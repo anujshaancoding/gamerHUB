@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:api:*)",
+      "Bash(npx jest:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(xargs:*)",
+      "Bash(npm run test:*)",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(for table in user_badges user_battle_passes user_frames user_game_progression user_progression user_themes user_titles coach_profiles streamer_profiles creator_profiles)",
+      "Bash(do echo \"=== $table ===\")",
+      "Bash(done)",
+      "Bash(for table in behavioral_signals stripe_customers payment_transactions regional_communities sponsorship_applications player_endorsements player_reports users verified_badges memes mood_history replay_rooms)"
+    ]
+  }
+}

@@ -1,0 +1,387 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  LogOut,
+  Save,
+  Camera,
+  Upload,
+} from "lucide-react";
+import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, Badge } from "@/components/ui";
+import { ThemeSwitcher } from "@/components/settings";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { createClient } from "@/lib/supabase/client";
+import { REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
+
+type SettingsTab = "profile" | "notifications" | "privacy" | "appearance";
+
+const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "privacy", label: "Privacy", icon: Shield },
+  { id: "appearance", label: "Appearance", icon: Palette },
+];
+
+export default function SettingsPage() {
+  const { profile, updateProfile, signOut } = useAuth();
+  const supabase = createClient();
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const [formData, setFormData] = useState({
+    display_name: profile?.display_name || "",
+    bio: profile?.bio || "",
+    gaming_style: profile?.gaming_style || "",
+    region: profile?.region || "",
+    preferred_language: profile?.preferred_language || "en",
+    discord: (profile?.social_links as Record<string, string>)?.discord || "",
+    twitch: (profile?.social_links as Record<string, string>)?.twitch || "",
+    youtube: (profile?.social_links as Record<string, string>)?.youtube || "",
+  });
+
+  // Sync form data when profile loads (profile is null on initial render)
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || "",
+        bio: profile.bio || "",
+        gaming_style: profile.gaming_style || "",
+        region: profile.region || "",
+        preferred_language: profile.preferred_language || "en",
+        discord: (profile.social_links as Record<string, string>)?.discord || "",
+        twitch: (profile.social_links as Record<string, string>)?.twitch || "",
+        youtube: (profile.social_links as Record<string, string>)?.youtube || "",
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setSuccess(false);
+
+    try {
+      await updateProfile({
+        display_name: formData.display_name || null,
+        bio: formData.bio || null,
+        gaming_style: formData.gaming_style as "casual" | "competitive" | "pro" || null,
+        region: formData.region || null,
+        preferred_language: formData.preferred_language,
+        social_links: {
+          discord: formData.discord,
+          twitch: formData.twitch,
+          youtube: formData.youtube,
+        },
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = "/";
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-text">Settings</h1>
+        <p className="text-text-muted mt-1">
+          Manage your account preferences and profile
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <Card className="p-2">
+            <nav className="space-y-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-text-secondary hover:text-text hover:bg-surface-light"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              ))}
+              <hr className="my-2 border-border" />
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-error hover:bg-error/10 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </nav>
+          </Card>
+        </div>
+
+        {/* Content */}
+        <div className="lg:col-span-3">
+          {activeTab === "profile" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card>
+                <h2 className="text-lg font-semibold text-text mb-6">
+                  Profile Settings
+                </h2>
+
+                {/* Avatar Section */}
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+                  <Avatar
+                    src={profile?.avatar_url}
+                    alt={profile?.display_name || profile?.username || "User"}
+                    size="xl"
+                  />
+                  <div>
+                    <Button variant="outline" size="sm" leftIcon={<Camera className="h-4 w-4" />}>
+                      Change Avatar
+                    </Button>
+                    <p className="text-xs text-text-muted mt-2">
+                      Recommended: 256x256 PNG or JPG
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-text-secondary mb-2 block">
+                        Username
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Input value={profile?.username || ""} disabled />
+                        <Badge variant="default">Cannot change</Badge>
+                      </div>
+                    </div>
+                    <Input
+                      label="Display Name"
+                      value={formData.display_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, display_name: e.target.value })
+                      }
+                      placeholder="Your display name"
+                    />
+                  </div>
+
+                  <Textarea
+                    label="Bio"
+                    value={formData.bio}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bio: e.target.value })
+                    }
+                    placeholder="Tell other gamers about yourself..."
+                    rows={3}
+                  />
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <Select
+                      label="Gaming Style"
+                      options={[
+                        { value: "", label: "Select style" },
+                        ...GAMING_STYLES.map((s) => ({
+                          value: s.value,
+                          label: s.label,
+                        })),
+                      ]}
+                      value={formData.gaming_style}
+                      onChange={(e) =>
+                        setFormData({ ...formData, gaming_style: e.target.value })
+                      }
+                    />
+                    <Select
+                      label="Region"
+                      options={[
+                        { value: "", label: "Select region" },
+                        ...REGIONS.map((r) => ({
+                          value: r.value,
+                          label: r.label,
+                        })),
+                      ]}
+                      value={formData.region}
+                      onChange={(e) =>
+                        setFormData({ ...formData, region: e.target.value })
+                      }
+                    />
+                    <Select
+                      label="Language"
+                      options={LANGUAGES.map((l) => ({
+                        value: l.value,
+                        label: l.label,
+                      }))}
+                      value={formData.preferred_language}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          preferred_language: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="text-sm font-medium text-text mb-4">
+                      Social Links
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Input
+                        label="Discord"
+                        value={formData.discord}
+                        onChange={(e) =>
+                          setFormData({ ...formData, discord: e.target.value })
+                        }
+                        placeholder="username#0000"
+                      />
+                      <Input
+                        label="Twitch"
+                        value={formData.twitch}
+                        onChange={(e) =>
+                          setFormData({ ...formData, twitch: e.target.value })
+                        }
+                        placeholder="username"
+                      />
+                      <Input
+                        label="YouTube"
+                        value={formData.youtube}
+                        onChange={(e) =>
+                          setFormData({ ...formData, youtube: e.target.value })
+                        }
+                        placeholder="channel URL"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
+                  {success && (
+                    <span className="text-sm text-success">
+                      Settings saved successfully!
+                    </span>
+                  )}
+                  <Button
+                    onClick={handleSave}
+                    isLoading={loading}
+                    leftIcon={<Save className="h-4 w-4" />}
+                    className="ml-auto"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {activeTab === "notifications" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card>
+                <h2 className="text-lg font-semibold text-text mb-6">
+                  Notification Preferences
+                </h2>
+                <div className="space-y-4">
+                  {[
+                    { label: "Match invitations", description: "Get notified when you're invited to a match" },
+                    { label: "Challenge alerts", description: "Get notified about new challenges" },
+                    { label: "Messages", description: "Get notified about new messages" },
+                    { label: "Follow notifications", description: "Get notified when someone follows you" },
+                    { label: "Rating notifications", description: "Get notified when you receive a rating" },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between p-4 bg-surface-light rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-text">{item.label}</p>
+                        <p className="text-sm text-text-muted">{item.description}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-surface-lighter peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {activeTab === "privacy" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card>
+                <h2 className="text-lg font-semibold text-text mb-6">
+                  Privacy Settings
+                </h2>
+                <div className="space-y-4">
+                  {[
+                    { label: "Profile visibility", description: "Allow others to view your profile" },
+                    { label: "Online status", description: "Show when you're online" },
+                    { label: "Game stats visibility", description: "Show your game stats publicly" },
+                    { label: "Achievement visibility", description: "Show your achievements publicly" },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between p-4 bg-surface-light rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-text">{item.label}</p>
+                        <p className="text-sm text-text-muted">{item.description}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-11 h-6 bg-surface-lighter peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {activeTab === "appearance" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card>
+                <h2 className="text-lg font-semibold text-text mb-6">
+                  Appearance Settings
+                </h2>
+                <p className="text-text-muted mb-6">
+                  Customize the look and feel of GamerHub with different color themes
+                </p>
+              </Card>
+              <div className="mt-6">
+                <ThemeSwitcher />
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
