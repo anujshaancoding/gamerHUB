@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 interface RouteParams {
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         .eq("post_id", post.id)
         .eq("user_id", user.id);
 
+      revalidatePath(`/blog/${slug}`);
       return NextResponse.json({ liked: false });
     } else {
       // Like
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         user_id: user.id,
       } as never);
 
+      revalidatePath(`/blog/${slug}`);
       return NextResponse.json({ liked: true });
     }
   } catch (error) {

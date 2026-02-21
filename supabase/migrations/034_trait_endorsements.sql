@@ -8,9 +8,7 @@
 -- 1A: DROP OLD PEER RATINGS, CREATE TRAIT ENDORSEMENTS
 -- ============================================
 
-DROP TABLE IF EXISTS public.peer_ratings CASCADE;
-
-CREATE TABLE public.trait_endorsements (
+CREATE TABLE IF NOT EXISTS public.trait_endorsements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   endorser_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   endorsed_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
@@ -458,9 +456,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Drop old trigger if exists
-DROP TRIGGER IF EXISTS on_peer_rating_change ON peer_ratings;
 
 -- Create new trigger on trait_endorsements
 CREATE TRIGGER on_trait_endorsement_change

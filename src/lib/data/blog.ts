@@ -34,7 +34,7 @@ export async function getBlogPosts(
       `
       id, title, slug, excerpt, featured_image_url, category, tags,
       published_at, views_count, likes_count, comments_count,
-      is_featured, is_pinned,
+      is_featured, is_pinned, template, color_palette,
       author:profiles!blog_posts_author_id_fkey(
         id, username, display_name, avatar_url
       ),
@@ -90,9 +90,12 @@ export async function getBlogPosts(
     query = query.eq("is_featured", true);
   }
 
-  // Search in title
+  // Full-text search using tsvector + GIN index
   if (search) {
-    query = query.ilike("title", `%${search}%`);
+    query = query.textSearch("search_vector", search, {
+      type: "websearch",
+      config: "english",
+    });
   }
 
   const { data, error, count } = await query;
@@ -142,8 +145,7 @@ export async function getBlogPostBySlug(
     .eq("user_id", post.author_id)
     .single();
 
-  // Increment view count (fire and forget)
-  supabase.rpc("increment_blog_view", { post_slug: slug }).then();
+  // View counting is handled client-side with sessionStorage dedup
 
   return {
     ...post,

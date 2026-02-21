@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
 
 // Types
 export type NotificationType =
@@ -235,7 +237,9 @@ export function useNotifications(options?: {
   limit?: number;
   unreadOnly?: boolean;
 }) {
-  return useQuery<{
+  const queryClient = useQueryClient();
+
+  const query = useQuery<{
     notifications: Notification[];
     unreadCount: number;
     hasMore: boolean;
@@ -246,6 +250,45 @@ export function useNotifications(options?: {
     retry: false, // Don't retry on failure (e.g., if table doesn't exist)
     staleTime: 1000 * 60, // Consider data stale after 1 minute
   });
+
+  // Realtime: listen for notification updates
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("notifications-updates")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        () => {
+          // Refetch when new notifications arrive
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications" },
+        () => {
+          // Refetch when notifications are marked as read
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "notifications" },
+        () => {
+          // Refetch when notifications are deleted/archived
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
 }
 
 export function useUnreadCount() {

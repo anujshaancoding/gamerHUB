@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "GamerHub",
-    "slug": "gamerhub",
+    "name": "ggLobby",
+    "slug": "gglobby",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gamerhub.mobile"
+      "bundleIdentifier": "com.gglobby.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
       },
-      "package": "com.gamerhub.mobile",
+      "package": "com.gglobby.mobile",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

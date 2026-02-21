@@ -181,7 +181,7 @@ export function useLocalePreferences() {
 
     // Convenience getters
     language: (query.data?.language || "en") as SupportedLanguage,
-    region: (query.data?.region || "na") as Region,
+    region: (query.data?.region || "delhi") as Region,
     timezone: query.data?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     timeFormat: query.data?.timeFormat || "12h",
     dateFormat: query.data?.dateFormat || "mdy",

@@ -20,6 +20,7 @@ export function SuggestedFriendsSection({ className, isExpanded, onToggleExpand 
   const { allSuggestions, loading, refetch } = useSuggestions({
     limit: 10,
     enabled: !!user,
+    includeRandom: true, // Fetch random users if no personalized suggestions
   });
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
@@ -37,7 +38,12 @@ export function SuggestedFriendsSection({ className, isExpanded, onToggleExpand 
   // Don't render if not logged in
   if (!user) return null;
 
-  // Don't render if loading or no suggestions
+  // Hide section if no suggestions (after loading)
+  if (!loading && visibleSuggestions.length === 0) {
+    return null;
+  }
+
+  // Show loading state
   if (loading) {
     return (
       <div className={className}>
@@ -63,26 +69,6 @@ export function SuggestedFriendsSection({ className, isExpanded, onToggleExpand 
             </Card>
           ))}
         </HorizontalScroll>
-      </div>
-    );
-  }
-
-  if (visibleSuggestions.length === 0) {
-    return (
-      <div className={className}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-text">Suggested Friends</h2>
-          </div>
-        </div>
-        <Card className="p-6 text-center">
-          <UserPlus className="h-10 w-10 text-text-muted mx-auto mb-3" />
-          <p className="text-text-secondary mb-2">No suggestions yet</p>
-          <p className="text-sm text-text-muted">
-            Add friends and games to get personalized suggestions
-          </p>
-        </Card>
       </div>
     );
   }

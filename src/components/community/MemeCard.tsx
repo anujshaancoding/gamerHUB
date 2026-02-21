@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Heart, MessageSquare, Share2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
 import Link from "next/link";
 import type { Meme } from "@/types/community";
 
@@ -39,15 +40,11 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
       {/* Header */}
       <div className="p-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {meme.creator?.avatar_url ? (
-            <img
-              src={meme.creator.avatar_url}
-              alt={meme.creator.username}
-              className="w-8 h-8 rounded-full"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-muted" />
-          )}
+          <Avatar
+            src={meme.creator?.avatar_url}
+            alt={meme.creator?.username || "User"}
+            size="sm"
+          />
           <div>
             <Link
               href={`/profile/${meme.creator?.username}`}

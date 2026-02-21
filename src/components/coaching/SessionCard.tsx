@@ -139,7 +139,7 @@ export function SessionCard({
           {session.price && (
             <div className="text-right">
               <p className="font-semibold">
-                {formatPrice(session.price, session.currency || "USD")}
+                {formatPrice(session.price, session.currency || "INR")}
               </p>
             </div>
           )}

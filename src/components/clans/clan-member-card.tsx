@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { ClanRoleBadge } from "./clan-role-badge";
 import { formatRelativeTime } from "@/lib/utils";
 import type { ClanMember, Profile, ClanMemberRole } from "@/types/database";
@@ -32,6 +33,7 @@ export function ClanMemberCard({
   onRemove,
   onMessage,
 }: ClanMemberCardProps) {
+  const { getUserStatus } = usePresence();
   const [showMenu, setShowMenu] = useState(false);
 
   const canManage =
@@ -68,7 +70,7 @@ export function ClanMemberCard({
             src={member.profile.avatar_url}
             alt={member.profile.display_name || member.profile.username}
             size="md"
-            status={member.profile.is_online ? "online" : "offline"}
+            status={getUserStatus(member.profile.id)}
             showStatus
           />
         </Link>

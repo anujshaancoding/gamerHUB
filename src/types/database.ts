@@ -975,294 +975,6 @@ export interface Database {
         };
         Relationships: [];
  };
-      demo_community_posts: {
-        Row: {
-          id: string;
-          author_id: string | null;
-          title: string;
-          slug: string;
-          excerpt: string | null;
-          content: string;
-          cover_image: string | null;
-          category: string;
-          game: string;
-          tags: string[] | null;
-          views_count: number | null;
-          likes_count: number | null;
-          comments_count: number | null;
-          read_time_minutes: number | null;
-          is_featured: boolean | null;
-          is_pinned: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          author_id?: string | null;
-          title: string;
-          slug: string;
-          excerpt?: string | null;
-          content: string;
-          cover_image?: string | null;
-          category: string;
-          game: string;
-          tags?: string[] | null;
-          views_count?: number | null;
-          likes_count?: number | null;
-          comments_count?: number | null;
-          read_time_minutes?: number | null;
-          is_featured?: boolean | null;
-          is_pinned?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          author_id?: string | null;
-          title?: string;
-          slug?: string;
-          excerpt?: string | null;
-          content?: string;
-          cover_image?: string | null;
-          category?: string;
-          game?: string;
-          tags?: string[] | null;
-          views_count?: number | null;
-          likes_count?: number | null;
-          comments_count?: number | null;
-          read_time_minutes?: number | null;
-          is_featured?: boolean | null;
-          is_pinned?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [];
- };
-      demo_post_comments: {
-        Row: {
-          id: string;
-          post_id: string | null;
-          author_id: string | null;
-          content: string;
-          likes_count: number | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          post_id?: string | null;
-          author_id?: string | null;
-          content: string;
-          likes_count?: number | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          post_id?: string | null;
-          author_id?: string | null;
-          content?: string;
-          likes_count?: number | null;
-          created_at?: string | null;
-        };
-        Relationships: [];
- };
-      demo_profiles: {
-        Row: {
-          id: string;
-          username: string;
-          display_name: string | null;
-          avatar_url: string | null;
-          banner_url: string | null;
-          bio: string | null;
-          gaming_style: string | null;
-          preferred_language: string | null;
-          region: string | null;
-          timezone: string | null;
-          online_hours: Json | null;
-          social_links: Json | null;
-          is_online: boolean | null;
-          is_verified: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          username: string;
-          display_name?: string | null;
-          avatar_url?: string | null;
-          banner_url?: string | null;
-          bio?: string | null;
-          gaming_style?: string | null;
-          preferred_language?: string | null;
-          region?: string | null;
-          timezone?: string | null;
-          online_hours?: Json | null;
-          social_links?: Json | null;
-          is_online?: boolean | null;
-          is_verified?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          username?: string;
-          display_name?: string | null;
-          avatar_url?: string | null;
-          banner_url?: string | null;
-          bio?: string | null;
-          gaming_style?: string | null;
-          preferred_language?: string | null;
-          region?: string | null;
-          timezone?: string | null;
-          online_hours?: Json | null;
-          social_links?: Json | null;
-          is_online?: boolean | null;
-          is_verified?: boolean | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [];
- };
-      demo_profiles_complete: {
-        Row: {
-          id: string | null;
-          username: string | null;
-          display_name: string | null;
-          avatar_url: string | null;
-          banner_url: string | null;
-          bio: string | null;
-          gaming_style: string | null;
-          preferred_language: string | null;
-          region: string | null;
-          timezone: string | null;
-          online_hours: Json | null;
-          social_links: Json | null;
-          is_online: boolean | null;
-          is_verified: boolean | null;
-          created_at: string | null;
-          games: Json | null;
-          badges: Json | null;
-          badge_count: number | null;
-          total_hours: number | null;
-        };
-        Insert: {
-          id?: string | null;
-          username?: string | null;
-          display_name?: string | null;
-          avatar_url?: string | null;
-          banner_url?: string | null;
-          bio?: string | null;
-          gaming_style?: string | null;
-          preferred_language?: string | null;
-          region?: string | null;
-          timezone?: string | null;
-          online_hours?: Json | null;
-          social_links?: Json | null;
-          is_online?: boolean | null;
-          is_verified?: boolean | null;
-          created_at?: string | null;
-          games?: Json | null;
-          badges?: Json | null;
-          badge_count?: number | null;
-          total_hours?: number | null;
-        };
-        Update: {
-          id?: string | null;
-          username?: string | null;
-          display_name?: string | null;
-          avatar_url?: string | null;
-          banner_url?: string | null;
-          bio?: string | null;
-          gaming_style?: string | null;
-          preferred_language?: string | null;
-          region?: string | null;
-          timezone?: string | null;
-          online_hours?: Json | null;
-          social_links?: Json | null;
-          is_online?: boolean | null;
-          is_verified?: boolean | null;
-          created_at?: string | null;
-          games?: Json | null;
-          badges?: Json | null;
-          badge_count?: number | null;
-          total_hours?: number | null;
-        };
-        Relationships: [];
- };
-      demo_user_badges: {
-        Row: {
-          id: string;
-          user_id: string | null;
-          badge_name: string;
-          badge_slug: string | null;
-          badge_icon: string | null;
-          badge_description: string | null;
-          badge_rarity: string | null;
-          earned_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          user_id?: string | null;
-          badge_name: string;
-          badge_slug?: string | null;
-          badge_icon?: string | null;
-          badge_description?: string | null;
-          badge_rarity?: string | null;
-          earned_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          user_id?: string | null;
-          badge_name?: string;
-          badge_slug?: string | null;
-          badge_icon?: string | null;
-          badge_description?: string | null;
-          badge_rarity?: string | null;
-          earned_at?: string | null;
-        };
-        Relationships: [];
- };
-      demo_user_games: {
-        Row: {
-          id: string;
-          user_id: string | null;
-          game_name: string;
-          game_slug: string | null;
-          in_game_name: string | null;
-          rank: string | null;
-          role: string | null;
-          secondary_role: string | null;
-          hours_played: number | null;
-          stats: Json | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          user_id?: string | null;
-          game_name: string;
-          game_slug?: string | null;
-          in_game_name?: string | null;
-          rank?: string | null;
-          role?: string | null;
-          secondary_role?: string | null;
-          hours_played?: number | null;
-          stats?: Json | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          user_id?: string | null;
-          game_name?: string;
-          game_slug?: string | null;
-          in_game_name?: string | null;
-          rank?: string | null;
-          role?: string | null;
-          secondary_role?: string | null;
-          hours_played?: number | null;
-          stats?: Json | null;
-          created_at?: string | null;
-        };
-        Relationships: [];
- };
       followers_only_view: {
         Row: {
           user_id: string | null;
@@ -2107,8 +1819,11 @@ export interface Database {
           social_links: Json | null;
           is_online: boolean | null;
           last_seen: string | null;
+          status: string;
+          status_until: string | null;
           is_premium: boolean | null;
           premium_until: string | null;
+          is_verified: boolean | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -2127,8 +1842,11 @@ export interface Database {
           social_links?: Json | null;
           is_online?: boolean | null;
           last_seen?: string | null;
+          status?: string;
+          status_until?: string | null;
           is_premium?: boolean | null;
           premium_until?: string | null;
+          is_verified?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -2147,8 +1865,11 @@ export interface Database {
           social_links?: Json | null;
           is_online?: boolean | null;
           last_seen?: string | null;
+          status?: string;
+          status_until?: string | null;
           is_premium?: boolean | null;
           premium_until?: string | null;
+          is_verified?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -3197,30 +2918,6 @@ export interface Database {
         };
         Relationships: [];
       };
-      demo_posts_complete: {
-        Row: {
-          id: string | null;
-          title: string | null;
-          slug: string | null;
-          excerpt: string | null;
-          content: string | null;
-          cover_image: string | null;
-          category: string | null;
-          game: string | null;
-          tags: string[] | null;
-          views_count: number | null;
-          likes_count: number | null;
-          comments_count: number | null;
-          read_time_minutes: number | null;
-          is_featured: boolean | null;
-          is_pinned: boolean | null;
-          created_at: string | null;
-          updated_at: string | null;
-          author: Json | null;
-          comments: Json | null;
-        };
-        Relationships: [];
-      };
       friends_view: {
         Row: {
           user_id: string | null;
@@ -3557,6 +3254,20 @@ export interface Database {
       [_ in never]: never;
     };
   };
+}
+
+// ============================================
+// Activity Tracking
+// ============================================
+
+export interface UserActivityDay {
+  id: string;
+  user_id: string;
+  activity_date: string; // DATE as YYYY-MM-DD
+  minutes_online: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  created_at: string | null;
 }
 
 // ============================================
@@ -4046,6 +3757,9 @@ export interface TrustBadges {
 }
 
 export type StandingLevel = "new" | "growing" | "established" | "veteran";
+
+export type UserStatus = "online" | "away" | "dnd" | "offline";
+export type UserStatusPreference = "auto" | "online" | "away" | "dnd" | "offline";
 
 export interface AccountStandingFactor {
   key: string;

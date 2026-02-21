@@ -46,14 +46,13 @@ export async function POST(
     }
 
     // Validate game ID
-    const validGames = ["valorant", "cs2", "coc"];
+    const validGames = ["valorant"];
     if (!validGames.includes(gameId)) {
       return NextResponse.json({ error: "Invalid game ID" }, { status: 400 });
     }
 
     // Determine provider
-    const provider =
-      gameId === "valorant" ? "riot" : gameId === "coc" ? "supercell" : "steam";
+    const provider = "riot";
 
     // Get connection for this provider
     const { data: connection, error: connError } = await supabase
@@ -93,25 +92,6 @@ export async function POST(
       // Sync based on game
       if (gameId === "valorant") {
         const result = await syncValorantStats(
-          connection.provider_user_id,
-          user.id,
-          connection.id,
-          supabase
-        );
-        stats = result.stats;
-        rankInfo = result.rankInfo;
-        matchesSynced = result.matchesSynced;
-      } else if (gameId === "cs2") {
-        const result = await syncCS2Stats(
-          connection.provider_user_id,
-          user.id,
-          connection.id,
-          supabase
-        );
-        stats = result.stats;
-        rankInfo = result.rankInfo;
-      } else if (gameId === "coc") {
-        const result = await syncCocStats(
           connection.provider_user_id,
           user.id,
           connection.id,

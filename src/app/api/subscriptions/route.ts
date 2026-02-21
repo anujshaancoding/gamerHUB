@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { noCacheResponse } from "@/lib/api/cache-headers";
+import { isPromoPeriodActive, PROMO_END_DATE } from "@/lib/promo";
 
 // GET - Get user's current subscription
 export async function GET() {
@@ -30,6 +31,16 @@ export async function GET() {
       subscription = subData;
     }
     // Silently handle table-not-found (PGRST205) and no-rows (PGRST116)
+
+    // Launch promo: all users get premium free for the first 3 months
+    if (isPromoPeriodActive()) {
+      return noCacheResponse({
+        subscription,
+        isPremium: true,
+        premiumUntil: PROMO_END_DATE.toISOString(),
+        isPromo: true,
+      });
+    }
 
     // Try to get premium status from profiles table
     let isPremium = false;

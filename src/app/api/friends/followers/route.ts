@@ -8,7 +8,7 @@ interface FollowData {
   created_at: string;
 }
 
-// GET - List followers (excludes friends - one-way only)
+// GET - List all users who follow this person
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -52,27 +52,26 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get all users this person follows back (to exclude friends)
-    const { data: followBackDataRaw } = await supabase
+    // Exclude mutual friends: get users this person also follows back
+    const followerIds = followersData.map((f) => f.follower_id);
+    const { data: mutualRaw } = await supabase
       .from("follows")
       .select("following_id")
       .eq("follower_id", userId)
-      .in(
-        "following_id",
-        followersData.map((f) => f.follower_id)
-      );
+      .in("following_id", followerIds);
 
-    const followBackData = followBackDataRaw as Pick<FollowData, "following_id">[] | null;
-    const mutualFollowIds = new Set(
-      (followBackData || []).map((f) => f.following_id)
+    const mutualIds = new Set(
+      (mutualRaw as Pick<FollowData, "following_id">[] | null)?.map(
+        (f) => f.following_id
+      ) || []
     );
 
-    // Filter out mutual follows (friends)
-    const oneWayFollowers = followersData.filter(
-      (f) => !mutualFollowIds.has(f.follower_id)
+    // Filter out mutual friends (they belong in the Friends tab)
+    const followersOnly = followersData.filter(
+      (f) => !mutualIds.has(f.follower_id)
     );
 
-    if (oneWayFollowers.length === 0) {
+    if (followersOnly.length === 0) {
       return NextResponse.json({
         followers: [],
         total: 0,
@@ -81,13 +80,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get profiles for one-way followers
+    // Get profiles for followers-only users (excluding mutual friends)
     let query = supabase
       .from("profiles")
       .select("*", { count: "exact" })
       .in(
         "id",
-        oneWayFollowers.map((f) => f.follower_id)
+        followersOnly.map((f) => f.follower_id)
       )
       .order("username")
       .range(offset, offset + limit - 1);
@@ -112,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     // Combine with follow data
     const followers = (profiles || []).map((profile) => {
-      const followData = oneWayFollowers.find(
+      const followData = followersOnly.find(
         (f) => f.follower_id === profile.id
       );
       return {

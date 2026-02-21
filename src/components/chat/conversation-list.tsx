@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Badge } from "@/components/ui";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Conversation, Profile, Message } from "@/types/database";
 
@@ -25,6 +26,7 @@ export function ConversationList({
   onSelect,
   currentUserId,
 }: ConversationListProps) {
+  const { getUserStatus } = usePresence();
   return (
     <div className="space-y-1">
       {conversations.map((conversation) => {
@@ -38,8 +40,9 @@ export function ConversationList({
         );
         const hasUnread =
           lastMessage &&
-          myParticipant?.last_read_at &&
-          new Date(lastMessage.created_at) > new Date(myParticipant.last_read_at);
+          lastMessage.sender_id !== currentUserId &&
+          (!myParticipant?.last_read_at ||
+            new Date(lastMessage.created_at) > new Date(myParticipant.last_read_at));
 
         return (
           <button
@@ -55,7 +58,7 @@ export function ConversationList({
               src={otherUser?.avatar_url}
               alt={otherUser?.display_name || otherUser?.username || "User"}
               size="md"
-              status={otherUser?.is_online ? "online" : "offline"}
+              status={otherUser?.id ? getUserStatus(otherUser.id) : "offline"}
               showStatus
             />
 

@@ -11,10 +11,13 @@ import {
   ChevronUp,
   Eye,
   Loader2,
+  Palette,
+  LayoutTemplate,
 } from "lucide-react";
 import { PremiumFeatureGate } from "@/components/premium/PremiumFeatureGate";
 import { RichTextEditor } from "@/components/blog/rich-text-editor";
 import { BlogEditorTutorial } from "@/components/blog/blog-editor-tutorial";
+import { BlogCreationWizard } from "@/components/blog/blog-creation-wizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,7 +28,11 @@ import {
 import { useBlogAuthor } from "@/lib/hooks/useBlogAuthor";
 import {
   BLOG_CATEGORIES,
+  BLOG_TEMPLATES,
+  BLOG_COLOR_PALETTES,
   type BlogCategory,
+  type BlogTemplate,
+  type BlogColorPalette,
   type CreateBlogPostInput,
 } from "@/types/blog";
 
@@ -44,9 +51,14 @@ function WritePage() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSeo, setShowSeo] = useState(false);
 
+  // Template & palette state
+  const [template, setTemplate] = useState<BlogTemplate>("classic");
+  const [colorPalette, setColorPalette] = useState<BlogColorPalette>("neon_surge");
+
   // Form state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState<BlogCategory>("news");
   const [tags, setTags] = useState("");
@@ -76,14 +88,22 @@ function WritePage() {
       setAllowComments(existingPost.allow_comments);
       setMetaTitle(existingPost.meta_title || "");
       setMetaDescription(existingPost.meta_description || "");
+      setTemplate(existingPost.template || "classic");
+      setColorPalette(existingPost.color_palette || "neon_surge");
     }
   }, [editSlug, existingPost]);
+
+  const handleWizardComplete = (t: BlogTemplate, p: BlogColorPalette) => {
+    setTemplate(t);
+    setColorPalette(p);
+  };
 
   const buildInput = (
     status: "draft" | "published"
   ): CreateBlogPostInput => ({
     title: title.trim(),
     content,
+    content_json: contentJson || undefined,
     excerpt: excerpt.trim() || undefined,
     category,
     tags: tags
@@ -94,6 +114,8 @@ function WritePage() {
     allow_comments: allowComments,
     meta_title: metaTitle.trim() || undefined,
     meta_description: metaDescription.trim() || undefined,
+    template,
+    color_palette: colorPalette,
     status,
   });
 
@@ -126,24 +148,19 @@ function WritePage() {
     }
 
     try {
-      const canPublish = author?.can_publish_directly;
-      const status = canPublish ? "published" : "published";
+      const status = "published";
 
       if (editSlug) {
-        const post = await updatePost({
+        await updatePost({
           slug: editSlug,
           updates: buildInput(status),
         });
         toast.success("Post published!");
-        router.push(`/blog/${post.slug}`);
+        router.push("/community");
       } else {
-        const post = await createPost(buildInput(status));
-        toast.success(
-          canPublish
-            ? "Post published!"
-            : "Post submitted for review!"
-        );
-        router.push(`/blog/${post.slug}`);
+        await createPost(buildInput(status));
+        toast.success("Post published!");
+        router.push("/community");
       }
     } catch (err) {
       toast.error(
@@ -160,7 +177,10 @@ function WritePage() {
     );
   }
 
-  return (
+  const selectedTemplateInfo = BLOG_TEMPLATES[template];
+  const selectedPaletteInfo = BLOG_COLOR_PALETTES[colorPalette];
+
+  const editorContent = (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -182,14 +202,26 @@ function WritePage() {
         </Button>
       </div>
 
-      {/* Contributor notice */}
-      {isAuthor && !author?.can_publish_directly && (
-        <div className="mb-6 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm text-text-muted">
-          As a new contributor, your posts will go through a brief review before
-          being published. Keep writing and you&apos;ll earn direct publishing
-          access!
+      {/* Selected template & palette indicator */}
+      <div className="flex flex-wrap items-center gap-3 mb-6 p-3 bg-surface-light rounded-lg border border-border">
+        <div className="flex items-center gap-2 text-sm">
+          <LayoutTemplate className="w-4 h-4 text-primary" />
+          <span className="text-text-muted">Template:</span>
+          <span className="font-medium text-text">{selectedTemplateInfo.label}</span>
         </div>
-      )}
+        <div className="w-px h-4 bg-border" />
+        <div className="flex items-center gap-2 text-sm">
+          <Palette className="w-4 h-4 text-primary" />
+          <span className="text-text-muted">Palette:</span>
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-3 h-3 rounded-full border border-white/20"
+              style={{ backgroundColor: selectedPaletteInfo.primaryHex }}
+            />
+            <span className="font-medium text-text">{selectedPaletteInfo.label}</span>
+          </div>
+        </div>
+      </div>
 
       {/* Title */}
       <div className="mb-4">
@@ -209,6 +241,7 @@ function WritePage() {
         <RichTextEditor
           content={content}
           onChange={setContent}
+          onJsonChange={setContentJson}
           placeholder="Start writing your post..."
         />
       </div>
@@ -372,6 +405,17 @@ function WritePage() {
         onClose={() => setShowTutorial(false)}
       />
     </div>
+  );
+
+  return (
+    <BlogCreationWizard
+      initialTemplate={template}
+      initialPalette={colorPalette}
+      onComplete={handleWizardComplete}
+      skipWizard={!!editSlug}
+    >
+      {editorContent}
+    </BlogCreationWizard>
   );
 }
 

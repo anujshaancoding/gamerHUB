@@ -22,12 +22,19 @@ import {
   MessageCircle,
   Radio,
   Megaphone,
+  UserCheck,
+  Shield,
+  BookOpen,
 } from "lucide-react";
-import { Button, Avatar, Input } from "@/components/ui";
+import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { useNotifications, formatNotificationTime, type NotificationType } from "@/lib/hooks/useNotifications";
+import { useNotifications, useMarkAsRead, formatNotificationTime, type NotificationType } from "@/lib/hooks/useNotifications";
+import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useSocialCounts } from "@/lib/hooks/useFriends";
 import { PremiumBadge } from "@/components/premium";
+import { Logo } from "@/components/layout/logo";
+import { SearchDropdown } from "@/components/search";
 import { cn } from "@/lib/utils";
 
 const getNotificationIcon = (type: NotificationType) => {
@@ -57,11 +64,17 @@ const getNotificationIcon = (type: NotificationType) => {
   }
 };
 
-const navItems = [
-  { href: "/profile", label: "My Profile" },
-  { href: "/community", label: "Community" },
-  { href: "/find-gamers", label: "Discover" },
-  { href: "/premium", label: "Premium", isPremium: true },
+// Mobile menu navigation items - same as sidebar
+const mobileNavItems = [
+  { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
+  { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
+  { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
+  { href: "/community", label: "Community", icon: Users, requiresAuth: false },
+  { href: "/blog", label: "Blog", icon: BookOpen, isPremium: true, requiresAuth: true },
+  { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
+  { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
+  { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
+  { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
 
 export function Navbar() {
@@ -74,6 +87,8 @@ export function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Fetch notifications from backend (with error handling)
   const { data: notificationData, isLoading: notificationsLoading } = useNotifications({
@@ -82,9 +97,13 @@ export function Navbar() {
 
   const notifications = notificationData?.notifications || [];
   const unreadCount = notificationData?.unreadCount || 0;
+  const unreadMessages = useUnreadMessageCount();
+  const { counts } = useSocialCounts(user?.id);
+  const markAsReadMutation = useMarkAsRead();
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -101,6 +120,12 @@ export function Navbar() {
       ) {
         setShowUserMenu(false);
       }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearch(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -109,64 +134,74 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push("/");
+    router.push("/login");
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/find-gamers?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearch(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 xl:right-72 z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
+    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] xl:right-[calc(var(--app-inset)_+_18rem)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/community" className="flex items-center gap-2">
-            <Gamepad2 className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-glow-primary hidden sm:block">
-              GamerHub
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
-                  item.href === "/profile"
-                    ? pathname.startsWith("/profile")
-                      ? "bg-primary/10 text-primary"
-                      : "text-text-secondary hover:text-text hover:bg-surface-light"
-                    : pathname === item.href || pathname.startsWith(item.href + "/")
-                      ? "bg-primary/10 text-primary"
-                      : "text-text-secondary hover:text-text hover:bg-surface-light",
-                  item.isPremium && "text-warning hover:text-warning"
-                )}
-              >
-                {item.isPremium && <Crown className="h-4 w-4" />}
-                {item.label}
-              </Link>
-            ))}
+          {/* Logo - pinned left on all screen sizes */}
+          <div className="flex-shrink-0">
+            <Logo showText={true} size="md" className="hidden sm:flex" />
+            <Logo showText={true} size="sm" className="sm:hidden" />
           </div>
 
           {/* Search & Actions */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            <form onSubmit={handleSearch} className="hidden lg:block">
-              <Input
-                placeholder="Search gamers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search className="h-4 w-4" />}
-                className="w-48"
+            <div className="hidden lg:block relative" ref={searchRef}>
+              <form onSubmit={handleSearch}>
+                <Input
+                  placeholder="Search news and blogs"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 3) setShowSearch(true);
+                  }}
+                  onFocus={() => {
+                    setSearchFocused(true);
+                    if (searchQuery.length >= 3) setShowSearch(true);
+                  }}
+                  onBlur={() => setSearchFocused(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowSearch(false);
+                  }}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  rightIcon={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setShowSearch(false);
+                        }}
+                        className="hover:text-text transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : undefined
+                  }
+                  className={cn(
+                    "transition-all duration-300 ease-in-out",
+                    searchFocused ? "w-96" : "w-48"
+                  )}
+                />
+              </form>
+              <SearchDropdown
+                query={searchQuery}
+                isOpen={showSearch && searchQuery.length >= 3}
+                onClose={() => setShowSearch(false)}
               />
-            </form>
+            </div>
 
             {/* Show Login/Sign Up for guests, or Notifications/User Menu for logged in users */}
             {!user ? (
@@ -186,6 +221,18 @@ export function Navbar() {
             ) : (
               /* Logged In User - Show Notifications and User Menu */
               <>
+                {/* Messages */}
+                <Link href="/messages" className="relative">
+                  <Button variant="ghost" size="icon" className="relative">
+                    <MessageCircle className="h-5 w-5" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 bg-error text-white text-xs rounded-full flex items-center justify-center">
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                   <Button
@@ -193,8 +240,19 @@ export function Navbar() {
                     size="icon"
                     className="relative"
                     onClick={() => {
-                      setShowNotifications(!showNotifications);
+                      const isOpening = !showNotifications;
+                      setShowNotifications(isOpening);
                       setShowUserMenu(false);
+
+                      // Mark all unread notifications as read when opening the dropdown
+                      if (isOpening && unreadCount > 0) {
+                        const unreadIds = notifications
+                          .filter(n => !n.is_read)
+                          .map(n => n.id);
+                        if (unreadIds.length > 0) {
+                          markAsReadMutation.mutate(unreadIds);
+                        }
+                      }
                     }}
                   >
                     <Bell className="h-5 w-5" />
@@ -289,8 +347,8 @@ export function Navbar() {
                   )}
                 </div>
 
-                {/* User Menu */}
-                <div className="relative" ref={userMenuRef}>
+                {/* User Menu - hidden on mobile since My Profile is in hamburger */}
+                <div className="relative hidden sm:block" ref={userMenuRef}>
                   <button
                     onClick={() => {
                       setShowUserMenu(!showUserMenu);
@@ -349,11 +407,11 @@ export function Navbar() {
               </>
             )}
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Show on small/medium screens, hide on large where sidebar is visible */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
               {showMobileMenu ? (
@@ -371,38 +429,94 @@ export function Navbar() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-surface border-b border-border"
+          className="lg:hidden bg-surface border-b border-border max-h-[calc(100vh-4rem)] overflow-y-auto"
         >
           <div className="px-4 py-3 space-y-2">
-            <form onSubmit={handleSearch} className="mb-3">
-              <Input
-                placeholder="Search gamers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search className="h-4 w-4" />}
+            <div className="relative mb-3">
+              <form onSubmit={handleSearch}>
+                <Input
+                  placeholder="Search news and blogs"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 3) setShowSearch(true);
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.length >= 3) setShowSearch(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowSearch(false);
+                  }}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  rightIcon={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setShowSearch(false);
+                        }}
+                        className="hover:text-text transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : undefined
+                  }
+                />
+              </form>
+              <SearchDropdown
+                query={searchQuery}
+                isOpen={showSearch && searchQuery.length >= 3}
+                onClose={() => {
+                  setShowSearch(false);
+                  setShowMobileMenu(false);
+                }}
               />
-            </form>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setShowMobileMenu(false)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  item.href === "/profile"
-                    ? pathname.startsWith("/profile")
-                      ? "bg-primary/10 text-primary"
-                      : "text-text-secondary hover:text-text hover:bg-surface-light"
-                    : pathname === item.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-text-secondary hover:text-text hover:bg-surface-light",
-                  item.isPremium && "text-warning"
-                )}
-              >
-                {item.isPremium && <Crown className="h-4 w-4" />}
-                {item.label}
-              </Link>
-            ))}
+            </div>
+            {mobileNavItems.map((item) => {
+              // Skip auth-required items for guests
+              if (item.requiresAuth && !user) return null;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setShowMobileMenu(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    item.href === "/profile"
+                      ? pathname.startsWith("/profile")
+                        ? "bg-primary/10 text-primary"
+                        : "text-text-secondary hover:text-text hover:bg-surface-light"
+                      : pathname === item.href || pathname.startsWith(item.href + "/")
+                        ? "bg-primary/10 text-primary"
+                        : "text-text-secondary hover:text-text hover:bg-surface-light",
+                    item.isPremium && "text-warning hover:text-warning"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="flex-1">{item.label}</span>
+                  {item.showBadge && counts.pending_requests > 0 && (
+                    <Badge variant="primary" size="sm">
+                      {counts.pending_requests}
+                    </Badge>
+                  )}
+                  {item.showMessageBadge && unreadMessages > 0 && (
+                    <Badge variant="error" size="sm">
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* Legal Links */}
+            <div className="pt-3 mt-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-dim px-3">
+              <Link href="/privacy" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Privacy</Link>
+              <Link href="/terms" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Terms</Link>
+              <Link href="/guidelines" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Guidelines</Link>
+              <span className="basis-full text-text-dim/60 mt-1">&copy; {new Date().getFullYear()} ggLobby</span>
+            </div>
           </div>
         </motion.div>
       )}

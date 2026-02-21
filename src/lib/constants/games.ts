@@ -2,7 +2,7 @@ export const SUPPORTED_GAMES = [
   {
     slug: "valorant",
     name: "Valorant",
-    iconUrl: "/images/games/valorant.png",
+    iconUrl: "/images/games/valorant.svg",
     hasApi: true,
     ranks: [
       "Iron 1", "Iron 2", "Iron 3",
@@ -18,25 +18,9 @@ export const SUPPORTED_GAMES = [
     roles: ["Duelist", "Controller", "Initiator", "Sentinel"]
   },
   {
-    slug: "cs2",
-    name: "Counter-Strike 2",
-    iconUrl: "/images/games/cs2.png",
-    hasApi: true,
-    ranks: [
-      "Silver I", "Silver II", "Silver III", "Silver IV",
-      "Silver Elite", "Silver Elite Master",
-      "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master",
-      "Master Guardian I", "Master Guardian II",
-      "Master Guardian Elite", "Distinguished Master Guardian",
-      "Legendary Eagle", "Legendary Eagle Master",
-      "Supreme Master First Class", "Global Elite"
-    ],
-    roles: ["Entry Fragger", "AWPer", "Support", "Lurker", "IGL"]
-  },
-  {
-    slug: "pubg-mobile",
-    name: "PUBG Mobile",
-    iconUrl: "/images/games/pubg-mobile.png",
+    slug: "bgmi",
+    name: "BGMI",
+    iconUrl: "/images/games/bgmi.svg",
     hasApi: false,
     ranks: [
       "Bronze V-I", "Silver V-I", "Gold V-I",
@@ -49,7 +33,7 @@ export const SUPPORTED_GAMES = [
   {
     slug: "freefire",
     name: "Free Fire",
-    iconUrl: "/images/games/freefire.png",
+    iconUrl: "/images/games/freefire.svg",
     hasApi: false,
     ranks: [
       "Bronze I-III", "Silver I-III", "Gold I-IV",
@@ -59,33 +43,9 @@ export const SUPPORTED_GAMES = [
     roles: ["Rusher", "Support", "Sniper", "Defuser"]
   },
   {
-    slug: "coc",
-    name: "Clash of Clans",
-    iconUrl: "/images/games/coc.png",
-    hasApi: true,
-    ranks: [
-      "Bronze League", "Silver League", "Gold League",
-      "Crystal League", "Master League",
-      "Champion League", "Titan League", "Legend League"
-    ],
-    roles: ["War Specialist", "Donator", "Clan Leader", "Base Builder"]
-  },
-  {
-    slug: "cod-mobile",
-    name: "COD Mobile",
-    iconUrl: "/images/games/cod-mobile.png",
-    hasApi: false,
-    ranks: [
-      "Rookie I-V", "Veteran I-V", "Elite I-V",
-      "Pro I-V", "Master I-V",
-      "Grandmaster I-V", "Legendary"
-    ],
-    roles: ["Slayer", "OBJ", "Anchor", "Support"]
-  },
-  {
     slug: "other",
     name: "Other",
-    iconUrl: "/images/games/other.png",
+    iconUrl: "/images/games/other.svg",
     hasApi: false,
     ranks: [],
     roles: []
@@ -93,28 +53,82 @@ export const SUPPORTED_GAMES = [
 ] as const;
 
 export const REGIONS = [
-  { value: "na", label: "North America" },
-  { value: "eu", label: "Europe" },
-  { value: "asia", label: "Asia" },
-  { value: "oce", label: "Oceania" },
-  { value: "sa", label: "South America" },
-  { value: "mena", label: "Middle East & North Africa" },
-  { value: "sea", label: "Southeast Asia" },
+  // Indian States
+  { value: "andhra-pradesh", label: "Andhra Pradesh" },
+  { value: "arunachal-pradesh", label: "Arunachal Pradesh" },
+  { value: "assam", label: "Assam" },
+  { value: "bihar", label: "Bihar" },
+  { value: "chhattisgarh", label: "Chhattisgarh" },
+  { value: "goa", label: "Goa" },
+  { value: "gujarat", label: "Gujarat" },
+  { value: "haryana", label: "Haryana" },
+  { value: "himachal-pradesh", label: "Himachal Pradesh" },
+  { value: "jharkhand", label: "Jharkhand" },
+  { value: "karnataka", label: "Karnataka" },
+  { value: "kerala", label: "Kerala" },
+  { value: "madhya-pradesh", label: "Madhya Pradesh" },
+  { value: "maharashtra", label: "Maharashtra" },
+  { value: "manipur", label: "Manipur" },
+  { value: "meghalaya", label: "Meghalaya" },
+  { value: "mizoram", label: "Mizoram" },
+  { value: "nagaland", label: "Nagaland" },
+  { value: "odisha", label: "Odisha" },
+  { value: "punjab", label: "Punjab" },
+  { value: "rajasthan", label: "Rajasthan" },
+  { value: "sikkim", label: "Sikkim" },
+  { value: "tamil-nadu", label: "Tamil Nadu" },
+  { value: "telangana", label: "Telangana" },
+  { value: "tripura", label: "Tripura" },
+  { value: "uttar-pradesh", label: "Uttar Pradesh" },
+  { value: "uttarakhand", label: "Uttarakhand" },
+  { value: "west-bengal", label: "West Bengal" },
+  // Union Territories
+  { value: "andaman-nicobar", label: "Andaman & Nicobar Islands" },
+  { value: "chandigarh", label: "Chandigarh" },
+  { value: "dadra-nagar-haveli", label: "Dadra & Nagar Haveli and Daman & Diu" },
+  { value: "delhi", label: "Delhi" },
+  { value: "jammu-kashmir", label: "Jammu & Kashmir" },
+  { value: "ladakh", label: "Ladakh" },
+  { value: "lakshadweep", label: "Lakshadweep" },
+  { value: "puducherry", label: "Puducherry" },
+  // Other
+  { value: "other", label: "Other" },
 ] as const;
 
 export const LANGUAGES = [
   { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "pt", label: "Portuguese" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "ru", label: "Russian" },
-  { value: "zh", label: "Chinese" },
-  { value: "ja", label: "Japanese" },
-  { value: "ko", label: "Korean" },
-  { value: "ar", label: "Arabic" },
   { value: "hi", label: "Hindi" },
+  { value: "bn", label: "Bengali" },
+  { value: "te", label: "Telugu" },
+  { value: "mr", label: "Marathi" },
+  { value: "ta", label: "Tamil" },
+  { value: "gu", label: "Gujarati" },
+  { value: "ur", label: "Urdu" },
+  { value: "kn", label: "Kannada" },
+  { value: "or", label: "Odia" },
+  { value: "ml", label: "Malayalam" },
+  { value: "pa", label: "Punjabi" },
+  { value: "as", label: "Assamese" },
+  { value: "mai", label: "Maithili" },
+  { value: "sa", label: "Sanskrit" },
+  { value: "sd", label: "Sindhi" },
+  { value: "ks", label: "Kashmiri" },
+  { value: "ne", label: "Nepali" },
+  { value: "kok", label: "Konkani" },
+  { value: "doi", label: "Dogri" },
+  { value: "mni", label: "Manipuri" },
+  { value: "sat", label: "Santali" },
+  { value: "brx", label: "Bodo" },
+  { value: "other", label: "Other" },
 ] as const;
+
+export function getRegionLabel(value: string): string {
+  return REGIONS.find((r) => r.value === value)?.label || value;
+}
+
+export function getLanguageLabel(value: string): string {
+  return LANGUAGES.find((l) => l.value === value)?.label || value;
+}
 
 export const GAMING_STYLES = [
   { value: "casual", label: "Casual", description: "Play for fun, no pressure" },

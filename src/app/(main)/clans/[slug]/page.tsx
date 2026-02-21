@@ -40,7 +40,7 @@ export default function ClanDetailPage() {
   const slug = params.slug as string;
   const { user } = useAuth();
 
-  const { clan, loading: clanLoading, refetch: refetchClan, updateClan } = useClan(slug);
+  const { clan, loading: clanLoading, refetch: refetchClan, updateClan, deleteClan } = useClan(slug);
   const {
     members,
     loading: membersLoading,
@@ -58,9 +58,14 @@ export default function ClanDetailPage() {
   const [joiningOpen, setJoiningOpen] = useState(false);
 
   // Find current user's membership in this clan
+  // Check both useClanMembers (API) and clan.clan_members (nested from useClan) as fallback
   const currentMember = members.find((m) => m.user_id === user?.id);
-  const userRole = currentMember?.role as ClanMemberRole | null;
-  const isMember = !!currentMember;
+  const clanMemberFallback = !currentMember && user && clan
+    ? (clan as any).clan_members?.find((m: any) => m.user_id === user.id)
+    : null;
+  const effectiveMember = currentMember || clanMemberFallback;
+  const userRole = (effectiveMember?.role as ClanMemberRole) || null;
+  const isMember = !!effectiveMember;
   const canInvite =
     userRole === "leader" ||
     userRole === "co_leader" ||
@@ -427,6 +432,18 @@ export default function ClanDetailPage() {
                 }
                 return result;
               }}
+              onDelete={
+                userRole === "leader"
+                  ? async () => {
+                      const result = await deleteClan();
+                      if (!result.error) {
+                        router.push("/clans");
+                      }
+                      return result;
+                    }
+                  : undefined
+              }
+              isLeader={userRole === "leader"}
             />
           )}
         </>

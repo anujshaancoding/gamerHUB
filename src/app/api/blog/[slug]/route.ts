@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 interface RouteParams {
@@ -60,8 +61,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       userHasBookmarked = !!bookmarkResult.data;
     }
 
-    // Increment view count (fire and forget)
-    supabase.rpc("increment_blog_view", { post_slug: slug }).then();
+    // View counting is handled client-side with sessionStorage dedup
+    // to prevent inflated counts from bots, crawlers, and repeat visits
 
     // Get blog author info
     const { data: blogAuthor } = await supabase
@@ -135,11 +136,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const allowedFields = [
       "title",
       "content",
+      "content_json",
       "excerpt",
       "featured_image_url",
       "game_id",
       "category",
       "tags",
+      "template",
+      "color_palette",
       "status",
       "meta_title",
       "meta_description",
@@ -162,22 +166,39 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     updates.updated_at = new Date().toISOString();
 
-    const { data: post, error: updateError } = await supabase
+    const updateSelect = `
+      *,
+      author:profiles!blog_posts_author_id_fkey(
+        id, username, display_name, avatar_url
+      ),
+      game:games!blog_posts_game_id_fkey(
+        id, slug, name, icon_url
+      )
+    `;
+
+    let { data: post, error: updateError } = await supabase
       .from("blog_posts")
       .update(updates as never)
       .eq("slug", slug)
-      .select(
-        `
-        *,
-        author:profiles!blog_posts_author_id_fkey(
-          id, username, display_name, avatar_url
-        ),
-        game:games!blog_posts_game_id_fkey(
-          id, slug, name, icon_url
-        )
-      `
-      )
+      .select(updateSelect)
       .single();
+
+    // If update failed (possibly due to template/color_palette columns missing),
+    // retry without those fields
+    if (updateError && (updates.template || updates.color_palette)) {
+      delete updates.template;
+      delete updates.color_palette;
+
+      const retry = await supabase
+        .from("blog_posts")
+        .update(updates as never)
+        .eq("slug", slug)
+        .select(updateSelect)
+        .single();
+
+      post = retry.data;
+      updateError = retry.error;
+    }
 
     if (updateError) {
       console.error("Error updating blog post:", updateError);
@@ -186,6 +207,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { status: 500 }
       );
     }
+
+    // On-demand ISR revalidation — instant freshness after update
+    revalidatePath(`/blog/${slug}`);
+    revalidatePath("/blog");
 
     return NextResponse.json({ post });
   } catch (error) {
@@ -253,6 +278,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 500 }
       );
     }
+
+    // On-demand ISR revalidation — remove stale cached page
+    revalidatePath(`/blog/${slug}`);
+    revalidatePath("/blog");
 
     return NextResponse.json({ success: true });
   } catch (error) {

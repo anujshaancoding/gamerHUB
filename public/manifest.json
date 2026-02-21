@@ -1,7 +1,7 @@
 {
-  "name": "GamerHub - Connect. Play. Compete.",
-  "short_name": "GamerHub",
-  "description": "The ultimate gaming social platform. Create your profile, find teammates, schedule matches, and compete with gamers worldwide.",
+  "name": "ggLobby - Where Gamers Unite",
+  "short_name": "ggLobby",
+  "description": "The ultimate gaming social platform. Connect with gamers, find teammates, and compete worldwide. GG starts here.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -58,21 +58,5 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["games", "social", "entertainment"],
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "GamerHub Desktop View"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "GamerHub Mobile View"
-    }
-  ]
+  "categories": ["games", "social", "entertainment"]
 }

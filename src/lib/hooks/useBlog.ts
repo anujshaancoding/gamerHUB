@@ -39,12 +39,12 @@ interface BlogPostsResponse {
   posts: BlogPost[];
   total: number;
   limit: number;
-  offset: number;
+  nextCursor: string | null;
 }
 
-// Fetch blog posts with filters
+// Fetch blog posts with cursor-based pagination
 async function fetchBlogPosts(
-  filters: BlogFilters & { offset: number; limit: number }
+  filters: BlogFilters & { cursor?: string; limit: number }
 ): Promise<BlogPostsResponse> {
   const params = new URLSearchParams();
 
@@ -55,7 +55,7 @@ async function fetchBlogPosts(
   if (filters.featured) params.set("featured", "true");
   if (filters.search) params.set("search", filters.search);
   params.set("limit", String(filters.limit));
-  params.set("offset", String(filters.offset));
+  if (filters.cursor) params.set("cursor", filters.cursor);
 
   const response = await fetch(`/api/blog?${params.toString()}`);
   const data = await response.json();
@@ -67,7 +67,7 @@ async function fetchBlogPosts(
   return data;
 }
 
-// Hook: List blog posts with infinite scroll
+// Hook: List blog posts with infinite scroll (cursor-based)
 export function useBlogPosts(filters: BlogFilters = {}, limit = 20) {
   const {
     data,
@@ -79,16 +79,14 @@ export function useBlogPosts(filters: BlogFilters = {}, limit = 20) {
     refetch,
   } = useInfiniteQuery({
     queryKey: blogKeys.posts(filters),
-    queryFn: ({ pageParam = 0 }) =>
-      fetchBlogPosts({ ...filters, offset: pageParam, limit }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loadedCount = allPages.reduce(
-        (acc, page) => acc + page.posts.length,
-        0
-      );
-      return loadedCount < lastPage.total ? loadedCount : undefined;
-    },
+    queryFn: ({ pageParam }) =>
+      fetchBlogPosts({
+        ...filters,
+        cursor: pageParam || undefined,
+        limit,
+      }),
+    initialPageParam: "" as string,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: STALE_TIMES.POSTS,
   });
 
@@ -262,6 +260,7 @@ export function useLikeBlogPost() {
     },
     onSuccess: (_, slug) => {
       queryClient.invalidateQueries({ queryKey: blogKeys.post(slug) });
+      queryClient.invalidateQueries({ queryKey: ["blog", "posts"] });
     },
   });
 
@@ -296,6 +295,32 @@ export function useBlogComments(postSlug: string) {
     loading: isLoading,
     error: error instanceof Error ? error.message : null,
     refetch,
+  };
+}
+
+// Hook: Like/Unlike a blog comment
+export function useLikeBlogComment(postSlug: string) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const response = await fetch(`/api/blog/${postSlug}/comments/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment_id: commentId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to toggle comment like");
+      return data.liked as boolean;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: blogKeys.comments(postSlug) });
+    },
+  });
+
+  return {
+    toggleCommentLike: mutation.mutateAsync,
+    isLikingComment: mutation.isPending,
   };
 }
 

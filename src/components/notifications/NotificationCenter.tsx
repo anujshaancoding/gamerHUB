@@ -43,8 +43,22 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
     archiveMutation.mutate(notificationId);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+
+    // Mark all unread notifications as read when opening the dropdown
+    if (open && unreadCount > 0) {
+      const unreadIds = notifications
+        .filter(n => !n.is_read)
+        .map(n => n.id);
+      if (unreadIds.length > 0) {
+        markAsReadMutation.mutate(unreadIds);
+      }
+    }
+  };
+
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { UserPlus, UserCheck, Users, Clock } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { formatRelativeTime } from "@/lib/utils";
@@ -17,6 +18,7 @@ interface SocialListItemProps {
 
 export function SocialListItem({ profile, listType, onActionComplete }: SocialListItemProps) {
   const { user } = useAuth();
+  const { getUserStatus } = usePresence();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [localRelationship, setLocalRelationship] = useState(profile.relationship_to_viewer);
@@ -135,7 +137,7 @@ export function SocialListItem({ profile, listType, onActionComplete }: SocialLi
           src={profile.avatar_url}
           alt={profile.display_name || profile.username}
           size="md"
-          status={profile.is_online ? "online" : "offline"}
+          status={getUserStatus(profile.id)}
           showStatus
         />
       </Link>

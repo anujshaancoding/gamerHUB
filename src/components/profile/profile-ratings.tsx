@@ -14,6 +14,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, Button } from "@/components/ui";
 import { RatingModal } from "@/components/ratings/rating-modal";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { Profile, TraitEndorsementStats } from "@/types/database";
 
 interface ProfileRatingsProps {
@@ -114,7 +115,7 @@ export function ProfileRatings({
   return (
     <>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="gaming-card-border overflow-hidden">
+        <Card className="gaming-card-border overflow-hidden h-full">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-lg">

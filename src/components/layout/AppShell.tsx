@@ -2,15 +2,19 @@
 
 import { usePathname } from "next/navigation";
 import { RightSidebar } from "./RightSidebar";
+import { MessageNotifier } from "@/components/messages/message-notifier";
 
 // Pages where sidebar should be hidden
 const HIDDEN_SIDEBAR_ROUTES = [
   "/onboard",
+  "/onboarding",
   "/login",
   "/register",
   "/auth",
   "/forgot-password",
   "/reset-password",
+  "/admin",
+  "/overview",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -27,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <MessageNotifier />
       <div className="xl:mr-72">{children}</div>
       <RightSidebar />
     </>

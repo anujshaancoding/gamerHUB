@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { formatRelativeTime } from "@/lib/utils";
@@ -32,9 +33,11 @@ export function FollowCard({
   onSendFriendRequest,
 }: FollowCardProps) {
   const { user } = useAuth();
+  const { getUserStatus } = usePresence();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(type === "following");
+  const profileStatus = getUserStatus(profile.id);
 
   const handleMessage = () => {
     window.location.href = `/messages?user=${profile.id}`;
@@ -82,7 +85,7 @@ export function FollowCard({
             src={profile.avatar_url}
             alt={profile.display_name || profile.username}
             size="lg"
-            status={profile.is_online ? "online" : "offline"}
+            status={profileStatus}
             showStatus
           />
         </Link>
@@ -137,8 +140,12 @@ export function FollowCard({
 
       <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
         <span className="text-xs text-text-muted">
-          {profile.is_online
+          {profileStatus === "online"
             ? "Online now"
+            : profileStatus === "away"
+            ? "Away"
+            : profileStatus === "dnd"
+            ? "Do Not Disturb"
             : profile.last_seen
             ? `Active ${formatRelativeTime(profile.last_seen)}`
             : "Offline"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,38 +8,68 @@ import {
   Users,
   UserPlus,
   UserCheck,
-  UserX,
   Search,
   X,
-  MessageCircle,
   Clock,
   Check,
   Loader2,
+  FileText,
+  Filter,
+  Calendar,
 } from "lucide-react";
 import { Button, Input, Card, Avatar, Badge } from "@/components/ui";
 import { useFriends, useFriendRequests, useSocialCounts } from "@/lib/hooks/useFriends";
+import { useFollowing, useFollowers } from "@/lib/hooks/useFollowing";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { FriendCard } from "@/components/friends/friend-card";
+import { FollowCard } from "@/components/friends/follow-card";
+import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { createClient } from "@/lib/supabase/client";
 
-type TabType = "friends" | "requests" | "following" | "followers";
+type TabType = "friends" | "requests" | "following" | "followers" | "posts";
+
+interface FriendPost {
+  id: string;
+  content: string;
+  image_url?: string;
+  user_id: string;
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
+  user?: {
+    username: string;
+    display_name: string;
+    avatar_url: string;
+  };
+}
 
 const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
   { id: "friends", label: "Friends", icon: UserCheck },
   { id: "requests", label: "Requests", icon: UserPlus },
   { id: "following", label: "Following", icon: Users },
   { id: "followers", label: "Followers", icon: Users },
+  { id: "posts", label: "Posts", icon: FileText },
 ];
 
 function FriendsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = createClient();
 
   const initialTab = (searchParams.get("tab") as TabType) || "friends";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Posts tab state
+  const [posts, setPosts] = useState<FriendPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postSearchQuery, setPostSearchQuery] = useState("");
+  const [postFilterBy, setPostFilterBy] = useState<"all" | "friends" | "following">("all");
+  const [postDateFilter, setPostDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch data
   const { counts, refetch: refetchCounts } = useSocialCounts(user?.id);
@@ -53,15 +83,100 @@ function FriendsContent() {
     acceptRequest,
     declineRequest,
     refetch: refetchRequests,
-  } = useFriendRequests({ type: "received" });
+  } = useFriendRequests({ type: "received", userId: user?.id });
   const {
     requests: sentRequests,
     loading: sentLoading,
     cancelRequest,
     refetch: refetchSentRequests,
-  } = useFriendRequests({ type: "sent" });
+  } = useFriendRequests({ type: "sent", userId: user?.id });
+  const { following, loading: followingLoading } = useFollowing({ userId: user?.id });
+  const { followers, loading: followersLoading } = useFollowers({ userId: user?.id });
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Fetch posts when posts tab is active
+  useEffect(() => {
+    if (activeTab === "posts" && user) {
+      fetchPosts();
+    }
+  }, [activeTab, user]);
+
+  const fetchPosts = async () => {
+    if (!user) return;
+    setPostsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("friend_posts")
+        .select(`
+          *,
+          user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url)
+        `)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) {
+        console.error("Error fetching posts:", error);
+      }
+      setPosts(data || []);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      setPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  // Get friend and following user IDs for filtering
+  const friendUserIds = useMemo(() => {
+    return new Set(friends.map((f: { friend_id: string }) => f.friend_id));
+  }, [friends]);
+
+  const followingUserIds = useMemo(() => {
+    return new Set(following.map((f: { id: string }) => f.id));
+  }, [following]);
+
+  // Filter posts based on search, person filter, and date filter
+  const filteredPosts = useMemo(() => {
+    let result = posts;
+
+    // Filter by person type
+    if (postFilterBy === "friends") {
+      result = result.filter((post) => friendUserIds.has(post.user_id));
+    } else if (postFilterBy === "following") {
+      result = result.filter((post) => followingUserIds.has(post.user_id));
+    }
+
+    // Filter by date
+    if (postDateFilter !== "all") {
+      const now = new Date();
+      let cutoff: Date;
+      switch (postDateFilter) {
+        case "today":
+          cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case "week":
+          cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "month":
+          cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+      }
+      result = result.filter((post) => new Date(post.created_at) >= cutoff);
+    }
+
+    // Filter by search query (matches content, username, or display name)
+    if (postSearchQuery.trim()) {
+      const query = postSearchQuery.toLowerCase();
+      result = result.filter(
+        (post) =>
+          post.content.toLowerCase().includes(query) ||
+          post.user?.username?.toLowerCase().includes(query) ||
+          post.user?.display_name?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [posts, postFilterBy, postDateFilter, postSearchQuery, friendUserIds, followingUserIds]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -71,21 +186,21 @@ function FriendsContent() {
   const handleAccept = async (requestId: string) => {
     setActionLoading(requestId);
     await acceptRequest(requestId);
-    await Promise.all([refetchCounts(), refetchFriends(), refetchRequests()]);
+    await Promise.all([refetchCounts(), refetchFriends(), refetchRequests(), refetchSentRequests()]);
     setActionLoading(null);
   };
 
   const handleDecline = async (requestId: string) => {
     setActionLoading(requestId);
     await declineRequest(requestId);
-    await refetchCounts();
+    await Promise.all([refetchCounts(), refetchRequests()]);
     setActionLoading(null);
   };
 
   const handleCancel = async (requestId: string) => {
     setActionLoading(requestId);
     await cancelRequest(requestId);
-    await refetchCounts();
+    await Promise.all([refetchCounts(), refetchSentRequests()]);
     setActionLoading(null);
   };
 
@@ -163,7 +278,7 @@ function FriendsContent() {
         ))}
       </div>
 
-      {/* Search (only for friends tab) */}
+      {/* Search (for friends tab) */}
       {activeTab === "friends" && (
         <div className="w-full sm:w-64">
           <Input
@@ -179,6 +294,146 @@ function FriendsContent() {
               )
             }
           />
+        </div>
+      )}
+
+      {/* Search & Filters (for posts tab) */}
+      {activeTab === "posts" && (
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Search posts by keyword, friend name..."
+                value={postSearchQuery}
+                onChange={(e) => setPostSearchQuery(e.target.value)}
+                leftIcon={<Search className="h-4 w-4" />}
+                rightIcon={
+                  postSearchQuery && (
+                    <button onClick={() => setPostSearchQuery("")}>
+                      <X className="h-4 w-4 hover:text-primary" />
+                    </button>
+                  )
+                }
+              />
+            </div>
+            <Button
+              variant={showFilters ? "primary" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              leftIcon={<Filter className="h-4 w-4" />}
+              className="flex-shrink-0"
+            >
+              Filters
+            </Button>
+          </div>
+
+          {/* Filter options */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <Card className="p-4 space-y-4">
+                  {/* Filter by person */}
+                  <div>
+                    <label className="text-sm font-medium text-text-secondary mb-2 block">
+                      Show posts from
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: "all" as const, label: "Everyone" },
+                        { id: "friends" as const, label: "Friends Only" },
+                        { id: "following" as const, label: "Following Only" },
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setPostFilterBy(option.id)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                            postFilterBy === option.id
+                              ? "bg-primary/10 text-primary border border-primary/30"
+                              : "bg-surface-light text-text-secondary hover:text-text border border-transparent"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter by date */}
+                  <div>
+                    <label className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Time period
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: "all" as const, label: "All time" },
+                        { id: "today" as const, label: "Today" },
+                        { id: "week" as const, label: "This week" },
+                        { id: "month" as const, label: "This month" },
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setPostDateFilter(option.id)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                            postDateFilter === option.id
+                              ? "bg-primary/10 text-primary border border-primary/30"
+                              : "bg-surface-light text-text-secondary hover:text-text border border-transparent"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Clear filters */}
+                  {(postFilterBy !== "all" || postDateFilter !== "all" || postSearchQuery) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPostFilterBy("all");
+                        setPostDateFilter("all");
+                        setPostSearchQuery("");
+                      }}
+                      leftIcon={<X className="h-3.5 w-3.5" />}
+                    >
+                      Clear all filters
+                    </Button>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Active filter badges */}
+          {(postFilterBy !== "all" || postDateFilter !== "all") && !showFilters && (
+            <div className="flex flex-wrap gap-2">
+              {postFilterBy !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                  {postFilterBy === "friends" ? "Friends only" : "Following only"}
+                  <button onClick={() => setPostFilterBy("all")}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {postDateFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                  {postDateFilter === "today" ? "Today" : postDateFilter === "week" ? "This week" : "This month"}
+                  <button onClick={() => setPostDateFilter("all")}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -256,7 +511,7 @@ function FriendsContent() {
                           <p className="text-sm text-text-muted">@{request.sender?.username}</p>
                           {request.message && (
                             <p className="text-sm text-text-secondary mt-1 italic">
-                              "{request.message}"
+                              &ldquo;{request.message}&rdquo;
                             </p>
                           )}
                           <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
@@ -351,13 +606,28 @@ function FriendsContent() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <Card className="text-center py-12">
-              <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-text mb-2">Following</h3>
-              <p className="text-text-muted max-w-md mx-auto">
-                Users you follow will appear here
-              </p>
-            </Card>
+            {followingLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : following.length === 0 ? (
+              <Card className="text-center py-12">
+                <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-text mb-2">Not following anyone</h3>
+                <p className="text-text-muted max-w-md mx-auto mb-4">
+                  Follow other gamers to see their updates
+                </p>
+                <Link href="/find-gamers">
+                  <Button variant="primary">Find Gamers</Button>
+                </Link>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {following.map((profile) => (
+                  <FollowCard key={profile.id} profile={profile} type="following" />
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -368,13 +638,106 @@ function FriendsContent() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <Card className="text-center py-12">
-              <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-text mb-2">Followers</h3>
-              <p className="text-text-muted max-w-md mx-auto">
-                Users who follow you will appear here
-              </p>
-            </Card>
+            {followersLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : followers.length === 0 ? (
+              <Card className="text-center py-12">
+                <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-text mb-2">No followers yet</h3>
+                <p className="text-text-muted max-w-md mx-auto">
+                  When other gamers follow you, they&apos;ll appear here
+                </p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {followers.map((profile) => (
+                  <FollowCard key={profile.id} profile={profile} type="follower" />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === "posts" && (
+          <motion.div
+            key="posts"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            {postsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <Card className="text-center py-12">
+                <FileText className="h-16 w-16 text-text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-text mb-2">
+                  {posts.length === 0 ? "No posts yet" : "No posts match your filters"}
+                </h3>
+                <p className="text-text-muted max-w-md mx-auto mb-4">
+                  {posts.length === 0
+                    ? "Head over to the Community page to create your first post!"
+                    : "Try adjusting your search or filter criteria"
+                  }
+                </p>
+                {posts.length === 0 ? (
+                  <Link href="/community">
+                    <Button variant="primary">Go to Community</Button>
+                  </Link>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPostSearchQuery("");
+                      setPostFilterBy("all");
+                      setPostDateFilter("all");
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </Card>
+            ) : (
+              <div className="max-w-2xl mx-auto space-y-4">
+                <p className="text-sm text-text-muted">
+                  {filteredPosts.length} {filteredPosts.length === 1 ? "post" : "posts"} found
+                </p>
+                {filteredPosts.map((post, index) => (
+                  <FriendPostCard
+                    key={post.id}
+                    post={post}
+                    index={index}
+                    onLike={async () => {
+                      const { data } = await supabase
+                        .from("friend_posts")
+                        .select("likes_count")
+                        .eq("id", post.id)
+                        .single();
+                      const { error } = await supabase
+                        .from("friend_posts")
+                        .update({ likes_count: (data?.likes_count || 0) + 1 })
+                        .eq("id", post.id);
+                      if (error) throw error;
+                    }}
+                    onShare={async () => {
+                      const url = `${window.location.origin}/community?tab=friends`;
+                      if (navigator.share) {
+                        await navigator.share({
+                          title: `Post by ${post.user?.display_name || post.user?.username}`,
+                          text: post.content.slice(0, 100),
+                          url,
+                        });
+                      } else {
+                        await navigator.clipboard.writeText(url);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

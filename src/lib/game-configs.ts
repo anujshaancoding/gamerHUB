@@ -52,27 +52,6 @@ export interface GameConfig {
 }
 
 // ============================================
-// COUNTER-STRIKE 2
-// ============================================
-export const CS2_CONFIG: GameConfig = {
-  slug: "cs2",
-  name: "Counter-Strike 2",
-  rankType: "numeric",
-  ratingRange: { min: 1000, max: 35000, step: 500 },
-  ratingLabel: "Premier Rating",
-  hasUnrankedOption: true,
-  gameModes: [
-    { value: "premier", label: "Premier" },
-    { value: "competitive", label: "Competitive" },
-    { value: "wingman", label: "Wingman", teamSize: 2 },
-    { value: "casual", label: "Casual" },
-    { value: "deathmatch", label: "Deathmatch" },
-  ],
-  defaultTeamSize: 5,
-  teamSizeOptions: [2, 3, 4, 5],
-};
-
-// ============================================
 // VALORANT
 // ============================================
 export const VALORANT_CONFIG: GameConfig = {
@@ -157,11 +136,11 @@ export const VALORANT_CONFIG: GameConfig = {
 };
 
 // ============================================
-// PUBG MOBILE
+// BGMI
 // ============================================
-export const PUBG_MOBILE_CONFIG: GameConfig = {
-  slug: "pubg-mobile",
-  name: "PUBG Mobile",
+export const BGMI_CONFIG: GameConfig = {
+  slug: "bgmi",
+  name: "BGMI",
   rankType: "tier",
   ranks: [
     { value: "bronze5", label: "Bronze V", tier: 1 },
@@ -217,103 +196,6 @@ export const PUBG_MOBILE_CONFIG: GameConfig = {
   ],
   defaultTeamSize: 4,
   teamSizeOptions: [1, 2, 4],
-};
-
-// ============================================
-// CLASH OF CLANS
-// ============================================
-export const COC_CONFIG: GameConfig = {
-  slug: "coc",
-  name: "Clash of Clans",
-  rankType: "tier",
-  ranks: [
-    { value: "bronze", label: "Bronze League", tier: 1 },
-    { value: "silver", label: "Silver League", tier: 2 },
-    { value: "gold", label: "Gold League", tier: 3 },
-    { value: "crystal", label: "Crystal League", tier: 4 },
-    { value: "master", label: "Master League", tier: 5 },
-    { value: "champion", label: "Champion League", tier: 6 },
-    { value: "titan", label: "Titan League", tier: 7 },
-    { value: "legend", label: "Legend League", tier: 8 },
-  ],
-  hasUnrankedOption: true,
-  gameModes: [
-    { value: "clan_wars", label: "Clan Wars", teamSize: 50 },
-    { value: "cwl", label: "Clan War Leagues", teamSize: 30 },
-    { value: "friendly_wars", label: "Friendly Wars", teamSize: 50 },
-    { value: "builder_base", label: "Builder Base", teamSize: 1 },
-    { value: "clan_games", label: "Clan Games", teamSize: 50 },
-    { value: "capital_raids", label: "Clan Capital Raids", teamSize: 50 },
-    { value: "legend_league", label: "Legend League Attacks", teamSize: 1 },
-  ],
-  defaultTeamSize: 50,
-  teamSizeOptions: [1, 5, 10, 15, 30, 50],
-};
-
-// ============================================
-// COD MOBILE
-// ============================================
-export const COD_MOBILE_CONFIG: GameConfig = {
-  slug: "cod-mobile",
-  name: "COD Mobile",
-  rankType: "tier",
-  ranks: [
-    { value: "rookie1", label: "Rookie I", tier: 1 },
-    { value: "rookie2", label: "Rookie II", tier: 2 },
-    { value: "rookie3", label: "Rookie III", tier: 3 },
-    { value: "rookie4", label: "Rookie IV", tier: 4 },
-    { value: "rookie5", label: "Rookie V", tier: 5 },
-    { value: "veteran1", label: "Veteran I", tier: 6 },
-    { value: "veteran2", label: "Veteran II", tier: 7 },
-    { value: "veteran3", label: "Veteran III", tier: 8 },
-    { value: "veteran4", label: "Veteran IV", tier: 9 },
-    { value: "veteran5", label: "Veteran V", tier: 10 },
-    { value: "elite1", label: "Elite I", tier: 11 },
-    { value: "elite2", label: "Elite II", tier: 12 },
-    { value: "elite3", label: "Elite III", tier: 13 },
-    { value: "elite4", label: "Elite IV", tier: 14 },
-    { value: "elite5", label: "Elite V", tier: 15 },
-    { value: "pro1", label: "Pro I", tier: 16 },
-    { value: "pro2", label: "Pro II", tier: 17 },
-    { value: "pro3", label: "Pro III", tier: 18 },
-    { value: "pro4", label: "Pro IV", tier: 19 },
-    { value: "pro5", label: "Pro V", tier: 20 },
-    { value: "master1", label: "Master I", tier: 21 },
-    { value: "master2", label: "Master II", tier: 22 },
-    { value: "master3", label: "Master III", tier: 23 },
-    { value: "master4", label: "Master IV", tier: 24 },
-    { value: "master5", label: "Master V", tier: 25 },
-    { value: "grandmaster1", label: "Grandmaster I", tier: 26 },
-    { value: "grandmaster2", label: "Grandmaster II", tier: 27 },
-    { value: "grandmaster3", label: "Grandmaster III", tier: 28 },
-    { value: "grandmaster4", label: "Grandmaster IV", tier: 29 },
-    { value: "grandmaster5", label: "Grandmaster V", tier: 30 },
-    { value: "legendary", label: "Legendary", tier: 31 },
-  ],
-  hasUnrankedOption: true,
-  gameModes: [
-    { value: "mp_ranked", label: "MP Ranked", teamSize: 5 },
-    { value: "br_squad", label: "BR Squad", teamSize: 4 },
-    { value: "br_duo", label: "BR Duo", teamSize: 2 },
-    { value: "br_solo", label: "BR Solo", teamSize: 1 },
-    { value: "mp_unranked", label: "MP Unranked", teamSize: 5 },
-    { value: "snd", label: "Search & Destroy", teamSize: 5 },
-    { value: "hardpoint", label: "Hardpoint", teamSize: 5 },
-    { value: "domination", label: "Domination", teamSize: 5 },
-  ],
-  hasMaps: true,
-  maps: [
-    { value: "isolated", label: "Isolated" },
-    { value: "blackout", label: "Blackout" },
-    { value: "nuketown", label: "Nuketown" },
-    { value: "crash", label: "Crash" },
-    { value: "crossfire", label: "Crossfire" },
-    { value: "firing_range", label: "Firing Range" },
-    { value: "standoff", label: "Standoff" },
-    { value: "summit", label: "Summit" },
-  ],
-  defaultTeamSize: 5,
-  teamSizeOptions: [1, 2, 4, 5],
 };
 
 // ============================================
@@ -393,12 +275,9 @@ export const FREEFIRE_CONFIG: GameConfig = {
 // CONFIG MAP
 // ============================================
 export const GAME_CONFIGS: Record<string, GameConfig> = {
-  cs2: CS2_CONFIG,
   valorant: VALORANT_CONFIG,
-  "pubg-mobile": PUBG_MOBILE_CONFIG,
+  bgmi: BGMI_CONFIG,
   freefire: FREEFIRE_CONFIG,
-  coc: COC_CONFIG,
-  "cod-mobile": COD_MOBILE_CONFIG,
 };
 
 export function getGameConfig(slug: string): GameConfig | undefined {

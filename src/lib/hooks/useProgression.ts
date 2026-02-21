@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import { queryKeys, STALE_TIMES } from "@/lib/query";
 
 interface Title {
@@ -74,12 +72,8 @@ async function fetchProgressionData(userId?: string): Promise<UserProgression> {
   return data.progression;
 }
 
-// Create supabase client outside hook to avoid re-creation on render
-const supabase = createClient();
-
 export function useProgression(userId?: string) {
   const queryClient = useQueryClient();
-  const lastRefetchRef = useRef<number>(0);
 
   const {
     data: progression,
@@ -92,39 +86,10 @@ export function useProgression(userId?: string) {
     staleTime: STALE_TIMES.USER_PROGRESSION,
   });
 
-  // Throttled refetch for realtime updates (max once per 2 seconds)
-  const throttledRefetch = useCallback(() => {
-    const now = Date.now();
-    if (now - lastRefetchRef.current > 2000) {
-      lastRefetchRef.current = now;
-      refetch();
-    }
-  }, [refetch]);
-
-  // Subscribe to realtime updates with throttling
-  useEffect(() => {
-    if (!progression?.user_id) return;
-
-    const channel = supabase
-      .channel(`progression:${progression.user_id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "user_progression",
-          filter: `user_id=eq.${progression.user_id}`,
-        },
-        () => {
-          throttledRefetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [progression?.user_id, throttledRefetch]);
+  // Realtime subscription disabled — user_progression table was removed
+  // in 999_cleanup_and_focus.sql.  Subscribing to a missing table causes
+  // the Supabase Realtime WebSocket to reconnect in a loop, spamming the
+  // dev console.  Data is still fetched via React Query above.
 
   const equipTitleMutation = useMutation({
     mutationFn: async (titleId: string | null) => {

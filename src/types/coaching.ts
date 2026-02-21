@@ -306,9 +306,9 @@ export function formatDuration(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-export function formatPrice(amount: number | undefined, currency: string): string {
+export function formatPrice(amount: number | undefined, currency: string = "INR"): string {
   if (!amount || amount === 0) return "Free";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,
   }).format(amount);

@@ -13,9 +13,11 @@ import {
   Lock,
   Mail,
   Shield,
+  Settings,
 } from "lucide-react";
 import { Card, Avatar, Badge, Button, Modal } from "@/components/ui";
-import type { Clan, Game, ClanGame } from "@/types/database";
+import { getRegionLabel, getLanguageLabel } from "@/lib/constants/games";
+import type { Clan, Game, ClanGame, ClanMemberRole } from "@/types/database";
 
 interface ClanWithDetails extends Clan {
   primary_game: Game | null;
@@ -26,9 +28,11 @@ interface ClanWithDetails extends Clan {
 interface ClanCardProps {
   clan: ClanWithDetails;
   onJoinRequest?: () => void;
+  /** Current user's role in this clan, if they are a member */
+  userRole?: ClanMemberRole | null;
 }
 
-export function ClanCard({ clan, onJoinRequest }: ClanCardProps) {
+export function ClanCard({ clan, onJoinRequest, userRole }: ClanCardProps) {
   const [showPreview, setShowPreview] = useState(false);
 
   const stats = clan.stats as { challenges_won?: number; total_matches?: number } | null;
@@ -79,13 +83,13 @@ export function ClanCard({ clan, onJoinRequest }: ClanCardProps) {
               {clan.region && (
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  {clan.region}
+                  {getRegionLabel(clan.region)}
                 </span>
               )}
               {clan.language && (
                 <span className="flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  {clan.language.toUpperCase()}
+                  {getLanguageLabel(clan.language)}
                 </span>
               )}
             </div>
@@ -238,13 +242,13 @@ export function ClanCard({ clan, onJoinRequest }: ClanCardProps) {
             {clan.region && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
-                {clan.region}
+                {getRegionLabel(clan.region)}
               </span>
             )}
             {clan.language && (
               <span className="flex items-center gap-1">
                 <Globe className="h-4 w-4" />
-                {clan.language.toUpperCase()}
+                {getLanguageLabel(clan.language)}
               </span>
             )}
             {clan.min_rank_requirement && (
@@ -262,7 +266,18 @@ export function ClanCard({ clan, onJoinRequest }: ClanCardProps) {
                 View Clan
               </Button>
             </Link>
-            {clan.is_recruiting && onJoinRequest && (
+            {(userRole === "leader" || userRole === "co_leader") && (
+              <Link href={`/clans/${clan.slug}`}>
+                <Button
+                  variant="secondary"
+                  leftIcon={<Settings className="h-4 w-4" />}
+                  onClick={() => setShowPreview(false)}
+                >
+                  Manage
+                </Button>
+              </Link>
+            )}
+            {!userRole && clan.is_recruiting && onJoinRequest && (
               <Button
                 variant="primary"
                 onClick={(e) => {

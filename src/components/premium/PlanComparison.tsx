@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { isPromoPeriodActive, PROMO_END_LABEL } from "@/lib/promo";
 
 interface Feature {
   name: string;
@@ -13,15 +14,14 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { name: "Basic matchmaking", free: true, premium: true },
-  { name: "Create and join clans", free: true, premium: true },
-  { name: "Participate in tournaments", free: true, premium: true },
+  { name: "Create tournaments/giveaways", free: false, premium: true },
+  { name: "Create clans", free: false, premium: true },
+  { name: "Participate in tournaments/giveaways", free: true, premium: true },
+  { name: "Join/request clans", free: true, premium: true },
   { name: "Direct messaging", free: true, premium: true },
-  { name: "Voice/video calls", free: true, premium: true },
   { name: "Media uploads", free: "20MB limit", premium: "100MB limit" },
   { name: "Following limit", free: "100", premium: "Unlimited" },
-  { name: "Priority matchmaking", free: false, premium: true },
-  { name: "Advanced stats dashboard", free: false, premium: true },
+  { name: "Advanced stats dashboard (Coming Soon)", free: false, premium: true },
   { name: "See who viewed your profile", free: false, premium: true },
   { name: "Exclusive titles & frames", free: false, premium: true },
   { name: "Premium profile themes", free: false, premium: true },
@@ -56,11 +56,15 @@ export function PlanComparison({ isPremium = false }: PlanComparisonProps) {
         </div>
         <div className="p-4 text-center border-r border-zinc-800">
           <h3 className="font-semibold text-white">Free</h3>
-          <p className="text-sm text-zinc-400 mt-1">$0/month</p>
+          <p className="text-sm text-zinc-400 mt-1">Free</p>
         </div>
         <div className="p-4 text-center bg-purple-500/10">
           <h3 className="font-semibold text-purple-300">Premium</h3>
-          <p className="text-sm text-zinc-400 mt-1">$9.99/month</p>
+          <p className="text-sm text-zinc-400 mt-1">
+            {isPromoPeriodActive()
+              ? `FREE until ${PROMO_END_LABEL}`
+              : "Starting at ₹99/month"}
+          </p>
         </div>
       </div>
 
@@ -98,8 +102,10 @@ export function PlanComparison({ isPremium = false }: PlanComparisonProps) {
           )}
         </div>
         <div className="p-4 flex items-center justify-center bg-purple-500/10">
-          {isPremium ? (
-            <span className="text-sm text-green-400">Your current plan</span>
+          {isPremium || isPromoPeriodActive() ? (
+            <span className="text-sm text-green-400">
+              {isPromoPeriodActive() ? `Free until ${PROMO_END_LABEL}` : "Your current plan"}
+            </span>
           ) : (
             <Link href="/premium">
               <Button size="sm" className="bg-purple-600 hover:bg-purple-700">

@@ -33,11 +33,8 @@ const resultColors = {
 
 const gameIcons: Record<string, string> = {
   valorant: "VAL",
-  cs2: "CS2",
-  "pubg-mobile": "PUBG",
+  bgmi: "BGMI",
   freefire: "FF",
-  coc: "COC",
-  "cod-mobile": "COD",
 };
 
 export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {

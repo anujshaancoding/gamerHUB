@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       await sendWebhookMessage(webhook.webhook_url, {
         embeds: [embed],
         username: "GamerHub",
-        avatar_url: `${appUrl}/gamerhub-logo.png`,
+        // avatar_url: `${appUrl}/gamerhub-logo.png`,
       });
 
       // Record crosspost

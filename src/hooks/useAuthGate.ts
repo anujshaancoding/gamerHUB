@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 // Routes that guests can access without showing the auth gate
 const GUEST_ALLOWED_ROUTES = [
   "/community",
-  "/blog",
   "/login",
   "/register",
   "/onboarding",

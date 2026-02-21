@@ -2,8 +2,16 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, ChevronLeft, MoreVertical, Phone, Video } from "lucide-react";
+import {
+  Send,
+  ChevronLeft,
+  MoreVertical,
+  Phone,
+  Video,
+  ChevronDown,
+} from "lucide-react";
 import { Button, Input, Avatar, Card } from "@/components/ui";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/supabase/client";
 import { formatRelativeTime } from "@/lib/utils";
 import { useCall } from "@/components/call";
@@ -33,7 +41,9 @@ export function ChatWindow({
   onBack,
 }: ChatWindowProps) {
   const supabase = createClient();
+  const { getUserStatus } = usePresence();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { initiateCall, isInCall, isConnecting } = useCall();
 
@@ -42,10 +52,44 @@ export function ChatWindow({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  const otherUser = conversation.participants.find(
+  const otherParticipant = conversation.participants.find(
     (p) => p.user?.id !== currentUserId
-  )?.user;
+  );
+  const otherUser = otherParticipant?.user;
+
+  // Track the other user's last_read_at for read receipts
+  const [otherLastReadAt, setOtherLastReadAt] = useState<string | null>(
+    otherParticipant?.last_read_at || null
+  );
+
+  // Realtime: listen for read status updates
+  useEffect(() => {
+    if (!otherParticipant?.user?.id) return;
+    const channel = supabase
+      .channel(`read-receipts-chat:${conversation.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversation_participants",
+          filter: `conversation_id=eq.${conversation.id}`,
+        },
+        (payload) => {
+          if (payload.new.user_id === otherParticipant.user?.id) {
+            setOtherLastReadAt(payload.new.last_read_at);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, conversation.id, otherParticipant?.user?.id]);
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
@@ -108,19 +152,29 @@ export function ChatWindow({
     };
   }, [supabase, conversation.id]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages (only if user hasn't manually scrolled)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isUserScrolling) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isUserScrolling]);
 
   // Update last read
   useEffect(() => {
     const updateLastRead = async () => {
+      const now = new Date().toISOString();
       await supabase
         .from("conversation_participants")
-        .update({ last_read_at: new Date().toISOString() } as never)
+        .update({ last_read_at: now } as never)
         .eq("conversation_id", conversation.id)
         .eq("user_id", currentUserId);
+
+      // Notify conversation list to clear unread badge immediately
+      window.dispatchEvent(
+        new CustomEvent("messages-read", {
+          detail: { conversationId: conversation.id, readAt: now },
+        })
+      );
     };
     updateLastRead();
   }, [supabase, conversation.id, currentUserId, messages]);
@@ -159,6 +213,33 @@ export function ChatWindow({
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Check if user is near the bottom
+    const threshold = 100;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold;
+
+    setShowScrollButton(!isNearBottom);
+
+    // Mark as user scrolling if not at bottom
+    if (!isNearBottom) {
+      setIsUserScrolling(true);
+    } else {
+      // Reset user scrolling state when at bottom
+      setIsUserScrolling(false);
+    }
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setIsUserScrolling(false);
+    setShowScrollButton(false);
   };
 
   const handleVoiceCall = async () => {
@@ -206,7 +287,7 @@ export function ChatWindow({
             src={otherUser?.avatar_url}
             alt={otherUser?.display_name || otherUser?.username || "User"}
             size="md"
-            status={otherUser?.is_online ? "online" : "offline"}
+            status={otherUser?.id ? getUserStatus(otherUser.id) : "offline"}
             showStatus
           />
           <div>
@@ -216,17 +297,22 @@ export function ChatWindow({
                 : otherUser?.display_name || otherUser?.username}
             </h3>
             <p className="text-xs text-text-muted">
-              {otherUser?.is_online
-                ? "Online"
-                : otherUser?.last_seen
-                ? `Last seen ${formatRelativeTime(otherUser.last_seen)}`
-                : "Offline"}
+              {(() => {
+                const status = otherUser?.id ? getUserStatus(otherUser.id) : "offline";
+                if (status === "online") return "Online";
+                if (status === "away") return "Away";
+                if (status === "dnd") return "Do Not Disturb";
+                return otherUser?.last_seen
+                  ? `Last seen ${formatRelativeTime(otherUser.last_seen)}`
+                  : "Offline";
+              })()}
             </p>
           </div>
         </div>
 
         <div className="flex gap-1">
-          <Button
+          {/* TODO: Voice and Video calls - to be integrated later */}
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={handleVoiceCall}
@@ -243,7 +329,7 @@ export function ChatWindow({
             title="Video call"
           >
             <Video className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button variant="ghost" size="icon">
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -251,7 +337,34 @@ export function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 relative overflow-hidden">
+        {/* Scroll to bottom button */}
+        <AnimatePresence>
+          {showScrollButton && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-6 right-6 z-10"
+            >
+              <Button
+                variant="primary"
+                size="icon"
+                onClick={scrollToBottom}
+                className="rounded-full shadow-lg"
+                title="Scroll to bottom"
+              >
+                <ChevronDown className="h-5 w-5" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto p-4 space-y-4"
+        >
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary" />
@@ -312,16 +425,35 @@ export function ChatWindow({
                         >
                           <p className="text-sm break-words">{message.content}</p>
                         </div>
-                        <p
-                          className={`text-xs text-text-dim mt-1 ${
-                            isOwn ? "text-right" : ""
+                        <div
+                          className={`flex items-center gap-0.5 mt-1 ${
+                            isOwn ? "justify-end" : "justify-start"
                           }`}
                         >
-                          {new Date(message.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                          <span className="text-xs text-text-dim">
+                            {new Date(message.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          {isOwn && (
+                            otherLastReadAt &&
+                            new Date(otherLastReadAt) >= new Date(message.created_at) ? (
+                              <span className="inline-flex items-center ml-1" title="Read">
+                                <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-[#00bfff]">
+                                  <path d="M1.5 5.5L4 8L9 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  <path d="M5.5 5.5L8 8L13 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center ml-1" title="Sent">
+                                <svg width="12" height="10" viewBox="0 0 12 10" fill="none" className="text-text-muted/60">
+                                  <path d="M1.5 5.5L4 8L10 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </span>
+                            )
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   );
@@ -348,6 +480,7 @@ export function ChatWindow({
           </div>
         )}
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input */}

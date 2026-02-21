@@ -225,44 +225,12 @@ const valorantTheme: Theme = {
   },
 };
 
-const cs2Theme: Theme = {
-  id: "game-cs2",
-  name: "Counter-Strike 2",
-  description: "CS2 orange and military green aesthetic",
+const bgmiTheme: Theme = {
+  id: "game-bgmi",
+  name: "BGMI",
+  description: "BGMI military tactical theme",
   category: "game",
-  gameSlug: "cs2",
-  isDark: true,
-  colors: {
-    background: "#1a1a1a",
-    surface: "#242424",
-    surfaceLight: "#2e2e2e",
-    surfaceLighter: "#383838",
-    border: "#444444",
-    borderLight: "#555555",
-    primary: "#de9b35",
-    primaryDark: "#b27a2a",
-    primaryGlow: "rgba(222, 155, 53, 0.3)",
-    accent: "#5d7e5f",
-    accentDark: "#4a654c",
-    accentGlow: "rgba(93, 126, 95, 0.3)",
-    secondary: "#8b7355",
-    warning: "#de9b35",
-    error: "#c94f4f",
-    success: "#5d7e5f",
-    text: "#ffffff",
-    textSecondary: "#c8c8c8",
-    textMuted: "#888888",
-    textDim: "#585858",
-    foreground: "#ffffff",
-  },
-};
-
-const pubgMobileTheme: Theme = {
-  id: "game-pubg-mobile",
-  name: "PUBG Mobile",
-  description: "PUBG Mobile military tactical theme",
-  category: "game",
-  gameSlug: "pubg-mobile",
+  gameSlug: "bgmi",
   isDark: true,
   colors: {
     background: "#1a1c14",
@@ -321,70 +289,6 @@ const freefireTheme: Theme = {
   },
 };
 
-const cocTheme: Theme = {
-  id: "game-coc",
-  name: "Clash of Clans",
-  description: "Clash of Clans gold and green village theme",
-  category: "game",
-  gameSlug: "coc",
-  isDark: true,
-  colors: {
-    background: "#1a1c14",
-    surface: "#242618",
-    surfaceLight: "#2e3020",
-    surfaceLighter: "#383a28",
-    border: "#4a4c38",
-    borderLight: "#5a5c48",
-    primary: "#f5c518",
-    primaryDark: "#c49e13",
-    primaryGlow: "rgba(245, 197, 24, 0.3)",
-    accent: "#4caf50",
-    accentDark: "#388e3c",
-    accentGlow: "rgba(76, 175, 80, 0.3)",
-    secondary: "#8d6e63",
-    warning: "#f5c518",
-    error: "#e53935",
-    success: "#4caf50",
-    text: "#fff8e1",
-    textSecondary: "#c8c0a8",
-    textMuted: "#8a8468",
-    textDim: "#5a5438",
-    foreground: "#fff8e1",
-  },
-};
-
-const codMobileTheme: Theme = {
-  id: "game-cod-mobile",
-  name: "COD Mobile",
-  description: "COD Mobile dark ops military theme",
-  category: "game",
-  gameSlug: "cod-mobile",
-  isDark: true,
-  colors: {
-    background: "#0c0c0c",
-    surface: "#161616",
-    surfaceLight: "#202020",
-    surfaceLighter: "#2a2a2a",
-    border: "#3a3a3a",
-    borderLight: "#4a4a4a",
-    primary: "#ff6f00",
-    primaryDark: "#cc5900",
-    primaryGlow: "rgba(255, 111, 0, 0.3)",
-    accent: "#37474f",
-    accentDark: "#263238",
-    accentGlow: "rgba(55, 71, 79, 0.3)",
-    secondary: "#607d8b",
-    warning: "#ff6f00",
-    error: "#d32f2f",
-    success: "#388e3c",
-    text: "#ffffff",
-    textSecondary: "#c4c4c4",
-    textMuted: "#888888",
-    textDim: "#585858",
-    foreground: "#ffffff",
-  },
-};
-
 // Export all themes
 export const THEMES: Theme[] = [
   neonGreenBlack,
@@ -393,11 +297,8 @@ export const THEMES: Theme[] = [
   orangeWhite,
   cyberPurple,
   valorantTheme,
-  cs2Theme,
-  pubgMobileTheme,
+  bgmiTheme,
   freefireTheme,
-  cocTheme,
-  codMobileTheme,
 ];
 
 export const DEFAULT_THEME = neonGreenBlack;

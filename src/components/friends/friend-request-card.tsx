@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, X, MapPin, Clock } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { formatRelativeTime } from "@/lib/utils";
 import type { FriendRequestWithProfiles } from "@/types/database";
 
@@ -23,6 +24,7 @@ export function FriendRequestCard({
   onDecline,
   onCancel,
 }: FriendRequestCardProps) {
+  const { getUserStatus } = usePresence();
   const [loading, setLoading] = useState<"accept" | "decline" | "cancel" | null>(
     null
   );
@@ -71,7 +73,7 @@ export function FriendRequestCard({
             src={profile.avatar_url}
             alt={profile.display_name || profile.username}
             size="lg"
-            status={profile.is_online ? "online" : "offline"}
+            status={profile?.id ? getUserStatus(profile.id) : "offline"}
             showStatus
           />
         </Link>

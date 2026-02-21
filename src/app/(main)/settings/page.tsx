@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -11,12 +11,10 @@ import {
   LogOut,
   Save,
   Camera,
-  Upload,
 } from "lucide-react";
-import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, Badge } from "@/components/ui";
+import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, SelectWithOther } from "@/components/ui";
 import { ThemeSwitcher } from "@/components/settings";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 
 type SettingsTab = "profile" | "notifications" | "privacy" | "appearance";
@@ -30,32 +28,41 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
 
 export default function SettingsPage() {
   const { profile, updateProfile, signOut } = useAuth();
-  const supabase = createClient();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const formInitialized = useRef(false);
 
   const [formData, setFormData] = useState({
-    display_name: profile?.display_name || "",
-    bio: profile?.bio || "",
-    gaming_style: profile?.gaming_style || "",
-    region: profile?.region || "",
-    preferred_language: profile?.preferred_language || "en",
-    discord: (profile?.social_links as Record<string, string>)?.discord || "",
-    twitch: (profile?.social_links as Record<string, string>)?.twitch || "",
-    youtube: (profile?.social_links as Record<string, string>)?.youtube || "",
+    display_name: "",
+    bio: "",
+    gaming_style: "",
+    region: "",
+    preferred_language: "en",
+    custom_region: "",
+    custom_language: "",
+    discord: "",
+    twitch: "",
+    youtube: "",
   });
 
-  // Sync form data when profile loads (profile is null on initial render)
+  // Sync form data only once when profile first becomes available
   useEffect(() => {
-    if (profile) {
+    if (profile && !formInitialized.current) {
+      formInitialized.current = true;
+      const isKnownRegion = REGIONS.some((r) => r.value === profile.region);
+      const isKnownLang = LANGUAGES.some((l) => l.value === profile.preferred_language);
+
       setFormData({
         display_name: profile.display_name || "",
         bio: profile.bio || "",
         gaming_style: profile.gaming_style || "",
-        region: profile.region || "",
-        preferred_language: profile.preferred_language || "en",
+        region: isKnownRegion ? (profile.region || "") : (profile.region ? "other" : ""),
+        preferred_language: isKnownLang ? (profile.preferred_language || "en") : (profile.preferred_language ? "other" : "en"),
+        custom_region: isKnownRegion ? "" : (profile.region || ""),
+        custom_language: isKnownLang ? "" : (profile.preferred_language || ""),
         discord: (profile.social_links as Record<string, string>)?.discord || "",
         twitch: (profile.social_links as Record<string, string>)?.twitch || "",
         youtube: (profile.social_links as Record<string, string>)?.youtube || "",
@@ -66,24 +73,36 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setLoading(true);
     setSuccess(false);
+    setError(null);
 
     try {
-      await updateProfile({
+      const resolvedRegion = formData.region === "other" ? formData.custom_region : formData.region;
+      const resolvedLanguage = formData.preferred_language === "other" ? formData.custom_language : formData.preferred_language;
+
+      const { error } = await updateProfile({
         display_name: formData.display_name || null,
         bio: formData.bio || null,
         gaming_style: formData.gaming_style as "casual" | "competitive" | "pro" || null,
-        region: formData.region || null,
-        preferred_language: formData.preferred_language,
+        region: resolvedRegion || null,
+        preferred_language: resolvedLanguage || "en",
         social_links: {
           discord: formData.discord,
           twitch: formData.twitch,
           youtube: formData.youtube,
         },
       });
+
+      if (error) {
+        setError(error.message || "Failed to save profile");
+        console.error("Save error:", error);
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (error) {
-      console.error("Save error:", error);
+    } catch (err) {
+      console.error("Save error:", err);
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -91,7 +110,7 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   return (
@@ -164,15 +183,13 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-text-secondary mb-2 block">
                         Username
                       </label>
-                      <div className="flex items-center gap-2">
-                        <Input value={profile?.username || ""} disabled />
-                        <Badge variant="default">Cannot change</Badge>
-                      </div>
+                      <Input value={profile?.username || ""} disabled />
+                      <p className="text-xs text-text-dim mt-1">Cannot be changed</p>
                     </div>
                     <Input
                       label="Display Name"
@@ -194,7 +211,7 @@ export default function SettingsPage() {
                     rows={3}
                   />
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Select
                       label="Gaming Style"
                       options={[
@@ -209,33 +226,40 @@ export default function SettingsPage() {
                         setFormData({ ...formData, gaming_style: e.target.value })
                       }
                     />
-                    <Select
-                      label="Region"
+                    <SelectWithOther
+                      label="State / Region"
                       options={[
-                        { value: "", label: "Select region" },
+                        { value: "", label: "Select state" },
                         ...REGIONS.map((r) => ({
                           value: r.value,
                           label: r.label,
                         })),
                       ]}
                       value={formData.region}
-                      onChange={(e) =>
-                        setFormData({ ...formData, region: e.target.value })
+                      customValue={formData.custom_region}
+                      onChange={(v) =>
+                        setFormData({ ...formData, region: v, custom_region: "" })
                       }
+                      onCustomChange={(v) =>
+                        setFormData({ ...formData, custom_region: v })
+                      }
+                      customPlaceholder="Enter your region..."
                     />
-                    <Select
+                    <SelectWithOther
                       label="Language"
                       options={LANGUAGES.map((l) => ({
                         value: l.value,
                         label: l.label,
                       }))}
                       value={formData.preferred_language}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          preferred_language: e.target.value,
-                        })
+                      customValue={formData.custom_language}
+                      onChange={(v) =>
+                        setFormData({ ...formData, preferred_language: v, custom_language: "" })
                       }
+                      onCustomChange={(v) =>
+                        setFormData({ ...formData, custom_language: v })
+                      }
+                      customPlaceholder="Enter your language..."
                     />
                   </div>
 
@@ -243,7 +267,7 @@ export default function SettingsPage() {
                     <h3 className="text-sm font-medium text-text mb-4">
                       Social Links
                     </h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <Input
                         label="Discord"
                         value={formData.discord}
@@ -276,6 +300,11 @@ export default function SettingsPage() {
                   {success && (
                     <span className="text-sm text-success">
                       Settings saved successfully!
+                    </span>
+                  )}
+                  {error && (
+                    <span className="text-sm text-error">
+                      {error}
                     </span>
                   )}
                   <Button

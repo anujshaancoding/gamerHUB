@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { UserPlus, UserCheck, Users, Gamepad2, Trophy } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { ProPlayer } from "@/app/api/pro-players/route";
@@ -16,6 +17,7 @@ interface ProPlayerCardProps {
 
 export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProps) {
   const { user } = useAuth();
+  const { getUserStatus } = usePresence();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [isFollowed, setIsFollowed] = useState(player.is_followed_by_viewer);
@@ -73,7 +75,7 @@ export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProp
               src={profile.avatar_url}
               alt={profile.display_name || profile.username}
               size="xl"
-              status={profile.is_online ? "online" : "offline"}
+              status={getUserStatus(profile.id)}
               showStatus
             />
             <Badge

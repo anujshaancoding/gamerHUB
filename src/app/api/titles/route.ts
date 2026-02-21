@@ -40,6 +40,7 @@ export async function GET() {
     const titlesWithStatus = typedTitles?.map((title) => ({
       ...title,
       is_unlocked: unlockedTitleIds.includes(title.id),
+      requires_premium: title.unlock_type === "special" || title.unlock_type === "purchase",
     }));
 
     return NextResponse.json({ titles: titlesWithStatus || [] });

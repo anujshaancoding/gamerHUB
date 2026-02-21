@@ -70,6 +70,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
+        ) : asChild ? (
+          children
         ) : (
           <>
             {leftIcon && <span className="shrink-0">{leftIcon}</span>}

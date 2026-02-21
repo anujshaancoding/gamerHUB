@@ -1,21 +1,34 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gamerhub.com";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gglobby.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/blog", "/blog/*"],
+        allow: [
+          "/",
+          "/blog",
+          "/blog/*",
+          "/clans",
+          "/clans/*",
+          "/find-gamers",
+          "/community",
+          "/profile/*",
+          "/privacy",
+          "/terms",
+          "/guidelines",
+        ],
         disallow: [
           "/api/",
-          "/community/",
-          "/profile/",
           "/settings/",
           "/messages/",
-          "/clan/",
-          "/tournament/",
+          "/admin/",
+          "/write/",
+          "/dashboard/",
+          "/notifications/",
+          "/premium/",
           "/auth/",
         ],
       },

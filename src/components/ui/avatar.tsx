@@ -45,6 +45,18 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
       "5xl": "h-48 w-48 text-5xl",
     };
 
+    const imageSizes: Record<string, string> = {
+      xs: "24px",
+      sm: "32px",
+      md: "40px",
+      lg: "48px",
+      xl: "64px",
+      "2xl": "96px",
+      "3xl": "128px",
+      "4xl": "160px",
+      "5xl": "192px",
+    };
+
     const statusSizes = {
       xs: "h-2 w-2",
       sm: "h-2.5 w-2.5",
@@ -109,11 +121,20 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
               src={src}
               alt={alt}
               fill
+              sizes={imageSizes[size]}
               className="object-cover"
               onError={() => setImageError(true)}
             />
-          ) : (
+          ) : fallback ? (
             <span>{displayFallback}</span>
+          ) : (
+            <Image
+              src="/images/defaults/avatar.svg"
+              alt={alt}
+              fill
+              sizes={imageSizes[size]}
+              className="object-cover"
+            />
           )}
         </div>
         {showStatus && status && (

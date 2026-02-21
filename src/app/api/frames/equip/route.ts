@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isPromoPeriodActive } from "@/lib/promo";
 
 // POST - Equip a frame
 export async function POST(request: NextRequest) {
@@ -33,6 +34,37 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, active_frame_id: null });
+    }
+
+    // Check if frame requires premium (special/purchase frames are premium-only)
+    const { data: frameData } = await supabase
+      .from("profile_frames")
+      .select("unlock_type")
+      .eq("id", frame_id)
+      .single();
+
+    if (frameData?.unlock_type === "special" || frameData?.unlock_type === "purchase") {
+      if (!isPromoPeriodActive()) {
+        const { data: sub } = await supabase
+          .from("user_subscriptions" as any)
+          .select("status")
+          .eq("user_id", user.id)
+          .in("status", ["active", "trialing"])
+          .single();
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_premium")
+          .eq("id", user.id)
+          .single();
+
+        if (!sub && !profile?.is_premium) {
+          return NextResponse.json(
+            { error: "Premium required to equip this frame" },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Verify user owns this frame

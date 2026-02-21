@@ -3,6 +3,10 @@
 
 /* GamerHub Dark Gaming Theme */
 :root {
+  /* App max-width constraint for ultrawide screens */
+  --app-max-width: 1920px;
+  --app-inset: max(0px, calc((100vw - var(--app-max-width)) / 2));
+
   /* Background colors */
   --background: #0a0a0f;
   --surface: #12121a;
@@ -79,6 +83,17 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  max-width: var(--app-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1921px) {
+  body {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    box-shadow: -20px 0 40px rgba(0, 0, 0, 0.5), 20px 0 40px rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* Custom scrollbar */
@@ -543,7 +558,6 @@ body {
   position: relative;
   background: var(--surface);
   border-radius: 12px;
-  overflow: hidden;
 }
 
 .gaming-card-border::before {

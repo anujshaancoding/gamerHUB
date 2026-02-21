@@ -39,3 +39,5 @@ export { HorizontalScroll } from "./horizontal-scroll";
 export type { HorizontalScrollProps } from "./horizontal-scroll";
 
 export { RelativeTime } from "./RelativeTime";
+
+export { SelectWithOther } from "./select-with-other";

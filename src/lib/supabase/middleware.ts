@@ -45,7 +45,16 @@ export async function updateSession(request: NextRequest) {
   const isGuestAllowedRoute = guestAllowedRoutes.some((route) => path.startsWith(route));
   const isStrictlyProtectedRoute = strictlyProtectedRoutes.some((route) => path.startsWith(route));
   const isAuthRoute = authRoutes.some((route) => path.startsWith(route));
+  const isAdminRoute = path.startsWith("/admin");
   const isLandingPage = path === "/";
+
+  // Admin routes require authentication — redirect to login if not signed in
+  // The actual is_admin check happens client-side in the admin layout
+  if (isAdminRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
 
   // Allow guest access to community - no redirect needed
   // The AuthGate popup will show on the client side for other protected routes

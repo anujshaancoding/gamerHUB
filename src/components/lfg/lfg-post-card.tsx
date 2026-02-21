@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { LFGPost } from "@/types/lfg";
+import { getRegionLabel } from "@/lib/constants/games";
 import { formatDistanceToNow } from "date-fns";
 
 interface LFGPostCardProps {
@@ -128,7 +129,7 @@ export function LFGPostCard({ post, onClick }: LFGPostCardProps) {
             {post.region && (
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
-                <span>{post.region.toUpperCase()}</span>
+                <span>{getRegionLabel(post.region)}</span>
               </div>
             )}
           </div>

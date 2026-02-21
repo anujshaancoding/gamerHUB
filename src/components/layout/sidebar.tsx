@@ -13,17 +13,23 @@ import {
   UserPlus,
   Shield,
   UserCheck,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useSocialCounts } from "@/lib/hooks/useFriends";
+import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { Avatar, Button, Badge } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { Logo } from "@/components/layout/logo";
+import { StatusSelector } from "@/components/presence/StatusSelector";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 
 const navItems = [
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
   { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
+  { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
@@ -37,18 +43,20 @@ export function Sidebar() {
   const { user, profile } = useAuth();
   const isGuest = !user;
   const { counts } = useSocialCounts(user?.id);
+  const unreadMessages = useUnreadMessageCount();
   const { isPremium } = useSubscription();
+  const { myStatus } = usePresence();
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-16 bottom-0 w-64 bg-surface border-r border-border flex-col">
+    <aside className="hidden lg:flex fixed left-[var(--app-inset)] top-16 bottom-0 w-64 bg-surface border-r border-border flex-col">
       {/* Profile Summary for logged in users, Join CTA for guests */}
       <div className="p-4 border-b border-border">
         {isGuest ? (
           /* Guest User - Show Join CTA */
           <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
             <div className="text-center mb-4">
-              <Gamepad2 className="h-10 w-10 mx-auto text-primary mb-2" />
-              <h3 className="font-semibold text-text">Join GamerHub</h3>
+              <Logo showText={false} size="lg" href={undefined} className="justify-center mb-2" />
+              <h3 className="font-semibold text-text">Join ggLobby</h3>
               <p className="text-xs text-text-muted mt-1">
                 Connect with gamers and showcase your skills
               </p>
@@ -75,13 +83,16 @@ export function Sidebar() {
               href="/profile"
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-light transition-colors"
             >
-              <Avatar
-                src={profile?.avatar_url}
-                alt={profile?.display_name || profile?.username || "User"}
-                size="lg"
-                status="online"
-                showStatus
-              />
+              <div className="relative">
+                <Avatar
+                  src={profile?.avatar_url}
+                  alt={profile?.display_name || profile?.username || "User"}
+                  size="lg"
+                  status={myStatus}
+                  showStatus={false}
+                />
+                <StatusSelector />
+              </div>
               <div className="flex-1 min-w-0">
                 <span className="font-semibold text-text truncate flex items-center gap-1.5">
                   {profile?.display_name || profile?.username}
@@ -135,6 +146,11 @@ export function Sidebar() {
             {item.showBadge && counts.pending_requests > 0 && (
               <Badge variant="primary" size="sm">
                 {counts.pending_requests}
+              </Badge>
+            )}
+            {item.showMessageBadge && unreadMessages > 0 && (
+              <Badge variant="error" size="sm">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
               </Badge>
             )}
           </Link>
@@ -193,6 +209,16 @@ export function Sidebar() {
           ))}
         </div>
       )}
+      {/* Legal Links */}
+      <div className="px-4 py-3 border-t border-border">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-dim">
+          <Link href="/overview" className="hover:text-text-muted transition-colors">Overview</Link>
+          <Link href="/privacy" className="hover:text-text-muted transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-text-muted transition-colors">Terms</Link>
+          <Link href="/guidelines" className="hover:text-text-muted transition-colors">Guidelines</Link>
+        </div>
+        <p className="text-xs text-text-dim/60 mt-1.5">&copy; {new Date().getFullYear()} ggLobby</p>
+      </div>
     </aside>
   );
 }

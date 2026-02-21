@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="otherBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f" />
+      <stop offset="100%" style="stop-color:#1a1a25" />
+    </linearGradient>
+    <linearGradient id="padAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88" />
+      <stop offset="100%" style="stop-color:#00d4ff" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#otherBg)"/>
+  <!-- Controller body -->
+  <path d="M12 30 Q12 22 22 22 L42 22 Q52 22 52 30 L52 36 Q52 46 44 46 L40 46 Q36 46 34 42 L30 42 Q28 46 24 46 L20 46 Q12 46 12 36 Z"
+        fill="none" stroke="url(#padAccent)" stroke-width="2"/>
+  <!-- D-pad -->
+  <rect x="18" y="29" width="10" height="3" rx="1" fill="#00ff88" opacity="0.5"/>
+  <rect x="21.5" y="25.5" width="3" height="10" rx="1" fill="#00ff88" opacity="0.5"/>
+  <!-- Buttons -->
+  <circle cx="40" cy="28" r="2" fill="#00d4ff" opacity="0.5"/>
+  <circle cx="46" cy="32" r="2" fill="#00d4ff" opacity="0.5"/>
+  <circle cx="40" cy="36" r="2" fill="#00d4ff" opacity="0.5"/>
+  <circle cx="34" cy="32" r="2" fill="#00d4ff" opacity="0.5"/>
+</svg>

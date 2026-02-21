@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="clanBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#12121a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="clanAccent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.7" />
+      <stop offset="100%" style="stop-color:#00ff88;stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#clanBg)"/>
+  <!-- Shield shape -->
+  <path d="M100 35 L145 55 L145 110 Q145 150 100 170 Q55 150 55 110 L55 55 Z"
+        fill="#1a1a25" stroke="url(#clanAccent)" stroke-width="2.5"/>
+  <!-- Inner shield detail -->
+  <path d="M100 50 L135 65 L135 108 Q135 140 100 158 Q65 140 65 108 L65 65 Z"
+        fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+  <!-- Crossed swords -->
+  <line x1="82" y1="75" x2="118" y2="135" stroke="#00ff88" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+  <line x1="118" y1="75" x2="82" y2="135" stroke="#00ff88" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+  <!-- Sword handles -->
+  <line x1="78" y1="71" x2="86" y2="79" stroke="#00d4ff" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+  <line x1="122" y1="71" x2="114" y2="79" stroke="#00d4ff" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+  <!-- Star at center -->
+  <circle cx="100" cy="100" r="6" fill="#00ff88" opacity="0.4"/>
+  <circle cx="100" cy="100" r="3" fill="#00ff88" opacity="0.7"/>
+  <!-- Glow ring -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.15"/>
+</svg>

@@ -85,17 +85,9 @@ function ConnectionsSettingsContent() {
   const handleSyncAll = () => {
     // Sync all connected games
     const riotConnection = getConnection("riot");
-    const steamConnection = getConnection("steam");
-    const supercellConnection = getConnection("supercell");
 
     if (riotConnection) {
       sync("valorant");
-    }
-    if (steamConnection) {
-      sync("cs2");
-    }
-    if (supercellConnection) {
-      sync("coc");
     }
 
     toast.info("Syncing all connected games...");

@@ -48,6 +48,11 @@ export async function GET(request: Request) {
           profileData.bio
         );
 
+        // Always respect explicit next param (e.g. /update-password for password reset)
+        if (next !== "/onboarding") {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
+
         if (hasCompletedOnboarding) {
           return NextResponse.redirect(`${origin}/community`);
         }

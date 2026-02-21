@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, Eye, EyeOff, Gamepad2 } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { Logo } from "@/components/layout/logo";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -18,16 +19,20 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isLogin = mode === "login";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
 
     try {
@@ -39,18 +44,36 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (username.length < 3) {
           throw new Error("Username must be at least 3 characters");
         }
-        const { error } = await signUpWithEmail(email, password, username);
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters");
+        }
+        const { data, error } = await signUpWithEmail(email, password, username);
         if (error) throw error;
-        router.push("/onboarding");
+        // If Supabase returns a session, the user is immediately authenticated
+        const signUpData = data as { session?: unknown } | null;
+        if (signUpData?.session) {
+          router.push("/onboarding");
+        } else {
+          // Email confirmation is required
+          setSuccessMessage("Check your email for a confirmation link to complete signup.");
+        }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+    } catch (err: unknown) {
+      console.error("[AuthForm] Full error object:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      const status = (err as { status?: number })?.status;
+      const cause = (err as { cause?: unknown })?.cause;
+      console.error("[AuthForm] Parsed:", { message, status, cause });
+      setError(status ? `${message} (status: ${status})` : message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOAuth = async (provider: "google" | "discord") => {
+  const handleOAuth = async (provider: "google") => {
     setError(null);
     setLoading(true);
     try {
@@ -70,12 +93,11 @@ export function AuthForm({ mode }: AuthFormProps) {
       className="w-full max-w-md"
     >
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Gamepad2 className="h-10 w-10 text-primary" />
-          <span className="text-3xl font-bold text-glow-primary">GamerHub</span>
+        <div className="flex items-center justify-center mb-4">
+          <Logo showText={true} size="lg" href={undefined} />
         </div>
         <h1 className="text-2xl font-bold text-text">
-          {isLogin ? "Welcome back, Gamer!" : "Join the Arena"}
+          {isLogin ? "Welcome back, Gamer!" : "Join the Lobby"}
         </h1>
         <p className="text-text-muted mt-2">
           {isLogin
@@ -87,19 +109,6 @@ export function AuthForm({ mode }: AuthFormProps) {
       <div className="bg-surface border border-border rounded-xl p-6">
         {/* OAuth Buttons */}
         <div className="space-y-3 mb-6">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => handleOAuth("discord")}
-            disabled={loading}
-            leftIcon={
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-              </svg>
-            }
-          >
-            Continue with Discord
-          </Button>
           <Button
             variant="secondary"
             className="w-full"
@@ -188,10 +197,52 @@ export function AuthForm({ mode }: AuthFormProps) {
             required
             minLength={6}
           />
+          {!isLogin && (
+            <Input
+              label="Confirm Password"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              leftIcon={<Lock className="h-4 w-4" />}
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="hover:text-primary transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              }
+              required
+              minLength={6}
+            />
+          )}
 
           {error && (
             <div className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm">
               {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="p-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm">
+              {successMessage}
+            </div>
+          )}
+
+          {isLogin && (
+            <div className="text-right">
+              <Link
+                href="/reset-password"
+                className="text-sm text-primary hover:text-primary-dark transition-colors"
+              >
+                Forgot password?
+              </Link>
             </div>
           )}
 

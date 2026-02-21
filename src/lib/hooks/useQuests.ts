@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import { queryKeys, STALE_TIMES } from "@/lib/query";
 
 interface QuestDefinition {
@@ -59,12 +57,8 @@ async function fetchQuestsData(): Promise<QuestsResponse> {
   };
 }
 
-// Create supabase client outside hook to avoid re-creation on render
-const supabase = createClient();
-
 export function useQuests() {
   const queryClient = useQueryClient();
-  const lastRefetchRef = useRef<number>(0);
 
   const {
     data,
@@ -81,30 +75,8 @@ export function useQuests() {
   const weeklyQuests = data?.weekly ?? [];
   const resets = data?.resets ?? null;
 
-  // Throttled refetch for realtime updates (max once per 3 seconds)
-  const throttledRefetch = useCallback(() => {
-    const now = Date.now();
-    if (now - lastRefetchRef.current > 3000) {
-      lastRefetchRef.current = now;
-      refetch();
-    }
-  }, [refetch]);
-
-  // Subscribe to quest updates with throttling
-  useEffect(() => {
-    const channel = supabase
-      .channel("user_quests_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_quests" },
-        () => throttledRefetch()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [throttledRefetch]);
+  // Realtime subscription disabled — user_quests table was removed
+  // in 999_cleanup_and_focus.sql. Data is still fetched via React Query.
 
   const claimQuestMutation = useMutation({
     mutationFn: async (userQuestId: string) => {

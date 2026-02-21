@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type {
   FriendWithProfile,
   SocialCounts,
@@ -18,11 +18,14 @@ export function useFriends(options: UseFriendsOptions = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const hasFetched = useRef(false);
 
   const { userId, search, limit = 50 } = options;
 
   const fetchFriends = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -40,6 +43,7 @@ export function useFriends(options: UseFriendsOptions = {}) {
 
       setFriends(data.friends);
       setTotal(data.total);
+      hasFetched.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch friends");
     } finally {
@@ -48,8 +52,13 @@ export function useFriends(options: UseFriendsOptions = {}) {
   }, [userId, search, limit]);
 
   useEffect(() => {
+    // Skip fetching if no userId is provided and auth is required server-side
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchFriends();
-  }, [fetchFriends]);
+  }, [fetchFriends, userId]);
 
   const sendFriendRequest = async (recipientId: string, message?: string) => {
     const response = await fetch("/api/friends", {
@@ -102,9 +111,12 @@ export function useSocialCounts(userId?: string) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetched = useRef(false);
 
   const fetchCounts = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -119,6 +131,7 @@ export function useSocialCounts(userId?: string) {
       }
 
       setCounts(data.counts);
+      hasFetched.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch counts");
     } finally {
@@ -127,8 +140,12 @@ export function useSocialCounts(userId?: string) {
   }, [userId]);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchCounts();
-  }, [fetchCounts]);
+  }, [fetchCounts, userId]);
 
   return {
     counts,
@@ -142,6 +159,7 @@ export function useRelationship(targetUserId: string | null) {
   const [relationship, setRelationship] = useState<RelationshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetched = useRef(false);
 
   const fetchRelationship = useCallback(async () => {
     if (!targetUserId) {
@@ -150,7 +168,9 @@ export function useRelationship(targetUserId: string | null) {
       return;
     }
 
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -162,6 +182,7 @@ export function useRelationship(targetUserId: string | null) {
       }
 
       setRelationship(data.relationship);
+      hasFetched.current = true;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch relationship"
@@ -213,16 +234,19 @@ interface UseFriendRequestsOptions {
   limit?: number;
 }
 
-export function useFriendRequests(options: UseFriendRequestsOptions = {}) {
+export function useFriendRequests(options: UseFriendRequestsOptions & { userId?: string } = {}) {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const hasFetched = useRef(false);
 
-  const { type = "received", limit = 50 } = options;
+  const { type = "received", limit = 50, userId } = options;
 
   const fetchRequests = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -239,6 +263,7 @@ export function useFriendRequests(options: UseFriendRequestsOptions = {}) {
 
       setRequests(data.requests);
       setTotal(data.total);
+      hasFetched.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch friend requests");
     } finally {
@@ -247,8 +272,12 @@ export function useFriendRequests(options: UseFriendRequestsOptions = {}) {
   }, [type, limit]);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchRequests();
-  }, [fetchRequests]);
+  }, [fetchRequests, userId]);
 
   const acceptRequest = async (requestId: string) => {
     const response = await fetch(`/api/friends/requests/${requestId}`, {

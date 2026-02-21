@@ -54,13 +54,13 @@ interface Comment {
   };
 }
 
-interface DemoPost {
+interface CommunityPost {
   id: string;
   title: string;
   slug: string;
   excerpt: string;
   content: string;
-  cover_image: string;
+  featured_image_url: string;
   category: string;
   game: string;
   tags: string[];
@@ -76,10 +76,10 @@ interface DemoPost {
 
 const supabase = createClient();
 
-export default function DemoPostPage() {
+export default function CommunityPostPage() {
   const params = useParams();
   const router = useRouter();
-  const [post, setPost] = useState<DemoPost | null>(null);
+  const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -94,38 +94,36 @@ export default function DemoPostPage() {
   const fetchPost = async (postId: string) => {
     setLoading(true);
     try {
-      // Fetch the post with author info
+      // Fetch the post from blog_posts (real user content)
       const { data: postData, error: postError } = await supabase
-        .from("demo_community_posts")
+        .from("blog_posts")
         .select(`
           *,
-          author:demo_profiles!demo_community_posts_author_id_fkey(
+          author:profiles!blog_posts_author_id_fkey(
             id,
             username,
             display_name,
             avatar_url,
             bio,
             gaming_style,
-            region,
-            is_verified,
-            social_links
+            region
           )
         `)
         .eq("id", postId)
         .single();
 
       if (postError) throw postError;
-      setPost(postData as DemoPost);
+      setPost(postData as CommunityPost);
 
-      // Fetch comments
+      // Fetch comments from blog_comments
       const { data: commentsData } = await supabase
-        .from("demo_post_comments")
+        .from("blog_comments")
         .select(`
           id,
           content,
           likes_count,
           created_at,
-          author:demo_profiles!demo_post_comments_author_id_fkey(
+          author:profiles!blog_comments_author_id_fkey(
             id,
             username,
             display_name,
@@ -156,74 +154,8 @@ export default function DemoPostPage() {
     }
   };
 
-  const renderMarkdown = (content: string) => {
-    // Simple markdown rendering
-    return content
-      .split("\n\n")
-      .map((paragraph, index) => {
-        // Headers
-        if (paragraph.startsWith("## ")) {
-          return (
-            <h2 key={index} className="text-xl font-bold text-text mt-8 mb-4">
-              {paragraph.replace("## ", "")}
-            </h2>
-          );
-        }
-        if (paragraph.startsWith("### ")) {
-          return (
-            <h3 key={index} className="text-lg font-semibold text-text mt-6 mb-3">
-              {paragraph.replace("### ", "")}
-            </h3>
-          );
-        }
-        // Bold text processing
-        const processBold = (text: string) => {
-          const parts = text.split(/(\*\*.*?\*\*)/g);
-          return parts.map((part, i) => {
-            if (part.startsWith("**") && part.endsWith("**")) {
-              return <strong key={i}>{part.slice(2, -2)}</strong>;
-            }
-            return part;
-          });
-        };
-        // Lists
-        if (paragraph.includes("\n- ") || paragraph.startsWith("- ")) {
-          const items = paragraph.split("\n").filter(item => item.startsWith("- "));
-          return (
-            <ul key={index} className="list-disc list-inside space-y-2 mb-4 text-text-secondary">
-              {items.map((item, i) => (
-                <li key={i}>{processBold(item.replace("- ", ""))}</li>
-              ))}
-            </ul>
-          );
-        }
-        // Numbered lists
-        if (/^\d+\.\s/.test(paragraph)) {
-          const items = paragraph.split("\n").filter(item => /^\d+\.\s/.test(item));
-          return (
-            <ol key={index} className="list-decimal list-inside space-y-2 mb-4 text-text-secondary">
-              {items.map((item, i) => (
-                <li key={i}>{processBold(item.replace(/^\d+\.\s/, ""))}</li>
-              ))}
-            </ol>
-          );
-        }
-        // Italic text (single asterisks at start/end)
-        if (paragraph.startsWith("*") && paragraph.endsWith("*") && !paragraph.startsWith("**")) {
-          return (
-            <p key={index} className="text-text-muted italic mb-4">
-              {paragraph.slice(1, -1)}
-            </p>
-          );
-        }
-        // Regular paragraph
-        return (
-          <p key={index} className="text-text-secondary leading-relaxed mb-4">
-            {processBold(paragraph)}
-          </p>
-        );
-      });
-  };
+  // Detect if content is HTML (from Tiptap editor) vs plain markdown
+  const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
 
   if (loading) {
     return (
@@ -266,10 +198,10 @@ export default function DemoPostPage() {
         transition={{ delay: 0.1 }}
       >
         {/* Cover Image */}
-        {post.cover_image && (
+        {post.featured_image_url && (
           <div className="relative aspect-video rounded-xl overflow-hidden mb-8">
             <img
-              src={post.cover_image}
+              src={post.featured_image_url}
               alt={post.title}
               className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/banners/gaming-1.svg'; }}
@@ -279,7 +211,8 @@ export default function DemoPostPage() {
               <span className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-semibold uppercase flex items-center gap-1.5",
                 post.game === "valorant" ? "bg-red-500 text-white" :
-                post.game === "cs2" ? "bg-amber-500 text-black" :
+                post.game === "bgmi" ? "bg-orange-500 text-white" :
+                post.game === "freefire" ? "bg-yellow-500 text-black" :
                 "bg-primary text-white"
               )}>
                 <Gamepad2 className="h-4 w-4" />
@@ -385,9 +318,19 @@ export default function DemoPostPage() {
         </div>
 
         {/* Content */}
-        <div className="prose prose-invert max-w-none mb-12">
-          {renderMarkdown(post.content)}
-        </div>
+        {isHtmlContent(post.content) ? (
+          <div
+            className="prose prose-invert prose-lg max-w-none mb-12
+              prose-headings:font-bold prose-a:text-primary prose-a:underline
+              prose-img:rounded-lg prose-img:max-w-full
+              prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+        ) : (
+          <div className="prose prose-invert max-w-none mb-12 text-text-secondary leading-relaxed whitespace-pre-line">
+            {post.content}
+          </div>
+        )}
 
         {/* Author Card */}
         <Card className="mb-8">

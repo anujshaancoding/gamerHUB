@@ -40,6 +40,7 @@ export async function GET() {
     const themesWithStatus = typedThemes?.map((theme) => ({
       ...theme,
       is_unlocked: unlockedThemeIds.includes(theme.id),
+      requires_premium: theme.unlock_type !== "default",
     }));
 
     return NextResponse.json({ themes: themesWithStatus || [] });

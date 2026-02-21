@@ -7,168 +7,135 @@ export type ChatTranslation = Database["public"]["Tables"]["chat_translations"][
 export type SchedulingPreference = Database["public"]["Tables"]["scheduling_preferences"]["Row"];
 export type RegionalPricing = Database["public"]["Tables"]["regional_pricing"]["Row"];
 
-// Supported languages
+// Supported languages (Indian scheduled languages + English)
 export type SupportedLanguage =
   | "en"
-  | "es"
-  | "pt"
-  | "fr"
-  | "de"
-  | "it"
-  | "ru"
-  | "zh"
-  | "ja"
-  | "ko"
-  | "ar"
   | "hi"
-  | "tr"
-  | "pl"
-  | "nl"
-  | "th"
-  | "vi"
-  | "id";
+  | "bn"
+  | "te"
+  | "mr"
+  | "ta"
+  | "gu"
+  | "ur"
+  | "kn"
+  | "or"
+  | "ml"
+  | "pa"
+  | "as"
+  | "mai"
+  | "sa"
+  | "sd"
+  | "ks"
+  | "ne"
+  | "kok"
+  | "doi"
+  | "mni"
+  | "sat"
+  | "brx"
+  | "other";
 
-export const SUPPORTED_LANGUAGES: Record<SupportedLanguage, {
+export const SUPPORTED_LANGUAGES: Record<string, {
   name: string;
   nativeName: string;
   flag: string;
   rtl: boolean;
 }> = {
-  en: { name: "English", nativeName: "English", flag: "🇺🇸", rtl: false },
-  es: { name: "Spanish", nativeName: "Español", flag: "🇪🇸", rtl: false },
-  pt: { name: "Portuguese", nativeName: "Português", flag: "🇧🇷", rtl: false },
-  fr: { name: "French", nativeName: "Français", flag: "🇫🇷", rtl: false },
-  de: { name: "German", nativeName: "Deutsch", flag: "🇩🇪", rtl: false },
-  it: { name: "Italian", nativeName: "Italiano", flag: "🇮🇹", rtl: false },
-  ru: { name: "Russian", nativeName: "Русский", flag: "🇷🇺", rtl: false },
-  zh: { name: "Chinese", nativeName: "中文", flag: "🇨🇳", rtl: false },
-  ja: { name: "Japanese", nativeName: "日本語", flag: "🇯🇵", rtl: false },
-  ko: { name: "Korean", nativeName: "한국어", flag: "🇰🇷", rtl: false },
-  ar: { name: "Arabic", nativeName: "العربية", flag: "🇸🇦", rtl: true },
+  en: { name: "English", nativeName: "English", flag: "🇮🇳", rtl: false },
   hi: { name: "Hindi", nativeName: "हिन्दी", flag: "🇮🇳", rtl: false },
-  tr: { name: "Turkish", nativeName: "Türkçe", flag: "🇹🇷", rtl: false },
-  pl: { name: "Polish", nativeName: "Polski", flag: "🇵🇱", rtl: false },
-  nl: { name: "Dutch", nativeName: "Nederlands", flag: "🇳🇱", rtl: false },
-  th: { name: "Thai", nativeName: "ไทย", flag: "🇹🇭", rtl: false },
-  vi: { name: "Vietnamese", nativeName: "Tiếng Việt", flag: "🇻🇳", rtl: false },
-  id: { name: "Indonesian", nativeName: "Bahasa Indonesia", flag: "🇮🇩", rtl: false },
+  bn: { name: "Bengali", nativeName: "বাংলা", flag: "🇮🇳", rtl: false },
+  te: { name: "Telugu", nativeName: "తెలుగు", flag: "🇮🇳", rtl: false },
+  mr: { name: "Marathi", nativeName: "मराठी", flag: "🇮🇳", rtl: false },
+  ta: { name: "Tamil", nativeName: "தமிழ்", flag: "🇮🇳", rtl: false },
+  gu: { name: "Gujarati", nativeName: "ગુજરાતી", flag: "🇮🇳", rtl: false },
+  ur: { name: "Urdu", nativeName: "اردو", flag: "🇮🇳", rtl: true },
+  kn: { name: "Kannada", nativeName: "ಕನ್ನಡ", flag: "🇮🇳", rtl: false },
+  or: { name: "Odia", nativeName: "ଓଡ଼ିଆ", flag: "🇮🇳", rtl: false },
+  ml: { name: "Malayalam", nativeName: "മലയാളം", flag: "🇮🇳", rtl: false },
+  pa: { name: "Punjabi", nativeName: "ਪੰਜਾਬੀ", flag: "🇮🇳", rtl: false },
+  as: { name: "Assamese", nativeName: "অসমীয়া", flag: "🇮🇳", rtl: false },
+  mai: { name: "Maithili", nativeName: "मैथिली", flag: "🇮🇳", rtl: false },
+  sa: { name: "Sanskrit", nativeName: "संस्कृतम्", flag: "🇮🇳", rtl: false },
+  sd: { name: "Sindhi", nativeName: "سنڌي", flag: "🇮🇳", rtl: true },
+  ks: { name: "Kashmiri", nativeName: "كٲشُر", flag: "🇮🇳", rtl: true },
+  ne: { name: "Nepali", nativeName: "नेपाली", flag: "🇮🇳", rtl: false },
+  kok: { name: "Konkani", nativeName: "कोंकणी", flag: "🇮🇳", rtl: false },
+  doi: { name: "Dogri", nativeName: "डोगरी", flag: "🇮🇳", rtl: false },
+  mni: { name: "Manipuri", nativeName: "মৈতৈলোন্", flag: "🇮🇳", rtl: false },
+  sat: { name: "Santali", nativeName: "ᱥᱟᱱᱛᱟᱲᱤ", flag: "🇮🇳", rtl: false },
+  brx: { name: "Bodo", nativeName: "बड़ो", flag: "🇮🇳", rtl: false },
+  other: { name: "Other", nativeName: "Other", flag: "🇮🇳", rtl: false },
 };
 
-// Regions
-export type Region =
-  | "na"      // North America
-  | "eu"      // Europe
-  | "latam"   // Latin America
-  | "br"      // Brazil
-  | "sea"     // Southeast Asia
-  | "oce"     // Oceania
-  | "mena"    // Middle East & North Africa
-  | "sa"      // South Asia
-  | "ea"      // East Asia
-  | "cis";    // CIS/Russia
+// Region type (Indian states/UTs + other/custom)
+export type Region = string;
 
-export const REGIONS: Record<Region, {
+export const REGIONS: Record<string, {
   name: string;
-  languages: SupportedLanguage[];
+  languages: string[];
   timezones: string[];
   currency: string;
   flag: string;
 }> = {
-  na: {
-    name: "North America",
-    languages: ["en", "es", "fr"],
-    timezones: ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"],
-    currency: "USD",
-    flag: "🌎",
-  },
-  eu: {
-    name: "Europe",
-    languages: ["en", "de", "fr", "es", "it", "pl", "nl"],
-    timezones: ["Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Warsaw"],
-    currency: "EUR",
-    flag: "🇪🇺",
-  },
-  latam: {
-    name: "Latin America",
-    languages: ["es", "pt"],
-    timezones: ["America/Mexico_City", "America/Bogota", "America/Lima", "America/Santiago"],
-    currency: "USD",
-    flag: "🌎",
-  },
-  br: {
-    name: "Brazil",
-    languages: ["pt"],
-    timezones: ["America/Sao_Paulo", "America/Manaus"],
-    currency: "BRL",
-    flag: "🇧🇷",
-  },
-  sea: {
-    name: "Southeast Asia",
-    languages: ["en", "th", "vi", "id"],
-    timezones: ["Asia/Singapore", "Asia/Bangkok", "Asia/Ho_Chi_Minh", "Asia/Jakarta"],
-    currency: "USD",
-    flag: "🌏",
-  },
-  oce: {
-    name: "Oceania",
-    languages: ["en"],
-    timezones: ["Australia/Sydney", "Australia/Melbourne", "Pacific/Auckland"],
-    currency: "AUD",
-    flag: "🇦🇺",
-  },
-  mena: {
-    name: "Middle East & North Africa",
-    languages: ["ar", "en", "tr"],
-    timezones: ["Asia/Dubai", "Asia/Riyadh", "Africa/Cairo", "Asia/Istanbul"],
-    currency: "USD",
-    flag: "🌍",
-  },
-  sa: {
-    name: "South Asia",
-    languages: ["en", "hi"],
-    timezones: ["Asia/Kolkata", "Asia/Karachi", "Asia/Dhaka"],
-    currency: "INR",
-    flag: "🇮🇳",
-  },
-  ea: {
-    name: "East Asia",
-    languages: ["zh", "ja", "ko"],
-    timezones: ["Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul"],
-    currency: "USD",
-    flag: "🌏",
-  },
-  cis: {
-    name: "CIS / Russia",
-    languages: ["ru"],
-    timezones: ["Europe/Moscow", "Asia/Novosibirsk", "Asia/Vladivostok"],
-    currency: "RUB",
-    flag: "🇷🇺",
-  },
+  "andhra-pradesh": { name: "Andhra Pradesh", languages: ["te", "en", "ur"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "arunachal-pradesh": { name: "Arunachal Pradesh", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "assam": { name: "Assam", languages: ["as", "en", "bn"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "bihar": { name: "Bihar", languages: ["hi", "en", "mai", "ur"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "chhattisgarh": { name: "Chhattisgarh", languages: ["hi", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "goa": { name: "Goa", languages: ["kok", "en", "mr"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "gujarat": { name: "Gujarat", languages: ["gu", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "haryana": { name: "Haryana", languages: ["hi", "en", "pa"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "himachal-pradesh": { name: "Himachal Pradesh", languages: ["hi", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "jharkhand": { name: "Jharkhand", languages: ["hi", "en", "sat"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "karnataka": { name: "Karnataka", languages: ["kn", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "kerala": { name: "Kerala", languages: ["ml", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "madhya-pradesh": { name: "Madhya Pradesh", languages: ["hi", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "maharashtra": { name: "Maharashtra", languages: ["mr", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "manipur": { name: "Manipur", languages: ["mni", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "meghalaya": { name: "Meghalaya", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "mizoram": { name: "Mizoram", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "nagaland": { name: "Nagaland", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "odisha": { name: "Odisha", languages: ["or", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "punjab": { name: "Punjab", languages: ["pa", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "rajasthan": { name: "Rajasthan", languages: ["hi", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "sikkim": { name: "Sikkim", languages: ["ne", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "tamil-nadu": { name: "Tamil Nadu", languages: ["ta", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "telangana": { name: "Telangana", languages: ["te", "en", "ur"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "tripura": { name: "Tripura", languages: ["bn", "en", "kok"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "uttar-pradesh": { name: "Uttar Pradesh", languages: ["hi", "en", "ur"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "uttarakhand": { name: "Uttarakhand", languages: ["hi", "en", "sa"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "west-bengal": { name: "West Bengal", languages: ["bn", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "andaman-nicobar": { name: "Andaman & Nicobar Islands", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "chandigarh": { name: "Chandigarh", languages: ["en", "hi", "pa"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "dadra-nagar-haveli": { name: "Dadra & Nagar Haveli and Daman & Diu", languages: ["gu", "en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "delhi": { name: "Delhi", languages: ["hi", "en", "ur", "pa"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "jammu-kashmir": { name: "Jammu & Kashmir", languages: ["ks", "en", "hi", "ur", "doi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "ladakh": { name: "Ladakh", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "lakshadweep": { name: "Lakshadweep", languages: ["ml", "en"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "puducherry": { name: "Puducherry", languages: ["ta", "en", "te", "ml"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
+  "other": { name: "Other", languages: ["en", "hi"], timezones: ["Asia/Kolkata"], currency: "INR", flag: "🇮🇳" },
 };
 
-// Pricing tiers by region
+// Pricing (India-only, INR)
 export interface RegionalPrice {
   amount: number;
   currency: string;
   formatted: string;
 }
 
-export const REGIONAL_PRICING: Record<Region, {
+const INR_PRICING = { multiplier: 0.3, currency: "INR", currencySymbol: "₹" };
+
+export function getRegionalPricing(_region?: string) {
+  return INR_PRICING;
+}
+
+// Keep REGIONAL_PRICING for backward compatibility
+export const REGIONAL_PRICING: Record<string, {
   multiplier: number;
   currency: string;
   currencySymbol: string;
-}> = {
-  na: { multiplier: 1.0, currency: "USD", currencySymbol: "$" },
-  eu: { multiplier: 0.92, currency: "EUR", currencySymbol: "€" },
-  latam: { multiplier: 0.6, currency: "USD", currencySymbol: "$" },
-  br: { multiplier: 0.4, currency: "BRL", currencySymbol: "R$" },
-  sea: { multiplier: 0.5, currency: "USD", currencySymbol: "$" },
-  oce: { multiplier: 1.1, currency: "AUD", currencySymbol: "A$" },
-  mena: { multiplier: 0.7, currency: "USD", currencySymbol: "$" },
-  sa: { multiplier: 0.3, currency: "INR", currencySymbol: "₹" },
-  ea: { multiplier: 0.8, currency: "USD", currencySymbol: "$" },
-  cis: { multiplier: 0.35, currency: "RUB", currencySymbol: "₽" },
-};
+}> = new Proxy({} as Record<string, typeof INR_PRICING>, {
+  get: () => INR_PRICING,
+});
 
 // Time format preferences
 export type TimeFormat = "12h" | "24h";
@@ -235,55 +202,14 @@ export interface JoinRegionalCommunityRequest {
 }
 
 // Helper functions
-export function detectUserRegion(timezone: string): Region {
-  const tzToRegion: Record<string, Region> = {
-    "America/New_York": "na",
-    "America/Chicago": "na",
-    "America/Denver": "na",
-    "America/Los_Angeles": "na",
-    "Europe/London": "eu",
-    "Europe/Paris": "eu",
-    "Europe/Berlin": "eu",
-    "Europe/Warsaw": "eu",
-    "America/Mexico_City": "latam",
-    "America/Bogota": "latam",
-    "America/Lima": "latam",
-    "America/Sao_Paulo": "br",
-    "Asia/Singapore": "sea",
-    "Asia/Bangkok": "sea",
-    "Asia/Jakarta": "sea",
-    "Australia/Sydney": "oce",
-    "Pacific/Auckland": "oce",
-    "Asia/Dubai": "mena",
-    "Asia/Riyadh": "mena",
-    "Asia/Istanbul": "mena",
-    "Asia/Kolkata": "sa",
-    "Asia/Shanghai": "ea",
-    "Asia/Tokyo": "ea",
-    "Asia/Seoul": "ea",
-    "Europe/Moscow": "cis",
-  };
-
-  return tzToRegion[timezone] || "na";
+export function detectUserRegion(_timezone: string): Region {
+  // India-only app: default to Delhi
+  return "delhi";
 }
 
-export function formatPrice(amount: number, region: Region): string {
-  const pricing = REGIONAL_PRICING[region];
-  const adjustedAmount = amount * pricing.multiplier;
-
-  // Convert to local currency if needed
-  let finalAmount = adjustedAmount;
-  if (pricing.currency === "BRL") {
-    finalAmount = adjustedAmount * 5; // Approximate BRL conversion
-  } else if (pricing.currency === "INR") {
-    finalAmount = adjustedAmount * 83; // Approximate INR conversion
-  } else if (pricing.currency === "RUB") {
-    finalAmount = adjustedAmount * 90; // Approximate RUB conversion
-  } else if (pricing.currency === "AUD") {
-    finalAmount = adjustedAmount * 1.5; // Approximate AUD conversion
-  }
-
-  return `${pricing.currencySymbol}${finalAmount.toFixed(2)}`;
+export function formatPrice(amount: number, _region?: string): string {
+  const adjustedAmount = amount * INR_PRICING.multiplier * 83; // Approximate USD to INR
+  return `₹${adjustedAmount.toFixed(0)}`;
 }
 
 export function getTimezoneOffset(timezone: string): string {
@@ -314,7 +240,7 @@ export function formatDateForLocale(
   date: Date,
   timezone: string,
   dateFormat: DateFormat,
-  language: SupportedLanguage
+  _language: SupportedLanguage
 ): string {
   const options: Intl.DateTimeFormatOptions = {
     timeZone: timezone,

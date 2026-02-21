@@ -11,12 +11,23 @@ import {
   ChevronLeft,
   Upload,
   Check,
-  Loader2
+  Loader2,
+  X,
 } from "lucide-react";
-import { Button, Input, LegacySelect as Select, Textarea, Avatar } from "@/components/ui";
+import { Button, Input, LegacySelect as Select, Textarea, Avatar, SelectWithOther } from "@/components/ui";
+import {
+  Select as RadixSelect,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { REGIONS, LANGUAGES, GAMING_STYLES, SUPPORTED_GAMES } from "@/lib/constants/games";
+import { getGameConfig } from "@/lib/game-configs";
 import { createClient } from "@/lib/supabase/client";
+import { optimizedUpload, createPreview } from "@/lib/upload";
+import { Logo } from "@/components/layout/logo";
 
 const steps = [
   { id: 1, title: "Basic Info", icon: User },
@@ -42,6 +53,8 @@ export default function OnboardingPage() {
     gaming_style: "",
     preferred_language: "en",
     region: "",
+    custom_region: "",
+    custom_language: "",
     social_links: {
       discord: "",
       twitch: "",
@@ -49,94 +62,108 @@ export default function OnboardingPage() {
     },
   });
 
-  const [selectedGames, setSelectedGames] = useState<string[]>([]);
+  interface OnboardingGameData {
+    slug: string;
+    game_username: string;
+    rank: string;
+    role: string;
+  }
+  const [selectedGames, setSelectedGames] = useState<Record<string, OnboardingGameData>>({});
+  const [expandedGame, setExpandedGame] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setAvatarPreview(await createPreview(file));
     }
   };
 
   const uploadAvatar = async () => {
     if (!avatarFile || !user) return null;
 
-    const fileExt = avatarFile.name.split(".").pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("media")
-      .upload(filePath, avatarFile);
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
+    try {
+      const { publicUrl } = await optimizedUpload(avatarFile, "avatar", user.id);
+      return publicUrl;
+    } catch (err) {
+      console.error("Upload error:", err);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("media")
-      .getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
   const handleNext = async () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
-    } else {
-      // Final step - save everything
-      if (!user) {
-        console.error("User not authenticated");
+      return;
+    }
+
+    // Final step - save everything
+    if (!user) {
+      setError("You're not signed in. Please log in and try again.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      let avatarUrl = null;
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar();
+      }
+
+      const resolvedRegion = formData.region === "other" ? formData.custom_region : formData.region;
+      const resolvedLanguage = formData.preferred_language === "other" ? formData.custom_language : formData.preferred_language;
+
+      // Update profile
+      const { error: profileError } = await updateProfile({
+        display_name: formData.display_name || null,
+        bio: formData.bio || null,
+        gaming_style: formData.gaming_style as "casual" | "competitive" | "pro",
+        preferred_language: resolvedLanguage || "en",
+        region: resolvedRegion || null,
+        social_links: formData.social_links,
+        ...(avatarUrl && { avatar_url: avatarUrl }),
+      });
+
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        setError("Failed to save your profile. Please try again.");
+        setLoading(false);
         return;
       }
-      setLoading(true);
-      try {
-        let avatarUrl = null;
-        if (avatarFile) {
-          avatarUrl = await uploadAvatar();
-        }
 
-        // Update profile
-        await updateProfile({
-          display_name: formData.display_name || null,
-          bio: formData.bio || null,
-          gaming_style: formData.gaming_style as "casual" | "competitive" | "pro",
-          preferred_language: formData.preferred_language,
-          region: formData.region || null,
-          social_links: formData.social_links,
-          ...(avatarUrl && { avatar_url: avatarUrl }),
-        });
+      // Link selected games with rank/IGN/role data (don't block navigation on failure)
+      for (const [gameSlug, gameData] of Object.entries(selectedGames)) {
+        try {
+          const { data: game } = await supabase
+            .from("games")
+            .select("id")
+            .eq("slug", gameSlug)
+            .single();
 
-        // Link selected games
-        if (user) {
-          for (const gameSlug of selectedGames) {
-            const { data: game } = await supabase
-              .from("games")
-              .select("id")
-              .eq("slug", gameSlug)
-              .single();
-
-            if (game && (game as { id: string }).id) {
-              await supabase.from("user_games").insert({
-                user_id: user.id,
-                game_id: (game as { id: string }).id,
-              } as never);
-            }
+          if (game && (game as { id: string }).id) {
+            await supabase.from("user_games").insert({
+              user_id: user.id,
+              game_id: (game as { id: string }).id,
+              game_username: gameData.game_username || null,
+              rank: gameData.rank || null,
+              role: gameData.role || null,
+              is_verified: false,
+              is_public: true,
+            } as never);
           }
+        } catch (err) {
+          console.error(`Failed to link game ${gameSlug}:`, err);
         }
-
-        router.push("/community");
-      } catch (error) {
-        console.error("Onboarding error:", error);
-      } finally {
-        setLoading(false);
       }
+
+      router.replace("/community");
+    } catch (err) {
+      console.error("Onboarding error:", err);
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -147,11 +174,24 @@ export default function OnboardingPage() {
   };
 
   const toggleGame = (slug: string) => {
-    setSelectedGames((prev) =>
-      prev.includes(slug)
-        ? prev.filter((g) => g !== slug)
-        : [...prev, slug]
-    );
+    setSelectedGames((prev) => {
+      if (prev[slug]) {
+        // Deselect: remove from record
+        const { [slug]: removed, ...rest } = prev;
+        if (expandedGame === slug) setExpandedGame(null);
+        return rest;
+      }
+      // Select: add to record and expand
+      setExpandedGame(slug);
+      return { ...prev, [slug]: { slug, game_username: "", rank: "", role: "" } };
+    });
+  };
+
+  const updateGameData = (slug: string, field: keyof OnboardingGameData, value: string) => {
+    setSelectedGames((prev) => ({
+      ...prev,
+      [slug]: { ...prev[slug], [field]: value },
+    }));
   };
 
   // Redirect if no user after auth loads
@@ -176,9 +216,8 @@ export default function OnboardingPage() {
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Gamepad2 className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold text-glow-primary">GamerHub</span>
+        <div className="flex items-center justify-center mb-4">
+          <Logo showText={true} size="md" href={undefined} />
         </div>
         <h1 className="text-xl font-semibold text-text">Set Up Your Profile</h1>
         <p className="text-text-muted mt-1">Let&apos;s get you ready to game</p>
@@ -348,22 +387,34 @@ export default function OnboardingPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Region"
-                  options={REGIONS.map((r) => ({ value: r.value, label: r.label }))}
+                <SelectWithOther
+                  label="State / Region"
+                  options={[
+                    { value: "", label: "Select state" },
+                    ...REGIONS.map((r) => ({ value: r.value, label: r.label })),
+                  ]}
                   value={formData.region}
-                  onChange={(e) =>
-                    setFormData({ ...formData, region: e.target.value })
+                  customValue={formData.custom_region}
+                  onChange={(v) =>
+                    setFormData({ ...formData, region: v, custom_region: "" })
                   }
-                  placeholder="Select your region"
+                  onCustomChange={(v) =>
+                    setFormData({ ...formData, custom_region: v })
+                  }
+                  customPlaceholder="Enter your region..."
                 />
-                <Select
+                <SelectWithOther
                   label="Language"
                   options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
                   value={formData.preferred_language}
-                  onChange={(e) =>
-                    setFormData({ ...formData, preferred_language: e.target.value })
+                  customValue={formData.custom_language}
+                  onChange={(v) =>
+                    setFormData({ ...formData, preferred_language: v, custom_language: "" })
                   }
+                  onCustomChange={(v) =>
+                    setFormData({ ...formData, custom_language: v })
+                  }
+                  customPlaceholder="Enter your language..."
                 />
               </div>
             </motion.div>
@@ -385,34 +436,234 @@ export default function OnboardingPage() {
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SUPPORTED_GAMES.map((game) => (
-                  <button
-                    key={game.slug}
-                    type="button"
-                    onClick={() => toggleGame(game.slug)}
-                    className={`p-4 rounded-lg border text-center transition-all ${
-                      selectedGames.includes(game.slug)
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-border-light"
-                    }`}
-                  >
-                    <div className="w-12 h-12 mx-auto mb-2 bg-surface-light rounded-lg flex items-center justify-center">
-                      <Gamepad2 className="h-6 w-6 text-text-muted" />
-                    </div>
-                    <span className="text-sm font-medium text-text">
-                      {game.name}
-                    </span>
-                    {selectedGames.includes(game.slug) && (
-                      <div className="mt-2">
-                        <Check className="h-4 w-4 text-primary mx-auto" />
+                {SUPPORTED_GAMES.map((game) => {
+                  const isSelected = !!selectedGames[game.slug];
+                  const gameData = selectedGames[game.slug];
+                  return (
+                    <button
+                      key={game.slug}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          // If already selected, toggle expand/collapse
+                          setExpandedGame(expandedGame === game.slug ? null : game.slug);
+                        } else {
+                          toggleGame(game.slug);
+                        }
+                      }}
+                      className={`relative p-4 rounded-lg border text-center transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-border-light"
+                      }`}
+                    >
+                      {/* Remove button */}
+                      {isSelected && (
+                        <div
+                          className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-surface-light hover:bg-error/20 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleGame(game.slug);
+                          }}
+                        >
+                          <X className="h-3 w-3 text-text-muted hover:text-error" />
+                        </div>
+                      )}
+                      <div className="w-12 h-12 mx-auto mb-2 bg-surface-light rounded-lg flex items-center justify-center overflow-hidden">
+                        {game.iconUrl && game.slug !== "other" ? (
+                          <img
+                            src={game.iconUrl}
+                            alt={game.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <Gamepad2 className="h-6 w-6 text-text-muted" />
+                        )}
                       </div>
-                    )}
-                  </button>
-                ))}
+                      <span className="text-sm font-medium text-text">
+                        {game.name}
+                      </span>
+                      {isSelected && (
+                        <div className="mt-1.5">
+                          {gameData?.game_username || gameData?.rank ? (
+                            <p className="text-[10px] text-primary truncate">
+                              {gameData.game_username && `${gameData.game_username}`}
+                              {gameData.game_username && gameData.rank && " · "}
+                              {gameData.rank && gameData.rank}
+                            </p>
+                          ) : (
+                            <Check className="h-4 w-4 text-primary mx-auto" />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Expanded game form */}
+              <AnimatePresence mode="wait">
+                {expandedGame && selectedGames[expandedGame] && (
+                  <motion.div
+                    key={expandedGame}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                      <h4 className="text-sm font-semibold text-text mb-3">
+                        Set up {SUPPORTED_GAMES.find((g) => g.slug === expandedGame)?.name}
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Input
+                          label="In-Game Name"
+                          placeholder="Your username"
+                          value={selectedGames[expandedGame]?.game_username || ""}
+                          onChange={(e) =>
+                            updateGameData(expandedGame, "game_username", e.target.value)
+                          }
+                        />
+                        {(() => {
+                          const config = getGameConfig(expandedGame);
+                          const ranks = config?.ranks || [];
+                          const isOther = expandedGame === "other";
+
+                          if (isOther) {
+                            return (
+                              <Input
+                                label="Rank"
+                                placeholder="e.g., Diamond"
+                                value={selectedGames[expandedGame]?.rank || ""}
+                                onChange={(e) =>
+                                  updateGameData(expandedGame, "rank", e.target.value)
+                                }
+                              />
+                            );
+                          }
+
+                          if (ranks.length > 0) {
+                            return (
+                              <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                  Rank
+                                </label>
+                                <RadixSelect
+                                  value={selectedGames[expandedGame]?.rank || ""}
+                                  onValueChange={(v) => updateGameData(expandedGame, "rank", v)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select rank" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {config?.hasUnrankedOption && (
+                                      <SelectItem value="Unranked">Unranked</SelectItem>
+                                    )}
+                                    {ranks.map((r) => (
+                                      <SelectItem key={r.value} value={r.label}>
+                                        {r.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </RadixSelect>
+                              </div>
+                            );
+                          }
+
+                          return null;
+                        })()}
+                        {(() => {
+                          const config = getGameConfig(expandedGame);
+                          const supportedGame = SUPPORTED_GAMES.find((g) => g.slug === expandedGame);
+                          const isOther = expandedGame === "other";
+
+                          if (config?.hasAgents && config.agents && config.agents.length > 0) {
+                            return (
+                              <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                  Main {config.agentLabel || "Role"}
+                                </label>
+                                <RadixSelect
+                                  value={selectedGames[expandedGame]?.role || ""}
+                                  onValueChange={(v) => updateGameData(expandedGame, "role", v)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder={`Select ${(config.agentLabel || "role").toLowerCase()}`} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {config.agents.map((a) => (
+                                      <SelectItem key={a.value} value={a.label}>
+                                        {a.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </RadixSelect>
+                              </div>
+                            );
+                          }
+
+                          if (supportedGame?.roles && supportedGame.roles.length > 0) {
+                            return (
+                              <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                  Main Role
+                                </label>
+                                <RadixSelect
+                                  value={selectedGames[expandedGame]?.role || ""}
+                                  onValueChange={(v) => updateGameData(expandedGame, "role", v)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {supportedGame.roles.map((r) => (
+                                      <SelectItem key={r} value={r}>
+                                        {r}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </RadixSelect>
+                              </div>
+                            );
+                          }
+
+                          if (isOther) {
+                            return (
+                              <Input
+                                label="Main Role"
+                                placeholder="e.g., Support"
+                                value={selectedGames[expandedGame]?.role || ""}
+                                onChange={(e) =>
+                                  updateGameData(expandedGame, "role", e.target.value)
+                                }
+                              />
+                            );
+                          }
+
+                          return null;
+                        })()}
+                      </div>
+                      <p className="text-xs text-text-dim mt-3">
+                        You can add more details later from your profile settings.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {error && (
+          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between mt-8">

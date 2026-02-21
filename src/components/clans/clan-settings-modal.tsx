@@ -11,10 +11,13 @@ import {
   Shield,
   Camera,
   ImageIcon,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Modal, Button, Input, Textarea } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { REGIONS } from "@/lib/constants/games";
+import { optimizedUpload } from "@/lib/upload";
 import type { Clan, ClanJoinType } from "@/types/database";
 
 interface ClanSettingsModalProps {
@@ -22,6 +25,8 @@ interface ClanSettingsModalProps {
   onClose: () => void;
   clan: Clan;
   onUpdate: (updates: Partial<Clan>) => Promise<{ data?: any; error?: Error }>;
+  onDelete?: () => Promise<{ success?: boolean; error?: Error }>;
+  isLeader?: boolean;
 }
 
 const JOIN_TYPES: {
@@ -59,6 +64,8 @@ export function ClanSettingsModal({
   onClose,
   clan,
   onUpdate,
+  onDelete,
+  isLeader = false,
 }: ClanSettingsModalProps) {
   const currentJoinType = (clan.join_type as ClanJoinType) || (clan.settings as any)?.join_type || "closed";
 
@@ -74,34 +81,24 @@ export function ClanSettingsModal({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
-
-  const uploadImage = async (file: File, path: string): Promise<string | null> => {
-    const supabase = createClient();
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${path}/${clan.id}-${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("media")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return null;
-    }
-
-    const { data } = supabase.storage.from("media").getPublicUrl(filePath);
-    return data.publicUrl;
-  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingAvatar(true);
-    const url = await uploadImage(file, "clan-avatars");
-    if (url) setAvatarUrl(url);
+    setError(null);
+    try {
+      const { publicUrl } = await optimizedUpload(file, "clan-avatar", clan.id, clan.avatar_url);
+      setAvatarUrl(publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload avatar");
+    }
     setUploadingAvatar(false);
   };
 
@@ -109,8 +106,13 @@ export function ClanSettingsModal({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingBanner(true);
-    const url = await uploadImage(file, "clan-banners");
-    if (url) setBannerUrl(url);
+    setError(null);
+    try {
+      const { publicUrl } = await optimizedUpload(file, "clan-banner", clan.id, clan.banner_url);
+      setBannerUrl(publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload banner");
+    }
     setUploadingBanner(false);
   };
 
@@ -156,6 +158,17 @@ export function ClanSettingsModal({
     }
 
     setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || deleteConfirmText !== clan.tag) return;
+    setDeleting(true);
+    setError(null);
+    const result = await onDelete();
+    if (result.error) {
+      setError(result.error.message);
+      setDeleting(false);
+    }
   };
 
   return (
@@ -228,8 +241,8 @@ export function ClanSettingsModal({
               )}
             </div>
             <div className="text-xs text-text-muted">
-              <p>Click to upload avatar</p>
-              <p>Recommended: 200x200px</p>
+              <p>Click to upload avatar (max 2MB)</p>
+              <p>Auto-compressed to WebP, 400x400</p>
             </div>
           </div>
           <input
@@ -357,11 +370,9 @@ export function ClanSettingsModal({
             className="w-full bg-surface-light border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">No region</option>
-            <option value="India">India</option>
-            <option value="SEA">Southeast Asia</option>
-            <option value="EU">Europe</option>
-            <option value="NA">North America</option>
-            <option value="ME">Middle East</option>
+            {REGIONS.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
           </select>
         </div>
 
@@ -387,6 +398,70 @@ export function ClanSettingsModal({
             Save Changes
           </Button>
         </div>
+
+        {/* Danger Zone - Only for leader */}
+        {isLeader && onDelete && (
+          <div className="mt-4 pt-4 border-t border-error/20">
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 text-sm text-error hover:text-error/80 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete this clan
+              </button>
+            ) : (
+              <div className="p-4 bg-error/5 border border-error/20 rounded-lg space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-error shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-error">
+                      Delete {clan.name}?
+                    </p>
+                    <p className="text-xs text-text-muted mt-1">
+                      This will permanently delete the clan, remove all members, and delete all
+                      associated data. This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted block mb-1">
+                    Type <strong>{clan.tag}</strong> to confirm
+                  </label>
+                  <Input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder={clan.tag}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteConfirmText("");
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDelete}
+                    isLoading={deleting}
+                    disabled={deleteConfirmText !== clan.tag}
+                    leftIcon={<Trash2 className="h-4 w-4" />}
+                  >
+                    Delete Clan
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );

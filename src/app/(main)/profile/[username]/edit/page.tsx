@@ -17,27 +17,31 @@ import {
   Palette,
   Crown,
   Zap,
+  Plus,
+  Pencil,
+  Trash2,
+  ShieldAlert,
+  CheckCircle,
 } from "lucide-react";
-import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar } from "@/components/ui";
+import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
+import { optimizedUpload, createPreview } from "@/lib/upload";
+import { useMyGames, useDeleteUserGame, type UserGameWithGame } from "@/lib/hooks/useUserGames";
+import { GameProfileModal } from "@/components/profile/game-profile-modal";
 import Link from "next/link";
 
 interface EditProfilePageProps {
   params: Promise<{ username: string }>;
 }
 
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
-const MAX_BANNER_SIZE = 5 * 1024 * 1024; // 5MB
-
 export default function EditProfilePage({ params }: EditProfilePageProps) {
   const router = useRouter();
   const { user, profile, updateProfile } = useAuth();
-  const supabase = createClient();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const formInitialized = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -48,6 +52,13 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+
+  // Game management state
+  const { userGames, loading: gamesLoading, refetch: refetchGames } = useMyGames();
+  const { deleteGame, deleting: gameDeleting } = useDeleteUserGame();
+  const [gameModalOpen, setGameModalOpen] = useState(false);
+  const [editingGame, setEditingGame] = useState<UserGameWithGame | null>(null);
+  const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     display_name: "",
@@ -66,8 +77,10 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
     params.then((p) => setUsername(p.username));
   }, [params]);
 
+  // Sync form data only once when profile first becomes available
   useEffect(() => {
-    if (profile) {
+    if (profile && !formInitialized.current) {
+      formInitialized.current = true;
       const socialLinks = profile.social_links as Record<string, string> | null;
       setFormData({
         display_name: profile.display_name || "",
@@ -95,48 +108,19 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file (PNG, JPG, GIF)");
-      return;
-    }
-
-    // Validate file size
-    if (file.size > MAX_AVATAR_SIZE) {
-      setError("Avatar image must be less than 2MB");
-      return;
-    }
-
     setError(null);
     setAvatarUploading(true);
 
     try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setAvatarPreview(await createPreview(file));
 
-      // Upload to Supabase
-      const fileExt = file.name.split(".").pop();
-      const fileName = `avatars/${user.id}/${Date.now()}.${fileExt}`;
+      const { publicUrl } = await optimizedUpload(
+        file,
+        "avatar",
+        user.id,
+        profile?.avatar_url,
+      );
 
-      const { error: uploadError } = await supabase.storage
-        .from("media")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("media")
-        .getPublicUrl(fileName);
-
-      // Update profile
       await updateProfile({ avatar_url: publicUrl });
       setAvatarPreview(null);
     } catch (err) {
@@ -154,48 +138,19 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file (PNG, JPG, GIF)");
-      return;
-    }
-
-    // Validate file size
-    if (file.size > MAX_BANNER_SIZE) {
-      setError("Banner image must be less than 5MB");
-      return;
-    }
-
     setError(null);
     setBannerUploading(true);
 
     try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBannerPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setBannerPreview(await createPreview(file));
 
-      // Upload to Supabase
-      const fileExt = file.name.split(".").pop();
-      const fileName = `banners/${user.id}/${Date.now()}.${fileExt}`;
+      const { publicUrl } = await optimizedUpload(
+        file,
+        "banner",
+        user.id,
+        profile?.banner_url,
+      );
 
-      const { error: uploadError } = await supabase.storage
-        .from("media")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("media")
-        .getPublicUrl(fileName);
-
-      // Update profile
       await updateProfile({ banner_url: publicUrl });
       setBannerPreview(null);
     } catch (err) {
@@ -392,7 +347,7 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
               {bannerUploading ? "Uploading..." : "Change Banner"}
             </Button>
             <span className="flex items-center text-xs text-text-muted ml-auto">
-              Avatar: max 2MB • Banner: max 5MB
+              Auto-compressed to WebP • Avatar: max 2MB • Banner: max 5MB
             </span>
           </div>
 
@@ -501,6 +456,172 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
                 />
               </div>
             </motion.div>
+
+            {/* My Games Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="pt-6 border-t border-border"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Gamepad2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold text-text">My Games</h3>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingGame(null);
+                    setGameModalOpen(true);
+                  }}
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  className="hover:border-primary hover:text-primary"
+                >
+                  Add Game
+                </Button>
+              </div>
+              <div className="space-y-3 pl-2">
+                {gamesLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                ) : userGames.length === 0 ? (
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-surface-light rounded-lg flex items-center justify-center border border-border">
+                      <Gamepad2 className="h-6 w-6 text-text-muted" />
+                    </div>
+                    <p className="text-text-muted text-sm">No games added yet</p>
+                    <p className="text-text-dim text-xs mt-1">
+                      Add your first game to showcase your skills!
+                    </p>
+                  </div>
+                ) : (
+                  userGames.map((ug) => (
+                    <div
+                      key={ug.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-surface-light border border-border hover:border-border-light transition-colors"
+                    >
+                      {/* Game icon */}
+                      <div className="w-10 h-10 rounded-lg bg-surface overflow-hidden shrink-0 flex items-center justify-center">
+                        {ug.game?.icon_url ? (
+                          <img
+                            src={ug.game.icon_url}
+                            alt={ug.game?.name || "Game"}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <Gamepad2 className="h-5 w-5 text-text-muted" />
+                        )}
+                      </div>
+
+                      {/* Game info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-text text-sm">
+                            {ug.game?.name || "Unknown Game"}
+                          </span>
+                          {ug.rank && (
+                            <Badge variant="primary" className="text-xs">
+                              {ug.rank}
+                            </Badge>
+                          )}
+                          {ug.role && (
+                            <Badge variant="secondary" className="text-xs">
+                              {ug.role}
+                            </Badge>
+                          )}
+                          {ug.is_verified ? (
+                            <Badge variant="success" className="text-xs gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Verified
+                            </Badge>
+                          ) : (ug.rank || ug.game_username) ? (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <ShieldAlert className="h-3 w-3" />
+                              Self-Reported
+                            </Badge>
+                          ) : null}
+                        </div>
+                        {ug.game_username && (
+                          <p className="text-xs text-text-muted mt-0.5 truncate">
+                            IGN: {ug.game_username}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingGame(ug);
+                            setGameModalOpen(true);
+                          }}
+                          className="h-8 w-8 hover:text-primary"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            if (deletingGameId === ug.id) {
+                              // Confirmed delete
+                              await deleteGame(ug.id);
+                              setDeletingGameId(null);
+                            } else {
+                              // First click — ask for confirmation
+                              setDeletingGameId(ug.id);
+                              setTimeout(() => setDeletingGameId(null), 3000);
+                            }
+                          }}
+                          disabled={gameDeleting}
+                          className={`h-8 w-8 ${
+                            deletingGameId === ug.id
+                              ? "text-error bg-error/10"
+                              : "hover:text-error"
+                          }`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        {deletingGameId === ug.id && (
+                          <span className="text-xs text-error animate-pulse">
+                            Click again
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            {/* Game Profile Modal */}
+            <GameProfileModal
+              isOpen={gameModalOpen}
+              onClose={() => {
+                setGameModalOpen(false);
+                setEditingGame(null);
+              }}
+              existingGame={editingGame}
+              onSaved={() => {
+                setGameModalOpen(false);
+                setEditingGame(null);
+                refetchGames();
+              }}
+              linkedGameSlugs={userGames
+                .map((ug) => ug.game?.slug)
+                .filter((s): s is string => !!s)}
+            />
 
             {/* Social Links Section */}
             <motion.div

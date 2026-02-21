@@ -1,4 +1,4 @@
-export type GameSlug = 'valorant' | 'cs2' | 'pubg-mobile' | 'freefire' | 'coc' | 'cod-mobile';
+export type GameSlug = 'valorant' | 'bgmi' | 'freefire';
 
 export type NewsCategory = 'patch' | 'tournament' | 'event' | 'update' | 'roster' | 'meta' | 'general';
 

@@ -19,6 +19,7 @@ import { ClanCard } from "@/components/clans/clan-card";
 import { useClans } from "@/lib/hooks/useClans";
 import { useGames } from "@/lib/hooks/useGames";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useClanMembership } from "@/lib/hooks/useClanMembership";
 import { cn } from "@/lib/utils";
 
 const JOIN_TYPE_OPTIONS = [
@@ -40,6 +41,7 @@ const REGION_OPTIONS = [
 export default function ClansPage() {
   const { user } = useAuth();
   const { games } = useGames();
+  const { membership, role: myRole } = useClanMembership(user?.id || null);
 
   const [search, setSearch] = useState("");
   const [selectedGame, setSelectedGame] = useState("");
@@ -197,7 +199,11 @@ export default function ClansPage() {
           <p className="text-sm text-text-muted">{total} clan{total !== 1 ? "s" : ""} found</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {clans.map((clan) => (
-              <ClanCard key={clan.id} clan={clan} />
+              <ClanCard
+                key={clan.id}
+                clan={clan}
+                userRole={membership?.clan_id === clan.id ? myRole : undefined}
+              />
             ))}
           </div>
 

@@ -25,20 +25,14 @@ interface GameStatsCardProps {
 
 const gameColors: Record<string, string> = {
   valorant: "from-red-500/20 to-red-900/20 border-red-500/30",
-  cs2: "from-orange-500/20 to-orange-900/20 border-orange-500/30",
-  "pubg-mobile": "from-yellow-500/20 to-yellow-900/20 border-yellow-500/30",
+  bgmi: "from-orange-500/20 to-orange-900/20 border-orange-500/30",
   freefire: "from-orange-500/20 to-red-900/20 border-orange-500/30",
-  coc: "from-green-500/20 to-yellow-900/20 border-green-500/30",
-  "cod-mobile": "from-orange-600/20 to-gray-900/20 border-orange-600/30",
 };
 
 const gameLogos: Record<string, string> = {
   valorant: "VAL",
-  cs2: "CS2",
-  "pubg-mobile": "PUBG",
+  bgmi: "BGMI",
   freefire: "FF",
-  coc: "COC",
-  "cod-mobile": "COD",
 };
 
 export function GameStatsCard({

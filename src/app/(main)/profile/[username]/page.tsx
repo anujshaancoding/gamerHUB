@@ -6,49 +6,20 @@ import { ProfileMedals } from "@/components/profile/profile-medals";
 import { ProfileStats } from "@/components/profile/profile-stats";
 import { ProfileRatings } from "@/components/profile/profile-ratings";
 import { ProfileBadges } from "@/components/profile/profile-badges";
+import { GameThemeProvider } from "@/components/profile/game-theme-provider";
+import { ProfileTabs } from "@/components/profile/profile-tabs";
+import { PowerLevelGauge } from "@/components/profile/power-level-gauge";
+import { ActivityCalendar } from "@/components/profile/activity-calendar";
+import { PlayerCard } from "@/components/profile/player-card";
+import { StatTrackers } from "@/components/profile/stat-trackers";
+import { ClanDisplay } from "@/components/profile/clan-display";
+import { RankHistoryTimeline } from "@/components/profile/rank-history-timeline";
+import { ProfileActivity } from "@/components/profile/profile-activity";
 import { GlobalRatingBreakdown, scoreToStanding } from "@/components/ratings/global-rating-breakdown";
 import type { Profile, TraitEndorsementStats, TrustBadges, StandingLevel } from "@/types/database";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
-}
-
-interface DemoProfileComplete {
-  id: string;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  bio: string | null;
-  gaming_style: "casual" | "competitive" | "pro" | null;
-  preferred_language: string;
-  region: string | null;
-  timezone: string | null;
-  online_hours: unknown;
-  social_links: unknown;
-  is_online: boolean;
-  is_verified: boolean;
-  created_at: string;
-  games: Array<{
-    game: string;
-    game_slug: string;
-    in_game_name: string;
-    rank: string;
-    role: string;
-    secondary_role: string | null;
-    hours: number;
-    stats: unknown;
-  }>;
-  badges: Array<{
-    name: string;
-    slug: string;
-    icon: string;
-    description: string;
-    rarity: string;
-    earned_at: string;
-  }>;
-  badge_count: number;
-  total_hours: number;
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
@@ -62,179 +33,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .eq("username", username)
     .single();
 
-  // If not found in main profiles, try demo profiles
   if (!profileData) {
-    const { data: demoProfile } = await supabase
-      .from("demo_profiles_complete")
-      .select("*")
-      .eq("username", username)
-      .single();
-
-    if (!demoProfile) {
-      notFound();
-    }
-
-    // Render demo profile page
-    const demo = demoProfile as DemoProfileComplete;
-
-    // Convert demo profile to Profile format
-    const demoAsProfile: Profile = {
-      id: demo.id,
-      username: demo.username,
-      display_name: demo.display_name,
-      avatar_url: demo.avatar_url,
-      banner_url: demo.banner_url,
-      bio: demo.bio,
-      gaming_style: demo.gaming_style,
-      preferred_language: demo.preferred_language,
-      region: demo.region,
-      timezone: demo.timezone,
-      online_hours: demo.online_hours as Profile["online_hours"],
-      social_links: demo.social_links as Profile["social_links"],
-      is_online: demo.is_online,
-      is_premium: false,
-      premium_until: null,
-      last_seen: demo.created_at,
-      created_at: demo.created_at,
-      updated_at: demo.created_at,
-    };
-
-    // Convert demo games to user_games format
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const demoUserGames = (demo.games?.map((g) => ({
-      id: `demo-${demo.id}-${g.game_slug}`,
-      user_id: demo.id,
-      game_id: g.game_slug,
-      game_username: g.in_game_name,
-      game_id_external: null,
-      in_game_name: g.in_game_name,
-      rank: g.rank,
-      role: g.role,
-      hours_played: g.hours,
-      stats: g.stats,
-      is_public: true,
-      is_verified: false,
-      created_at: demo.created_at,
-      updated_at: demo.created_at,
-      game: {
-        id: g.game_slug,
-        name: g.game,
-        slug: g.game_slug,
-        icon_url: g.game_slug === "valorant"
-          ? "/images/banners/gaming-1.svg"
-          : "/images/banners/gaming-4.svg",
-        banner_url: null,
-        has_api: false,
-        api_config: null,
-        ranks: null,
-        roles: null,
-        created_at: demo.created_at,
-      },
-    })) || []) as any[];
-
-    const demoBadges = (demo.badges?.map((b) => ({
-      id: `badge-${demo.id}-${b.slug}`,
-      user_id: demo.id,
-      badge_id: b.slug,
-      earned_at: b.earned_at,
-      is_featured: false,
-      badge: {
-        id: b.slug,
-        name: b.name,
-        slug: b.slug,
-        description: b.description,
-        icon_url: b.icon,
-        rarity: b.rarity,
-        category: "achievement",
-        requirements: null,
-        is_active: true,
-        created_at: demo.created_at,
-      },
-    })) || []) as any[];
-    /* eslint-enable @typescript-eslint/no-explicit-any */
-
-    // Fixed mock trait endorsement data for demo
-    const totalEndorsers = 42;
-    const demoTraits: TraitEndorsementStats = {
-      friendly: Math.floor(totalEndorsers * 0.85),
-      teamPlayer: Math.floor(totalEndorsers * 0.78),
-      leader: Math.floor(totalEndorsers * 0.62),
-      communicative: Math.floor(totalEndorsers * 0.71),
-      reliable: Math.floor(totalEndorsers * 0.88),
-      totalEndorsers,
-    };
-
-    // Mock trust badges for demo
-    const demoTrustBadges: TrustBadges = {
-      isVeteran: true,
-      isActive: true,
-      isTrusted: true,
-      isVerified: demo.is_verified,
-      isCommunityPillar: false,
-      isEstablished: true,
-    };
-
-    // Mock account standing for demo
-    const demoStanding = {
-      accountAge: "veteran" as StandingLevel,
-      activity: "established" as StandingLevel,
-      community: "established" as StandingLevel,
-      cleanRecord: "veteran" as StandingLevel,
-      engagement: "growing" as StandingLevel,
-      repeatPlays: "growing" as StandingLevel,
-      clanActivity: "new" as StandingLevel,
-      verified: demo.is_verified,
-    };
-
-    return (
-      <div className="max-w-6xl mx-auto space-y-6 pb-12">
-        {/* Profile Header */}
-        <ProfileHeader
-          profile={demoAsProfile}
-          followersCount={347}
-          followingCount={128}
-          isFollowing={false}
-          isOwnProfile={false}
-          trustBadges={demoTrustBadges}
-          isPremium={false}
-        />
-
-        {/* Main Content Grid - items in same row align horizontally */}
-        <div className="grid lg:grid-cols-3 gap-6 items-start">
-          {/* Row 1: Games + Player Traits */}
-          <div className="lg:col-span-2">
-            <ProfileGames userGames={demoUserGames} />
-          </div>
-          <div>
-            <ProfileRatings
-              traits={demoTraits}
-              profile={demoAsProfile}
-              isOwnProfile={false}
-            />
-          </div>
-
-          {/* Row 2: Badges + Account Standing */}
-          <div className="lg:col-span-2">
-            <ProfileBadges badges={demoBadges} isOwnProfile={false} />
-          </div>
-          <div>
-            <GlobalRatingBreakdown factors={demoStanding} />
-          </div>
-
-          {/* Row 3: Medals + Stats */}
-          <div className="lg:col-span-2">
-            <ProfileMedals achievements={[]} username={username} />
-          </div>
-          <div>
-            <ProfileStats
-              profile={demoAsProfile}
-              matchesPlayed={1247}
-              gamesLinked={demoUserGames.length}
-            />
-          </div>
-        </div>
-      </div>
-    );
+    notFound();
   }
 
   const profile = profileData as unknown as Profile;
@@ -356,6 +156,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .eq("user_id", profile.id)
     .order("earned_at", { ascending: false });
 
+  // Note: gamification tables (badge_definitions, user_badges, user_progression) are not yet migrated.
+  // Badge definitions are provided as static data in the ProfileMedals component.
+  // User stats for progress bars are derived from already-fetched profile data below.
+
   // Fetch follow counts
   const { count: followersCount } = await supabase
     .from("follows")
@@ -405,58 +209,324 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     } as never);
   }
 
+  // Fetch recent 5 profile viewers (only for own profile)
+  type ProfileViewRow = {
+    viewer_id: string;
+    viewed_at: string;
+    viewer: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null;
+  };
+  let recentViewers: ProfileViewRow[] = [];
+  if (isOwnProfile) {
+    const { data: viewerData } = await supabase
+      .from("profile_views" as never)
+      .select("viewer_id, viewed_at, viewer:profiles!profile_views_viewer_id_fkey(id, username, display_name, avatar_url)" as never)
+      .eq("profile_id" as never, profile.id)
+      .not("viewer_id" as never, "is", null)
+      .order("viewed_at" as never, { ascending: false })
+      .limit(5);
+    const allViewers = (viewerData as unknown as ProfileViewRow[]) || [];
+    // Deduplicate by viewer_id — query is ordered by viewed_at desc so first occurrence is most recent
+    const seen = new Set<string>();
+    recentViewers = allViewers.filter((v) => {
+      const id = v.viewer?.id || v.viewer_id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }
+
+  // Determine primary game slug for theme
+  const primaryGameSlug = userGames?.[0]?.game?.slug ?? null;
+
+  // Fetch clan memberships for profile display
+  const { data: clanMemberships } = await supabase
+    .from("clan_members")
+    .select("*, clan:clans(id, name, tag, slug, avatar_url, banner_url)")
+    .eq("user_id", profile.id);
+
+  // Fetch rank history for timeline
+  const { data: rankHistoryRaw } = await supabase
+    .from("rank_history" as never)
+    .select("id, rank, achieved_at, season, game_id, game:games(name, slug, icon_url)" as never)
+    .eq("user_id" as never, profile.id)
+    .order("achieved_at" as never, { ascending: true })
+    .limit(20);
+
+  type RankHistoryRow = {
+    id: string;
+    rank: string;
+    achieved_at: string;
+    season: string | null;
+    game_id: string;
+    game: { name: string; slug: string; icon_url: string | null } | null;
+  };
+
+  const rankHistory = (rankHistoryRaw as unknown as RankHistoryRow[] | null) || [];
+  const rankMilestones = rankHistory.map((rh, i) => ({
+    id: rh.id,
+    rank: rh.rank,
+    gameSlug: rh.game?.slug || "",
+    gameName: rh.game?.name || "",
+    gameIcon: rh.game?.icon_url || undefined,
+    date: rh.achieved_at,
+    isCurrent: i === rankHistory.length - 1,
+  }));
+
+  // Fetch activity data for power level and calendar
+  const { data: activityDataRaw } = await supabase
+    .from("user_activity_days" as never)
+    .select("activity_date, minutes_online, first_seen_at, last_seen_at" as never)
+    .eq("user_id" as never, profile.id)
+    .gte("activity_date" as never, new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
+    .order("activity_date" as never, { ascending: true });
+
+  type ActivityRow = { activity_date: string; minutes_online: number; first_seen_at: string; last_seen_at: string };
+  const activityRows = (activityDataRaw as unknown as ActivityRow[] | null) || [];
+  const totalMinutesOnline = activityRows.reduce((sum, d) => sum + d.minutes_online, 0);
+  const totalHoursOnline = Math.round((totalMinutesOnline / 60) * 10) / 10;
+
+  const activeDateSet = new Set(activityRows.filter((d) => d.minutes_online > 0).map((d) => d.activity_date));
+  let currentStreak = 0;
+  {
+    const checkDate = new Date();
+    checkDate.setHours(0, 0, 0, 0);
+    while (activeDateSet.has(checkDate.toISOString().split("T")[0])) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+  }
+  let longestStreak = 0;
+  if (activityRows.length > 0) {
+    let streak = 0;
+    const first = new Date(activityRows[0].activity_date);
+    const last = new Date(activityRows[activityRows.length - 1].activity_date);
+    const cursor = new Date(first);
+    while (cursor <= last) {
+      if (activeDateSet.has(cursor.toISOString().split("T")[0])) {
+        streak++;
+        longestStreak = Math.max(longestStreak, streak);
+      } else {
+        streak = 0;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+  const averageDailyMinutes = activeDateSet.size > 0 ? Math.round(totalMinutesOnline / activeDateSet.size) : 0;
+
+  // Compose activity feed from existing data
+  type ActivityItem = { id: string; type: "achievement" | "badge" | "game_added" | "rank_up" | "joined"; title: string; description?: string; date: string };
+  const activityItems: ActivityItem[] = [];
+
+  // Add achievements
+  achievements?.forEach((a) => {
+    const ach = a as unknown as { id: string; title: string; description?: string; achievement_date?: string; game?: { name: string } | null };
+    activityItems.push({
+      id: `ach-${ach.id}`,
+      type: "achievement",
+      title: `Earned "${ach.title}"`,
+      description: ach.game?.name ? `In ${ach.game.name}` : undefined,
+      date: ach.achievement_date || profile.created_at,
+    });
+  });
+
+  // Add badges
+  userBadges?.forEach((ub) => {
+    const badge = ub as unknown as { id: string; earned_at: string; badge: { display_name: string; rarity: string } };
+    activityItems.push({
+      id: `badge-${badge.id}`,
+      type: "badge",
+      title: `Unlocked "${badge.badge.display_name}" badge`,
+      description: `${badge.badge.rarity} rarity`,
+      date: badge.earned_at,
+    });
+  });
+
+  // Add games
+  userGames?.forEach((ug) => {
+    const game = ug as unknown as { id: string; created_at: string; game?: { name: string } | null };
+    activityItems.push({
+      id: `game-${game.id}`,
+      type: "game_added",
+      title: `Linked ${game.game?.name || "a game"}`,
+      date: game.created_at,
+    });
+  });
+
+  // Add rank history
+  rankHistory.forEach((rh) => {
+    activityItems.push({
+      id: `rank-${rh.id}`,
+      type: "rank_up",
+      title: `Reached ${rh.rank}`,
+      description: rh.game?.name ? `In ${rh.game.name}` : undefined,
+      date: rh.achieved_at,
+    });
+  });
+
+  // Add joined event
+  activityItems.push({
+    id: "joined",
+    type: "joined",
+    title: "Joined GamerHub",
+    date: profile.created_at,
+  });
+
+  // Sort by date descending (most recent first)
+  activityItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Profile Header - Full Width */}
-      <ProfileHeader
-        profile={profile}
-        followersCount={followersCount || 0}
-        followingCount={followingCount || 0}
-        isFollowing={isFollowing}
-        isOwnProfile={isOwnProfile}
-        trustBadges={trustBadges}
-        isPremium={isPremium}
-      />
+    <GameThemeProvider gameSlug={primaryGameSlug}>
+      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
+        {/* Profile Header — always visible above tabs */}
+        <ProfileHeader
+          profile={profile}
+          followersCount={followersCount || 0}
+          followingCount={followingCount || 0}
+          isFollowing={isFollowing}
+          isOwnProfile={isOwnProfile}
+          trustBadges={trustBadges}
+          isPremium={isPremium}
+          profileViewsCount={(profile as unknown as Record<string, unknown>)?.profile_views as number ?? 0}
+          recentViewers={recentViewers.map((v) => ({
+            id: v.viewer?.id || v.viewer_id,
+            username: v.viewer?.username || "unknown",
+            display_name: v.viewer?.display_name || null,
+            avatar_url: v.viewer?.avatar_url || null,
+            viewed_at: v.viewed_at,
+          }))}
+        />
 
-      {/* Main Content Grid - items in same row align horizontally */}
-      <div className="grid lg:grid-cols-3 gap-6 items-start">
-        {/* Row 1: Games + Player Traits */}
-        <div className="lg:col-span-2">
-          <ProfileGames userGames={userGames || []} />
-        </div>
-        <div>
-          <ProfileRatings
-            traits={traitStats}
-            profile={profile}
-            isOwnProfile={isOwnProfile}
-          />
-        </div>
-
-        {/* Row 2: Badges + Stats */}
-        <div className="lg:col-span-2">
-          <ProfileBadges
-            badges={userBadges || []}
-            isOwnProfile={isOwnProfile}
-          />
-        </div>
-        <div>
-          {standingFactors && (
-            <GlobalRatingBreakdown factors={standingFactors} />
-          )}
-        </div>
-
-        {/* Row 3: Medals + Quick Stats */}
-        <div className="lg:col-span-2">
-          <ProfileMedals achievements={achievements || []} username={username} />
-        </div>
-        <div>
-          <ProfileStats
-            profile={profile}
-            matchesPlayed={(profile as unknown as { total_matches_played?: number }).total_matches_played || 0}
-            gamesLinked={userGames?.length || 0}
-          />
-        </div>
+        {/* Tabbed Content */}
+        <ProfileTabs>
+          {{
+            overview: (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {/* Row 1: Power Level (hero) + Clan/Player Card */}
+                <div className="xl:col-span-2">
+                  <PowerLevelGauge
+                    gamesLinked={userGames?.length || 0}
+                    hoursOnline={totalHoursOnline}
+                    badgeCount={userBadges?.length || 0}
+                    level={0}
+                    endorsementCount={traitStats.totalEndorsers}
+                    isPremium={isPremium}
+                    isVerified={trustBadges.isVerified}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <PlayerCard
+                    profile={profile}
+                    primaryGame={userGames?.[0] ? {
+                      name: userGames[0].game?.name || "",
+                      slug: userGames[0].game?.slug || "",
+                      rank: userGames[0].rank,
+                      role: userGames[0].role,
+                      icon_url: userGames[0].game?.icon_url,
+                    } : null}
+                  />
+                </div>
+                {/* Row 2: Games (hero) + Stat Trackers */}
+                <div className="xl:col-span-2">
+                  <ProfileGames userGames={userGames || []} />
+                </div>
+                <div>
+                  <StatTrackers
+                    stats={{
+                      matches_played: (profile as unknown as { total_matches_played?: number }).total_matches_played || 0,
+                      matches_won: 0,
+                      games_linked: userGames?.length || 0,
+                      badge_count: userBadges?.length || 0,
+                    }}
+                  />
+                </div>
+                {/* Activity Calendar (full width) */}
+                <div className="xl:col-span-3">
+                  <ActivityCalendar
+                    days={activityRows}
+                    totalHoursOnline={totalHoursOnline}
+                    currentStreak={currentStreak}
+                    longestStreak={longestStreak}
+                    averageDailyMinutes={averageDailyMinutes}
+                    memberSince={profile.created_at}
+                  />
+                </div>
+                {/* Row 3: Player Traits + Clan + Account Standing */}
+                <div>
+                  <ProfileRatings
+                    traits={traitStats}
+                    profile={profile}
+                    isOwnProfile={isOwnProfile}
+                  />
+                </div>
+                <div>
+                  <ClanDisplay memberships={(clanMemberships as unknown as Array<{ id: string; role: string; joined_at: string; clan: { id: string; name: string; tag: string; slug: string; avatar_url: string | null; banner_url: string | null } }>) || []} />
+                </div>
+                {standingFactors && (
+                  <div>
+                    <GlobalRatingBreakdown factors={standingFactors} />
+                  </div>
+                )}
+              </div>
+            ),
+            games: (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+                <div className="xl:col-span-2 space-y-4">
+                  <ProfileGames userGames={userGames || []} />
+                  <RankHistoryTimeline milestones={rankMilestones} />
+                </div>
+                <div className="space-y-4">
+                  <StatTrackers
+                    stats={{
+                      matches_played: (profile as unknown as { total_matches_played?: number }).total_matches_played || 0,
+                      matches_won: 0,
+                      games_linked: userGames?.length || 0,
+                    }}
+                  />
+                  <ProfileStats
+                    profile={profile}
+                    matchesPlayed={(profile as unknown as { total_matches_played?: number }).total_matches_played || 0}
+                    gamesLinked={userGames?.length || 0}
+                  />
+                </div>
+              </div>
+            ),
+            achievements: (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                <div className="xl:col-span-2">
+                  <ProfileBadges
+                    badges={userBadges || []}
+                    isOwnProfile={isOwnProfile}
+                  />
+                </div>
+                {standingFactors && (
+                  <div>
+                    <GlobalRatingBreakdown factors={standingFactors} />
+                  </div>
+                )}
+                <div className="xl:col-span-3">
+                  <ProfileMedals
+                    achievements={achievements || []}
+                    username={username}
+                    userStats={{
+                      matches_played: (profile as unknown as { total_matches_played?: number }).total_matches_played || 0,
+                      matches_won: 0,
+                      challenges_completed: 0,
+                      quests_completed: 0,
+                      best_win_streak: 0,
+                      followers: followersCount || 0,
+                      following: followingCount || 0,
+                      clans_joined: clanMemberships?.length || 0,
+                    }}
+                  />
+                </div>
+              </div>
+            ),
+            activity: (
+              <ProfileActivity activities={activityItems} />
+            ),
+          }}
+        </ProfileTabs>
       </div>
-    </div>
+    </GameThemeProvider>
   );
 }

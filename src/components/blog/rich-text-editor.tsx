@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 interface RichTextEditorProps {
   content: string;
   onChange: (html: string) => void;
+  onJsonChange?: (json: Record<string, unknown>) => void;
   placeholder?: string;
 }
 
@@ -72,6 +73,7 @@ function ToolbarDivider() {
 export function RichTextEditor({
   content,
   onChange,
+  onJsonChange,
   placeholder = "Start writing your post...",
 }: RichTextEditorProps) {
   const [linkUrl, setLinkUrl] = useState("");
@@ -97,6 +99,7 @@ export function RichTextEditor({
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+      onJsonChange?.(editor.getJSON() as Record<string, unknown>);
     },
     editorProps: {
       attributes: {
@@ -109,6 +112,7 @@ export function RichTextEditor({
           "prose-code:text-primary prose-pre:bg-surface-light",
       },
     },
+    immediatelyRender: false,
   });
 
   const addLink = useCallback(() => {

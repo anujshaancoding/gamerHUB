@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="postBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#12121a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a0f;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="postGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.15" />
+      <stop offset="50%" style="stop-color:#00d4ff;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#ff00ff;stop-opacity:0.08" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#postBg)"/>
+  <!-- Ambient glow circles -->
+  <circle cx="200" cy="100" r="250" fill="url(#postGlow)" opacity="0.5"/>
+  <circle cx="650" cy="350" r="200" fill="#00d4ff" opacity="0.04"/>
+  <circle cx="400" cy="200" r="150" fill="#00ff88" opacity="0.03"/>
+  <!-- Document icon -->
+  <rect x="335" y="120" width="130" height="160" rx="8" fill="#1a1a25" stroke="#00ff88" stroke-width="1.5" opacity="0.6"/>
+  <!-- Corner fold -->
+  <path d="M435 120 L465 150 L435 150 Z" fill="#1a1a25" stroke="#00ff88" stroke-width="1.5" opacity="0.6"/>
+  <!-- Text lines -->
+  <rect x="360" y="165" width="80" height="4" rx="2" fill="#00ff88" opacity="0.3"/>
+  <rect x="360" y="180" width="60" height="4" rx="2" fill="#00d4ff" opacity="0.2"/>
+  <rect x="360" y="195" width="70" height="4" rx="2" fill="#00ff88" opacity="0.15"/>
+  <rect x="360" y="215" width="80" height="4" rx="2" fill="#00d4ff" opacity="0.2"/>
+  <rect x="360" y="230" width="50" height="4" rx="2" fill="#00ff88" opacity="0.15"/>
+  <rect x="360" y="245" width="65" height="4" rx="2" fill="#00d4ff" opacity="0.1"/>
+  <!-- Decorative lines -->
+  <line x1="0" y1="380" x2="800" y2="380" stroke="#00ff88" stroke-width="1" opacity="0.1"/>
+  <line x1="0" y1="390" x2="800" y2="390" stroke="#00d4ff" stroke-width="1" opacity="0.05"/>
+</svg>

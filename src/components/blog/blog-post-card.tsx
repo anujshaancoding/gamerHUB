@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import type { BlogPost } from "@/types/blog";
-import { BLOG_CATEGORIES, AUTHOR_ROLES } from "@/types/blog";
+import type { BlogPost, BlogColorPalette } from "@/types/blog";
+import { BLOG_CATEGORIES, AUTHOR_ROLES, BLOG_COLOR_PALETTES } from "@/types/blog";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
@@ -27,6 +27,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
   const categoryInfo = BLOG_CATEGORIES[post.category];
   const authorRole = post.author?.blog_author?.role;
   const authorRoleInfo = authorRole ? AUTHOR_ROLES[authorRole] : null;
+  const paletteInfo = post.color_palette ? BLOG_COLOR_PALETTES[post.color_palette as BlogColorPalette] : null;
 
   const categoryColors: Record<string, string> = {
     blue: "text-blue-400 border-blue-400/30 bg-blue-500/10",
@@ -53,24 +54,40 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
           featured ? "ring-1 ring-primary/20" : ""
         }`}
       >
+        {/* Palette accent line at top */}
+        {paletteInfo && (
+          <div
+            className="absolute inset-x-0 top-0 h-1 z-10"
+            style={{
+              background: `linear-gradient(90deg, ${paletteInfo.primaryHex}, ${paletteInfo.secondaryHex})`,
+            }}
+          />
+        )}
+
         {/* Hover glow effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
+          <div
+            className="absolute inset-x-0 -bottom-px h-px"
+            style={paletteInfo ? {
+              background: `linear-gradient(90deg, transparent, ${paletteInfo.primaryHex}, transparent)`,
+            } : undefined}
+          />
+          {!paletteInfo && <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary to-transparent" />}
           <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent" />
         </div>
 
         {/* Featured image */}
-        {post.featured_image_url && (
-          <div
-            className={`relative overflow-hidden ${
-              featured ? "h-52" : "h-40"
-            }`}
-          >
-            <img
-              src={post.featured_image_url}
-              alt={post.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
+        <div
+          className={`relative overflow-hidden ${
+            featured ? "h-52" : "h-40"
+          }`}
+        >
+          <img
+            src={post.featured_image_url || "/images/defaults/post.svg"}
+            alt={post.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/images/defaults/post.svg"; }}
+          />
             <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
 
             {/* Badges overlay */}
@@ -115,8 +132,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
                 </div>
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         <div className="p-5">
           {/* Category Badge */}

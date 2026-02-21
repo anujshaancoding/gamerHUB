@@ -5,6 +5,7 @@ import Link from "next/link";
 import { UserPlus, Users } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { SuggestedUser } from "@/app/api/suggestions/route";
 
@@ -16,6 +17,7 @@ interface SuggestionCardProps {
 
 export function SuggestionCard({ suggestion, onAddFriend, isLoading }: SuggestionCardProps) {
   const { user } = useAuth();
+  const { getUserStatus } = usePresence();
   const [loading, setLoading] = useState(false);
   const { profile, suggestion_reason } = suggestion;
 
@@ -56,6 +58,10 @@ export function SuggestionCard({ suggestion, onAddFriend, isLoading }: Suggestio
       return `${game.their_rank} in ${game.game_name.split(" ")[0]}`;
     }
 
+    if (suggestion_reason.type === "random") {
+      return "New Gamer";
+    }
+
     return "Suggested";
   };
 
@@ -68,7 +74,7 @@ export function SuggestionCard({ suggestion, onAddFriend, isLoading }: Suggestio
             src={profile.avatar_url}
             alt={profile.display_name || profile.username}
             size="lg"
-            status={profile.is_online ? "online" : "offline"}
+            status={getUserStatus(profile.id)}
             showStatus
           />
 
@@ -83,7 +89,13 @@ export function SuggestionCard({ suggestion, onAddFriend, isLoading }: Suggestio
 
           {/* Suggestion Reason Badge */}
           <Badge
-            variant={suggestion_reason.type === "mutual" ? "secondary" : "primary"}
+            variant={
+              suggestion_reason.type === "mutual"
+                ? "secondary"
+                : suggestion_reason.type === "random"
+                ? "outline"
+                : "primary"
+            }
             size="sm"
             className="gap-1"
           >

@@ -3,33 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, Globe, MapPin, Gamepad2 } from "lucide-react";
-import { Card, Button, Input, Textarea, LegacySelect as Select } from "@/components/ui";
+import { Card, Button, Input, Textarea, LegacySelect as Select, SelectWithOther } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { useClans } from "@/lib/hooks/useClans";
+import { REGIONS, LANGUAGES } from "@/lib/constants/games";
 import type { Game } from "@/types/database";
-
-const REGIONS = [
-  "North America",
-  "Europe",
-  "Asia Pacific",
-  "South America",
-  "Middle East",
-  "Africa",
-  "Oceania",
-];
-
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "pt", label: "Portuguese" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "ru", label: "Russian" },
-  { value: "zh", label: "Chinese" },
-  { value: "ja", label: "Japanese" },
-  { value: "ko", label: "Korean" },
-  { value: "ar", label: "Arabic" },
-];
 
 export function CreateClanForm() {
   const router = useRouter();
@@ -47,6 +25,8 @@ export function CreateClanForm() {
     primary_game_id: "",
     region: "",
     language: "en",
+    custom_region: "",
+    custom_language: "",
     is_public: true,
   });
 
@@ -72,13 +52,16 @@ export function CreateClanForm() {
         throw new Error("Tag must be 2-6 alphanumeric characters");
       }
 
+      const resolvedRegion = formData.region === "other" ? formData.custom_region : formData.region;
+      const resolvedLanguage = formData.language === "other" ? formData.custom_language : formData.language;
+
       const result = await createClan({
         name: formData.name,
         tag: formData.tag.toUpperCase(),
         description: formData.description || undefined,
         primary_game_id: formData.primary_game_id || undefined,
-        region: formData.region || undefined,
-        language: formData.language,
+        region: resolvedRegion || undefined,
+        language: resolvedLanguage || "en",
         is_public: formData.is_public,
       });
 
@@ -177,24 +160,34 @@ export function CreateClanForm() {
 
         {/* Region and Language */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
-            label="Region"
-            value={formData.region}
-            onChange={(e) =>
-              setFormData({ ...formData, region: e.target.value })
-            }
+          <SelectWithOther
+            label="State / Region"
             options={[
-              { value: "", label: "Select region (optional)" },
-              ...REGIONS.map((r) => ({ value: r, label: r })),
+              { value: "", label: "Select state (optional)" },
+              ...REGIONS.map((r) => ({ value: r.value, label: r.label })),
             ]}
-          />
-          <Select
-            label="Language"
-            value={formData.language}
-            onChange={(e) =>
-              setFormData({ ...formData, language: e.target.value })
+            value={formData.region}
+            customValue={formData.custom_region}
+            onChange={(v) =>
+              setFormData({ ...formData, region: v, custom_region: "" })
             }
-            options={LANGUAGES}
+            onCustomChange={(v) =>
+              setFormData({ ...formData, custom_region: v })
+            }
+            customPlaceholder="Enter your region..."
+          />
+          <SelectWithOther
+            label="Language"
+            options={LANGUAGES.map((l) => ({ value: l.value, label: l.label }))}
+            value={formData.language}
+            customValue={formData.custom_language}
+            onChange={(v) =>
+              setFormData({ ...formData, language: v, custom_language: "" })
+            }
+            onCustomChange={(v) =>
+              setFormData({ ...formData, custom_language: v })
+            }
+            customPlaceholder="Enter your language..."
           />
         </div>
 

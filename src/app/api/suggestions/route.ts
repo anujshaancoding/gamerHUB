@@ -7,7 +7,7 @@ export interface SuggestedUser {
   user_id: string;
   profile: Profile & { user_games: (UserGame & { game: Game })[] };
   suggestion_reason: {
-    type: "mutual" | "similar_rank";
+    type: "mutual" | "similar_rank" | "random";
     mutual_friend_count?: number;
     mutual_friend_names?: string[];
     common_games?: { game_name: string; user_rank: string; their_rank: string }[];
@@ -44,9 +44,11 @@ export async function GET(request: NextRequest) {
     const result: {
       mutual_friends: SuggestedUser[];
       similar_rank: SuggestedUser[];
+      random_users: SuggestedUser[];
     } = {
       mutual_friends: [],
       similar_rank: [],
+      random_users: [],
     };
 
     // Get mutual friends suggestions
@@ -147,6 +149,65 @@ export async function GET(request: NextRequest) {
             },
           };
         }).filter((s) => s.profile);
+      }
+    }
+
+    // If no suggestions found, return random users as fallback
+    const includeRandom = searchParams.get("includeRandom") === "true";
+    if ((type === "all" && includeRandom) || type === "random") {
+      const totalSuggestions = result.mutual_friends.length + result.similar_rank.length;
+
+      if (totalSuggestions === 0 || type === "random") {
+        try {
+          // Get current user's friends to exclude them
+          const { data: friendsData, error: friendsError } = await supabase
+            .from("friends")
+            .select("friend_id, user_id")
+            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+
+          if (friendsError) {
+            console.error("Error fetching friends for random users:", friendsError);
+          }
+
+          const friendIds = new Set(
+            friendsData?.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id)) || []
+          );
+
+          // Get random users excluding current user and friends
+          const { data: randomProfilesRaw, error: randomError } = await supabase
+            .from("profiles")
+            .select(`
+              *,
+              user_games (
+                *,
+                game:games (*)
+              )
+            `)
+            .neq("id", user.id)
+            .limit(limit);
+
+          if (randomError) {
+            console.error("Error fetching random profiles:", randomError);
+          } else {
+            const randomProfiles = (randomProfilesRaw as ProfileWithGames[] | null) || [];
+
+            // Filter out friends
+            const filteredProfiles = randomProfiles.filter(
+              (profile) => !friendIds.has(profile.id)
+            );
+
+            result.random_users = filteredProfiles.map((profile) => ({
+              user_id: profile.id,
+              profile,
+              suggestion_reason: {
+                type: "random" as const,
+              },
+            }));
+          }
+        } catch (randomError) {
+          console.error("Error in random users fallback:", randomError);
+          // Continue without random users - don't break the API
+        }
       }
     }
 

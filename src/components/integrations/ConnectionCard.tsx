@@ -35,23 +35,15 @@ const providerInfo = {
     color: "text-red-400",
     bgColor: "bg-red-500/20",
     borderColor: "border-red-500/50",
-    logo: "/images/riot-logo.svg",
+    // logo: "/images/riot-logo.svg",
   },
   steam: {
     name: "Steam",
-    description: "Connect to sync your CS2 and Dota 2 stats",
+    description: "Connect to sync your Steam gaming stats",
     color: "text-blue-400",
     bgColor: "bg-blue-500/20",
     borderColor: "border-blue-500/50",
-    logo: "/images/steam-logo.svg",
-  },
-  supercell: {
-    name: "Supercell",
-    description: "Connect your Clash of Clans account with your player tag",
-    color: "text-green-400",
-    bgColor: "bg-green-500/20",
-    borderColor: "border-green-500/50",
-    logo: "/images/supercell-logo.svg",
+    // logo: "/images/steam-logo.svg",
   },
 };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, UserPlus, X } from "lucide-react";
 import { Modal, Button, Input, Avatar, Badge } from "@/components/ui";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database";
 
@@ -20,6 +21,7 @@ export function ClanInviteModal({
   onInvite,
 }: ClanInviteModalProps) {
   const supabase = createClient();
+  const { getUserStatus } = usePresence();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -136,7 +138,7 @@ export function ClanInviteModal({
                 src={user.avatar_url}
                 alt={user.display_name || user.username}
                 size="sm"
-                status={user.is_online ? "online" : "offline"}
+                status={getUserStatus(user.id)}
                 showStatus
               />
               <div className="flex-1 min-w-0">

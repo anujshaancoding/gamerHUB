@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -71,6 +72,13 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
+  // Use refs so the realtime callback always reads current state
+  // without needing to re-subscribe the channel on every state change
+  const activeCallRef = useRef(activeCall);
+  const incomingCallRef = useRef(incomingCall);
+  activeCallRef.current = activeCall;
+  incomingCallRef.current = incomingCall;
+
   // Fetch call with details
   const fetchCallDetails = useCallback(
     async (callId: string): Promise<CallWithDetails | null> => {
@@ -94,7 +102,7 @@ export function CallProvider({ children }: CallProviderProps) {
     [supabase]
   );
 
-  // Subscribe to incoming calls
+  // Subscribe to incoming calls — stable effect that reads state via refs
   useEffect(() => {
     if (!user) return;
 
@@ -139,16 +147,16 @@ export function CallProvider({ children }: CallProviderProps) {
             updatedCall.status === "missed" ||
             updatedCall.status === "failed"
           ) {
-            if (activeCall?.id === updatedCall.id) {
+            if (activeCallRef.current?.id === updatedCall.id) {
               setActiveCall(null);
             }
-            if (incomingCall?.id === updatedCall.id) {
+            if (incomingCallRef.current?.id === updatedCall.id) {
               setIncomingCall(null);
             }
           }
 
           // Update active call if it's the same call
-          if (activeCall?.id === updatedCall.id) {
+          if (activeCallRef.current?.id === updatedCall.id) {
             setActiveCall((prev) =>
               prev ? { ...prev, ...updatedCall } : null
             );
@@ -160,7 +168,7 @@ export function CallProvider({ children }: CallProviderProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, supabase, activeCall?.id, incomingCall?.id, fetchCallDetails]);
+  }, [user?.id, supabase, fetchCallDetails]);
 
   const initiateCall = useCallback(
     async (conversationId: string, type: "voice" | "video") => {

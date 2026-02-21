@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { Profile } from "@/types/database";
 
 interface ProfileWithFollowDate extends Profile {
@@ -18,11 +18,14 @@ export function useFollowing(options: UseFollowingOptions = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const hasFetched = useRef(false);
 
   const { userId, search, limit = 50 } = options;
 
   const fetchFollowing = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -40,6 +43,7 @@ export function useFollowing(options: UseFollowingOptions = {}) {
 
       setFollowing(data.following);
       setTotal(data.total);
+      hasFetched.current = true;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch following"
@@ -50,8 +54,12 @@ export function useFollowing(options: UseFollowingOptions = {}) {
   }, [userId, search, limit]);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchFollowing();
-  }, [fetchFollowing]);
+  }, [fetchFollowing, userId]);
 
   return {
     following,
@@ -67,11 +75,14 @@ export function useFollowers(options: UseFollowingOptions = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const hasFetched = useRef(false);
 
   const { userId, search, limit = 50 } = options;
 
   const fetchFollowers = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -89,6 +100,7 @@ export function useFollowers(options: UseFollowingOptions = {}) {
 
       setFollowers(data.followers);
       setTotal(data.total);
+      hasFetched.current = true;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch followers"
@@ -99,8 +111,12 @@ export function useFollowers(options: UseFollowingOptions = {}) {
   }, [userId, search, limit]);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchFollowers();
-  }, [fetchFollowers]);
+  }, [fetchFollowers, userId]);
 
   return {
     followers,

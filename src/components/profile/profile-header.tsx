@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { getRegionLabel, getLanguageLabel } from "@/lib/constants/games";
 import {
   MapPin,
   Globe,
@@ -22,6 +23,9 @@ import {
   Camera,
   ImageIcon,
   Sparkles,
+  Eye,
+  Lock,
+  Crown,
 } from "lucide-react";
 import { Button, Avatar, Badge } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
@@ -31,7 +35,18 @@ import { LevelBadge, BadgeShowcase } from "@/components/gamification";
 import { TrustBadges } from "@/components/ratings/trust-badges";
 import { PremiumBadge } from "@/components/premium";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { usePresence } from "@/lib/presence/PresenceProvider";
+import { SocialListModal } from "@/components/social-lists";
+import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { Profile, UserProgressionWithDetails, UserBadgeWithDetails, TrustBadges as TrustBadgesType } from "@/types/database";
+
+interface RecentViewer {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  viewed_at: string;
+}
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -44,6 +59,8 @@ interface ProfileHeaderProps {
   progression?: UserProgressionWithDetails | null;
   showcaseBadges?: UserBadgeWithDetails[];
   isPremium?: boolean;
+  profileViewsCount?: number;
+  recentViewers?: RecentViewer[];
 }
 
 // Deterministic pseudo-random based on seed (avoids hydration mismatch)
@@ -52,17 +69,17 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-// Particle component for background effect
-function Particle({ index, delay }: { index: number; delay: number }) {
+// Particle component for background effect (uses game theme colors)
+function Particle({ index, delay, colors }: { index: number; delay: number; colors: string[] }) {
   const left = `${Math.round(seededRandom(index) * 10000) / 100}%`;
-  const hue = Math.round(seededRandom(index + 100) * 60 + 140);
+  const color = colors[index % colors.length];
   return (
     <div
       className="particle"
       style={{
         left,
         animationDelay: `${delay}s`,
-        background: `hsl(${hue}, 100%, 50%)`,
+        background: color,
       }}
     />
   );
@@ -79,18 +96,40 @@ export function ProfileHeader({
   progression,
   showcaseBadges,
   isPremium,
+  profileViewsCount = 0,
+  recentViewers = [],
 }: ProfileHeaderProps) {
   const { user } = useAuth();
   const supabase = createClient();
   const { isPremium: isCurrentUserPremium } = useSubscription();
+  const { getUserStatus } = usePresence();
+  const { theme: gameTheme } = useGameTheme();
 
   // Use subscription hook for own profile (checks auth metadata), fall back to prop for other users
   const showPremiumBadge = isOwnProfile ? isCurrentUserPremium : isPremium;
+
+  // Use realtime presence for online status instead of stale DB value
+  const profileStatus = getUserStatus(profile.id);
 
   const [followers, setFollowers] = useState(followersCount);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<"follow" | "friend" | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [socialListType, setSocialListType] = useState<"friends" | "followers" | "following" | null>(null);
+  const [showViewers, setShowViewers] = useState(false);
+  const viewersRef = useRef<HTMLDivElement>(null);
+
+  // Close viewers dropdown on outside click
+  useEffect(() => {
+    if (!showViewers) return;
+    function handleClick(e: MouseEvent) {
+      if (viewersRef.current && !viewersRef.current.contains(e.target as Node)) {
+        setShowViewers(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showViewers]);
 
   const { relationship, refetch: refetchRelationship } = useRelationship(
     !isOwnProfile && user ? profile.id : null
@@ -100,10 +139,10 @@ export function ProfileHeader({
 
   const friendsCount = counts?.friends ?? initialFriendsCount ?? 0;
 
-  // Profile customization (could come from profile.settings in future)
+  // Profile customization — now driven by game theme
   const profileTheme = {
     frameStyle: (progression?.level ?? 0) >= 50 ? "mythic" : (progression?.level ?? 0) >= 25 ? "legendary" : (progression?.level ?? 0) >= 10 ? "epic" : "default",
-    glowColor: profile.gaming_style === "pro" ? "#ff00ff" : profile.gaming_style === "competitive" ? "#00d4ff" : "#00ff88",
+    glowColor: gameTheme.colors.primary,
   };
 
   const handleFollow = async () => {
@@ -160,8 +199,19 @@ export function ProfileHeader({
         title: `${profile.display_name || profile.username} on GamerHub`,
         url,
       });
-    } else {
+    } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
+      setShowShareToast(true);
+      setTimeout(() => setShowShareToast(false), 2000);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       setShowShareToast(true);
       setTimeout(() => setShowShareToast(false), 2000);
     }
@@ -209,16 +259,16 @@ export function ProfileHeader({
       )}
 
       {/* Main Profile Card */}
-      <div className="relative bg-surface rounded-2xl overflow-hidden shadow-2xl gaming-card-border">
-        {/* Particles Background */}
-        <div className="particles-bg">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <Particle key={i} index={i} delay={i * 0.7} />
+      <div className="relative bg-surface rounded-2xl shadow-2xl gaming-card-border">
+        {/* Particles Background — themed to active game */}
+        <div className="particles-bg overflow-hidden rounded-2xl">
+          {Array.from({ length: gameTheme.particles.count }).map((_, i) => (
+            <Particle key={i} index={i} delay={i * 0.7} colors={gameTheme.particles.colors} />
           ))}
         </div>
 
         {/* Banner Section */}
-        <div className="h-56 md:h-72 lg:h-80 relative group">
+        <div className="h-40 sm:h-56 md:h-72 xl:h-80 relative group overflow-hidden">
           {profile.banner_url ? (
             <img
               src={profile.banner_url}
@@ -273,9 +323,9 @@ export function ProfileHeader({
         </div>
 
         {/* Profile Content */}
-        <div className="relative -mt-24 px-6 pb-8 z-10">
+        <div className="relative -mt-24 px-4 sm:px-6 pb-6 sm:pb-8 z-10">
           {/* Upper Section: Avatar + Name/Username + Stats */}
-          <div className="relative z-10 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-end">
+          <div className="relative z-20 flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
             {/* Avatar Section */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -293,7 +343,7 @@ export function ProfileHeader({
                 src={profile.avatar_url}
                 alt={profile.display_name || profile.username}
                 size="4xl"
-                status={profile.is_online ? "online" : "offline"}
+                status={profileStatus}
                 showStatus
                 frameStyle={profileTheme.frameStyle as "none" | "default" | "epic" | "legendary" | "mythic" | "rgb"}
                 glowColor={profileTheme.glowColor}
@@ -307,11 +357,15 @@ export function ProfileHeader({
                 </div>
               )}
 
-              {/* Online pulse indicator */}
-              {profile.is_online && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 bg-success/90 backdrop-blur-sm text-black text-xs font-bold rounded-full flex items-center gap-1.5 z-20">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  ONLINE
+              {/* Status indicator */}
+              {profileStatus !== "offline" && (
+                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 backdrop-blur-sm text-xs font-bold rounded-full flex items-center gap-1.5 z-20 ${
+                  profileStatus === "online" ? "bg-success/90 text-black" :
+                  profileStatus === "away" ? "bg-yellow-500/90 text-black" :
+                  "bg-red-500/90 text-white"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${profileStatus === "online" ? "bg-white animate-pulse" : "bg-white/80"}`} />
+                  {profileStatus === "online" ? "ONLINE" : profileStatus === "away" ? "AWAY" : "DO NOT DISTURB"}
                 </div>
               )}
             </motion.div>
@@ -325,12 +379,10 @@ export function ProfileHeader({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-3xl md:text-4xl lg:text-5xl font-black text-text tracking-tight"
+                    className="text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-black text-text tracking-tight"
                     style={{
-                      textShadow: profile.gaming_style === "pro"
-                        ? "0 0 30px rgba(255,0,255,0.5)"
-                        : profile.gaming_style === "competitive"
-                        ? "0 0 30px rgba(0,212,255,0.5)"
+                      textShadow: profile.gaming_style === "pro" || profile.gaming_style === "competitive"
+                        ? `0 0 30px ${gameTheme.colors.glow}`
                         : undefined
                     }}
                   >
@@ -407,35 +459,127 @@ export function ProfileHeader({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex gap-3 lg:min-w-[280px] lg:justify-end"
+              className="relative flex gap-2 sm:gap-3 md:min-w-[240px] xl:min-w-[280px] md:justify-end"
             >
               {[
-                { label: "FRIENDS", value: friendsCount, href: isOwnProfile ? "/friends" : undefined, color: "primary" },
-                { label: "FOLLOWERS", value: followers, color: "accent" },
-                { label: "FOLLOWING", value: followingCount, color: "secondary" },
+                { label: "FRIENDS", value: friendsCount, color: "primary", listType: "friends" as const },
+                { label: "FOLLOWERS", value: followers, color: "accent", listType: "followers" as const },
+                { label: "FOLLOWING", value: followingCount, color: "secondary", listType: "following" as const },
               ].map((stat) => (
                 <motion.div
                   key={stat.label}
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 400 }}
+                  onClick={() => setSocialListType(stat.listType)}
                 >
-                  {stat.href ? (
-                    <Link href={stat.href} className="block">
-                      <StatCard {...stat} />
-                    </Link>
-                  ) : (
-                    <StatCard {...stat} />
-                  )}
+                  <StatCard label={stat.label} value={stat.value} color={stat.color} />
                 </motion.div>
               ))}
+
+              {/* Profile Views Stat Card — only on own profile */}
+              {isOwnProfile && (
+                <div ref={viewersRef} className="relative">
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                    onClick={() => setShowViewers((prev) => !prev)}
+                  >
+                    <ViewsStatCard value={profileViewsCount} />
+                  </motion.div>
+
+              {/* Recent Viewers Dropdown */}
+              <AnimatePresence>
+                {showViewers && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 rounded-xl bg-surface border border-border shadow-2xl overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-warning" />
+                        <span className="text-sm font-bold text-text">Recent Visitors</span>
+                      </div>
+                      <span className="text-xs text-text-muted bg-surface-light px-2 py-0.5 rounded-full">
+                        {profileViewsCount} total
+                      </span>
+                    </div>
+
+                    {showPremiumBadge ? (
+                      // Premium: show recent viewer cards
+                      <div className="divide-y divide-border">
+                        {recentViewers.length > 0 ? (
+                          recentViewers.map((viewer) => (
+                            <Link
+                              key={viewer.id}
+                              href={`/profile/${viewer.username}`}
+                              className="flex items-center gap-3 px-4 py-3 hover:bg-surface-light transition-colors group"
+                            >
+                              <Avatar
+                                src={viewer.avatar_url}
+                                alt={viewer.display_name || viewer.username}
+                                size="sm"
+                                className="ring-2 ring-border group-hover:ring-primary/50 transition-all"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-text truncate group-hover:text-primary transition-colors">
+                                  {viewer.display_name || viewer.username}
+                                </p>
+                                <p className="text-xs text-text-muted truncate">
+                                  @{viewer.username}
+                                </p>
+                              </div>
+                              <span className="text-[10px] text-text-muted whitespace-nowrap">
+                                {formatViewTime(viewer.viewed_at)}
+                              </span>
+                            </Link>
+                          ))
+                        ) : (
+                          <div className="px-4 py-6 text-center">
+                            <Eye className="h-8 w-8 text-text-muted/30 mx-auto mb-2" />
+                            <p className="text-sm text-text-muted">No visitors yet</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Free tier: show count + upgrade prompt
+                      <div className="px-4 py-6 text-center space-y-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <Eye className="h-10 w-10 text-warning/40" />
+                        </div>
+                        <p className="text-3xl font-black text-text">{profileViewsCount}</p>
+                        <p className="text-sm text-text-muted">people visited your profile</p>
+                        <div className="flex items-center gap-1.5 justify-center text-xs text-text-muted">
+                          <Lock className="h-3 w-3" />
+                          <span>Visitor details are hidden</span>
+                        </div>
+                        <Link
+                          href="/premium"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-warning/20 to-warning/10 border border-warning/30 text-warning text-sm font-semibold hover:from-warning/30 hover:to-warning/20 transition-all"
+                        >
+                          <Crown className="h-4 w-4" />
+                          Upgrade to see visitors
+                        </Link>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+                </div>
+              )}
             </motion.div>
           </div>
 
-          {/* Animated gradient divider line */}
-          <div className="relative z-10 h-1 bg-gradient-to-r from-primary via-accent to-secondary animate-gradient-xy my-5" />
+          {/* Animated gradient divider line — themed */}
+          <div
+            className="relative z-10 h-px opacity-40 my-5 rounded-full"
+            style={{ background: gameTheme.gradient.accent }}
+          />
 
           {/* Lower Section: Bio + Meta + Social + Actions */}
-          <div className="relative z-10 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-start">
+          <div className="relative z-10 flex flex-col md:flex-row gap-4 md:gap-6 md:items-start">
             <div className="flex-1 min-w-0 space-y-3">
               {/* Bio */}
               {profile.bio && (
@@ -459,16 +603,16 @@ export function ProfileHeader({
                 {profile.region && (
                   <span className="flex items-center gap-1.5 bg-surface-light/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm text-text-secondary border border-border hover:border-primary/50 transition-colors">
                     <MapPin className="h-4 w-4 text-primary" />
-                    {profile.region}
+                    {getRegionLabel(profile.region)}
                   </span>
                 )}
                 {profile.preferred_language && (
                   <span className="flex items-center gap-1.5 bg-surface-light/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm text-text-secondary border border-border hover:border-accent/50 transition-colors">
                     <Globe className="h-4 w-4 text-accent" />
-                    {profile.preferred_language.toUpperCase()}
+                    {getLanguageLabel(profile.preferred_language)}
                   </span>
                 )}
-                {!profile.is_online && profile.last_seen && (
+                {profileStatus === "offline" && profile.last_seen && (
                   <span className="flex items-center gap-1.5 bg-surface-light/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm text-text-muted border border-border">
                     <Clock className="h-4 w-4" />
                     Last seen {new Date(profile.last_seen).toLocaleDateString()}
@@ -577,7 +721,7 @@ export function ProfileHeader({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex gap-2 flex-wrap lg:justify-end lg:min-w-[280px] shrink-0"
+              className="flex gap-2 flex-wrap md:justify-end md:min-w-[240px] xl:min-w-[280px] shrink-0"
             >
                 {isOwnProfile ? (
                   <Link href={`/profile/${profile.username}/edit`}>
@@ -672,12 +816,23 @@ export function ProfileHeader({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Social List Modal (Friends / Followers / Following) */}
+      {socialListType && (
+        <SocialListModal
+          isOpen={true}
+          onClose={() => setSocialListType(null)}
+          userId={profile.id}
+          username={profile.username}
+          listType={socialListType}
+        />
+      )}
     </motion.div>
   );
 }
 
 // Stat Card Component
-function StatCard({ label, value, color }: { label: string; value: number; color: string; href?: string }) {
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   const colorClasses = {
     primary: "hover:border-primary/50 hover:shadow-primary/20",
     accent: "hover:border-accent/50 hover:shadow-accent/20",
@@ -687,13 +842,44 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   return (
     <div
       className={`
-        stat-card-gaming rounded-xl px-4 py-3 text-center min-w-[80px]
+        stat-card-gaming rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-center min-w-[70px] sm:min-w-[80px]
         ${colorClasses[color as keyof typeof colorClasses]}
         hover:shadow-lg transition-all cursor-pointer
       `}
     >
-      <p className="text-2xl font-black text-text">{value}</p>
-      <p className="text-[10px] text-text-muted uppercase tracking-widest font-medium">{label}</p>
+      <p className="text-xl sm:text-2xl font-black text-text">{value}</p>
+      <p className="text-[9px] sm:text-[10px] text-text-muted uppercase tracking-widest font-medium">{label}</p>
     </div>
   );
+}
+
+// Profile Views Stat Card with eye icon accent
+function ViewsStatCard({ value }: { value: number }) {
+  return (
+    <div
+      className="stat-card-gaming rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-center min-w-[70px] sm:min-w-[80px] hover:border-warning/50 hover:shadow-warning/20 hover:shadow-lg transition-all cursor-pointer"
+    >
+      <div className="flex items-center justify-center gap-1">
+        <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
+        <p className="text-xl sm:text-2xl font-black text-text">{value}</p>
+      </div>
+      <p className="text-[9px] sm:text-[10px] text-text-muted uppercase tracking-widest font-medium">VIEWS</p>
+    </div>
+  );
+}
+
+// Format relative time for viewer timestamps
+function formatViewTime(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }

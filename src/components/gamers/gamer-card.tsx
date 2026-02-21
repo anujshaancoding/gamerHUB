@@ -17,11 +17,14 @@ import {
   Users,
 } from "lucide-react";
 import { Card, Avatar, Badge, Button, Modal } from "@/components/ui";
+import { getRegionLabel, getLanguageLabel } from "@/lib/constants/games";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelationship } from "@/lib/hooks/useFriends";
+import { toast } from "sonner";
 import { formatRelativeTime } from "@/lib/utils";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import type { Profile, UserGame, Game } from "@/types/database";
 
 interface GamerWithGames extends Profile {
@@ -34,9 +37,11 @@ interface GamerCardProps {
 
 export function GamerCard({ gamer }: GamerCardProps) {
   const { user } = useAuth();
+  const { getUserStatus } = usePresence();
   const supabase = createClient();
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
+  const gamerStatus = getUserStatus(gamer.id);
 
   const { relationship, refetch: refetchRelationship } = useRelationship(
     user?.id !== gamer.id ? gamer.id : null
@@ -57,9 +62,14 @@ export function GamerCard({ gamer }: GamerCardProps) {
       });
       if (response.ok) {
         refetchRelationship();
+        toast.success(`Friend request sent to ${gamer.display_name || gamer.username}`);
+      } else {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error || "Failed to send friend request");
       }
     } catch (error) {
       console.error("Add friend error:", error);
+      toast.error("Failed to send friend request");
     } finally {
       setLoading(false);
     }
@@ -69,7 +79,8 @@ export function GamerCard({ gamer }: GamerCardProps) {
     if (!user) return;
     setLoading(true);
     try {
-      if (relationship?.is_following) {
+      const wasFollowing = relationship?.is_following;
+      if (wasFollowing) {
         await supabase
           .from("follows")
           .delete()
@@ -82,8 +93,13 @@ export function GamerCard({ gamer }: GamerCardProps) {
         } as never);
       }
       refetchRelationship();
+      toast.success(wasFollowing
+        ? `Unfollowed ${gamer.display_name || gamer.username}`
+        : `Following ${gamer.display_name || gamer.username}`
+      );
     } catch (error) {
       console.error("Follow error:", error);
+      toast.error("Failed to update follow status");
     } finally {
       setLoading(false);
     }
@@ -160,17 +176,18 @@ export function GamerCard({ gamer }: GamerCardProps) {
     <>
       <Card
         variant="interactive"
-        className="h-full"
+        className="h-full flex flex-col"
         onClick={() => setShowPreview(true)}
       >
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-1 pb-4">
           {/* Avatar */}
           <Avatar
             src={gamer.avatar_url}
             alt={gamer.display_name || gamer.username}
             size="lg"
-            status={gamer.is_online ? "online" : "offline"}
+            status={gamerStatus}
             showStatus
+            className="self-start"
           />
 
           {/* Info */}
@@ -204,13 +221,13 @@ export function GamerCard({ gamer }: GamerCardProps) {
               {gamer.region && (
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  {gamer.region}
+                  {getRegionLabel(gamer.region)}
                 </span>
               )}
               {gamer.preferred_language && (
                 <span className="flex items-center gap-1">
                   <Globe className="h-3 w-3" />
-                  {gamer.preferred_language.toUpperCase()}
+                  {getLanguageLabel(gamer.preferred_language)}
                 </span>
               )}
             </div>
@@ -239,11 +256,15 @@ export function GamerCard({ gamer }: GamerCardProps) {
           </div>
         </div>
 
-        {/* Status */}
-        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+        {/* Status - always pinned to bottom */}
+        <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
           <span className="text-xs text-text-muted">
-            {gamer.is_online
+            {gamerStatus === "online"
               ? "Online now"
+              : gamerStatus === "away"
+              ? "Away"
+              : gamerStatus === "dnd"
+              ? "Do Not Disturb"
               : gamer.last_seen
               ? `Active ${formatRelativeTime(gamer.last_seen)}`
               : "Offline"}
@@ -271,7 +292,7 @@ export function GamerCard({ gamer }: GamerCardProps) {
               src={gamer.avatar_url}
               alt={gamer.display_name || gamer.username}
               size="xl"
-              status={gamer.is_online ? "online" : "offline"}
+              status={gamerStatus}
               showStatus
             />
             <div className="flex-1">

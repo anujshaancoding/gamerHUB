@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { getRegionLabel, getLanguageLabel } from "@/lib/constants/games";
 import {
   Users,
   MapPin,
@@ -51,14 +51,13 @@ export function ClanHeader({
       <div className="relative">
         {/* Banner */}
         <div className="h-48 bg-gradient-to-br from-primary/20 via-surface to-accent/20 rounded-xl overflow-hidden">
-          {clan.banner_url && (
-            <Image
-              src={clan.banner_url}
-              alt={`${clan.name} banner`}
-              fill
-              className="object-cover"
-            />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={clan.banner_url || `/images/banners/gaming-${((clan.name?.charCodeAt(0) || 0) % 5) + 1}.svg`}
+            alt={`${clan.name} banner`}
+            className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/images/banners/gaming-1.svg"; }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
         </div>
 
@@ -129,13 +128,13 @@ export function ClanHeader({
                 {clan.region && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {clan.region}
+                    {getRegionLabel(clan.region)}
                   </span>
                 )}
                 {clan.language && (
                   <span className="flex items-center gap-1">
                     <Globe className="h-4 w-4" />
-                    {clan.language.toUpperCase()}
+                    {getLanguageLabel(clan.language)}
                   </span>
                 )}
                 <span className="flex items-center gap-1">

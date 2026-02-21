@@ -1,10 +1,7 @@
 export const GAME_KEYWORDS: Record<string, string[]> = {
   'valorant': ['valorant', 'vct', 'champions tour', 'riot games valorant', 'vct pacific', 'vct ascension'],
-  'cs2': ['counter-strike', 'cs2', 'csgo', 'cs:go', 'counter strike', 'major', 'blast premier', 'esl pro league'],
-  'pubg-mobile': ['pubg mobile', 'pubg', 'battlegrounds mobile', 'bgmi', 'pubg mobile india'],
+  'bgmi': ['bgmi', 'battlegrounds mobile india', 'pubg mobile', 'pubg', 'battlegrounds mobile', 'pubg mobile india'],
   'freefire': ['free fire', 'freefire', 'garena free fire', 'ff max', 'free fire india'],
-  'coc': ['clash of clans', 'coc', 'supercell clash', 'clan war', 'clan war league', 'cwl'],
-  'cod-mobile': ['cod mobile', 'call of duty mobile', 'codm', 'call of duty: mobile'],
 };
 
 export const INDIA_ASIA_KEYWORDS = [
@@ -17,33 +14,48 @@ export const INDIA_ASIA_KEYWORDS = [
   'vct pacific', 'vct ascension pacific',
 ];
 
-export const ALL_GAME_SLUGS = ['valorant', 'cs2', 'pubg-mobile', 'freefire', 'coc', 'cod-mobile'] as const;
+export const ALL_GAME_SLUGS = ['valorant', 'bgmi', 'freefire'] as const;
 
 export const GAME_COLORS: Record<string, string> = {
   'valorant': 'bg-red-500/20 text-red-400 border-red-500/30',
-  'cs2': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  'pubg-mobile': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  'bgmi': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   'freefire': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  'coc': 'bg-green-500/20 text-green-400 border-green-500/30',
-  'cod-mobile': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
+  'other': 'bg-gray-500/10 text-gray-400 border-gray-500/30',
 };
 
 export const GAME_BORDER_COLORS: Record<string, string> = {
   'valorant': 'border-l-red-500',
-  'cs2': 'border-l-amber-500',
-  'pubg-mobile': 'border-l-orange-500',
+  'bgmi': 'border-l-orange-500',
   'freefire': 'border-l-yellow-500',
-  'coc': 'border-l-green-500',
-  'cod-mobile': 'border-l-sky-500',
+  'other': 'border-l-gray-500',
 };
 
 export const GAME_DISPLAY_NAMES: Record<string, string> = {
   'valorant': 'Valorant',
-  'cs2': 'CS2',
-  'pubg-mobile': 'PUBG Mobile',
+  'bgmi': 'BGMI',
   'freefire': 'Free Fire',
-  'coc': 'Clash of Clans',
-  'cod-mobile': 'COD Mobile',
+  'other': 'Other',
+};
+
+export const GAME_GRADIENT_HEADERS: Record<string, string> = {
+  'valorant': 'from-red-600 to-red-900',
+  'bgmi': 'from-orange-600 to-orange-900',
+  'freefire': 'from-yellow-600 to-yellow-900',
+  'other': 'from-gray-700 to-gray-950',
+};
+
+export const GAME_ACCENT_COLORS: Record<string, string> = {
+  'valorant': 'text-red-400',
+  'bgmi': 'text-orange-400',
+  'freefire': 'text-yellow-400',
+  'other': 'text-gray-300',
+};
+
+export const GAME_GLOW_COLORS: Record<string, string> = {
+  'valorant': 'hover:shadow-red-500/20',
+  'bgmi': 'hover:shadow-orange-500/20',
+  'freefire': 'hover:shadow-yellow-500/20',
+  'other': 'hover:shadow-gray-500/20',
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {

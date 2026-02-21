@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { REGIONS, REGIONAL_PRICING, type Region, formatPrice } from "@/types/localization";
 
-// Base prices in USD
+// Base prices in INR
 const BASE_PRICES = {
-  premium_monthly: 9.99,
-  premium_yearly: 99.99,
-  creator_boost: 4.99,
-  tournament_entry: 2.99,
-  clan_premium: 14.99,
+  premium_monthly: 99,
+  premium_yearly: 999,
+  creator_boost: 49,
+  tournament_entry: 29,
+  clan_premium: 149,
 };
 
 // GET - Get regional pricing
@@ -66,8 +66,8 @@ export async function GET(
         product,
         basePrice: {
           amount: basePrice,
-          currency: "USD",
-          formatted: `$${basePrice.toFixed(2)}`,
+          currency: "INR",
+          formatted: `₹${basePrice.toFixed(2)}`,
         },
         regionalPrice: {
           amount: Math.round(localAmount * 100) / 100,

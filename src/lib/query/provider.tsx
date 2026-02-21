@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
 
 // Default stale times for different data types
@@ -28,11 +28,17 @@ export const STALE_TIMES = {
   USER_PROGRESSION: 1000 * 60 * 2, // 2 minutes
   USER_QUESTS: 1000 * 60 * 2, // 2 minutes
   USER_BADGES: 1000 * 60 * 2, // 2 minutes
+  USER_GAMES: 1000 * 60 * 2, // 2 minutes
   DASHBOARD: 1000 * 60 * 1, // 1 minute
+
+  // Search
+  SEARCH: 1000 * 60, // 1 minute
 
   // Real-time data
   MATCHES: 1000 * 30, // 30 seconds
   ONLINE_USERS: 1000 * 30, // 30 seconds
+  CONVERSATIONS: 1000 * 30, // 30 seconds
+  MESSAGES: 1000 * 10, // 10 seconds (mostly realtime)
 } as const;
 
 // Cache times (how long to keep in cache after becoming inactive)
@@ -108,6 +114,25 @@ export const queryKeys = {
   matches: (params?: { status?: string; userId?: string }) =>
     ["matches", params || {}] as const,
   match: (id: string) => ["match", id] as const,
+
+  // User Games
+  userGames: (userId?: string) => userId ? ["user-games", userId] as const : ["user-games"] as const,
+
+  // Search
+  search: (query: string) => ["search", query] as const,
+  searchUsers: (query: string) => ["search", "users", query] as const,
+  searchBlogs: (query: string) => ["search", "blogs", query] as const,
+  searchListings: (query: string) => ["search", "listings", query] as const,
+  searchClans: (query: string) => ["search", "clans", query] as const,
+
+  // Activity
+  activity: (userId: string) => ["activity", userId] as const,
+
+  // Messages
+  conversations: ["conversations"] as const,
+  conversation: (id: string) => ["conversation", id] as const,
+  conversationMessages: (id: string) => ["conversation-messages", id] as const,
+  unreadMessages: ["unread-message-count"] as const,
 } as const;
 
 function makeQueryClient() {
@@ -158,9 +183,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === "development" && (
+      {/* {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} />
-      )}
+      )} */}
     </QueryClientProvider>
   );
 }
@@ -189,6 +214,13 @@ export function getInvalidationHelpers(queryClient: QueryClient) {
     },
     invalidateDashboard: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    invalidateConversations: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-message-count"] });
+    },
+    invalidateUserGames: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-games"] });
     },
   };
 }

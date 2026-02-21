@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,100 +24,6 @@ import type { Profile, UserGame, Game } from "@/types/database";
 
 interface GamerWithGames extends Profile {
   user_games: (UserGame & { game: Game })[];
-  /** @internal flag for demo/seed profiles — not rendered in UI */
-  _isDemo?: boolean;
-}
-
-interface DemoProfile {
-  id: string;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  bio: string | null;
-  gaming_style: "casual" | "competitive" | "pro" | null;
-  preferred_language: string;
-  region: string | null;
-  timezone: string | null;
-  online_hours: unknown;
-  social_links: unknown;
-  is_online: boolean;
-  is_verified: boolean;
-  created_at: string;
-  games: Array<{
-    game: string;
-    game_slug: string;
-    in_game_name: string;
-    rank: string;
-    role: string;
-    secondary_role: string | null;
-    hours: number;
-    stats: unknown;
-  }>;
-  badges: Array<{
-    name: string;
-    slug: string;
-    icon: string;
-    description: string;
-    rarity: string;
-    earned_at: string;
-  }>;
-  badge_count: number;
-  total_hours: number;
-}
-
-// Convert demo profile to GamerWithGames format
-function convertDemoToGamer(demo: DemoProfile): GamerWithGames {
-  return {
-    id: demo.id,
-    username: demo.username,
-    display_name: demo.display_name,
-    avatar_url: demo.avatar_url,
-    banner_url: demo.banner_url,
-    bio: demo.bio,
-    gaming_style: demo.gaming_style,
-    preferred_language: demo.preferred_language,
-    region: demo.region,
-    timezone: demo.timezone,
-    online_hours: demo.online_hours,
-    social_links: demo.social_links,
-    is_online: demo.is_online,
-    is_premium: false,
-    premium_until: null,
-    last_seen: demo.created_at,
-    created_at: demo.created_at,
-    updated_at: demo.created_at,
-    _isDemo: true,
-    user_games: demo.games?.map((g) => ({
-      id: `demo-${demo.id}-${g.game_slug}`,
-      user_id: demo.id,
-      game_id: g.game_slug,
-      in_game_name: g.in_game_name,
-      rank: g.rank,
-      role: g.role,
-      hours_played: g.hours,
-      stats: g.stats,
-      is_public: true,
-      is_verified: false,
-      created_at: demo.created_at,
-      updated_at: demo.created_at,
-      game: {
-        id: g.game_slug,
-        name: g.game,
-        slug: g.game_slug,
-        icon_url: null,
-        banner_url: null,
-        description: null,
-        genre: "FPS",
-        platforms: ["PC"],
-        player_count_range: "5v5",
-        has_ranked: true,
-        rank_system: null,
-        is_active: true,
-        created_at: demo.created_at,
-      },
-    })) || [],
-  } as GamerWithGames;
 }
 
 const INITIAL_PROFILES_TO_SHOW = 3;
@@ -156,7 +62,7 @@ function FindGamersContent() {
   const fetchGamers = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch real profiles
+      // Fetch real profiles (no search filter - search is done client-side)
       let query = supabase
         .from("profiles")
         .select(`
@@ -167,13 +73,6 @@ function FindGamersContent() {
           )
         `)
         .order("last_seen", { ascending: false });
-
-      // Apply filters to real profiles
-      if (searchQuery) {
-        query = query.or(
-          `username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`
-        );
-      }
 
       if (selectedRegion) {
         query = query.eq("region", selectedRegion);
@@ -197,73 +96,25 @@ function FindGamersContent() {
         console.error("Error fetching real profiles:", realError);
       }
 
-      // Fetch demo profiles from view
-      let demoQuery = supabase
-        .from("demo_profiles_complete")
-        .select("*")
-        .order("is_online", { ascending: false });
-
-      // Apply filters to demo profiles
-      if (searchQuery) {
-        demoQuery = demoQuery.or(
-          `username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`
-        );
-      }
-
-      if (selectedRegion) {
-        demoQuery = demoQuery.ilike("region", `%${selectedRegion}%`);
-      }
-
-      if (selectedLanguage) {
-        demoQuery = demoQuery.eq("preferred_language", selectedLanguage);
-      }
-
-      if (selectedStyle) {
-        demoQuery = demoQuery.eq("gaming_style", selectedStyle);
-      }
-
-      if (onlineOnly) {
-        demoQuery = demoQuery.eq("is_online", true);
-      }
-
-      const { data: demoData, error: demoError } = await demoQuery.limit(25);
-
-      if (demoError) {
-        console.error("Error fetching demo profiles:", demoError);
-      }
-
-      // Convert demo profiles to GamerWithGames format
-      const demoGamers: GamerWithGames[] = (demoData as DemoProfile[] || []).map(convertDemoToGamer);
-
       // Client-side filtering for game and rank
-      let filteredReal = (realData as GamerWithGames[]) || [];
-      let filteredDemo = demoGamers;
+      let filtered = (realData as GamerWithGames[]) || [];
 
       if (selectedGame) {
-        filteredReal = filteredReal.filter((gamer) =>
-          gamer.user_games?.some((ug) => ug.game?.slug === selectedGame)
-        );
-        filteredDemo = filteredDemo.filter((gamer) =>
+        filtered = filtered.filter((gamer) =>
           gamer.user_games?.some((ug) => ug.game?.slug === selectedGame)
         );
       }
 
       if (selectedRank && selectedGame) {
-        filteredReal = filteredReal.filter((gamer) =>
-          gamer.user_games?.some(
-            (ug) => ug.game?.slug === selectedGame && ug.rank === selectedRank
-          )
-        );
-        filteredDemo = filteredDemo.filter((gamer) =>
+        filtered = filtered.filter((gamer) =>
           gamer.user_games?.some(
             (ug) => ug.game?.slug === selectedGame && ug.rank === selectedRank
           )
         );
       }
 
-      // Combine real and demo profiles - demo profiles come after real ones
       // Filter out the current user and their friends
-      const combined = [...filteredReal, ...filteredDemo].filter((gamer) => {
+      const combined = filtered.filter((gamer) => {
         // Exclude current user
         if (user && gamer.id === user.id) return false;
         // Exclude friends
@@ -280,7 +131,6 @@ function FindGamersContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    searchQuery,
     selectedGame,
     selectedRank,
     selectedRegion,
@@ -294,6 +144,17 @@ function FindGamersContent() {
   useEffect(() => {
     fetchGamers();
   }, [fetchGamers]);
+
+  // Client-side search filtering (instant results as user types)
+  const filteredGamers = useMemo(() => {
+    if (!searchQuery.trim()) return gamers;
+    const q = searchQuery.toLowerCase();
+    return gamers.filter(
+      (gamer) =>
+        gamer.username?.toLowerCase().includes(q) ||
+        gamer.display_name?.toLowerCase().includes(q)
+    );
+  }, [gamers, searchQuery]);
 
   const selectedGameData = SUPPORTED_GAMES.find((g) => g.slug === selectedGame);
 
@@ -520,23 +381,36 @@ function FindGamersContent() {
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
         </div>
-      ) : gamers.length === 0 ? (
+      ) : filteredGamers.length === 0 ? (
         <Card className="text-center py-12">
           <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-text mb-2">
-            No gamers found
+            {searchQuery ? "No matching gamers found" : "No gamers found"}
           </h3>
           <p className="text-text-muted max-w-md mx-auto">
-            Try adjusting your filters or search criteria to find more players.
+            {searchQuery
+              ? "Try a different name or clear your search."
+              : "Try adjusting your filters or search criteria to find more players."}
           </p>
-          <Button variant="outline" onClick={clearFilters} className="mt-4">
-            Clear Filters
-          </Button>
+          {searchQuery ? (
+            <Button variant="outline" onClick={() => setSearchQuery("")} className="mt-4">
+              Clear Search
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={clearFilters} className="mt-4">
+              Clear Filters
+            </Button>
+          )}
         </Card>
       ) : (
         <div>
+          {searchQuery && (
+            <p className="text-sm text-text-muted mb-3">
+              {filteredGamers.length} {filteredGamers.length === 1 ? "gamer" : "gamers"} matching &quot;{searchQuery}&quot;
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {gamers.slice(0, visibleCount).map((gamer, index) => (
+            {filteredGamers.slice(0, searchQuery ? filteredGamers.length : visibleCount).map((gamer, index) => (
               <motion.div
                 key={gamer.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -547,7 +421,7 @@ function FindGamersContent() {
               </motion.div>
             ))}
           </div>
-          {visibleCount < gamers.length && (
+          {!searchQuery && visibleCount < filteredGamers.length && (
             <div className="flex justify-center mt-6">
               <Button
                 variant="outline"

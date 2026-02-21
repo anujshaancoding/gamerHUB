@@ -10,6 +10,7 @@ import {
   Flame,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
+import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { Profile } from "@/types/database";
 
 interface ProfileStatsProps {
@@ -23,8 +24,16 @@ export function ProfileStats({
   matchesPlayed,
   gamesLinked,
 }: ProfileStatsProps) {
+  const { theme } = useGameTheme();
+
+  const statItems = [
+    { label: "Games Linked", value: gamesLinked, icon: Gamepad2, color: theme.colors.primary },
+    { label: "Matches Played", value: matchesPlayed, icon: Trophy, color: theme.colors.accent },
+    { label: "Gaming Style", value: profile.gaming_style || "Not set", icon: Target, color: theme.colors.textAccent, isText: true },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Quick Stats */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -33,19 +42,15 @@ export function ProfileStats({
         <Card className="gaming-card-border overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="p-2 rounded-lg bg-primary/20">
-                <Zap className="h-5 w-5 text-primary" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${theme.colors.primary}20` }}>
+                <Zap className="h-5 w-5" style={{ color: theme.colors.primary }} />
               </div>
               Stats
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              {[
-                { label: "Games Linked", value: gamesLinked, icon: Gamepad2, color: "#00ff88" },
-                { label: "Matches Played", value: matchesPlayed, icon: Trophy, color: "#00d4ff" },
-                { label: "Gaming Style", value: profile.gaming_style || "Not set", icon: Target, color: "#ff00ff", isText: true },
-              ].map((stat, index) => (
+              {statItems.map((stat, index) => (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, x: -20 }}
@@ -84,31 +89,37 @@ export function ProfileStats({
         <Card className="gaming-card-border overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="p-2 rounded-lg bg-accent/20">
-                <Clock className="h-5 w-5 text-accent" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${theme.colors.accent}20` }}>
+                <Clock className="h-5 w-5" style={{ color: theme.colors.accent }} />
               </div>
               Usually Online
             </CardTitle>
           </CardHeader>
           <CardContent>
             {profile.online_hours && typeof profile.online_hours === "object" ? (
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center justify-center gap-2 sm:gap-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: theme.colors.primary }}>
                     {(profile.online_hours as { start?: string }).start || "--:--"}
                   </p>
-                  <p className="text-xs text-text-muted uppercase">Start</p>
+                  <p className="text-[10px] sm:text-xs text-text-muted uppercase">Start</p>
                 </div>
-                <div className="flex items-center gap-2 text-text-muted">
-                  <div className="w-8 h-0.5 bg-gradient-to-r from-primary to-accent rounded-full" />
-                  <Flame className="h-5 w-5 text-warning animate-pulse" />
-                  <div className="w-8 h-0.5 bg-gradient-to-r from-accent to-secondary rounded-full" />
+                <div className="flex items-center gap-1.5 sm:gap-2 text-text-muted">
+                  <div
+                    className="w-4 sm:w-8 h-0.5 rounded-full"
+                    style={{ background: `linear-gradient(to right, ${theme.colors.primary}, ${theme.colors.accent})` }}
+                  />
+                  <Flame className="h-4 sm:h-5 w-4 sm:w-5 text-warning animate-pulse" />
+                  <div
+                    className="w-4 sm:w-8 h-0.5 rounded-full"
+                    style={{ background: `linear-gradient(to right, ${theme.colors.accent}, ${theme.colors.textAccent})` }}
+                  />
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-accent">
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: theme.colors.accent }}>
                     {(profile.online_hours as { end?: string }).end || "--:--"}
                   </p>
-                  <p className="text-xs text-text-muted uppercase">End</p>
+                  <p className="text-[10px] sm:text-xs text-text-muted uppercase">End</p>
                 </div>
               </div>
             ) : (

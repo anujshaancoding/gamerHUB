@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { isPromoPeriodActive } from "@/lib/promo";
 import type { Clan } from "@/types/database";
 
 // GET - List/search clans
@@ -94,39 +95,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has premium access (subscription, profile flag, or app_metadata)
-    let isPremium = false;
+    // Check if user has premium access (subscription, profile flag, app_metadata, or launch promo)
+    let isPremium = isPromoPeriodActive();
 
-    // 1. Check user_subscriptions table
-    const { data: subscription } = await supabase
-      .from("user_subscriptions")
-      .select("status")
-      .eq("user_id", user.id)
-      .in("status", ["active", "trialing"])
-      .single();
-
-    if (subscription) {
-      isPremium = true;
-    }
-
-    // 2. Check profiles.is_premium flag
     if (!isPremium) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single() as any;
+      // 1. Check user_subscriptions table
+      const { data: subscription } = await supabase
+        .from("user_subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .in("status", ["active", "trialing"])
+        .single();
 
-      if (profile?.is_premium) {
+      if (subscription) {
         isPremium = true;
       }
-    }
 
-    // 3. Fallback: check auth app_metadata (set by coupon redemption)
-    if (!isPremium && user.app_metadata?.is_premium) {
-      const metaPremiumUntil = user.app_metadata.premium_until;
-      if (metaPremiumUntil && new Date(metaPremiumUntil) > new Date()) {
-        isPremium = true;
+      // 2. Check profiles.is_premium flag
+      if (!isPremium) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_premium, premium_until")
+          .eq("id", user.id)
+          .single() as any;
+
+        if (profile?.is_premium) {
+          isPremium = true;
+        }
+      }
+
+      // 3. Fallback: check auth app_metadata (set by coupon redemption)
+      if (!isPremium && user.app_metadata?.is_premium) {
+        const metaPremiumUntil = user.app_metadata.premium_until;
+        if (metaPremiumUntil && new Date(metaPremiumUntil) > new Date()) {
+          isPremium = true;
+        }
       }
     }
 
@@ -185,7 +188,7 @@ export async function POST(request: NextRequest) {
           .insert({
             name: custom_game_name,
             slug: customSlug,
-            icon_url: "/images/games/other.png",
+            // icon_url: "/images/games/other.png",
           } as never)
           .select("id")
           .single();
@@ -244,33 +247,35 @@ export async function POST(request: NextRequest) {
       slugCounter++;
     }
 
-    // Create conversation for clan chat using admin client to bypass RLS
-    // (user can't be a participant of a conversation that doesn't exist yet)
+    // Try to create conversation for clan chat (optional — table may not exist)
     const adminClient = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: conversationData, error: convError } = (await adminClient
-      .from("conversations")
-      .insert({
-        type: "group",
-        name: `${name} Chat`,
-      } as any)
-      .select()
-      .single()) as { data: { id: string } | null; error: any };
+    let conversationId: string | null = null;
 
-    if (convError || !conversationData) {
-      console.error("Failed to create clan conversation:", convError);
-      return NextResponse.json(
-        { error: "Failed to create clan conversation: " + (convError?.message || "Unknown error") },
-        { status: 500 }
-      );
+    try {
+      const { data: conversationData, error: convError } = (await adminClient
+        .from("conversations")
+        .insert({
+          type: "group",
+          name: `${name} Chat`,
+        } as any)
+        .select()
+        .single()) as { data: { id: string } | null; error: any };
+
+      if (!convError && conversationData) {
+        conversationId = conversationData.id;
+      } else {
+        console.warn("Skipping clan conversation (table may not exist):", convError?.message);
+      }
+    } catch (convErr) {
+      console.warn("Skipping clan conversation:", convErr);
     }
 
     // Validate join_type if provided
     const validJoinTypes = ["open", "invite_only", "closed"];
     const clanJoinType = validJoinTypes.includes(join_type) ? join_type : "closed";
 
-    // Create clan (store join_type in settings JSONB since column may not exist)
-    const { data: clanData, error: clanError } = await supabase
+    // Create clan using admin client to bypass RLS issues
+    const { data: clanData, error: clanError } = await adminClient
       .from("clans")
       .insert({
         name,
@@ -286,25 +291,27 @@ export async function POST(request: NextRequest) {
           join_approval_required: clanJoinType === "closed",
           allow_member_invites: clanJoinType !== "invite_only",
         },
-        conversation_id: conversationData.id,
+        conversation_id: conversationId,
       } as never)
       .select()
       .single();
 
     if (clanError || !clanData) {
       console.error("Failed to create clan entry:", clanError);
-      // Cleanup conversation
-      await adminClient.from("conversations").delete().eq("id", conversationData.id);
+      if (conversationId) {
+        await adminClient.from("conversations").delete().eq("id", conversationId);
+      }
       return NextResponse.json(
-        { error: "Failed to create clan entry: " + (clanError?.message || "Unknown error") },
+        { error: "Failed to create clan: " + (clanError?.message || "Unknown error") },
         { status: 500 }
       );
     }
 
     const clan = clanData as unknown as Clan;
 
-    // Add creator as leader
-    const { error: memberError } = await supabase
+    // Add creator as leader using admin client to avoid trigger issues
+    // (handle_clan_member_join trigger references conversation_participants which may not exist)
+    const { error: memberError } = await adminClient
       .from("clan_members")
       .insert({
         clan_id: clan.id,
@@ -315,21 +322,23 @@ export async function POST(request: NextRequest) {
     if (memberError) {
       console.error("Failed to add clan leader:", memberError);
       // Cleanup
-      await supabase.from("clans").delete().eq("id", clan.id);
-      await adminClient.from("conversations").delete().eq("id", conversationData.id);
+      await adminClient.from("clans").delete().eq("id", clan.id);
+      if (conversationId) {
+        await adminClient.from("conversations").delete().eq("id", conversationId);
+      }
       return NextResponse.json(
         { error: "Failed to add clan leader: " + (memberError?.message || "Unknown error") },
         { status: 500 }
       );
     }
 
-    // Log clan creation
-    await supabase.from("clan_activity_log").insert({
+    // Log clan creation (non-critical, ignore errors)
+    await adminClient.from("clan_activity_log").insert({
       clan_id: clan.id,
       user_id: user.id,
       activity_type: "clan_created",
       description: "Clan was created",
-    } as never);
+    } as never).then(() => {}).catch(() => {});
 
     return NextResponse.json({ clan }, { status: 201 });
   } catch (error) {

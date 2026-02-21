@@ -2,8 +2,9 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Crown, Check, Sparkles, Loader2, Tag, AlertCircle, RefreshCw } from "lucide-react";
+import { Crown, Check, Sparkles, Loader2, Tag, AlertCircle, RefreshCw, Gift } from "lucide-react";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { isPromoPeriodActive, PROMO_END_LABEL } from "@/lib/promo";
 import { PricingCard } from "@/components/payments/PricingCard";
 import { SubscriptionStatus } from "@/components/premium/SubscriptionStatus";
 import { PlanComparison } from "@/components/premium/PlanComparison";
@@ -156,6 +157,23 @@ function PremiumPageContent() {
         </div>
       )}
 
+      {/* Launch Promo Banner */}
+      {isPromoPeriodActive() && (
+        <div className="bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-purple-600/20 border border-purple-500/30 rounded-xl p-6 text-center">
+          <div className="inline-flex items-center justify-center p-2 bg-purple-500/20 rounded-full mb-3">
+            <Gift className="h-6 w-6 text-purple-300" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Launch Celebration — Premium is FREE for Everyone!
+          </h2>
+          <p className="text-zinc-300 max-w-lg mx-auto">
+            All premium features are unlocked for every user until{" "}
+            <span className="font-semibold text-purple-300">{PROMO_END_LABEL}</span>.
+            No credit card required.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center justify-center p-3 bg-purple-500/20 rounded-full">
@@ -165,8 +183,9 @@ function PremiumPageContent() {
           GamerHub Premium
         </h1>
         <p className="text-zinc-400 max-w-2xl mx-auto">
-          Take your gaming experience to the next level with exclusive features,
-          priority access, and unique cosmetics.
+          {isPromoPeriodActive()
+            ? "You currently have full access to all premium features. Here's what's included."
+            : "Take your gaming experience to the next level with exclusive features, priority access, and unique cosmetics."}
         </p>
       </div>
 
@@ -224,18 +243,16 @@ function PremiumPageContent() {
 
               <div className="mb-6">
                 <div className="flex items-baseline">
-                  <span className="text-4xl font-bold text-white">$0</span>
+                  <span className="text-4xl font-bold text-white">₹0</span>
                   <span className="text-zinc-400 ml-2">/month</span>
                 </div>
               </div>
 
               <ul className="space-y-3 mb-6 flex-1">
                 {[
-                  "Basic matchmaking",
-                  "Create and join clans",
-                  "Participate in tournaments",
+                  "Join/request clans",
+                  "Participate in tournaments/giveaways",
                   "Direct messaging",
-                  "Voice/video calls",
                   "20MB media uploads",
                 ].map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
@@ -446,7 +463,7 @@ function PremiumPageContent() {
             },
             {
               q: "Is there a free trial?",
-              a: "We occasionally offer free trials for new users. Check back or subscribe to our newsletter for announcements.",
+              a: `Yes! As part of our launch celebration, all premium features are completely free for every user until ${PROMO_END_LABEL}. No credit card needed — just enjoy!`,
             },
             {
               q: "Do you offer coupon codes or discounts?",

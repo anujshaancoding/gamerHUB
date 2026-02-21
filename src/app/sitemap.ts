@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllPublishedSlugs } from "@/lib/data/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gamerhub.com";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gglobby.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
@@ -18,6 +18,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/community`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/clans`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/find-gamers`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/guidelines`,
+      changeFrequency: "monthly",
+      priority: 0.3,
     },
     {
       url: `${BASE_URL}/login`,

@@ -5,3 +5,7 @@ export { BlogComments } from "./blog-comments";
 export { SocialShareButtons } from "./social-share-buttons";
 export { RichTextEditor } from "./rich-text-editor";
 export { BlogEditorTutorial } from "./blog-editor-tutorial";
+export { TemplateSelector } from "./template-selector";
+export { PaletteSelector } from "./palette-selector";
+export { BlogCreationWizard } from "./blog-creation-wizard";
+export { BlogTemplateRenderer } from "./blog-template-renderer";

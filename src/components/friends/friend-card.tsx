@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Card, Avatar, Badge, Button, Modal } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
+import { usePresence } from "@/lib/presence/PresenceProvider";
 import { formatRelativeTime } from "@/lib/utils";
 import type { FriendWithProfile } from "@/types/database";
 
@@ -22,7 +23,9 @@ interface FriendCardProps {
 
 export function FriendCard({ friend, onRemove, isRemoving }: FriendCardProps) {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const { getUserStatus } = usePresence();
   const { profile } = friend;
+  const profileStatus = getUserStatus(profile.id);
 
   const handleMessage = () => {
     window.location.href = `/messages?user=${profile.id}`;
@@ -42,7 +45,7 @@ export function FriendCard({ friend, onRemove, isRemoving }: FriendCardProps) {
               src={profile.avatar_url}
               alt={profile.display_name || profile.username}
               size="lg"
-              status={profile.is_online ? "online" : "offline"}
+              status={profileStatus}
               showStatus
             />
           </Link>
@@ -96,8 +99,12 @@ export function FriendCard({ friend, onRemove, isRemoving }: FriendCardProps) {
 
         <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
           <span className="text-xs text-text-muted">
-            {profile.is_online
+            {profileStatus === "online"
               ? "Online now"
+              : profileStatus === "away"
+              ? "Away"
+              : profileStatus === "dnd"
+              ? "Do Not Disturb"
               : profile.last_seen
               ? `Active ${formatRelativeTime(profile.last_seen)}`
               : "Offline"}

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getUserSocialCounts,
   getUserFriendsList,
-  getUserFollowersList,
-  getUserFollowingList,
 } from "@/lib/supabase/rpc-types";
 import type { Profile } from "@/types/database";
 
@@ -51,22 +48,13 @@ export async function GET(
       );
     }
 
-    // Get the counts
-    const { data: counts } = await getUserSocialCounts(supabase, userId);
-
-    let total = 0;
-    if (counts && counts.length > 0) {
-      const countData = counts[0];
-      if (listType === "friends") total = countData.friends_count;
-      else if (listType === "followers") total = countData.followers_count;
-      else if (listType === "following") total = countData.following_count;
-    }
-
     // Get the appropriate list
     let listData: SocialListResult[] = [];
     let targetUserIds: string[] = [];
+    let total = 0;
 
     if (listType === "friends") {
+      // Friends use the RPC function (works with friend_requests table)
       const { data, error } = await getUserFriendsList(
         supabase,
         userId,
@@ -88,50 +76,155 @@ export async function GET(
         is_viewer_following: d.is_viewer_following,
       }));
       targetUserIds = listData.map((item) => item.friend_id!).filter(Boolean);
+
+      // Get friend count
+      const { count: friendTotal } = await supabase.rpc("get_friend_count", {
+        p_user_id: userId,
+      } as never);
+      total = (friendTotal as number) || listData.length;
+
     } else if (listType === "followers") {
-      const { data, error } = await getUserFollowersList(
-        supabase,
-        userId,
-        user?.id || null,
-        limit,
-        offset,
-        search
-      );
+      // Query follows table directly: people who follow this user
+      let query = supabase
+        .from("follows")
+        .select("follower_id, created_at", { count: "exact" })
+        .eq("following_id", userId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      // If searching, we need to filter by profile name
+      const { data: followRows, count, error } = await query;
 
       if (error) {
         console.error("Error fetching followers list:", error);
         return NextResponse.json({ error: "Failed to fetch followers" }, { status: 500 });
       }
 
-      listData = (data || []).map((d) => ({
-        follower_id: d.follower_id,
-        followed_since: d.followed_since,
-        is_viewer_friend: d.is_viewer_friend,
-        is_viewer_following: d.is_viewer_following,
-      }));
+      const rows = followRows || [];
+      let filteredIds = rows.map((r: { follower_id: string }) => r.follower_id);
+
+      // If searching, filter by profile username/display_name
+      if (search && filteredIds.length > 0) {
+        const { data: matchedProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .in("id", filteredIds)
+          .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+
+        const matchedIds = new Set((matchedProfiles || []).map((p: { id: string }) => p.id));
+        filteredIds = filteredIds.filter((id: string) => matchedIds.has(id));
+      }
+
+      // Check viewer relationships
+      const viewerFollowingIds = new Set<string>();
+      const viewerFriendIds = new Set<string>();
+      if (user && filteredIds.length > 0) {
+        const { data: viewerFollows } = await supabase
+          .from("follows")
+          .select("following_id")
+          .eq("follower_id", user.id)
+          .in("following_id", filteredIds);
+        (viewerFollows || []).forEach((f: { following_id: string }) => viewerFollowingIds.add(f.following_id));
+
+        const { data: viewerFriendRequests } = await supabase
+          .from("friend_requests")
+          .select("sender_id, recipient_id")
+          .eq("status", "accepted")
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+        (viewerFriendRequests || []).forEach((fr: { sender_id: string; recipient_id: string }) => {
+          const friendId = fr.sender_id === user.id ? fr.recipient_id : fr.sender_id;
+          if (filteredIds.includes(friendId)) viewerFriendIds.add(friendId);
+        });
+      }
+
+      listData = rows
+        .filter((r: { follower_id: string }) => filteredIds.includes(r.follower_id))
+        .map((r: { follower_id: string; created_at: string }) => ({
+          follower_id: r.follower_id,
+          followed_since: r.created_at,
+          is_viewer_friend: viewerFriendIds.has(r.follower_id),
+          is_viewer_following: viewerFollowingIds.has(r.follower_id),
+        }));
+
       targetUserIds = listData.map((item) => item.follower_id!).filter(Boolean);
+
+      // Get total count (all followers, not just this page)
+      if (search) {
+        total = filteredIds.length;
+      } else {
+        total = count || 0;
+      }
+
     } else if (listType === "following") {
-      const { data, error } = await getUserFollowingList(
-        supabase,
-        userId,
-        user?.id || null,
-        limit,
-        offset,
-        search
-      );
+      // Query follows table directly: people this user follows
+      let query = supabase
+        .from("follows")
+        .select("following_id, created_at", { count: "exact" })
+        .eq("follower_id", userId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      const { data: followRows, count, error } = await query;
 
       if (error) {
         console.error("Error fetching following list:", error);
         return NextResponse.json({ error: "Failed to fetch following" }, { status: 500 });
       }
 
-      listData = (data || []).map((d) => ({
-        following_id: d.following_id,
-        following_since: d.following_since,
-        is_viewer_friend: d.is_viewer_friend,
-        is_viewer_following: d.is_viewer_following,
-      }));
+      const rows = followRows || [];
+      let filteredIds = rows.map((r: { following_id: string }) => r.following_id);
+
+      // If searching, filter by profile username/display_name
+      if (search && filteredIds.length > 0) {
+        const { data: matchedProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .in("id", filteredIds)
+          .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+
+        const matchedIds = new Set((matchedProfiles || []).map((p: { id: string }) => p.id));
+        filteredIds = filteredIds.filter((id: string) => matchedIds.has(id));
+      }
+
+      // Check viewer relationships
+      const viewerFollowingIds = new Set<string>();
+      const viewerFriendIds = new Set<string>();
+      if (user && filteredIds.length > 0) {
+        const { data: viewerFollows } = await supabase
+          .from("follows")
+          .select("following_id")
+          .eq("follower_id", user.id)
+          .in("following_id", filteredIds);
+        (viewerFollows || []).forEach((f: { following_id: string }) => viewerFollowingIds.add(f.following_id));
+
+        const { data: viewerFriendRequests } = await supabase
+          .from("friend_requests")
+          .select("sender_id, recipient_id")
+          .eq("status", "accepted")
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+        (viewerFriendRequests || []).forEach((fr: { sender_id: string; recipient_id: string }) => {
+          const friendId = fr.sender_id === user.id ? fr.recipient_id : fr.sender_id;
+          if (filteredIds.includes(friendId)) viewerFriendIds.add(friendId);
+        });
+      }
+
+      listData = rows
+        .filter((r: { following_id: string }) => filteredIds.includes(r.following_id))
+        .map((r: { following_id: string; created_at: string }) => ({
+          following_id: r.following_id,
+          following_since: r.created_at,
+          is_viewer_friend: viewerFriendIds.has(r.following_id),
+          is_viewer_following: viewerFollowingIds.has(r.following_id),
+        }));
+
       targetUserIds = listData.map((item) => item.following_id!).filter(Boolean);
+
+      // Get total count
+      if (search) {
+        total = filteredIds.length;
+      } else {
+        total = count || 0;
+      }
     }
 
     // Fetch profiles for all users

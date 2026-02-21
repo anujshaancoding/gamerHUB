@@ -3,17 +3,16 @@
 import { motion } from "framer-motion";
 import {
   Gamepad2,
-  Shield,
-  Trophy,
   CheckCircle,
-  ChevronRight,
   Swords,
   Target,
   Clock,
   Flame,
+  ShieldAlert,
 } from "lucide-react";
-import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui";
+import { AnimatedRankEmblem } from "@/components/profile/animated-rank-emblem";
+import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { UserGame, Game } from "@/types/database";
 
 interface UserGameWithGame extends UserGame {
@@ -24,38 +23,8 @@ interface ProfileGamesProps {
   userGames: UserGameWithGame[];
 }
 
-// Rank color configurations
-const rankColors: Record<string, { bg: string; text: string; border: string; glow: string }> = {
-  // Generic ranks
-  bronze: { bg: "bg-amber-900/30", text: "text-amber-400", border: "border-amber-600", glow: "shadow-amber-500/30" },
-  silver: { bg: "bg-gray-400/20", text: "text-gray-300", border: "border-gray-400", glow: "shadow-gray-400/30" },
-  gold: { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500", glow: "shadow-yellow-500/40" },
-  platinum: { bg: "bg-cyan-400/20", text: "text-cyan-300", border: "border-cyan-400", glow: "shadow-cyan-400/40" },
-  diamond: { bg: "bg-blue-400/20", text: "text-blue-300", border: "border-blue-400", glow: "shadow-blue-400/50" },
-  master: { bg: "bg-purple-500/20", text: "text-purple-400", border: "border-purple-500", glow: "shadow-purple-500/50" },
-  grandmaster: { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500", glow: "shadow-red-500/50" },
-  challenger: { bg: "bg-gradient-to-r from-yellow-500/30 to-orange-500/30", text: "text-yellow-300", border: "border-yellow-400", glow: "shadow-yellow-500/60" },
-  // Valorant ranks
-  iron: { bg: "bg-gray-600/30", text: "text-gray-400", border: "border-gray-500", glow: "shadow-gray-500/30" },
-  immortal: { bg: "bg-red-600/30", text: "text-red-400", border: "border-red-500", glow: "shadow-red-500/50" },
-  radiant: { bg: "bg-gradient-to-r from-yellow-400/30 to-white/20", text: "text-yellow-200", border: "border-yellow-300", glow: "shadow-yellow-300/60" },
-  // CS2 ranks
-  "global elite": { bg: "bg-yellow-500/30", text: "text-yellow-300", border: "border-yellow-400", glow: "shadow-yellow-400/50" },
-  // Default
-  default: { bg: "bg-primary/20", text: "text-primary", border: "border-primary/50", glow: "shadow-primary/30" },
-};
-
-function getRankStyle(rank: string | null) {
-  if (!rank) return rankColors.default;
-  const lowerRank = rank.toLowerCase();
-  for (const [key, value] of Object.entries(rankColors)) {
-    if (lowerRank.includes(key)) return value;
-  }
-  return rankColors.default;
-}
-
 function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
-  const rankStyle = getRankStyle(ug.rank);
+  const { theme: gameTheme } = useGameTheme();
   const stats = ug.stats as Record<string, number> | null;
 
   return (
@@ -80,12 +49,13 @@ function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
       `}
     >
       {/* Game Image/Icon Section */}
-      <div className="relative w-28 md:w-36 shrink-0 bg-surface overflow-hidden min-h-[100px]">
+      <div className="relative w-20 sm:w-28 md:w-36 shrink-0 bg-surface overflow-hidden min-h-[80px] sm:min-h-[100px]">
         {ug.game?.icon_url ? (
           <img
             src={ug.game.icon_url}
             alt={ug.game.name}
             className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/games/other.svg'; }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -95,22 +65,26 @@ function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
         {/* Subtle edge fade */}
         <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-r from-transparent to-surface-light/80" />
 
-        {/* Verified badge */}
-        {ug.is_verified && (
+        {/* Verified / Self-Reported badge */}
+        {ug.is_verified ? (
           <div className="absolute top-2 left-2 p-1 rounded-full bg-primary/90">
             <CheckCircle className="h-3 w-3 text-black" />
           </div>
-        )}
+        ) : (ug.rank || ug.game_username) ? (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface/90 border border-border text-[10px] text-text-muted">
+            <ShieldAlert className="h-2.5 w-2.5" />
+            <span>Self-Reported</span>
+          </div>
+        ) : null}
       </div>
 
       {/* Game Info */}
-      <div className="flex-1 p-4 min-w-0 flex flex-col justify-center">
+      <div className="flex-1 p-3 sm:p-4 min-w-0 flex flex-col justify-center">
         {/* Game Name */}
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-bold text-text text-lg truncate group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-text text-base sm:text-lg truncate group-hover:text-primary transition-colors">
             {ug.game?.name || "Unknown Game"}
           </h3>
-          <ChevronRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
         {/* In-game username */}
@@ -127,16 +101,12 @@ function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: index * 0.1 + 0.2 }}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                ${rankStyle.bg} border ${rankStyle.border}
-                shadow-lg ${rankStyle.glow}
-              `}
             >
-              <Trophy className={`h-3.5 w-3.5 ${rankStyle.text}`} />
-              <span className={`text-sm font-bold ${rankStyle.text}`}>
-                {ug.rank}
-              </span>
+              <AnimatedRankEmblem
+                rank={ug.rank}
+                gameSlug={ug.game?.slug}
+                size="md"
+              />
             </motion.div>
           )}
           {ug.role && (
@@ -155,7 +125,7 @@ function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
 
       {/* Stats Section */}
       {stats && Object.keys(stats).length > 0 && (
-        <div className="hidden lg:flex items-center gap-4 px-4 border-l border-border">
+        <div className="hidden xl:flex items-center gap-4 px-4 border-l border-border">
           {Object.entries(stats)
             .slice(0, 3)
             .map(([key, value], i) => {
@@ -182,9 +152,12 @@ function GameCard({ ug, index }: { ug: UserGameWithGame; index: number }) {
         </div>
       )}
 
-      {/* Hover glow effect */}
+      {/* Hover glow effect — themed */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent" />
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(to right, ${gameTheme.colors.primary}0D, transparent)` }}
+        />
       </div>
     </motion.div>
   );
@@ -206,11 +179,11 @@ export function ProfileGames({ userGames }: ProfileGamesProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12"
+            className="text-center py-6"
           >
             <div className="relative inline-block">
-              <div className="w-20 h-20 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4 border border-border">
-                <Gamepad2 className="h-10 w-10 text-text-muted" />
+              <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-3 border border-border">
+                <Gamepad2 className="h-8 w-8 text-text-muted" />
               </div>
               {/* Animated rings */}
               <motion.div

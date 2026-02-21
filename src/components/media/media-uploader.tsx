@@ -12,12 +12,13 @@ import { Button, Input, LegacySelect as Select, Textarea } from "@/components/ui
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { SUPPORTED_GAMES } from "@/lib/constants/games";
+import { optimizedMediaUpload, createPreview } from "@/lib/upload";
 
 interface MediaUploaderProps {
   onSuccess: () => void;
 }
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB (will be compressed)
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
 export function MediaUploader({ onSuccess }: MediaUploaderProps) {
@@ -37,7 +38,7 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
     game: "",
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
@@ -56,19 +57,13 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
     const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
     if (selectedFile.size > maxSize) {
       setError(
-        `File too large. Maximum size: ${isVideo ? "50MB" : "5MB"}`
+        `File too large. Maximum size: ${isVideo ? "50MB" : "10MB"}`
       );
       return;
     }
 
     setFile(selectedFile);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
+    setPreview(await createPreview(selectedFile));
   };
 
   const handleUpload = async () => {
@@ -78,25 +73,39 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
     setError(null);
 
     try {
-      const isVideo = file.type.startsWith("video/");
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const bucket = isVideo ? "videos" : "images";
+      const isImage = file.type.startsWith("image/");
 
-      // Upload file
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("media")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      let url: string;
+      let thumbnailUrl: string | null = null;
+      let fileSize: number;
 
-      if (uploadError) throw uploadError;
+      if (isImage) {
+        // Compress, convert to WebP, and generate thumbnail
+        const result = await optimizedMediaUpload(file, user.id);
+        url = result.image.publicUrl;
+        thumbnailUrl = result.thumbnail.publicUrl;
+        fileSize = result.image.fileSize;
+      } else {
+        // Videos: upload as-is (no compression)
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("media")
-        .getPublicUrl(fileName);
+        const { error: uploadError } = await supabase.storage
+          .from("media")
+          .upload(fileName, file, {
+            cacheControl: "31536000",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("media")
+          .getPublicUrl(fileName);
+
+        url = publicUrl;
+        fileSize = file.size;
+      }
 
       // Get game ID
       let gameId: string | null = null;
@@ -113,11 +122,12 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
       const { error: mediaError } = await supabase.from("media").insert({
         user_id: user.id,
         game_id: gameId,
-        type: isVideo ? "video" : "image",
-        url: publicUrl,
+        type: isImage ? "image" : "video",
+        url,
+        thumbnail_url: thumbnailUrl,
         title: formData.title || null,
         description: formData.description || null,
-        file_size: file.size,
+        file_size: fileSize,
         is_public: true,
       } as never);
 
@@ -159,7 +169,7 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
             Click to upload or drag and drop
           </p>
           <p className="text-sm text-text-muted">
-            Images (PNG, JPG, GIF) up to 5MB
+            Images (PNG, JPG, GIF) up to 10MB — auto-compressed to WebP
           </p>
           <p className="text-sm text-text-muted">
             Videos (MP4, WebM) up to 50MB

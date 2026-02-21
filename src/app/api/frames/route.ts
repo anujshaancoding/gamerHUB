@@ -40,6 +40,7 @@ export async function GET() {
     const framesWithStatus = typedFrames?.map((frame) => ({
       ...frame,
       is_unlocked: unlockedFrameIds.includes(frame.id),
+      requires_premium: frame.unlock_type === "special" || frame.unlock_type === "purchase",
     }));
 
     return NextResponse.json({ frames: framesWithStatus || [] });

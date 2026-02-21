@@ -84,25 +84,23 @@ describe('Page Rendering', () => {
       expect(screen.getByTestId('empty-state')).toHaveTextContent('No articles yet');
     });
 
-    it('should correctly format post data from demo and regular sources', () => {
-      const demoPost = {
-        id: 'demo-1',
+    it('should correctly format post data', () => {
+      const post = {
+        id: 'post-1',
         title: 'Test Post',
         excerpt: 'Test excerpt',
         content: 'Full content',
         cover_image: 'https://example.com/image.jpg',
-        author_id: '',
+        author_id: 'user-1',
         created_at: '2024-01-01T00:00:00Z',
         likes_count: 10,
         comments_count: 5,
         views_count: 100,
         read_time_minutes: 5,
-        is_demo: true,
       };
 
-      expect(demoPost.is_demo).toBe(true);
-      expect(demoPost.likes_count).toBe(10);
-      expect(demoPost.read_time_minutes).toBe(5);
+      expect(post.likes_count).toBe(10);
+      expect(post.read_time_minutes).toBe(5);
     });
   });
 
@@ -128,22 +126,14 @@ describe('Page Rendering', () => {
       expect(screen.getByTestId('no-gamers')).toHaveTextContent('No gamers found');
     });
 
-    it('should correctly combine real and demo profiles', () => {
-      const realProfiles = [
-        { id: 'real-1', username: 'player1', _isDemo: false },
-        { id: 'real-2', username: 'player2', _isDemo: false },
+    it('should list profiles correctly', () => {
+      const profiles = [
+        { id: 'user-1', username: 'player1' },
+        { id: 'user-2', username: 'player2' },
       ];
 
-      const demoProfiles = [
-        { id: 'demo-1', username: 'demoPlayer1', _isDemo: true },
-        { id: 'demo-2', username: 'demoPlayer2', _isDemo: true },
-      ];
-
-      // Real profiles should come first
-      const combined = [...realProfiles, ...demoProfiles];
-      expect(combined).toHaveLength(4);
-      expect(combined[0]._isDemo).toBe(false);
-      expect(combined[2]._isDemo).toBe(true);
+      expect(profiles).toHaveLength(2);
+      expect(profiles[0].username).toBe('player1');
     });
 
     it('should filter by game slug correctly', () => {

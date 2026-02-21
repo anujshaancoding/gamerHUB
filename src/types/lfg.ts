@@ -125,26 +125,9 @@ export const DURATION_OPTIONS = [
   { value: "until_full", label: "Until Full" },
 ] as const;
 
-export const REGIONS = [
-  { value: "na", label: "North America" },
-  { value: "eu", label: "Europe" },
-  { value: "asia", label: "Asia" },
-  { value: "sa", label: "South America" },
-  { value: "oce", label: "Oceania" },
-  { value: "mena", label: "Middle East" },
-  { value: "cis", label: "CIS" },
-] as const;
+export { REGIONS } from "@/lib/constants/games";
 
 // Re-export game configs for convenience
 export { getGameConfig, GAME_CONFIGS, usesNumericRating } from "@/lib/game-configs";
 export type { GameConfig, RankOption, GameModeOption, AgentOption, MapOption } from "@/lib/game-configs";
 
-// Legacy CS2 constants (deprecated - use getGameConfig('cs2') instead)
-export const CS2_RATING_MIN = 1000;
-export const CS2_RATING_MAX = 35000;
-export const CS2_GAME_MODES = [
-  { value: "premier", label: "Premier" },
-  { value: "competitive", label: "Competitive" },
-  { value: "wingman", label: "Wingman" },
-  { value: "casual", label: "Casual" },
-] as const;

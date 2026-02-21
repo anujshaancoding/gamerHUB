@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isPromoPeriodActive } from "@/lib/promo";
 
 // POST - Equip a title
 export async function POST(request: NextRequest) {
@@ -33,6 +34,37 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, active_title_id: null });
+    }
+
+    // Check if title requires premium (special/purchase titles are premium-only)
+    const { data: titleData } = await supabase
+      .from("titles")
+      .select("unlock_type")
+      .eq("id", title_id)
+      .single();
+
+    if (titleData?.unlock_type === "special" || titleData?.unlock_type === "purchase") {
+      if (!isPromoPeriodActive()) {
+        const { data: sub } = await supabase
+          .from("user_subscriptions" as any)
+          .select("status")
+          .eq("user_id", user.id)
+          .in("status", ["active", "trialing"])
+          .single();
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_premium")
+          .eq("id", user.id)
+          .single();
+
+        if (!sub && !profile?.is_premium) {
+          return NextResponse.json(
+            { error: "Premium required to equip this title" },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Verify user owns this title

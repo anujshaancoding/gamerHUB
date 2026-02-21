@@ -21,21 +21,21 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 // Helper to format amount for display
-export function formatAmount(amount: number, currency: string = "usd"): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatAmount(amount: number, currency: string = "inr"): string {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(amount / 100);
 }
 
-// Convert cents to dollars
-export function centsToDollars(cents: number): number {
-  return cents / 100;
+// Convert paise to rupees
+export function paiseToRupees(paise: number): number {
+  return paise / 100;
 }
 
-// Convert dollars to cents
-export function dollarsToCents(dollars: number): number {
-  return Math.round(dollars * 100);
+// Convert rupees to paise
+export function rupeesToPaise(rupees: number): number {
+  return Math.round(rupees * 100);
 }
 
 // Subscription status helpers

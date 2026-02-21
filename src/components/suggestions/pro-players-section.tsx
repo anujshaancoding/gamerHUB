@@ -20,6 +20,11 @@ export function ProPlayersSection({ className, gameId, isExpanded, onToggleExpan
     limit: 10,
   });
 
+  // Hide section if no pro players (after loading)
+  if (!loading && proPlayers.length === 0) {
+    return null;
+  }
+
   // Show loading state
   if (loading) {
     return (
@@ -50,27 +55,6 @@ export function ProPlayersSection({ className, gameId, isExpanded, onToggleExpan
             </Card>
           ))}
         </HorizontalScroll>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (proPlayers.length === 0) {
-    return (
-      <div className={className}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-warning" />
-            <h2 className="text-lg font-semibold text-text">Pro Players</h2>
-          </div>
-        </div>
-        <Card className="p-6 text-center">
-          <Star className="h-10 w-10 text-text-muted mx-auto mb-3" />
-          <p className="text-text-secondary mb-2">No pro players found</p>
-          <p className="text-sm text-text-muted">
-            Add games to discover pro players in your favorite titles
-          </p>
-        </Card>
       </div>
     );
   }
