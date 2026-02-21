@@ -182,8 +182,7 @@ export default function CommunityPage() {
 
     setLoading(true);
     fetchContent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id, authLoading]);
+  }, [fetchContent, authLoading, activeTab]);
 
   // Safety net: if loading is stuck for 10 seconds, force it off
   useEffect(() => {

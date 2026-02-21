@@ -211,6 +211,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // On-demand ISR revalidation — instant freshness after update
     revalidatePath(`/blog/${slug}`);
     revalidatePath("/blog");
+    revalidatePath("/community");
 
     return NextResponse.json({ post });
   } catch (error) {

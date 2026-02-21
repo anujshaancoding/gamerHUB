@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 // GET - List published blog posts with filters
@@ -199,10 +200,10 @@ export async function POST(request: NextRequest) {
       .slice(0, 200);
     const slug = baseSlug || `post-${Date.now()}`;
 
-    // Create post
+    // Create post (truncate SEO fields to match DB column limits)
     const coreData: Record<string, unknown> = {
       author_id: user.id,
-      title: title.trim(),
+      title: title.trim().slice(0, 200),
       slug,
       content,
       excerpt: excerpt?.trim() || null,
@@ -212,8 +213,8 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       status: postStatus,
       published_at: publishedAt,
-      meta_title: meta_title || null,
-      meta_description: meta_description || null,
+      meta_title: meta_title ? meta_title.slice(0, 70) : null,
+      meta_description: meta_description ? meta_description.slice(0, 160) : null,
       allow_comments: allow_comments !== false,
     };
 
@@ -265,6 +266,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Invalidate Next.js Router Cache so /community shows the new post
+    revalidatePath("/community");
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {
