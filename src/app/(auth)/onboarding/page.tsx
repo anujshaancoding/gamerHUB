@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +13,8 @@ import {
   Check,
   Loader2,
   X,
+  AlertCircle,
+  AtSign,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Textarea, Avatar, SelectWithOther } from "@/components/ui";
 import {
@@ -45,6 +47,69 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Username state
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const displayNameInitialized = useRef(false);
+
+  const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
+
+  // Pre-fill display name from Google account data
+  useEffect(() => {
+    if (user && !displayNameInitialized.current) {
+      displayNameInitialized.current = true;
+      const googleName = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      if (googleName) {
+        setFormData((prev) => ({ ...prev, display_name: googleName }));
+      }
+      // Pre-fill avatar from Google if available
+      if (user.user_metadata?.avatar_url && !avatarPreview) {
+        setAvatarPreview(user.user_metadata.avatar_url);
+      }
+    }
+  }, [user, avatarPreview]);
+
+  // Debounced username availability check
+  const checkUsernameAvailability = useCallback(async (value: string) => {
+    if (!USERNAME_REGEX.test(value)) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("3-20 chars, starts with a letter, letters/numbers/underscores only");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameMessage("Checking availability...");
+
+    try {
+      const res = await fetch(`/api/users/check-username?username=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      setUsernameStatus(data.available ? "available" : "taken");
+      setUsernameMessage(data.message);
+    } catch {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Failed to check availability");
+    }
+  }, []);
+
+  const handleUsernameChange = (value: string) => {
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(sanitized);
+
+    if (usernameCheckTimer.current) clearTimeout(usernameCheckTimer.current);
+
+    if (!sanitized || sanitized.length < 3) {
+      setUsernameStatus(sanitized.length > 0 ? "invalid" : "idle");
+      setUsernameMessage(sanitized.length > 0 ? "Username must be at least 3 characters" : "");
+      return;
+    }
+
+    usernameCheckTimer.current = setTimeout(() => {
+      checkUsernameAvailability(sanitized);
+    }, 300);
+  };
 
   // Form data
   const [formData, setFormData] = useState({
@@ -92,8 +157,16 @@ export default function OnboardingPage() {
     }
   };
 
+  const isStep1Valid = username.length >= 3 && usernameStatus === "available";
+
   const handleNext = async () => {
+    if (currentStep === 1 && !isStep1Valid) {
+      setError("Please choose a valid, available username to continue.");
+      return;
+    }
+
     if (currentStep < 3) {
+      setError(null);
       setCurrentStep(currentStep + 1);
       return;
     }
@@ -116,8 +189,9 @@ export default function OnboardingPage() {
       const resolvedRegion = formData.region === "other" ? formData.custom_region : formData.region;
       const resolvedLanguage = formData.preferred_language === "other" ? formData.custom_language : formData.preferred_language;
 
-      // Update profile
+      // Update profile with username
       const { error: profileError } = await updateProfile({
+        username: username,
         display_name: formData.display_name || null,
         bio: formData.bio || null,
         gaming_style: formData.gaming_style as "casual" | "competitive" | "pro",
@@ -293,6 +367,36 @@ export default function OnboardingPage() {
                     Recommended: 256x256 PNG or JPG
                   </p>
                 </div>
+              </div>
+
+              {/* Username - Required */}
+              <div>
+                <Input
+                  label="Username *"
+                  placeholder="Choose a unique username"
+                  value={username}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  leftIcon={<AtSign className="h-4 w-4" />}
+                  rightIcon={
+                    usernameStatus === "checking" ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-text-muted" />
+                    ) : usernameStatus === "available" ? (
+                      <Check className="h-4 w-4 text-green-400" />
+                    ) : usernameStatus === "taken" || usernameStatus === "invalid" ? (
+                      <AlertCircle className="h-4 w-4 text-red-400" />
+                    ) : null
+                  }
+                  maxLength={20}
+                />
+                {usernameMessage && (
+                  <p className={`text-xs mt-1 ${
+                    usernameStatus === "available" ? "text-green-400" :
+                    usernameStatus === "taken" || usernameStatus === "invalid" ? "text-red-400" :
+                    "text-text-muted"
+                  }`}>
+                    {usernameMessage}
+                  </p>
+                )}
               </div>
 
               <Input
@@ -678,6 +782,7 @@ export default function OnboardingPage() {
           <Button
             onClick={handleNext}
             isLoading={loading}
+            disabled={currentStep === 1 && !isStep1Valid}
             rightIcon={<ChevronRight className="h-4 w-4" />}
           >
             {currentStep === 3 ? "Complete Setup" : "Next"}

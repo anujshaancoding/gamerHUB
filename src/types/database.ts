@@ -1824,6 +1824,7 @@ export interface Database {
           is_premium: boolean | null;
           premium_until: string | null;
           is_verified: boolean | null;
+          username_changed_at: string | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1847,6 +1848,7 @@ export interface Database {
           is_premium?: boolean | null;
           premium_until?: string | null;
           is_verified?: boolean | null;
+          username_changed_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1870,6 +1872,7 @@ export interface Database {
           is_premium?: boolean | null;
           premium_until?: string | null;
           is_verified?: boolean | null;
+          username_changed_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };

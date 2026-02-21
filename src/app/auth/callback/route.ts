@@ -35,13 +35,14 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, gaming_style, region, bio")
+          .select("username, display_name, gaming_style, region, bio")
           .eq("id", user.id)
           .single();
 
-        // If profile exists and has any onboarding fields filled, skip onboarding
-        const profileData = profile as { display_name: string | null; gaming_style: string | null; region: string | null; bio: string | null } | null;
-        const hasCompletedOnboarding = profileData && (
+        // If profile exists, has a real username (not auto-generated), and has onboarding fields filled
+        const profileData = profile as { username: string | null; display_name: string | null; gaming_style: string | null; region: string | null; bio: string | null } | null;
+        const hasRealUsername = profileData?.username && !profileData.username.startsWith("user_");
+        const hasCompletedOnboarding = profileData && hasRealUsername && (
           profileData.gaming_style ||
           profileData.display_name ||
           profileData.region ||
