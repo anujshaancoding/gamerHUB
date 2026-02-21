@@ -39,20 +39,52 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 async function compressImage(file: File, preset: ImagePreset): Promise<File> {
   const { maxWidthOrHeight, maxSizeMB, quality } = PRESETS[preset];
 
-  // browser-image-compression handles resize + quality reduction
-  // useWebWorker disabled — web workers can hang indefinitely under strict CSP
-  // or HMR in dev; main-thread compression is fast enough for ≤ 10 MB images.
-  const compressed = await withTimeout(
-    imageCompression(file, {
-      maxSizeMB,
-      maxWidthOrHeight,
-      useWebWorker: false,
-      fileType: "image/webp",
-      initialQuality: quality,
-    }),
-    30_000,
-    "Image compression",
-  );
+  // Fast path: skip heavy compression when the file is already small enough.
+  // We still convert to WebP via canvas for consistency, but avoid the iterative
+  // compression loop that browser-image-compression uses to hit the size target.
+  if (file.size <= maxSizeMB * 1024 * 1024) {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const needsResize = bitmap.width > maxWidthOrHeight || bitmap.height > maxWidthOrHeight;
+      if (!needsResize) {
+        // Already within size + dimension limits — just convert to WebP
+        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        const blob = await canvas.convertToBlob({ type: "image/webp", quality });
+        return new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
+      }
+      bitmap.close();
+    } catch {
+      // OffscreenCanvas not supported or failed — fall through to full compression
+    }
+  }
+
+  // Try web worker first for non-blocking compression; fall back to main thread
+  // if the worker hangs (e.g. strict CSP or HMR in dev).
+  const options = {
+    maxSizeMB,
+    maxWidthOrHeight,
+    fileType: "image/webp" as const,
+    initialQuality: quality,
+  };
+
+  let compressed: File;
+  try {
+    compressed = await withTimeout(
+      imageCompression(file, { ...options, useWebWorker: true }),
+      15_000,
+      "Image compression (worker)",
+    );
+  } catch {
+    // Worker failed or timed out — retry on main thread with a generous timeout
+    compressed = await withTimeout(
+      imageCompression(file, { ...options, useWebWorker: false }),
+      30_000,
+      "Image compression (main thread)",
+    );
+  }
 
   // Ensure the output has a .webp extension for storage content-type detection
   return new File([compressed], compressed.name.replace(/\.[^.]+$/, ".webp"), {
@@ -65,7 +97,9 @@ function storagePathFromUrl(publicUrl: string): string | null {
   const marker = "/object/public/media/";
   const idx = publicUrl.indexOf(marker);
   if (idx === -1) return null;
-  return decodeURIComponent(publicUrl.substring(idx + marker.length));
+  // Strip any query params (e.g. ?v=… cache-busting) before extracting the path
+  const raw = publicUrl.substring(idx + marker.length).split("?")[0];
+  return decodeURIComponent(raw);
 }
 
 /** Build the stable storage path for a given upload type. */
@@ -154,10 +188,14 @@ export async function optimizedUpload(
 
   if (uploadError) throw uploadError;
 
-  // 7. Get public URL
-  const { data: { publicUrl } } = supabase.storage
+  // 7. Get public URL with cache-busting query param.
+  // Avatar/banner paths are stable (e.g. avatars/{id}/avatar.webp) so the
+  // browser would otherwise serve the old cached image for up to 1 year.
+  const { data: { publicUrl: rawUrl } } = supabase.storage
     .from("media")
     .getPublicUrl(storagePath);
+
+  const publicUrl = `${rawUrl}?v=${Date.now()}`;
 
   return { publicUrl, fileSize: compressed.size };
 }

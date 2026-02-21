@@ -11,6 +11,7 @@ const GUEST_ALLOWED_ROUTES = [
   "/register",
   "/onboarding",
   "/offline",
+  "/overview",
   "/",
 ];
 

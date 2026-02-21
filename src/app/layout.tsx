@@ -49,12 +49,15 @@ export const metadata: Metadata = {
     description: "The ultimate gaming social platform for gamers worldwide. GG starts here.",
     type: "website",
     siteName: "ggLobby",
-    url: "https://gglobby.com",
+    url: "https://gglobby.in",
   },
   twitter: {
     card: "summary_large_image",
     title: "ggLobby - Where Gamers Unite",
     description: "The ultimate gaming social platform for gamers worldwide. GG starts here.",
+  },
+  verification: {
+    google: "_fOha3A6zhf9yZkYw34lQa6hO0KFMDsorhDzs75QBYE",
   },
 };
 
