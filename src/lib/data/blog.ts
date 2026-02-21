@@ -177,6 +177,36 @@ export async function getAllPublishedSlugs(): Promise<
   return data || [];
 }
 
+// Fetch recent published posts for Google News sitemap (last 48 hours)
+export async function getRecentPublishedPosts(): Promise<
+  {
+    slug: string;
+    title: string;
+    published_at: string;
+    category: string;
+    tags: string[];
+  }[]
+> {
+  const supabase = createBuildClient();
+
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("slug, title, published_at, category, tags")
+    .eq("status", "published")
+    .gte("published_at", twoDaysAgo.toISOString())
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching recent posts for news sitemap:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // Fetch available games for filter dropdowns
 export async function getGames(): Promise<
   { id: string; slug: string; name: string; icon_url: string | null }[]

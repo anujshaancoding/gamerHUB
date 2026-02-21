@@ -3,6 +3,7 @@ import { getBlogPosts, getGames } from "@/lib/data/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
 import type { BlogCategory } from "@/types/blog";
 import { BlogListContent } from "./blog-list-content";
+import { JsonLd, BASE_URL, SITE_NAME } from "@/lib/seo";
 
 interface Props {
   searchParams: Promise<{
@@ -28,14 +29,23 @@ export async function generateMetadata({
     parts.push(BLOG_CATEGORIES[params.category as BlogCategory].label);
   }
 
-  const title = parts.length > 0 ? parts.join(" ") : undefined;
+  const title = parts.length > 0 ? `${parts.join(" ")} Articles` : "Gaming Blog";
   const description = parts.length > 0
     ? `Browse ${parts.join(" ").toLowerCase()} articles on ggLobby`
-    : "The latest gaming guides, and analysis for Valorant, CS2, PUBG, Free Fire and more.";
+    : "The latest gaming guides, news, and analysis for Valorant, BGMI, Free Fire and more.";
 
   return {
     title,
     description,
+    openGraph: {
+      title: `${title} | ggLobby`,
+      description,
+      type: "website",
+      url: `${BASE_URL}/blog`,
+    },
+    alternates: {
+      canonical: "/blog",
+    },
   };
 }
 
@@ -61,6 +71,39 @@ export default async function BlogPage({ searchParams }: Props) {
 
   return (
     <div>
+      <JsonLd
+        data={{
+          "@type": "CollectionPage",
+          name: "ggLobby Blog",
+          description: "Gaming news, guides, and analysis from the community",
+          url: `${BASE_URL}/blog`,
+          isPartOf: {
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: BASE_URL,
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: BASE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Blog",
+              item: `${BASE_URL}/blog`,
+            },
+          ],
+        }}
+      />
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-text mb-2">Blog</h1>
         <p className="text-text-muted">

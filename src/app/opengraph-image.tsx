@@ -148,7 +148,7 @@ export default async function OGImage() {
             letterSpacing: "2px",
           }}
         >
-          gglobby.com
+          gglobby.in
         </div>
       </div>
     ),

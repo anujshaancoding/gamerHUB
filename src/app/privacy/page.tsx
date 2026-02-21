@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | ggLobby",
+  title: "Privacy Policy",
   description: "Learn how ggLobby collects, uses, and protects your personal information.",
 };
 
@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
             <p>
               Welcome to ggLobby (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). We are committed to protecting your privacy.
               This Privacy Policy explains how we collect, use, disclose, and safeguard your
-              information when you use our platform at gglobby.com and associated services
+              information when you use our platform at gglobby.in and associated services
               (collectively, the &quot;Service&quot;).
             </p>
             <p>
@@ -114,7 +114,7 @@ export default function PrivacyPolicyPage() {
             </ul>
             <p className="mt-2">
               To exercise these rights, visit your <strong>Settings</strong> page or contact us at{" "}
-              <a href="mailto:privacy@gglobby.com" className="text-primary hover:underline">privacy@gglobby.com</a>.
+              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>.
             </p>
           </section>
 
@@ -135,7 +135,7 @@ export default function PrivacyPolicyPage() {
               personal information from children under 13. If we learn that we have collected data
               from a child under 13, we will delete it promptly. If you believe a child under 13
               has provided us with personal information, please contact us at{" "}
-              <a href="mailto:privacy@gglobby.com" className="text-primary hover:underline">privacy@gglobby.com</a>.
+              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>.
             </p>
           </section>
 
@@ -173,7 +173,7 @@ export default function PrivacyPolicyPage() {
               If you have questions about this Privacy Policy or our data practices, contact us at:
             </p>
             <p className="mt-2">
-              <a href="mailto:privacy@gglobby.com" className="text-primary hover:underline">privacy@gglobby.com</a>
+              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>
             </p>
           </section>
         </div>

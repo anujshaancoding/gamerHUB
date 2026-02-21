@@ -17,6 +17,7 @@ import type { BlogPost, BlogTemplate, BlogColorPalette } from "@/types/blog";
 import { BlogPostActions } from "./blog-post-actions";
 import { BlogComments } from "@/components/blog/blog-comments";
 import { BlogTemplateRenderer } from "@/components/blog/blog-template-renderer";
+import { JsonLd, BASE_URL, ORGANIZATION_JSONLD } from "@/lib/seo";
 
 // On-demand ISR: revalidated via revalidatePath() in PATCH/DELETE handlers
 // Falls back to 1 hour max-stale for safety
@@ -85,31 +86,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// JSON-LD structured data for search engines
-function JsonLd({ post }: { post: BlogPost }) {
-  const jsonLd = {
-    "@context": "https://schema.org",
+// Enhanced JSON-LD structured data for search engines
+function BlogPostJsonLd({ post }: { post: BlogPost }) {
+  const postUrl = `${BASE_URL}/blog/${post.slug}`;
+  const categoryInfo = BLOG_CATEGORIES[post.category];
+
+  const blogPosting = {
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt,
-    image: post.featured_image_url,
+    description: post.excerpt || post.meta_description,
+    image: post.featured_image_url
+      ? {
+          "@type": "ImageObject",
+          url: post.featured_image_url,
+          width: 1200,
+          height: 630,
+        }
+      : undefined,
     datePublished: post.published_at,
     dateModified: post.updated_at,
     author: {
       "@type": "Person",
       name: post.author?.display_name || post.author?.username,
+      url: post.author?.username
+        ? `${BASE_URL}/profile/${post.author.username}`
+        : undefined,
     },
-    publisher: {
-      "@type": "Organization",
-      name: "ggLobby",
-    },
+    publisher: ORGANIZATION_JSONLD,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `/blog/${post.slug}`,
+      "@id": postUrl,
     },
-    articleSection: post.category,
+    url: postUrl,
+    articleSection: categoryInfo?.label || post.category,
     keywords: post.tags?.join(", "),
     wordCount: post.content?.split(/\s+/).length,
+    inLanguage: "en",
+    isAccessibleForFree: true,
     interactionStatistic: [
       {
         "@type": "InteractionCounter",
@@ -124,11 +137,45 @@ function JsonLd({ post }: { post: BlogPost }) {
     ],
   };
 
+  const breadcrumb = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: BASE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: `${BASE_URL}/blog`,
+      },
+      ...(post.category
+        ? [
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: categoryInfo?.label || post.category,
+              item: `${BASE_URL}/blog?category=${post.category}`,
+            },
+          ]
+        : []),
+      {
+        "@type": "ListItem",
+        position: post.category ? 4 : 3,
+        name: post.title,
+        item: postUrl,
+      },
+    ],
+  };
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
+    <>
+      <JsonLd data={blogPosting} />
+      <JsonLd data={breadcrumb} />
+    </>
   );
 }
 
@@ -256,7 +303,7 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <div className="max-w-5xl mx-auto">
       {/* JSON-LD structured data */}
-      <JsonLd post={post} />
+      <BlogPostJsonLd post={post} />
 
       {/* Back link */}
       <div className="mb-6">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Community Guidelines | ggLobby",
+  title: "Community Guidelines",
   description: "The rules that keep ggLobby a positive, fair, and fun gaming community for everyone.",
 };
 
@@ -125,7 +125,7 @@ export default function CommunityGuidelinesPage() {
             <h2 className="text-xl font-semibold text-text">8. Appeals</h2>
             <p>
               If you believe you were banned unfairly, you can appeal by emailing{" "}
-              <a href="mailto:appeals@gglobby.com" className="text-primary hover:underline">appeals@gglobby.com</a>{" "}
+              <a href="mailto:appeals@gglobby.in" className="text-primary hover:underline">appeals@gglobby.in</a>{" "}
               with your username and a description of the situation. We review appeals within 7
               business days. Appeal decisions are final.
             </p>
@@ -136,7 +136,7 @@ export default function CommunityGuidelinesPage() {
             <p>
               If you see someone breaking these guidelines, please report them using the report
               button on their profile, post, or message. You can also email{" "}
-              <a href="mailto:reports@gglobby.com" className="text-primary hover:underline">reports@gglobby.com</a>.
+              <a href="mailto:reports@gglobby.in" className="text-primary hover:underline">reports@gglobby.in</a>.
               All reports are reviewed by our moderation team and kept confidential.
             </p>
           </section>

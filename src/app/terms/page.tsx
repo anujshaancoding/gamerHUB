@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | ggLobby",
+  title: "Terms of Service",
   description: "Read the terms and conditions for using ggLobby.",
 };
 
@@ -94,7 +94,7 @@ export default function TermsOfServicePage() {
             <p>
               We respect intellectual property rights. If you believe content on ggLobby infringes
               your copyright, please send a DMCA takedown notice to{" "}
-              <a href="mailto:legal@gglobby.com" className="text-primary hover:underline">legal@gglobby.com</a>{" "}
+              <a href="mailto:legal@gglobby.in" className="text-primary hover:underline">legal@gglobby.in</a>{" "}
               with:
             </p>
             <ul className="list-disc pl-6 space-y-1">
@@ -211,7 +211,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-semibold text-text">15. Contact</h2>
             <p>
               For questions about these Terms, contact us at:{" "}
-              <a href="mailto:legal@gglobby.com" className="text-primary hover:underline">legal@gglobby.com</a>
+              <a href="mailto:legal@gglobby.in" className="text-primary hover:underline">legal@gglobby.in</a>
             </p>
           </section>
         </div>

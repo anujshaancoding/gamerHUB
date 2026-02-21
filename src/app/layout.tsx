@@ -9,6 +9,8 @@ import { PWAProvider } from "@/components/pwa/PWAProvider";
 import { AppShell } from "@/components/layout/AppShell";
 // import { PageLoadTimer } from "@/components/dev/PageLoadTimer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
+import { GoogleAnalytics } from "@/components/analytics";
+import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -27,7 +29,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ggLobby - Where Gamers Unite",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://gglobby.in"),
+  title: {
+    default: "ggLobby - Where Gamers Unite",
+    template: "%s | ggLobby",
+  },
   description: "The ultimate gaming social platform. Connect with gamers, find teammates, and compete worldwide. GG starts here.",
   keywords: ["gaming", "social", "esports", "multiplayer", "valorant", "bgmi", "freefire", "gg", "lobby", "gamer"],
   authors: [{ name: "ggLobby" }],
@@ -57,7 +63,10 @@ export const metadata: Metadata = {
     description: "The ultimate gaming social platform for gamers worldwide. GG starts here.",
   },
   verification: {
-    google: "_fOha3A6zhf9yZkYw34lQa6hO0KFMDsorhDzs75QBYE",
+    google: [
+      "_fOha3A6zhf9yZkYw34lQa6hO0KFMDsorhDzs75QBYE",
+      "vj3nOvDs5QgHHN227bkiRwziaSp_GHsGuhgUVpPzy1s",
+    ],
   },
 };
 
@@ -71,6 +80,38 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        <GoogleAnalytics />
+        <JsonLd
+          data={[
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: ORGANIZATION_JSONLD.name,
+              url: ORGANIZATION_JSONLD.url,
+              logo: ORGANIZATION_JSONLD.logo,
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: SITE_NAME,
+              url: BASE_URL,
+              description: SITE_DESCRIPTION,
+              publisher: {
+                "@type": "Organization",
+                name: ORGANIZATION_JSONLD.name,
+                url: ORGANIZATION_JSONLD.url,
+              },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${BASE_URL}/search?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            },
+          ]}
+        />
         <QueryProvider>
           <AuthProvider>
             <PresenceProvider>

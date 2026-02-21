@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllPublishedSlugs } from "@/lib/data/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
-
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://gglobby.in";
+import { BASE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
