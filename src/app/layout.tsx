@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { PresenceProvider } from "@/lib/presence/PresenceProvider";
 import { AuthGateProvider } from "@/components/auth/auth-gate-provider";
 import { PWAProvider } from "@/components/pwa/PWAProvider";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
 // import { PageLoadTimer } from "@/components/dev/PageLoadTimer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
@@ -122,6 +123,7 @@ export default function RootLayout({
                   {/* <PageLoadTimer /> */}
                   <FeedbackWidget />
                   <Toaster theme="dark" position="bottom-right" richColors />
+                  <PWAInstallPrompt />
                 </AuthGateProvider>
               </PWAProvider>
             </ThemeProvider>

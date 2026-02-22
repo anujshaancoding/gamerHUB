@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import type { ReportType } from "@/types/verification";
 
 interface ReportUserModalProps {
@@ -95,6 +96,7 @@ export function ReportUserModal({
   contextType,
   contextId,
 }: ReportUserModalProps) {
+  const { can: permissions } = usePermissions();
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [description, setDescription] = useState("");
@@ -202,7 +204,27 @@ export function ReportUserModal({
 
           {/* Content */}
           <div className="p-4">
-            {step === "type" && (
+            {step === "type" && !permissions.reportUser && (
+              <div className="text-center py-8">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Shield className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Premium Feature</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Reporting users is available for Premium members and above. Upgrade to help keep GamerHub safe.
+                </p>
+                <Button
+                  onClick={() => {
+                    resetModal();
+                    onClose();
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            )}
+
+            {step === "type" && permissions.reportUser && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Select the reason for reporting <span className="font-medium text-foreground">@{username}</span>

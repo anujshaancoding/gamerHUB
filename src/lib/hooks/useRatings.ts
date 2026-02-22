@@ -61,11 +61,19 @@ export function useSubmitEndorsement() {
   return useMutation({
     mutationFn: async (payload: {
       endorsedId: string;
-      friendly: boolean;
-      teamPlayer: boolean;
-      leader: boolean;
-      communicative: boolean;
-      reliable: boolean;
+      endorsementType?: "positive" | "negative";
+      // Positive traits
+      friendly?: boolean;
+      teamPlayer?: boolean;
+      leader?: boolean;
+      communicative?: boolean;
+      reliable?: boolean;
+      // Negative traits
+      toxic?: boolean;
+      quitter?: boolean;
+      uncooperative?: boolean;
+      uncommunicative?: boolean;
+      unreliable?: boolean;
       gameId?: string;
       playedAs?: "teammate" | "opponent";
       positiveNote?: string;

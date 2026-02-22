@@ -13,6 +13,7 @@ import {
   Loader2,
   Palette,
   LayoutTemplate,
+  MessageSquare,
 } from "lucide-react";
 import { PremiumFeatureGate } from "@/components/premium/PremiumFeatureGate";
 import { RichTextEditor } from "@/components/blog/rich-text-editor";
@@ -26,6 +27,7 @@ import {
   useBlogPost,
 } from "@/lib/hooks/useBlog";
 import { useBlogAuthor } from "@/lib/hooks/useBlogAuthor";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import {
   BLOG_CATEGORIES,
   BLOG_TEMPLATES,
@@ -42,6 +44,7 @@ function WritePage() {
   const editSlug = searchParams.get("edit");
 
   const { ensureAuthor, isAuthor, isRegistering, author } = useBlogAuthor();
+  const { can: permissions } = usePermissions();
   const { createPost, isCreating } = useCreateBlogPost();
   const { updatePost, isUpdating } = useUpdateBlogPost();
   const { post: existingPost, loading: loadingPost } = useBlogPost(
@@ -60,7 +63,7 @@ function WritePage() {
   const [content, setContent] = useState("");
   const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
   const [excerpt, setExcerpt] = useState("");
-  const [category, setCategory] = useState<BlogCategory>("news");
+  const [category, setCategory] = useState<BlogCategory>("opinion");
   const [tags, setTags] = useState("");
   const [featuredImageUrl, setFeaturedImageUrl] = useState("");
   const [allowComments, setAllowComments] = useState(true);
@@ -223,6 +226,21 @@ function WritePage() {
         </div>
       </div>
 
+      {/* Editor Notes Banner */}
+      {editSlug && existingPost && (existingPost as Record<string, unknown>).editor_notes && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <div className="flex items-start gap-2">
+            <MessageSquare className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-400 mb-1">Editor Suggestions</p>
+              <p className="text-sm text-text-secondary whitespace-pre-line">
+                {(existingPost as Record<string, unknown>).editor_notes as string}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div className="mb-4">
         <Input
@@ -257,7 +275,9 @@ function WritePage() {
             onChange={(e) => setCategory(e.target.value as BlogCategory)}
             className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {Object.entries(BLOG_CATEGORIES).map(([key, { label }]) => (
+            {Object.entries(BLOG_CATEGORIES)
+              .filter(([key]) => key !== "news" || permissions.useNewsCategory)
+              .map(([key, { label }]) => (
               <option key={key} value={key}>
                 {label}
               </option>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPermissionContext } from "@/lib/api/check-permission";
+import { getUserTier, can } from "@/lib/permissions";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -152,6 +154,27 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       "is_pinned",
     ];
 
+    // Editor+ can set editor_notes on blog posts
+    if (body.editor_notes !== undefined) {
+      const permCtx = await getUserPermissionContext(supabase);
+      const tier = permCtx ? getUserTier(permCtx) : "free";
+      if (can.suggestEdits(tier)) {
+        allowedFields.push("editor_notes");
+      }
+    }
+
+    // Restrict "news" category to editors and admins only
+    if (body.category === "news") {
+      const permCtx = await getUserPermissionContext(supabase);
+      const tier = permCtx ? getUserTier(permCtx) : "free";
+      if (!can.useNewsCategory(tier)) {
+        return NextResponse.json(
+          { error: 'The "News" category is restricted to editors and administrators' },
+          { status: 403 }
+        );
+      }
+    }
+
     const updates: Record<string, unknown> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -253,13 +276,24 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const isDraft = existingPost.status === "draft";
 
     if (!isAuthor || !isDraft) {
-      const { data: author } = await supabase
-        .from("blog_authors")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
+      // Check if user is a blog editor/admin or a site admin
+      const [{ data: author }, { data: profile }] = await Promise.all([
+        supabase
+          .from("blog_authors")
+          .select("role")
+          .eq("user_id", user.id)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single(),
+      ]);
 
-      if (!author || !["editor", "admin"].includes(author.role)) {
+      const isBlogAdmin = author && ["editor", "admin"].includes(author.role);
+      const isSiteAdmin = profile?.is_admin;
+
+      if (!isBlogAdmin && !isSiteAdmin) {
         return NextResponse.json(
           { error: "Cannot delete published posts" },
           { status: 403 }

@@ -9,6 +9,8 @@ const GUEST_ALLOWED_ROUTES = [
   "/community",
   "/login",
   "/register",
+  "/reset-password",
+  "/update-password",
   "/onboarding",
   "/offline",
   "/overview",

@@ -357,6 +357,35 @@ export function useAddBlogComment() {
   };
 }
 
+// Hook: Delete a blog comment (soft-delete)
+export function useDeleteBlogComment(postSlug: string) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const response = await fetch(
+        `/api/blog/${postSlug}/comments/${commentId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete comment");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: blogKeys.comments(postSlug),
+      });
+    },
+  });
+
+  return {
+    deleteComment: mutation.mutateAsync,
+    isDeleting: mutation.isPending,
+    error: mutation.error instanceof Error ? mutation.error.message : null,
+  };
+}
+
 // Hook: Get blog authors
 export function useBlogAuthors(verified?: boolean) {
   const { data, isLoading, error } = useQuery({

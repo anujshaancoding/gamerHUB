@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { AdminRole } from "@/types/admin";
 
 export function useAdmin() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
 
   const { data, isLoading } = useQuery({
@@ -32,6 +32,6 @@ export function useAdmin() {
   return {
     isAdmin: data?.is_admin ?? false,
     adminRole: data?.admin_role ?? null,
-    isLoading: isLoading || !user,
+    isLoading: authLoading || (!!user && isLoading),
   };
 }

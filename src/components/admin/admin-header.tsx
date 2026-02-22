@@ -6,10 +6,17 @@ import { Avatar } from "@/components/ui";
 
 const TITLES: Record<string, string> = {
   "/admin": "Dashboard",
+  "/admin/blog": "Blog Posts",
+  "/admin/blog/new": "New Blog Post",
+  "/admin/reports": "Reports",
+  "/admin/users": "Users",
+  "/admin/authors": "Blog Authors",
 };
 
 function getTitle(pathname: string): string {
-  return TITLES[pathname] || "Admin";
+  if (TITLES[pathname]) return TITLES[pathname];
+  if (pathname.startsWith("/admin/blog/edit/")) return "Edit Blog Post";
+  return "Admin";
 }
 
 export function AdminHeader() {

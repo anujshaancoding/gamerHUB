@@ -15,19 +15,24 @@ interface MemeCardProps {
 
 export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
   const handleShare = async () => {
+    const url = `${window.location.origin}/memes/${meme.id}`;
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: meme.title,
-          url: `${window.location.origin}/memes/${meme.id}`,
-        });
+        await navigator.share({ title: meme.title, url });
       } catch {
         // User cancelled or error
       }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
     } else {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/memes/${meme.id}`
-      );
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
     }
   };
 

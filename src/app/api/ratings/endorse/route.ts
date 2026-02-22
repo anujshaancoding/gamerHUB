@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPermissionContext } from "@/lib/api/check-permission";
+import { getUserTier, can } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,11 +17,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       endorsedId,
+      endorsementType = "positive",
+      // Positive traits
       friendly,
       teamPlayer,
       leader,
       communicative,
       reliable,
+      // Negative traits (premium+ only)
+      toxic,
+      quitter,
+      uncooperative,
+      uncommunicative,
+      unreliable,
       gameId,
       playedAs,
       positiveNote,
@@ -37,6 +47,18 @@ export async function POST(request: NextRequest) {
         { error: "Cannot endorse yourself" },
         { status: 400 }
       );
+    }
+
+    // Negative endorsements require premium+
+    if (endorsementType === "negative") {
+      const permCtx = await getUserPermissionContext(supabase);
+      const tier = permCtx ? getUserTier(permCtx) : "free";
+      if (!can.giveNegativeEndorsement(tier)) {
+        return NextResponse.json(
+          { error: "Negative endorsements require Premium membership" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if target user is frozen
@@ -105,35 +127,54 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // At least one trait must be endorsed
-    const hasEndorsement =
-      friendly || teamPlayer || leader || communicative || reliable;
-    if (!hasEndorsement) {
-      return NextResponse.json(
-        { error: "At least one trait must be endorsed" },
-        { status: 400 }
-      );
+    // Validate that at least one trait is selected
+    if (endorsementType === "negative") {
+      const hasNegativeTrait =
+        toxic || quitter || uncooperative || uncommunicative || unreliable;
+      if (!hasNegativeTrait) {
+        return NextResponse.json(
+          { error: "At least one negative trait must be selected" },
+          { status: 400 }
+        );
+      }
+    } else {
+      const hasPositiveTrait =
+        friendly || teamPlayer || leader || communicative || reliable;
+      if (!hasPositiveTrait) {
+        return NextResponse.json(
+          { error: "At least one trait must be endorsed" },
+          { status: 400 }
+        );
+      }
     }
+
+    // Build upsert data
+    const endorsementData: Record<string, unknown> = {
+      endorser_id: user.id,
+      endorsed_id: endorsedId,
+      endorsement_type: endorsementType,
+      friendly: endorsementType === "positive" ? !!friendly : false,
+      team_player: endorsementType === "positive" ? !!teamPlayer : false,
+      leader: endorsementType === "positive" ? !!leader : false,
+      communicative: endorsementType === "positive" ? !!communicative : false,
+      reliable: endorsementType === "positive" ? !!reliable : false,
+      toxic: endorsementType === "negative" ? !!toxic : false,
+      quitter: endorsementType === "negative" ? !!quitter : false,
+      uncooperative: endorsementType === "negative" ? !!uncooperative : false,
+      uncommunicative: endorsementType === "negative" ? !!uncommunicative : false,
+      unreliable: endorsementType === "negative" ? !!unreliable : false,
+      game_id: gameId || null,
+      played_as: playedAs || null,
+      positive_note: endorsementType === "positive" ? (positiveNote || null) : null,
+      updated_at: new Date().toISOString(),
+    };
 
     // Upsert endorsement (one per endorser-endorsed pair)
     const { data, error } = await supabase
       .from("trait_endorsements")
-      .upsert(
-        {
-          endorser_id: user.id,
-          endorsed_id: endorsedId,
-          friendly: !!friendly,
-          team_player: !!teamPlayer,
-          leader: !!leader,
-          communicative: !!communicative,
-          reliable: !!reliable,
-          game_id: gameId || null,
-          played_as: playedAs || null,
-          positive_note: positiveNote || null,
-          updated_at: new Date().toISOString(),
-        } as never,
-        { onConflict: "endorser_id,endorsed_id" }
-      )
+      .upsert(endorsementData as never, {
+        onConflict: "endorser_id,endorsed_id",
+      })
       .select()
       .single();
 

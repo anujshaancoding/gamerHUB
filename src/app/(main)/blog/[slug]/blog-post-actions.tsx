@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { Heart, MessageCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { SocialShareButtons } from "@/components/blog/social-share-buttons";
+import { ShareCardModal } from "@/components/blog/share-card-modal";
 import { useLikeBlogPost, useBlogPost } from "@/lib/hooks/useBlog";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,6 +22,7 @@ export function BlogPostActions({
 }: BlogPostActionsProps) {
   const { toggleLike, isLiking } = useLikeBlogPost();
   const { post } = useBlogPost(slug);
+  const [showShareCards, setShowShareCards] = useState(false);
 
   // Use client-fetched data when available, fall back to server props
   const likesCount = post?.likes_count ?? serverLikesCount;
@@ -74,8 +76,29 @@ export function BlogPostActions({
         <p className="text-xs text-text-dim mb-2 uppercase tracking-wider font-medium">
           Share this post
         </p>
-        <SocialShareButtons url={url} title={title} />
+        <div className="flex flex-wrap items-center gap-2">
+          <SocialShareButtons url={url} title={title} />
+          {post && (
+            <button
+              onClick={() => setShowShareCards(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-surface-light hover:bg-surface-lighter rounded-lg transition-colors text-text-muted hover:text-primary"
+            >
+              <ImageIcon className="w-4 h-4" />
+              Share as Cards
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Share Card Modal */}
+      {post && (
+        <ShareCardModal
+          isOpen={showShareCards}
+          onClose={() => setShowShareCards(false)}
+          post={post}
+          articleUrl={url}
+        />
+      )}
     </div>
   );
 }

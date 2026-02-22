@@ -5,12 +5,20 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ChevronLeft,
-  Shield,
+  BookOpen,
+  Flag,
+  Users,
+  PenTool,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/layout/logo";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
+  { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
 ];
 
 export function AdminSidebar() {
@@ -26,9 +34,7 @@ export function AdminSidebar() {
       {/* Logo */}
       <div className="p-5 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
+          <Logo size="sm" showText={false} href={undefined} />
           <div>
             <h1 className="font-bold text-white text-sm">ggLobby</h1>
             <p className="text-[11px] text-white/40 font-medium">Admin Panel</p>

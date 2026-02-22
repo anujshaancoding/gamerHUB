@@ -58,5 +58,31 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["games", "social", "entertainment"]
+  "categories": ["games", "social", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Community",
+      "short_name": "Community",
+      "url": "/community",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Find Gamers",
+      "short_name": "Find Gamers",
+      "url": "/find-gamers",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "url": "/messages",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Blog",
+      "short_name": "Blog",
+      "url": "/blog",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
 }

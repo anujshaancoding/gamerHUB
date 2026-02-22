@@ -17,6 +17,8 @@ import {
   Calendar,
   User,
   ExternalLink,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 import {
   Card,
@@ -28,6 +30,9 @@ import {
 } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { ShareCardModal } from "@/components/blog/share-card-modal";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 interface Author {
   id: string;
@@ -79,11 +84,35 @@ const supabase = createClient();
 export default function CommunityPostPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { can: permissions } = usePermissions();
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [showShareCards, setShowShareCards] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!post) return;
+    setDeletingCommentId(commentId);
+    try {
+      const response = await fetch(
+        `/api/blog/${post.slug}/comments/${commentId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete comment");
+      }
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
 
   useEffect(() => {
     if (params.id) {
@@ -148,8 +177,18 @@ export default function CommunityPostPage() {
         text: post?.excerpt,
         url: window.location.href,
       });
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      const textarea = document.createElement("textarea");
+      textarea.value = window.location.href;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
       alert("Link copied to clipboard!");
     }
   };
@@ -310,12 +349,33 @@ export default function CommunityPostPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleShare}
-            leftIcon={<Share2 className="h-4 w-4" />}
+            onClick={() => setShowShareCards(true)}
+            leftIcon={<ImageIcon className="h-4 w-4" />}
           >
             Share
           </Button>
         </div>
+
+        {/* Share Card Modal */}
+        <ShareCardModal
+          isOpen={showShareCards}
+          onClose={() => setShowShareCards(false)}
+          post={{
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            content: post.content,
+            featured_image_url: post.featured_image_url,
+            category: post.category,
+            tags: post.tags,
+            created_at: post.created_at,
+            author: post.author ? {
+              display_name: post.author.display_name,
+              username: post.author.username,
+            } : null,
+          }}
+          articleUrl={window.location.href}
+        />
 
         {/* Content */}
         {isHtmlContent(post.content) ? (
@@ -412,6 +472,21 @@ export default function CommunityPostPage() {
                           <button className="text-xs text-text-muted hover:text-primary transition-colors">
                             Reply
                           </button>
+                          {/* Delete button: visible to comment author, post author, or editor+ */}
+                          {user && (
+                            comment.author.id === user.id ||
+                            post?.author?.id === user.id ||
+                            permissions.deleteAnyComment
+                          ) && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              disabled={deletingCommentId === comment.id}
+                              className="flex items-center gap-1 text-xs text-text-muted hover:text-red-500 transition-colors ml-auto"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingCommentId === comment.id ? "Deleting..." : "Delete"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -207,16 +207,16 @@ export function Navbar() {
             {!user ? (
               /* Guest User - Show Login/Sign Up */
               <div className="flex items-center gap-2">
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">
                     Log In
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="primary" size="sm">
+                  </Link>
+                </Button>
+                <Button variant="primary" size="sm" asChild>
+                  <Link href="/register">
                     Sign Up
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             ) : (
               /* Logged In User - Show Notifications and User Menu */

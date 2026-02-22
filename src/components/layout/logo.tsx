@@ -1,8 +1,44 @@
 "use client";
 
-import { useId } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function BetaInfoIcon({ size }: { size: "sm" | "md" | "lg" }) {
+  const [show, setShow] = useState(false);
+  const iconSize = size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5";
+
+  return (
+    <div className="relative" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <button
+        type="button"
+        className="flex items-center justify-center text-warning/70 hover:text-warning transition-colors"
+        onClick={() => setShow((v) => !v)}
+        aria-label="Beta information"
+      >
+        <AlertTriangle className={iconSize} />
+      </button>
+      {show && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-surface border border-border rounded-lg shadow-lg p-3 z-50 text-left">
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-surface border-l border-t border-border rotate-45" />
+          <p className="text-xs text-warning font-semibold mb-1.5 flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Beta Version
+          </p>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            This website is currently in the testing/beta phase and may experience failures or crashes. If you encounter any issues, please report them at{" "}
+            <a href="mailto:support@gglobby.in" className="text-primary hover:underline font-medium">
+              support@gglobby.in
+            </a>{" "}
+            or fill out the feedback form on the bottom right corner of the page.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface LogoProps {
   className?: string;
@@ -12,9 +48,11 @@ interface LogoProps {
 }
 
 export function Logo({ className, showText = true, size = "md", href = "/community" }: LogoProps) {
-  const uid = useId();
-  const gradId = `gg-g${uid}`;
-  const glowId = `gg-w${uid}`;
+  const iconSizes = {
+    sm: 28,
+    md: 32,
+    lg: 48,
+  };
 
   const sizes = {
     sm: { icon: "h-7 w-7", text: "text-lg" },
@@ -24,101 +62,25 @@ export function Logo({ className, showText = true, size = "md", href = "/communi
 
   const logo = (
     <div className={cn("flex items-center gap-2", className)}>
-      <svg
+      <Image
+        src="/icons/icon.svg"
+        alt="ggLobby"
+        width={iconSizes[size]}
+        height={iconSizes[size]}
         className={sizes[size].icon}
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--primary, #00ff88)" />
-            <stop offset="100%" stopColor="var(--accent, #00d4ff)" />
-          </linearGradient>
-          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Outer circle ring */}
-        <circle
-          cx="50"
-          cy="54"
-          r="40"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2.5"
-          fill="none"
-        />
-
-        {/* Ambient glow */}
-        <circle cx="50" cy="48" r="36" fill={`url(#${gradId})`} opacity="0.07" />
-
-        {/* Controller body - filled */}
-        <path
-          d="M30 36C30 30 34 26 40 26H60C66 26 70 30 70 36V44C70 50 68 55 64 58L56 64C53 66 47 66 44 64L36 58C32 55 30 50 30 44V36Z"
-          fill={`url(#${gradId})`}
-          opacity="0.12"
-        />
-
-        {/* Controller outline */}
-        <path
-          d="M30 36C30 30 34 26 40 26H60C66 26 70 30 70 36V44C70 50 68 55 64 58L56 64C53 66 47 66 44 64L36 58C32 55 30 50 30 44V36Z"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-
-        {/* Left handle */}
-        <path
-          d="M36 58L28 64C25 67 23 71 23 76V81C23 83.5 25 85.5 27.5 85.5C30 85.5 32 83.5 32 81V75C32 73 33 71 34.5 69.5"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Right handle */}
-        <path
-          d="M64 58L72 64C75 67 77 71 77 76V81C77 83.5 75 85.5 72.5 85.5C70 85.5 68 83.5 68 81V75C68 73 67 71 65.5 69.5"
-          stroke={`url(#${gradId})`}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* D-pad (cross shape) */}
-        <rect x="36" y="42.5" width="10" height="3" rx="1" fill={`url(#${gradId})`} opacity="0.85" />
-        <rect x="39.5" y="39" width="3" height="10" rx="1" fill={`url(#${gradId})`} opacity="0.85" />
-
-        {/* Action buttons (diamond pattern) */}
-        <circle cx="60" cy="36.5" r="2.5" fill={`url(#${gradId})`} opacity="0.85" />
-        <circle cx="66" cy="42.5" r="2.5" fill={`url(#${gradId})`} opacity="0.85" />
-        <circle cx="60" cy="48.5" r="2.5" fill={`url(#${gradId})`} opacity="0.85" />
-        <circle cx="54" cy="42.5" r="2.5" fill={`url(#${gradId})`} opacity="0.85" />
-
-        {/* Center LED indicator with glow */}
-        <circle cx="50" cy="31" r="1.5" fill={`url(#${gradId})`} filter={`url(#${glowId})`} />
-
-        {/* Shine highlight */}
-        <path
-          d="M38 30C40 28 44 27 48 27C52 27 56 28 58 29"
-          stroke="white"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          opacity="0.15"
-        />
-      </svg>
+        priority
+      />
 
       {showText && (
-        <div className="flex flex-col leading-none">
+        <div className="flex items-center gap-1.5 leading-none">
           <span className={cn(sizes[size].text, "font-bold tracking-tight")}>
             <span className="text-primary text-glow-primary">gg</span>
             <span className="text-text">Lobby</span>
           </span>
+          <span className="text-[10px] font-semibold text-warning bg-warning/15 px-1.5 py-0.5 rounded-full leading-none uppercase tracking-wide">
+            Beta
+          </span>
+          <BetaInfoIcon size={size} />
         </div>
       )}
     </div>

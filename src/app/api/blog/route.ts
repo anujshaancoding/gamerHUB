@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPermissionContext } from "@/lib/api/check-permission";
+import { getUserTier, can } from "@/lib/permissions";
 
 // GET - List published blog posts with filters
 export async function GET(request: NextRequest) {
@@ -184,6 +186,18 @@ export async function POST(request: NextRequest) {
         { error: "Title, content, and category are required" },
         { status: 400 }
       );
+    }
+
+    // Restrict "news" category to editors and admins only
+    if (category === "news") {
+      const permCtx = await getUserPermissionContext(supabase);
+      const tier = permCtx ? getUserTier(permCtx) : "free";
+      if (!can.useNewsCategory(tier)) {
+        return NextResponse.json(
+          { error: 'The "News" category is restricted to editors and administrators' },
+          { status: 403 }
+        );
+      }
     }
 
     const postStatus = status || "draft";

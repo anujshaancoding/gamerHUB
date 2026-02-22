@@ -11,11 +11,14 @@ import {
   MoreHorizontal,
   Bookmark,
   CheckCircle,
+  Trash2,
 } from "lucide-react";
 import { Avatar, RelativeTime } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 interface FriendPost {
   id: string;
@@ -41,6 +44,7 @@ interface FriendPostCardProps {
   onComment?: () => void;
   onShare?: () => void;
   onBookmark?: () => void;
+  onDelete?: () => Promise<void> | void;
 }
 
 function highlightHashtags(text: string) {
@@ -65,9 +69,27 @@ export function FriendPostCard({
   onComment,
   onShare,
   onBookmark,
+  onDelete,
 }: FriendPostCardProps) {
+  const { user } = useAuth();
+  const { can: permissions } = usePermissions();
   // Optimistic local state for like
   const [liked, setLiked] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canDelete = !isGuest && (
+    (user && post.user_id === user.id) || permissions.deleteFreeUserPost
+  );
+
+  const handleDelete = async () => {
+    if (isDeleting || !onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isLiking, setIsLiking] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
@@ -152,9 +174,21 @@ export function FriendPostCard({
                 </p>
               </div>
             </Link>
-            <Button variant="ghost" size="icon" className="text-text-dim hover:text-text -mr-2 -mt-1">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1 -mr-2 -mt-1">
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="p-1.5 rounded-lg text-text-dim hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  title="Delete post"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              <Button variant="ghost" size="icon" className="text-text-dim hover:text-text">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}

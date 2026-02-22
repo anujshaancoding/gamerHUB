@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -15,7 +15,14 @@ interface AuthFormProps {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const { signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
+  const { user, loading: authLoading, signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
+
+  // Redirect authenticated users away from auth pages
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/community");
+    }
+  }, [user, authLoading, router]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

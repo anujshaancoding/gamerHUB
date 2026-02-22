@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPermissionContext } from "@/lib/api/check-permission";
+import { getUserTier, can } from "@/lib/permissions";
 import type { ReportType } from "@/types/verification";
 
 // GET /api/reports - Get user's submitted reports
@@ -73,6 +75,16 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Restrict reporting to premium users and above
+    const permCtx = await getUserPermissionContext(supabase);
+    const tier = permCtx ? getUserTier(permCtx) : "free";
+    if (!can.reportUser(tier)) {
+      return NextResponse.json(
+        { error: "Reporting is available for Premium members and above" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
