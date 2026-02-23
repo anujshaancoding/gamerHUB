@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query";
 
 // Types
 export type NotificationType =
@@ -246,7 +247,7 @@ export function useNotifications(options?: {
     unreadCount: number;
     hasMore: boolean;
   }>({
-    queryKey: ["notifications", options],
+    queryKey: queryKeys.notifications(options),
     queryFn: () => fetchNotifications(options || {}),
     refetchInterval: isEnabled ? 30000 : false, // Refetch every 30 seconds
     retry: false, // Don't retry on failure (e.g., if table doesn't exist)
@@ -266,21 +267,21 @@ export function useNotifications(options?: {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "notifications" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
         }
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "notifications" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
         }
       )
       .subscribe();
@@ -304,7 +305,7 @@ export function useMarkAsRead() {
   return useMutation({
     mutationFn: (notificationIds?: string[]) => markAsRead(notificationIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
     },
   });
 }
@@ -315,7 +316,7 @@ export function useArchiveNotification() {
   return useMutation({
     mutationFn: (notificationId?: string) => archiveNotification(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
     },
   });
 }
@@ -326,7 +327,7 @@ export function useNotificationPreferences() {
     discordConnected: boolean;
     discordUsername?: string;
   }>({
-    queryKey: ["notification-preferences"],
+    queryKey: queryKeys.notificationPreferences,
     queryFn: fetchPreferences,
   });
 }
@@ -337,7 +338,7 @@ export function useUpdatePreferences() {
   return useMutation({
     mutationFn: updatePreferences,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationPreferences });
     },
   });
 }
@@ -352,14 +353,14 @@ export function useUpdateSinglePreference() {
     }: Partial<NotificationPreference> & { notificationType: NotificationType }) =>
       updateSinglePreference(notificationType, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationPreferences });
     },
   });
 }
 
 export function useDiscordConnection() {
   return useQuery<DiscordConnection | null>({
-    queryKey: ["discord-connection"],
+    queryKey: queryKeys.discordConnection,
     queryFn: fetchDiscordConnection,
     retry: false,
   });
@@ -371,8 +372,8 @@ export function useDisconnectDiscord() {
   return useMutation({
     mutationFn: disconnectDiscord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["discord-connection"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.discordConnection });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationPreferences });
     },
   });
 }

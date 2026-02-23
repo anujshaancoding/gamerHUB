@@ -14,8 +14,13 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { RichTextEditor } from "@/components/blog/rich-text-editor";
+import dynamic from "next/dynamic";
 import { useBlogPost, useUpdateBlogPost } from "@/lib/hooks/useBlog";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-[400px] bg-white/[0.03] border border-white/10 rounded-xl animate-pulse" /> }
+);
 import {
   BLOG_CATEGORIES,
   BLOG_TEMPLATES,

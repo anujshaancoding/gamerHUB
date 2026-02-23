@@ -7,6 +7,9 @@ import {
   Users,
   Gamepad2,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { Button, Avatar } from "@/components/ui";
 import { Card } from "@/components/ui/card";
@@ -37,6 +40,7 @@ export function RightSidebar() {
   const { isUserOnline, getUserStatus } = usePresence();
   const [openChats, setOpenChats] = useState<ChatBox[]>([]);
   const openChatsRef = useRef<ChatBox[]>([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Keep ref in sync for event listener access
   useEffect(() => {
@@ -116,10 +120,103 @@ export function RightSidebar() {
     };
   }, [openChat]);
 
+  // Sidebar content shared between desktop and mobile
+  const sidebarContent = (
+    <div className="flex-1 p-4 overflow-y-auto pt-16 2xl:pt-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-accent" />
+          <h3 className="font-semibold text-text">Online Friends</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">
+            {onlineFriends.length} online
+          </span>
+          {/* Close button for mobile */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="2xl:hidden p-1 rounded-lg hover:bg-surface-light text-text-muted hover:text-text transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {!user ? (
+          <Card className="p-4 text-center">
+            <p className="text-sm text-text-muted mb-2">Sign in to see friends</p>
+            <Link href="/login">
+              <Button variant="outline" size="sm">Log In</Button>
+            </Link>
+          </Card>
+        ) : friendsLoading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-surface-light" />
+              <div className="flex-1">
+                <div className="h-4 w-24 bg-surface-light rounded mb-1" />
+                <div className="h-3 w-16 bg-surface-light rounded" />
+              </div>
+            </div>
+          ))
+        ) : onlineFriends.length === 0 ? (
+          <Card className="p-4 text-center">
+            <p className="text-sm text-text-muted">No friends online</p>
+          </Card>
+        ) : (
+          onlineFriends.map((friend, index) => (
+            <motion.div
+              key={friend.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              onClick={() => openChat(friend)}
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light transition-colors cursor-pointer group"
+            >
+              <div className="relative">
+                {friend.avatarUrl ? (
+                  <Avatar
+                    src={friend.avatarUrl}
+                    alt={friend.name}
+                    size="md"
+                    status={getUserStatus(friend.id)}
+                    showStatus
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">
+                    {friend.avatar}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-text truncate group-hover:text-primary transition-colors flex items-center gap-1">
+                  {friend.name}
+                  {friend.isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
+                </span>
+                <p className="text-xs text-text-muted truncate">
+                  {friend.game ? `${friend.game} • ` : ""}{friend.status}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity px-2">
+                <Gamepad2 className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          ))
+        )}
+      </div>
+      <Link href="/friends">
+        <Button variant="ghost" size="sm" className="w-full mt-3 text-text-muted">
+          View All Friends
+          <ArrowRight className="h-4 w-4 ml-1" />
+        </Button>
+      </Link>
+    </div>
+  );
+
   return (
     <>
       {/* Chat Boxes - Positioned to the left of sidebar on xl, bottom right on smaller screens */}
-      <div className="fixed bottom-0 right-[var(--app-inset)] xl:right-[calc(var(--app-inset)_+_18rem)] z-50 flex flex-row-reverse gap-2 sm:p-2">
+      <div className="fixed bottom-0 right-[var(--app-inset)] 2xl:right-[calc(var(--app-inset)_+_18rem)] z-50 flex flex-row-reverse gap-2 sm:p-2">
         <AnimatePresence>
           {openChats.map((chat) => (
             <MiniChatBox
@@ -133,90 +230,53 @@ export function RightSidebar() {
         </AnimatePresence>
       </div>
 
-      {/* Right Sidebar - Hidden on mobile/tablet, visible on xl screens */}
-      <aside className="fixed right-[var(--app-inset)] top-0 bottom-0 w-72 flex-col border-l border-border bg-surface/95 backdrop-blur-sm z-40 hidden xl:flex">
-        {/* Online Friends */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-accent" />
-              <h3 className="font-semibold text-text">Online Friends</h3>
-            </div>
-            <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">
-              {onlineFriends.length} online
-            </span>
-          </div>
-          <div className="space-y-2">
-            {!user ? (
-              <Card className="p-4 text-center">
-                <p className="text-sm text-text-muted mb-2">Sign in to see friends</p>
-                <Link href="/login">
-                  <Button variant="outline" size="sm">Log In</Button>
-                </Link>
-              </Card>
-            ) : friendsLoading ? (
-              // Loading skeleton
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
-                  <div className="w-10 h-10 rounded-full bg-surface-light" />
-                  <div className="flex-1">
-                    <div className="h-4 w-24 bg-surface-light rounded mb-1" />
-                    <div className="h-3 w-16 bg-surface-light rounded" />
-                  </div>
-                </div>
-              ))
-            ) : onlineFriends.length === 0 ? (
-              <Card className="p-4 text-center">
-                <p className="text-sm text-text-muted">No friends online</p>
-              </Card>
-            ) : (
-              onlineFriends.map((friend, index) => (
-                <motion.div
-                  key={friend.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => openChat(friend)}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light transition-colors cursor-pointer group"
-                >
-                  <div className="relative">
-                    {friend.avatarUrl ? (
-                      <Avatar
-                        src={friend.avatarUrl}
-                        alt={friend.name}
-                        size="md"
-                        status={getUserStatus(friend.id)}
-                        showStatus
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">
-                        {friend.avatar}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-text truncate group-hover:text-primary transition-colors flex items-center gap-1">
-                      {friend.name}
-                      {friend.isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
-                    </span>
-                    <p className="text-xs text-text-muted truncate">
-                      {friend.game ? `${friend.game} • ` : ""}{friend.status}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity px-2">
-                    <Gamepad2 className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              ))
-            )}
-          </div>
-          <Link href="/friends">
-            <Button variant="ghost" size="sm" className="w-full mt-3 text-text-muted">
-              View All Friends
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          </Link>
-        </div>
+      {/* Mobile toggle button - visible below xl */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 2xl:hidden flex items-center gap-1 bg-surface/95 backdrop-blur-sm border border-border border-r-0 rounded-l-xl px-1.5 py-3 shadow-lg hover:bg-surface-light transition-colors group"
+        title="Open Friends Panel"
+      >
+        <ChevronLeft className="h-4 w-4 text-text-muted group-hover:text-accent transition-colors" />
+        <Users className="h-4 w-4 text-accent" />
+        {onlineFriends.length > 0 && (
+          <span className="absolute -top-1 -left-1 w-4 h-4 bg-accent text-[10px] font-bold text-black rounded-full flex items-center justify-center">
+            {onlineFriends.length}
+          </span>
+        )}
+      </button>
+
+      {/* Mobile overlay backdrop */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 2xl:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile slide-in sidebar */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.aside
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed right-0 top-0 bottom-0 w-72 flex flex-col border-l border-border bg-surface/95 backdrop-blur-sm z-50 2xl:hidden"
+          >
+            {sidebarContent}
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop sidebar - always visible on xl+ */}
+      <aside className="fixed right-[var(--app-inset)] top-0 bottom-0 w-72 flex-col border-l border-border bg-surface/95 backdrop-blur-sm z-40 hidden 2xl:flex">
+        {sidebarContent}
       </aside>
     </>
   );

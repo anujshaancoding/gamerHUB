@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query";
 
 interface BattlePassReward {
   id: string;
@@ -93,14 +94,14 @@ export function useBattlePass() {
 
   // Query for battle pass
   const battlePassQuery = useQuery({
-    queryKey: ["battle-pass"],
+    queryKey: queryKeys.battlePass,
     queryFn: fetchBattlePass,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Query for progress
   const progressQuery = useQuery({
-    queryKey: ["battle-pass-progress"],
+    queryKey: queryKeys.battlePassProgress,
     queryFn: fetchProgress,
     staleTime: 1000 * 30, // 30 seconds
   });
@@ -117,7 +118,7 @@ export function useBattlePass() {
   const claimMutation = useMutation({
     mutationFn: claimReward,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["battle-pass-progress"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.battlePassProgress });
     },
   });
 
@@ -195,8 +196,8 @@ export function useBattlePass() {
 
     // Refetch
     refetch: () => {
-      queryClient.invalidateQueries({ queryKey: ["battle-pass"] });
-      queryClient.invalidateQueries({ queryKey: ["battle-pass-progress"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.battlePass });
+      queryClient.invalidateQueries({ queryKey: queryKeys.battlePassProgress });
     },
   };
 }

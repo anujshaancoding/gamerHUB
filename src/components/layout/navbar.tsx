@@ -137,7 +137,10 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push("/login");
+    // Use hard redirect (not router.push) to ensure session cookies are fully
+    // cleared before the next page loads. Client-side navigation can race with
+    // cookie cleanup, causing the middleware to still see the old session.
+    window.location.href = "/login";
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -149,7 +152,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] xl:right-[calc(var(--app-inset)_+_18rem)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
+    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] 2xl:right-[calc(var(--app-inset)_+_18rem)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo - pinned left on all screen sizes */}

@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Sidebar } from "@/components/layout/sidebar";
-import { CallWrapper } from "@/components/call";
+import { LazyCallWrapper } from "@/components/call/lazy-call-wrapper";
 
 export default function MainLayout({
   children,
@@ -8,7 +8,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <CallWrapper>
+    <LazyCallWrapper>
       <div className="min-h-screen bg-background">
         <Navbar />
         <Sidebar />
@@ -16,6 +16,6 @@ export default function MainLayout({
           <div className="p-4 lg:p-6">{children}</div>
         </main>
       </div>
-    </CallWrapper>
+    </LazyCallWrapper>
   );
 }

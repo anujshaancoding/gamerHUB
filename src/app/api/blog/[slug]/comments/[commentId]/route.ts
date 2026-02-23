@@ -41,7 +41,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Get the post to check ownership
     const { data: post } = await admin
       .from("blog_posts")
-      .select("id, author_id, slug")
+      .select("id, author_id, slug, comments_count")
       .eq("slug", slug)
       .single();
 
@@ -86,6 +86,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { status: 500 }
       );
     }
+
+    // Decrement comments_count since the DB trigger only fires on real DELETE,
+    // not on UPDATE (soft-delete)
+    await admin
+      .from("blog_posts")
+      .update({
+        comments_count: Math.max(0, (post.comments_count ?? 1) - 1),
+      })
+      .eq("id", post.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

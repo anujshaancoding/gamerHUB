@@ -21,8 +21,11 @@ export const blogKeys = {
   all: ["blog"] as const,
   posts: (filters?: BlogFilters) => ["blog", "posts", filters || {}] as const,
   post: (slug: string) => ["blog", "post", slug] as const,
+  postById: (id: string) => ["blog", "post-by-id", id] as const,
+  postLiked: (id: string) => ["blog", "post-liked", id] as const,
   myPosts: (status?: string) => ["blog", "my-posts", status || "all"] as const,
   comments: (postSlug: string) => ["blog", "comments", postSlug] as const,
+  commentsById: (postId: string) => ["blog", "comments-by-id", postId] as const,
   authors: (verified?: boolean) => ["blog", "authors", verified] as const,
   myAuthor: ["blog", "my-author"] as const,
 };
@@ -245,7 +248,7 @@ export function useDeleteBlogPost() {
   };
 }
 
-// Hook: Like/Unlike blog post
+// Hook: Like/Unlike blog post (with optimistic update)
 export function useLikeBlogPost() {
   const queryClient = useQueryClient();
 
@@ -258,9 +261,35 @@ export function useLikeBlogPost() {
       if (!response.ok) throw new Error(data.error || "Failed to toggle like");
       return data.liked as boolean;
     },
-    onSuccess: (_, slug) => {
-      queryClient.invalidateQueries({ queryKey: blogKeys.post(slug) });
-      queryClient.invalidateQueries({ queryKey: ["blog", "posts"] });
+    onMutate: async (slug) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: blogKeys.post(slug) });
+
+      // Snapshot previous post data for rollback
+      const previousPost = queryClient.getQueryData<BlogPost>(blogKeys.post(slug));
+
+      // Optimistically toggle the like
+      if (previousPost) {
+        queryClient.setQueryData(blogKeys.post(slug), {
+          ...previousPost,
+          likes_count: (previousPost as any).user_has_liked
+            ? Math.max(0, previousPost.likes_count - 1)
+            : previousPost.likes_count + 1,
+          user_has_liked: !(previousPost as any).user_has_liked,
+        });
+      }
+
+      return { previousPost };
+    },
+    onError: (_err, slug, context) => {
+      // Rollback on failure
+      if (context?.previousPost) {
+        queryClient.setQueryData(blogKeys.post(slug), context.previousPost);
+      }
+    },
+    onSettled: (_data, _error, slug) => {
+      // Always refetch to ensure server truth — all blog keys share the "blog" prefix
+      queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
   });
 
@@ -314,7 +343,7 @@ export function useLikeBlogComment(postSlug: string) {
       return data.liked as boolean;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: blogKeys.comments(postSlug) });
+      queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
   });
 
@@ -340,13 +369,8 @@ export function useAddBlogComment() {
         throw new Error(data.error || "Failed to create comment");
       return data.comment as BlogComment;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: blogKeys.comments(variables.post_id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: blogKeys.post(variables.post_id),
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
   });
 
@@ -373,9 +397,7 @@ export function useDeleteBlogComment(postSlug: string) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: blogKeys.comments(postSlug),
-      });
+      queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
   });
 

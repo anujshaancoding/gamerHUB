@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -93,6 +93,14 @@ export function FriendPostCard({
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isLiking, setIsLiking] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+
+  // Sync local state with prop when server data changes (e.g. after cache invalidation refetch)
+  // Only sync when not actively liking to avoid overwriting optimistic state
+  useEffect(() => {
+    if (!isLiking) {
+      setLikesCount(post.likes_count || 0);
+    }
+  }, [post.likes_count, isLiking]);
 
   const handleLike = async () => {
     if (isGuest) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query";
 
 interface ShopItem {
   id: string;
@@ -85,7 +86,7 @@ export function useShop(params: {
 
   // Query for shop items
   const itemsQuery = useQuery({
-    queryKey: ["shop-items", params],
+    queryKey: queryKeys.shopItems(params),
     queryFn: () => fetchShopItems(params),
     staleTime: 1000 * 60, // 1 minute
   });
@@ -94,8 +95,8 @@ export function useShop(params: {
   const purchaseMutation = useMutation({
     mutationFn: purchaseItem,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["shop-items"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+      queryClient.invalidateQueries({ queryKey: queryKeys.shopItems() });
     },
   });
 
@@ -117,7 +118,7 @@ export function useShop(params: {
 
     // Refetch
     refetch: () => {
-      queryClient.invalidateQueries({ queryKey: ["shop-items"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.shopItems() });
     },
   };
 }

@@ -23,6 +23,12 @@ export const STALE_TIMES = {
   CLANS: 1000 * 60 * 5, // 5 minutes
   PROFILES: 1000 * 60 * 5, // 5 minutes
   CLAN_DETAILS: 1000 * 60 * 2, // 2 minutes
+  BLOG_POSTS: 1000 * 60 * 2, // 2 minutes
+  FRIEND_POSTS: 1000 * 60 * 1, // 1 minute
+  BLOG_POST_DETAIL: 1000 * 60 * 5, // 5 minutes
+  BLOG_COMMENTS: 1000 * 60 * 1, // 1 minute
+  FIND_GAMERS: 1000 * 60 * 2, // 2 minutes
+  CLAN_ACTIVITY: 1000 * 60 * 2, // 2 minutes
 
   // User-specific data (more frequently updated)
   USER_PROGRESSION: 1000 * 60 * 2, // 2 minutes
@@ -99,6 +105,10 @@ export const queryKeys = {
   userClanMembership: ["user-clan-membership"] as const,
   clanChallenges: (clanId?: string) => clanId ? ["clan-challenges", clanId] as const : ["clan-challenges"] as const,
 
+  // Community / Blog / Friends — keys now live in:
+  //   blogKeys (src/lib/hooks/useBlog.ts)
+  //   friendPostKeys (src/lib/hooks/useFriendPosts.ts)
+
   // Community Challenges
   communityChallenges: (params?: { status?: string; gameId?: string }) =>
     ["community-challenges", params || {}] as const,
@@ -125,6 +135,13 @@ export const queryKeys = {
   searchListings: (query: string) => ["search", "listings", query] as const,
   searchClans: (query: string) => ["search", "clans", query] as const,
 
+  // Find Gamers
+  findGamers: (params: { game?: string; rank?: string; region?: string; language?: string; style?: string }) =>
+    ["find-gamers", params] as const,
+
+  // Clan Activity
+  clanActivity: (clanId: string) => ["clan-activity", clanId] as const,
+
   // Activity
   activity: (userId: string) => ["activity", userId] as const,
 
@@ -133,6 +150,28 @@ export const queryKeys = {
   conversation: (id: string) => ["conversation", id] as const,
   conversationMessages: (id: string) => ["conversation-messages", id] as const,
   unreadMessages: ["unread-message-count"] as const,
+
+  // Battle Pass
+  battlePass: ["battle-pass"] as const,
+  battlePassProgress: ["battle-pass-progress"] as const,
+
+  // Wallet & Shop
+  wallet: ["wallet"] as const,
+  currencyPacks: ["currency-packs"] as const,
+  walletTransactions: (params?: { limit?: number; currency?: string }) =>
+    ["wallet-transactions", params || {}] as const,
+  shopItems: (params?: { category?: string; type?: string; rarity?: string }) =>
+    ["shop-items", params || {}] as const,
+
+  // Notifications
+  notifications: (options?: { limit?: number; unreadOnly?: boolean }) =>
+    ["notifications", options || {}] as const,
+  notificationPreferences: ["notification-preferences"] as const,
+  discordConnection: ["discord-connection"] as const,
+
+  // Subscriptions
+  subscriptionPlans: ["subscription-plans"] as const,
+  userSubscription: ["user-subscription"] as const,
 } as const;
 
 function makeQueryClient() {
@@ -221,6 +260,26 @@ export function getInvalidationHelpers(queryClient: QueryClient) {
     },
     invalidateUserGames: () => {
       queryClient.invalidateQueries({ queryKey: ["user-games"] });
+    },
+    // Blog/FriendPost invalidation now handled by blogKeys.all and friendPostKeys.all
+    // in their respective hook files (useBlog.ts, useFriendPosts.ts)
+    invalidateBattlePass: () => {
+      queryClient.invalidateQueries({ queryKey: ["battle-pass"] });
+      queryClient.invalidateQueries({ queryKey: ["battle-pass-progress"] });
+    },
+    invalidateWallet: () => {
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+    },
+    invalidateShop: () => {
+      queryClient.invalidateQueries({ queryKey: ["shop-items"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+    },
+    invalidateNotifications: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    invalidateSubscription: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
     },
   };
 }

@@ -402,7 +402,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             overview: (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {/* Row 1: Power Level (hero) + Clan/Player Card */}
-                <div className="xl:col-span-2">
+                <div className="md:col-span-2 xl:col-span-2">
                   <PowerLevelGauge
                     gamesLinked={userGames?.length || 0}
                     hoursOnline={totalHoursOnline}
@@ -426,7 +426,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   />
                 </div>
                 {/* Row 2: Games (hero) + Stat Trackers */}
-                <div className="xl:col-span-2">
+                <div className="md:col-span-2 xl:col-span-2">
                   <ProfileGames userGames={userGames || []} />
                 </div>
                 <div>
@@ -440,7 +440,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   />
                 </div>
                 {/* Activity Calendar (full width) */}
-                <div className="xl:col-span-3">
+                <div className="md:col-span-2 xl:col-span-3">
                   <ActivityCalendar
                     days={activityRows}
                     totalHoursOnline={totalHoursOnline}
@@ -469,8 +469,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
             ),
             games: (
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
-                <div className="xl:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                <div className="md:col-span-2 xl:col-span-2 space-y-4">
                   <ProfileGames userGames={userGames || []} />
                   <RankHistoryTimeline milestones={rankMilestones} />
                 </div>
@@ -492,7 +492,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             ),
             achievements: (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                <div className="xl:col-span-2">
+                <div className="md:col-span-2 xl:col-span-2">
                   <ProfileBadges
                     badges={userBadges || []}
                     isOwnProfile={isOwnProfile}
@@ -503,7 +503,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     <GlobalRatingBreakdown factors={standingFactors} />
                   </div>
                 )}
-                <div className="xl:col-span-3">
+                <div className="md:col-span-2 xl:col-span-3">
                   <ProfileMedals
                     achievements={achievements || []}
                     username={username}

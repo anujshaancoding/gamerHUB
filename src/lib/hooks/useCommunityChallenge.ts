@@ -172,7 +172,7 @@ export function useCommunityChallenge(
         queryKey: queryKeys.communityChallenge(options.challengeId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["community-challenges"],
+        queryKey: queryKeys.communityChallenges(),
       });
     },
   });

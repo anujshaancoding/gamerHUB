@@ -9,6 +9,26 @@ import { Button, Input } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Logo } from "@/components/layout/logo";
 
+function getUserFriendlyAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("invalid login credentials")) {
+    return "Incorrect email or password. Please try again.";
+  }
+  if (lower.includes("email not confirmed")) {
+    return "Your email is not verified. Please check your inbox for a confirmation link.";
+  }
+  if (lower.includes("user already registered") || lower.includes("already been registered")) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
+  if (lower.includes("too many requests") || lower.includes("rate limit")) {
+    return "Too many login attempts. Please wait a moment and try again.";
+  }
+  if (lower.includes("network") || lower.includes("fetch")) {
+    return "Unable to connect. Please check your internet connection and try again.";
+  }
+  return message;
+}
+
 interface AuthFormProps {
   mode: "login" | "register";
 }
@@ -71,10 +91,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     } catch (err: unknown) {
       console.error("[AuthForm] Full error object:", err);
       const message = err instanceof Error ? err.message : String(err);
-      const status = (err as { status?: number })?.status;
-      const cause = (err as { cause?: unknown })?.cause;
-      console.error("[AuthForm] Parsed:", { message, status, cause });
-      setError(status ? `${message} (status: ${status})` : message);
+      setError(getUserFriendlyAuthError(message));
     } finally {
       setLoading(false);
     }

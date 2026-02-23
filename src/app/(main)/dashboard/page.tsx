@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   Users,
   Calendar,
@@ -20,6 +21,7 @@ import { useProgression } from "@/lib/hooks/useProgression";
 import { PremiumBadge } from "@/components/premium";
 import { useQuests } from "@/lib/hooks/useQuests";
 import { ProgressionOverview, QuestList } from "@/components/gamification";
+import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { Match, Challenge, Profile, Game, UserGame } from "@/types/database";
 
 interface DashboardStats {
@@ -33,108 +35,83 @@ interface UserGameWithGame extends UserGame {
   game: Game;
 }
 
-// Create supabase client outside component to avoid re-creation on render
-const supabase = createClient();
+interface DashboardData {
+  stats: DashboardStats;
+  upcomingMatches: Match[];
+  activeChallenges: Challenge[];
+  userGames: UserGameWithGame[];
+  recentGamers: Profile[];
+}
 
 export default function DashboardPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const { progression, loading: progressionLoading } = useProgression();
   const { dailyQuests, weeklyQuests, claimQuest, loading: questsLoading, resets } = useQuests();
+  const supabase = useMemo(() => createClient(), []);
 
-  const [stats, setStats] = useState<DashboardStats>({
-    totalMatches: 0,
-    upcomingMatches: 0,
-    activeChallenges: 0,
-    followers: 0,
-  });
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [activeChallenges, setActiveChallenges] = useState<Challenge[]>([]);
-  const [userGames, setUserGames] = useState<UserGameWithGame[]>([]);
-  const [recentGamers, setRecentGamers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Use user.id as dependency to avoid re-fetching when user object reference changes
   const userId = user?.id;
 
-  useEffect(() => {
-    // If auth is still loading, keep showing loading state
-    if (authLoading) {
-      return;
-    }
+  const { data, isLoading: loading } = useQuery({
+    queryKey: queryKeys.dashboard,
+    queryFn: async (): Promise<DashboardData> => {
+      if (!userId) throw new Error("No user");
 
-    // If no user after auth finished, stop loading
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+      const [gamesResult, matchesResult, challengesResult, followersResult, totalMatchesResult, gamersResult] = await Promise.all([
+        supabase
+          .from("user_games")
+          .select("*, game:games(*)")
+          .eq("user_id", userId),
+        supabase
+          .from("matches")
+          .select("*")
+          .or(`creator_id.eq.${userId}`)
+          .eq("status", "upcoming")
+          .order("scheduled_at", { ascending: true })
+          .limit(5),
+        supabase
+          .from("challenges")
+          .select("*")
+          .eq("creator_id", userId)
+          .eq("status", "open")
+          .limit(5),
+        supabase
+          .from("follows")
+          .select("*", { count: "exact", head: true })
+          .eq("following_id", userId),
+        supabase
+          .from("match_participants")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId),
+        supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", userId)
+          .eq("is_online", true)
+          .limit(6),
+      ]);
 
-    let isCancelled = false;
-    setLoading(true);
-
-    const fetchDashboardData = async () => {
-      try {
-        // Fetch all data in parallel for better performance
-        const [gamesResult, matchesResult, challengesResult, followersResult, totalMatchesResult, gamersResult] = await Promise.all([
-          supabase
-            .from("user_games")
-            .select("*, game:games(*)")
-            .eq("user_id", userId),
-          supabase
-            .from("matches")
-            .select("*")
-            .or(`creator_id.eq.${userId}`)
-            .eq("status", "upcoming")
-            .order("scheduled_at", { ascending: true })
-            .limit(5),
-          supabase
-            .from("challenges")
-            .select("*")
-            .eq("creator_id", userId)
-            .eq("status", "open")
-            .limit(5),
-          supabase
-            .from("follows")
-            .select("*", { count: "exact", head: true })
-            .eq("following_id", userId),
-          supabase
-            .from("match_participants")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId),
-          supabase
-            .from("profiles")
-            .select("*")
-            .neq("id", userId)
-            .eq("is_online", true)
-            .limit(6),
-        ]);
-
-        if (isCancelled) return;
-
-        setUserGames((gamesResult.data as UserGameWithGame[]) || []);
-        setUpcomingMatches(matchesResult.data || []);
-        setActiveChallenges(challengesResult.data || []);
-        setRecentGamers(gamersResult.data || []);
-        setStats({
+      return {
+        userGames: (gamesResult.data as UserGameWithGame[]) || [],
+        upcomingMatches: matchesResult.data || [],
+        activeChallenges: challengesResult.data || [],
+        recentGamers: gamersResult.data || [],
+        stats: {
           totalMatches: totalMatchesResult.count || 0,
           upcomingMatches: matchesResult.data?.length || 0,
           activeChallenges: challengesResult.data?.length || 0,
           followers: followersResult.count || 0,
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        if (!isCancelled) {
-          setLoading(false);
-        }
-      }
-    };
+        },
+      };
+    },
+    staleTime: STALE_TIMES.DASHBOARD,
+    enabled: !!userId && !authLoading,
+  });
 
-    fetchDashboardData();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [userId, authLoading]);
+  const stats = data?.stats ?? { totalMatches: 0, upcomingMatches: 0, activeChallenges: 0, followers: 0 };
+  const upcomingMatches = data?.upcomingMatches ?? [];
+  const activeChallenges = data?.activeChallenges ?? [];
+  const userGames = data?.userGames ?? [];
+  const recentGamers = data?.recentGamers ?? [];
 
   const statCards = [
     { label: "Matches Played", value: stats.totalMatches, icon: Calendar, color: "text-primary" },
@@ -143,7 +120,7 @@ export default function DashboardPage() {
     { label: "Followers", value: stats.followers, icon: Users, color: "text-secondary" },
   ];
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>

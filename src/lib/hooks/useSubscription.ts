@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStripe } from "@/lib/stripe-client";
+import { queryKeys } from "@/lib/query";
 
 interface SubscriptionPlan {
   id: string;
@@ -104,7 +105,7 @@ export function useSubscription(options?: { enabled?: boolean }) {
 
   // Query for subscription plans
   const plansQuery = useQuery({
-    queryKey: ["subscription-plans"],
+    queryKey: queryKeys.subscriptionPlans,
     queryFn: fetchPlans,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 2,
@@ -112,7 +113,7 @@ export function useSubscription(options?: { enabled?: boolean }) {
 
   // Query for user's subscription
   const subscriptionQuery = useQuery({
-    queryKey: ["user-subscription"],
+    queryKey: queryKeys.userSubscription,
     queryFn: fetchSubscription,
     staleTime: 1000 * 60, // 1 minute
     retry: 1,
@@ -162,7 +163,7 @@ export function useSubscription(options?: { enabled?: boolean }) {
   const cancelMutation = useMutation({
     mutationFn: cancelSubscription,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userSubscription });
     },
   });
 
@@ -170,7 +171,7 @@ export function useSubscription(options?: { enabled?: boolean }) {
   const resumeMutation = useMutation({
     mutationFn: resumeSubscription,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userSubscription });
     },
   });
 
@@ -203,10 +204,10 @@ export function useSubscription(options?: { enabled?: boolean }) {
 
     // Refetch
     refetch: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userSubscription });
     },
     refetchPlans: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscriptionPlans });
     },
   };
 }

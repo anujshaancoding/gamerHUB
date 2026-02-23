@@ -10,4 +10,3 @@ export { TitleSelector } from "./title-selector";
 export { FrameSelector } from "./frame-selector";
 export { ThemeSelector } from "./theme-selector";
 export { ProgressionOverview } from "./progression-overview";
-export { LeaderboardTable } from "./leaderboard-table";

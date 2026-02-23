@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Heart,
@@ -33,6 +34,8 @@ import { cn } from "@/lib/utils";
 import { ShareCardModal } from "@/components/blog/share-card-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { STALE_TIMES } from "@/lib/query/provider";
+import { useLikeBlogPost, blogKeys } from "@/lib/hooks/useBlog";
 
 interface Author {
   id: string;
@@ -79,51 +82,27 @@ interface CommunityPost {
   author: Author;
 }
 
-const supabase = createClient();
-
 export default function CommunityPostPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
   const { can: permissions } = usePermissions();
-  const [post, setPost] = useState<CommunityPost | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [showShareCards, setShowShareCards] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const { toggleLike, isLiking } = useLikeBlogPost();
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (!post) return;
-    setDeletingCommentId(commentId);
-    try {
-      const response = await fetch(
-        `/api/blog/${post.slug}/comments/${commentId}`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete comment");
-      }
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-    } finally {
-      setDeletingCommentId(null);
-    }
-  };
+  const postId = params.id as string;
 
-  useEffect(() => {
-    if (params.id) {
-      fetchPost(params.id as string);
-    }
-  }, [params.id]);
-
-  const fetchPost = async (postId: string) => {
-    setLoading(true);
-    try {
-      // Fetch the post from blog_posts (real user content)
+  // Fetch post with React Query
+  const {
+    data: post,
+    isLoading: postLoading,
+  } = useQuery({
+    queryKey: blogKeys.postById(postId),
+    queryFn: async () => {
       const { data: postData, error: postError } = await supabase
         .from("blog_posts")
         .select(`
@@ -141,11 +120,30 @@ export default function CommunityPostPage() {
         .eq("id", postId)
         .single();
 
-      if (postError) throw postError;
-      setPost(postData as CommunityPost);
+      if (postError) throw new Error(postError.message);
+      return postData as CommunityPost;
+    },
+    staleTime: STALE_TIMES.BLOG_POST_DETAIL,
+    enabled: !!postId,
+  });
 
-      // Fetch comments from blog_comments
-      const { data: commentsData } = await supabase
+  // Deduplicated view counting — only fires once per session per post
+  useEffect(() => {
+    if (!post?.slug) return;
+    const viewKey = `viewed_blog_${post.slug}`;
+    if (!sessionStorage.getItem(viewKey)) {
+      sessionStorage.setItem(viewKey, "1");
+      supabase.rpc("increment_blog_view", { post_slug: post.slug }).then();
+    }
+  }, [post?.slug, supabase]);
+
+  // Fetch comments with React Query
+  const {
+    data: comments = [],
+  } = useQuery({
+    queryKey: blogKeys.commentsById(postId),
+    queryFn: async () => {
+      const { data: commentsData, error } = await supabase
         .from("blog_comments")
         .select(`
           id,
@@ -160,13 +158,62 @@ export default function CommunityPostPage() {
           )
         `)
         .eq("post_id", postId)
+        .eq("status", "visible")
         .order("created_at", { ascending: false });
 
-      setComments((commentsData || []) as Comment[]);
+      if (error) throw new Error(error.message);
+      return (commentsData || []) as Comment[];
+    },
+    staleTime: STALE_TIMES.BLOG_COMMENTS,
+    enabled: !!postId,
+  });
+
+  // Check if user has liked this post
+  const { data: liked = false } = useQuery({
+    queryKey: blogKeys.postLiked(postId),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("blog_likes")
+        .select("id")
+        .eq("post_id", postId)
+        .eq("user_id", user!.id)
+        .single();
+      return !!data;
+    },
+    staleTime: STALE_TIMES.BLOG_POST_DETAIL,
+    enabled: !!postId && !!user,
+  });
+
+  const handleLikePost = async () => {
+    if (!post?.slug || !user) return;
+    try {
+      await toggleLike(post.slug);
+      // Also refresh the liked status
+      queryClient.invalidateQueries({ queryKey: blogKeys.postLiked(postId) });
+    } catch {
+      // Like failed silently
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!post) return;
+    setDeletingCommentId(commentId);
+    try {
+      const response = await fetch(
+        `/api/blog/${post.slug}/comments/${commentId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete comment");
+      }
+      // Invalidate comments cache — all keys are under blogKeys.all prefix
+      queryClient.invalidateQueries({ queryKey: blogKeys.commentsById(postId) });
+      queryClient.invalidateQueries({ queryKey: blogKeys.comments(post.slug) });
     } catch (error) {
-      console.error("Error fetching post:", error);
+      console.error("Error deleting comment:", error);
     } finally {
-      setLoading(false);
+      setDeletingCommentId(null);
     }
   };
 
@@ -196,7 +243,7 @@ export default function CommunityPostPage() {
   // Detect if content is HTML (from Tiptap editor) vs plain markdown
   const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
 
-  if (loading) {
+  if (postLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
@@ -326,10 +373,11 @@ export default function CommunityPostPage() {
           <Button
             variant={liked ? "default" : "outline"}
             size="sm"
-            onClick={() => setLiked(!liked)}
+            onClick={handleLikePost}
+            disabled={isLiking || !user}
             leftIcon={<Heart className={cn("h-4 w-4", liked && "fill-current")} />}
           >
-            {post.likes_count + (liked ? 1 : 0)}
+            {post.likes_count}
           </Button>
           <Button
             variant="outline"

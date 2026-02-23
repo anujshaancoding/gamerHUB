@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <MessageNotifier />
-      <div className="xl:mr-72">{children}</div>
+      <div className="2xl:mr-72">{children}</div>
       <RightSidebar />
     </>
   );

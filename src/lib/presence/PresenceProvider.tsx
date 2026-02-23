@@ -47,7 +47,7 @@ const IDLE_TIMEOUT = 5 * 60_000; // 5 minutes
 const HIDDEN_TAB_TIMEOUT = 60_000; // 1 minute when tab hidden
 
 export function PresenceProvider({ children }: { children: ReactNode }) {
-  const { user, session } = useAuth();
+  const { user, session, profile } = useAuth();
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [userStatuses, setUserStatuses] = useState<
     Map<string, UserStatusPreference>
@@ -154,9 +154,11 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   );
 
   // ── Main presence setup effect ────────────────────────────────────
+  // Wait for both user AND profile to be available. The profile being set
+  // means the DB row exists, so our queries (status, heartbeat) won't 406/409.
   useEffect(() => {
-    if (!user) {
-      // Not logged in — clean up everything
+    if (!user || !profile) {
+      // Not logged in or profile not loaded yet — clean up everything
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -165,11 +167,13 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
       }
-      setOnlineUserIds(new Set());
-      setUserStatuses(new Map());
-      setStatusPreference("auto");
-      setStatusUntil(null);
-      setIsAutoAway(false);
+      if (!user) {
+        setOnlineUserIds(new Set());
+        setUserStatuses(new Map());
+        setStatusPreference("auto");
+        setStatusUntil(null);
+        setIsAutoAway(false);
+      }
       return;
     }
 
@@ -181,7 +185,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .select("status, status_until")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (cancelled) return;
 
@@ -213,7 +217,8 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         .eq("id", user.id);
 
       // Record initial activity heartbeat for today
-      supabase.rpc("record_heartbeat_activity", { p_user_id: user.id }).then();
+      supabase.rpc("record_heartbeat_activity", { p_user_id: user.id })
+        .then(({ error }) => { if (error) console.warn("[Presence] heartbeat RPC error:", error.message); });
 
       if (cancelled) return;
 
@@ -267,7 +272,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         // Record activity for the day (deduplication handled server-side)
         supabase
           .rpc("record_heartbeat_activity", { p_user_id: user.id })
-          .then();
+          .then(({ error }) => { if (error) console.warn("[Presence] heartbeat RPC error:", error.message); });
       }, HEARTBEAT_INTERVAL);
     };
 
@@ -312,7 +317,8 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         channelRef.current = null;
       }
     };
-  }, [user?.id, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.id, supabase]);
 
   // ── Timed status expiry ───────────────────────────────────────────
   useEffect(() => {

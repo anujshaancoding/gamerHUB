@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
   UserPlus,
@@ -27,6 +28,8 @@ import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
+import { STALE_TIMES } from "@/lib/query/provider";
+import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 
 type TabType = "friends" | "requests" | "following" | "followers" | "posts";
 
@@ -58,14 +61,14 @@ function FriendsContent() {
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
+  const queryClient = useQueryClient();
+  const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
   const initialTab = (searchParams.get("tab") as TabType) || "friends";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Posts tab state
-  const [posts, setPosts] = useState<FriendPost[]>([]);
-  const [postsLoading, setPostsLoading] = useState(false);
   const [postSearchQuery, setPostSearchQuery] = useState("");
   const [postFilterBy, setPostFilterBy] = useState<"all" | "friends" | "following">("all");
   const [postDateFilter, setPostDateFilter] = useState<"all" | "today" | "week" | "month">("all");
@@ -95,17 +98,10 @@ function FriendsContent() {
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Fetch posts when posts tab is active
-  useEffect(() => {
-    if (activeTab === "posts" && user) {
-      fetchPosts();
-    }
-  }, [activeTab, user]);
-
-  const fetchPosts = async () => {
-    if (!user) return;
-    setPostsLoading(true);
-    try {
+  // Fetch posts with React Query — cached across navigations
+  const { data: posts = [], isLoading: postsLoading } = useQuery({
+    queryKey: friendPostKeys.list(false),
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("friend_posts")
         .select(`
@@ -114,17 +110,12 @@ function FriendsContent() {
         `)
         .order("created_at", { ascending: false })
         .limit(50);
-      if (error) {
-        console.error("Error fetching posts:", error);
-      }
-      setPosts(data || []);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      setPosts([]);
-    } finally {
-      setPostsLoading(false);
-    }
-  };
+      if (error) throw new Error(error.message);
+      return (data || []) as FriendPost[];
+    },
+    staleTime: STALE_TIMES.FRIEND_POSTS,
+    enabled: activeTab === "posts" && !!user,
+  });
 
   // Get friend and following user IDs for filtering
   const friendUserIds = useMemo(() => {
@@ -711,16 +702,7 @@ function FriendsContent() {
                     post={post}
                     index={index}
                     onLike={async () => {
-                      const { data } = await supabase
-                        .from("friend_posts")
-                        .select("likes_count")
-                        .eq("id", post.id)
-                        .single();
-                      const { error } = await supabase
-                        .from("friend_posts")
-                        .update({ likes_count: (data?.likes_count || 0) + 1 })
-                        .eq("id", post.id);
-                      if (error) throw error;
+                      await toggleFriendPostLike(post.id);
                     }}
                     onShare={async () => {
                       const url = `${window.location.origin}/community?tab=friends`;

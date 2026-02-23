@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
   Filter,
@@ -20,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useFriends } from "@/lib/hooks/useFriends";
+import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { Profile, UserGame, Game } from "@/types/database";
 
 interface GamerWithGames extends Profile {
@@ -32,15 +34,14 @@ const PROFILES_PER_LOAD = 3;
 function FindGamersContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   // Get friends list to filter them out
   const { friends } = useFriends({ userId: user?.id });
-  const friendIds = new Set(friends.map((f) => f.friend_id));
+  const friendIds = useMemo(() => new Set(friends.map((f) => f.friend_id)), [friends]);
 
-  const [gamers, setGamers] = useState<GamerWithGames[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
   // Pagination state
@@ -59,10 +60,17 @@ function FindGamersContent() {
   const [onlineOnly, setOnlineOnly] = useState(false);
   const [hasmic, setHasMic] = useState(false);
 
-  const fetchGamers = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Fetch real profiles (no search filter - search is done client-side)
+  const filterParams = useMemo(() => ({
+    game: selectedGame,
+    rank: selectedRank,
+    region: selectedRegion,
+    language: selectedLanguage,
+    style: selectedStyle,
+  }), [selectedGame, selectedRank, selectedRegion, selectedLanguage, selectedStyle]);
+
+  const { data: gamers = [], isLoading: loading } = useQuery({
+    queryKey: queryKeys.findGamers(filterParams),
+    queryFn: async () => {
       let query = supabase
         .from("profiles")
         .select(`
@@ -92,9 +100,7 @@ function FindGamersContent() {
 
       const { data: realData, error: realError } = await query.limit(50);
 
-      if (realError) {
-        console.error("Error fetching real profiles:", realError);
-      }
+      if (realError) throw new Error(realError.message);
 
       // Client-side filtering for game and rank
       let filtered = (realData as GamerWithGames[]) || [];
@@ -114,36 +120,20 @@ function FindGamersContent() {
       }
 
       // Filter out the current user and their friends
-      const combined = filtered.filter((gamer) => {
-        // Exclude current user
+      return filtered.filter((gamer) => {
         if (user && gamer.id === user.id) return false;
-        // Exclude friends
         if (friendIds.has(gamer.id)) return false;
         return true;
       });
+    },
+    staleTime: STALE_TIMES.FIND_GAMERS,
+  });
 
-      setGamers(combined);
-      setVisibleCount(INITIAL_PROFILES_TO_SHOW);
-    } catch (error) {
-      console.error("Error fetching gamers:", error);
-    } finally {
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedGame,
-    selectedRank,
-    selectedRegion,
-    selectedLanguage,
-    selectedStyle,
-    onlineOnly,
-    user?.id,
-    friendIds.size,
-  ]);
-
+  // Reset visible count when filters change
+  const prevFilterKey = useMemo(() => JSON.stringify(filterParams), [filterParams]);
   useEffect(() => {
-    fetchGamers();
-  }, [fetchGamers]);
+    setVisibleCount(INITIAL_PROFILES_TO_SHOW);
+  }, [prevFilterKey]);
 
   // Client-side search filtering (instant results as user types)
   const filteredGamers = useMemo(() => {
@@ -226,7 +216,7 @@ function FindGamersContent() {
               </Badge>
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={fetchGamers}>
+          <Button variant="ghost" size="icon" onClick={() => queryClient.invalidateQueries({ queryKey: ["find-gamers"] })}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PenSquare,
   Users,
@@ -36,6 +37,9 @@ import { TournamentsTab } from "@/components/community/TournamentsTab";
 import { CreateListingModal } from "@/components/community/CreateListingModal";
 import { ListingDetailModal } from "@/components/community/ListingDetailModal";
 import { FriendPostCard } from "@/components/friends/friend-post-card";
+import { STALE_TIMES } from "@/lib/query/provider";
+import { blogKeys } from "@/lib/hooks/useBlog";
+import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 import type { CommunityListing } from "@/types/listings";
 
 interface BlogPost {
@@ -81,13 +85,9 @@ interface FriendPost {
 export default function CommunityPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
   const [activeTab, setActiveTab] = useState<"author" | "tournaments" | "friends">("author");
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const blogFetchIdRef = useRef(0);
-  const friendFetchIdRef = useRef(0);
 
   // Tournament/Giveaway listing state
   const [showCreateListingModal, setShowCreateListingModal] = useState(false);
@@ -100,18 +100,14 @@ export default function CommunityPage() {
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use ref so fetchFriendPosts doesn't depend on user?.id
-  // (avoids recreating the callback on auth change)
-  const userRef = useRef(user);
-  userRef.current = user;
-
-  const fetchBlogPosts = useCallback(async () => {
-    const fetchId = ++blogFetchIdRef.current;
-    setFetchError(null);
-
-    try {
-      console.log("[Community] fetchBlogPosts start, fetchId:", fetchId);
-
+  // Blog posts query — cached, auto-refetches on window focus
+  const {
+    data: blogPosts = [],
+    isLoading: blogLoading,
+    error: blogError,
+  } = useQuery({
+    queryKey: blogKeys.posts(),
+    queryFn: async () => {
       const { data: posts, error: queryError } = await supabase
         .from("blog_posts")
         .select(`
@@ -124,23 +120,9 @@ export default function CommunityPage() {
         .order("published_at", { ascending: false })
         .limit(20);
 
-      if (queryError) {
-        console.error("[Community] Supabase query error in fetchBlogPosts:", queryError.message, queryError.code, queryError.details);
-        if (fetchId === blogFetchIdRef.current) {
-          setFetchError(`Blog posts query failed: ${queryError.message}`);
-        }
-        return;
-      }
+      if (queryError) throw new Error(queryError.message);
 
-      // Ignore stale result if a newer fetch was triggered
-      if (fetchId !== blogFetchIdRef.current) {
-        console.log("[Community] fetchBlogPosts stale result discarded, fetchId:", fetchId, "current:", blogFetchIdRef.current);
-        return;
-      }
-
-      console.log("[Community] fetchBlogPosts success, got", posts?.length ?? 0, "posts");
-
-      const blogPostsMapped: BlogPost[] = (posts || []).map((post: Record<string, unknown>) => ({
+      return (posts || []).map((post: Record<string, unknown>): BlogPost => ({
         id: post.id as string,
         title: post.title as string,
         excerpt: post.excerpt as string,
@@ -155,28 +137,20 @@ export default function CommunityPage() {
         tags: post.tags as string[],
         author: post.author as BlogPost["author"],
       }));
+    },
+    staleTime: STALE_TIMES.BLOG_POSTS,
+    enabled: activeTab === "author",
+  });
 
-      setBlogPosts(blogPostsMapped);
-    } catch (error) {
-      if (fetchId !== blogFetchIdRef.current) return;
-      const errMsg = error instanceof Error ? error.message : String(error);
-      console.error("[Community] fetchBlogPosts exception:", errMsg, error);
-      setFetchError(`Blog posts failed: ${errMsg}`);
-    } finally {
-      if (fetchId === blogFetchIdRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  const fetchFriendPosts = useCallback(async () => {
-    const fetchId = ++friendFetchIdRef.current;
-    setFetchError(null);
-
-    try {
-      console.log("[Community] fetchFriendPosts start, fetchId:", fetchId);
-
-      const isGuest = !userRef.current;
+  // Friend posts query — depends on auth state for guest vs logged-in view
+  const isGuest = !user;
+  const {
+    data: friendPosts = [],
+    isLoading: friendLoading,
+    error: friendError,
+  } = useQuery({
+    queryKey: friendPostKeys.list(isGuest),
+    queryFn: async () => {
       let query = supabase
         .from("friend_posts")
         .select(`
@@ -192,92 +166,19 @@ export default function CommunityPage() {
       }
 
       const { data, error: queryError } = await query;
-
-      if (queryError) {
-        console.error("[Community] Supabase query error in fetchFriendPosts:", queryError.message, queryError.code, queryError.details);
-        if (fetchId === friendFetchIdRef.current) {
-          setFetchError(`Friend posts query failed: ${queryError.message}`);
-        }
-        return;
-      }
-
-      // Ignore stale result if a newer fetch was triggered
-      if (fetchId !== friendFetchIdRef.current) {
-        console.log("[Community] fetchFriendPosts stale result discarded, fetchId:", fetchId, "current:", friendFetchIdRef.current);
-        return;
-      }
-
-      console.log("[Community] fetchFriendPosts success, got", data?.length ?? 0, "posts");
+      if (queryError) throw new Error(queryError.message);
 
       // Supabase inner-filter on joined table can return rows with user: null, filter those out for guests
-      const posts = isGuest
+      return isGuest
         ? (data || []).filter((p: FriendPost) => p.user !== null)
         : (data || []);
-      setFriendPosts(posts);
-    } catch (error) {
-      if (fetchId !== friendFetchIdRef.current) return;
-      const errMsg = error instanceof Error ? error.message : String(error);
-      console.error("[Community] fetchFriendPosts exception:", errMsg, error);
-      setFetchError(`Friend posts failed: ${errMsg}`);
-    } finally {
-      if (fetchId === friendFetchIdRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
+    },
+    staleTime: STALE_TIMES.FRIEND_POSTS,
+    enabled: activeTab === "friends" && !authLoading,
+  });
 
-  // Combined fetch for backward compat with handleCreatePost's fetchContent call
-  const fetchContent = useCallback(async () => {
-    if (activeTab === "author") {
-      await fetchBlogPosts();
-    } else {
-      await fetchFriendPosts();
-    }
-  }, [activeTab, fetchBlogPosts, fetchFriendPosts]);
-
-  // Blog posts are publicly readable — fetch immediately without waiting for auth
-  useEffect(() => {
-    if (activeTab !== "author") return;
-    setLoading(true);
-    fetchBlogPosts();
-  }, [activeTab, fetchBlogPosts]);
-
-  // Friend posts need auth context to determine guest vs logged-in view
-  useEffect(() => {
-    if (activeTab !== "friends") return;
-    if (authLoading) return;
-    setLoading(true);
-    fetchFriendPosts();
-    // Re-fetch when user logs in/out (changes guest vs authenticated view)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, authLoading, user?.id, fetchFriendPosts]);
-
-  // Re-fetch when the browser tab / app becomes visible again.
-  // This fixes content disappearing after tab-switch, app-switch, or navigation.
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return;
-      console.log("[Community] Tab became visible, re-fetching for tab:", activeTab);
-      if (activeTab === "author") {
-        setLoading(true);
-        fetchBlogPosts();
-      } else if (activeTab === "friends" && !authLoading) {
-        setLoading(true);
-        fetchFriendPosts();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [activeTab, authLoading, fetchBlogPosts, fetchFriendPosts]);
-
-  // Safety net: if loading is stuck for 5 seconds, force it off.
-  // This is a fallback — the root causes (auth delay, missing debounce)
-  // have been fixed, so this should rarely trigger.
-  useEffect(() => {
-    if (!loading) return;
-    const timer = setTimeout(() => setLoading(false), 5_000);
-    return () => clearTimeout(timer);
-  }, [loading]);
+  const loading = activeTab === "author" ? blogLoading : friendLoading;
+  const fetchError = blogError || friendError;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -333,7 +234,8 @@ export default function CommunityPage() {
       if (!error) {
         setNewPostContent("");
         removeImage();
-        fetchContent();
+        // Invalidate friend posts cache to refetch with the new post
+        queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
       }
     } catch (error) {
       console.error("Error creating post:", error);
@@ -397,7 +299,7 @@ export default function CommunityPage() {
       {/* Debug: show fetch error if any */}
       {fetchError && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-          <strong>Fetch error:</strong> {fetchError}
+          <strong>Fetch error:</strong> {fetchError.message}
         </div>
       )}
 
@@ -642,16 +544,7 @@ export default function CommunityPage() {
                   index={index}
                   isGuest={!user}
                   onLike={async () => {
-                    const { data } = await supabase
-                      .from("friend_posts")
-                      .select("likes_count")
-                      .eq("id", post.id)
-                      .single();
-                    const { error } = await supabase
-                      .from("friend_posts")
-                      .update({ likes_count: (data?.likes_count || 0) + 1 })
-                      .eq("id", post.id);
-                    if (error) throw error;
+                    await toggleFriendPostLike(post.id);
                   }}
                   onShare={async () => {
                     const url = `${window.location.origin}/community?tab=friends`;

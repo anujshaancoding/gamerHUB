@@ -1,4 +1,4 @@
 "use client";
 
 // Re-export from AuthProvider for backward compatibility
-export { useAuth } from "@/lib/auth/AuthProvider";
+export { useAuth, useAuthSession, useAuthProfile } from "@/lib/auth/AuthProvider";

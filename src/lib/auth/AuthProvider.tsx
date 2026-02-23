@@ -5,20 +5,26 @@ import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database";
 
-interface AuthContextType {
+// Session context — user, session, loading, auth actions
+interface AuthSessionContextType {
   user: User | null;
-  profile: Profile | null;
   session: Session | null;
   loading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ data: unknown; error: Error | null }>;
   signUpWithEmail: (email: string, password: string, username: string) => Promise<{ data: unknown; error: Error | null }>;
   signInWithOAuth: (provider: "google") => Promise<{ data: unknown; error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+}
+
+// Profile context — profile data and profile actions
+interface AuthProfileContextType {
+  profile: Profile | null;
   updateProfile: (updates: Partial<Profile>) => Promise<{ data: Profile | null; error: Error | null }>;
   refreshProfile: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthSessionContext = createContext<AuthSessionContextType | null>(null);
+const AuthProfileContext = createContext<AuthProfileContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -311,41 +317,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchProfile]);
 
-  const value = useMemo(() => ({
+  const sessionValue = useMemo(() => ({
     user,
-    profile,
     session,
     loading,
     signInWithEmail,
     signUpWithEmail,
     signInWithOAuth,
     signOut,
+  }), [
+    user,
+    session,
+    loading,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithOAuth,
+    signOut,
+  ]);
+
+  const profileValue = useMemo(() => ({
+    profile,
     updateProfile,
     refreshProfile,
   }), [
-    user,
     profile,
-    session,
-    loading,
-    signInWithEmail,
-    signUpWithEmail,
-    signInWithOAuth,
-    signOut,
     updateProfile,
     refreshProfile,
   ]);
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthSessionContext.Provider value={sessionValue}>
+      <AuthProfileContext.Provider value={profileValue}>
+        {children}
+      </AuthProfileContext.Provider>
+    </AuthSessionContext.Provider>
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
+export function useAuthSession() {
+  const context = useContext(AuthSessionContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuthSession must be used within an AuthProvider");
   }
   return context;
+}
+
+export function useAuthProfile() {
+  const context = useContext(AuthProfileContext);
+  if (!context) {
+    throw new Error("useAuthProfile must be used within an AuthProvider");
+  }
+  return context;
+}
+
+// Backward-compatible hook that merges both contexts
+export function useAuth() {
+  const sessionCtx = useAuthSession();
+  const profileCtx = useAuthProfile();
+  return { ...sessionCtx, ...profileCtx };
 }

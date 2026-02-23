@@ -94,7 +94,7 @@ export function useQuests() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.activeQuests });
-      queryClient.invalidateQueries({ queryKey: ["progression"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.progression() });
     },
   });
 

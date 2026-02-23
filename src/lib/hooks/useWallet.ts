@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query";
 
 interface Wallet {
   coins: number;
@@ -81,14 +82,14 @@ export function useWallet() {
 
   // Query for wallet
   const walletQuery = useQuery({
-    queryKey: ["wallet"],
+    queryKey: queryKeys.wallet,
     queryFn: fetchWallet,
     staleTime: 1000 * 30, // 30 seconds
   });
 
   // Query for currency packs
   const packsQuery = useQuery({
-    queryKey: ["currency-packs"],
+    queryKey: queryKeys.currencyPacks,
     queryFn: fetchCurrencyPacks,
     staleTime: 1000 * 60 * 60, // 1 hour
   });
@@ -122,7 +123,7 @@ export function useWallet() {
 
     // Refetch
     refetch: () => {
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   };
 }
@@ -132,7 +133,7 @@ export function useWalletTransactions(params: {
   currency?: string;
 } = {}) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["wallet-transactions", params],
+    queryKey: queryKeys.walletTransactions(params),
     queryFn: () => fetchTransactions(params),
     staleTime: 1000 * 30, // 30 seconds
   });

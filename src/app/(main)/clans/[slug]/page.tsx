@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Users,
   Activity,
@@ -30,6 +31,7 @@ import { useClanMembers } from "@/lib/hooks/useClanMembers";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn, formatRelativeTime } from "@/lib/utils";
+import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { ClanMemberRole, ClanActivityLog } from "@/types/database";
 
 type Tab = "members" | "activity";
@@ -49,12 +51,12 @@ export default function ClanDetailPage() {
     refetch: refetchMembers,
   } = useClanMembers(clan?.id || null);
 
+  const supabase = useMemo(() => createClient(), []);
+
   const [activeTab, setActiveTab] = useState<Tab>("members");
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [activityLog, setActivityLog] = useState<ClanActivityLog[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
   const [joiningOpen, setJoiningOpen] = useState(false);
 
   // Find current user's membership in this clan
@@ -71,32 +73,23 @@ export default function ClanDetailPage() {
     userRole === "co_leader" ||
     userRole === "officer";
 
-  // Fetch activity log when tab changes
-  useEffect(() => {
-    if (activeTab === "activity" && clan?.id) {
-      fetchActivityLog();
-    }
-  }, [activeTab, clan?.id]);
-
-  const fetchActivityLog = async () => {
-    if (!clan?.id || !isMember) return;
-    setActivityLoading(true);
-    try {
-      const supabase = createClient();
-      const { data } = await supabase
+  // Fetch activity log with React Query — cached
+  const { data: activityLog = [], isLoading: activityLoading } = useQuery({
+    queryKey: queryKeys.clanActivity(clan?.id || ""),
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("clan_activity_log")
         .select("*")
-        .eq("clan_id", clan.id)
+        .eq("clan_id", clan!.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
-      setActivityLog((data as ClanActivityLog[]) || []);
-    } catch {
-      // Activity log fetch failed silently
-    } finally {
-      setActivityLoading(false);
-    }
-  };
+      if (error) throw new Error(error.message);
+      return (data as ClanActivityLog[]) || [];
+    },
+    staleTime: STALE_TIMES.CLAN_ACTIVITY,
+    enabled: activeTab === "activity" && !!clan?.id && isMember,
+  });
 
   const handleJoinOpen = async () => {
     if (!clan?.id || !user) return;

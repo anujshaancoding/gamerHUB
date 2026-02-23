@@ -12,8 +12,13 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
-import { RichTextEditor } from "@/components/blog/rich-text-editor";
+import dynamic from "next/dynamic";
 import { useCreateBlogPost } from "@/lib/hooks/useBlog";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-[400px] bg-white/[0.03] border border-white/10 rounded-xl animate-pulse" /> }
+);
 import { useBlogAuthor } from "@/lib/hooks/useBlogAuthor";
 import {
   BLOG_CATEGORIES,
