@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
 
@@ -50,13 +51,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           .select("id")
           .eq("post_id", post.id)
           .eq("user_id", user.id)
-          .single(),
+          .maybeSingle(),
         supabase
           .from("blog_bookmarks")
           .select("id")
           .eq("post_id", post.id)
           .eq("user_id", user.id)
-          .single(),
+          .maybeSingle(),
       ]);
 
       userHasLiked = !!likeResult.data;
@@ -301,7 +302,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const { error: deleteError } = await supabase
+    // Use admin client for deletion to bypass RLS — permission checks above
+    // already verified the user is authorized to delete this post
+    const admin = createAdminClient();
+    const { error: deleteError } = await admin
       .from("blog_posts")
       .delete()
       .eq("slug", slug);

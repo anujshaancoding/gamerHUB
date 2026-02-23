@@ -2,7 +2,8 @@
 
 import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PenSquare,
@@ -33,14 +34,35 @@ import {
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { TournamentsTab } from "@/components/community/TournamentsTab";
-import { CreateListingModal } from "@/components/community/CreateListingModal";
-import { ListingDetailModal } from "@/components/community/ListingDetailModal";
 import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { STALE_TIMES } from "@/lib/query/provider";
 import { blogKeys } from "@/lib/hooks/useBlog";
 import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 import type { CommunityListing } from "@/types/listings";
+
+const TournamentsTab = dynamic(
+  () => import("@/components/community/TournamentsTab").then((mod) => mod.TournamentsTab),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid md:grid-cols-2 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-48 rounded-xl bg-surface-light animate-pulse" />
+        ))}
+      </div>
+    ),
+  }
+);
+
+const CreateListingModal = dynamic(
+  () => import("@/components/community/CreateListingModal").then((mod) => mod.CreateListingModal),
+  { ssr: false }
+);
+
+const ListingDetailModal = dynamic(
+  () => import("@/components/community/ListingDetailModal").then((mod) => mod.ListingDetailModal),
+  { ssr: false }
+);
 
 interface BlogPost {
   id: string;
@@ -83,7 +105,7 @@ interface FriendPost {
 }
 
 export default function CommunityPage() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile } = useAuth();
   const supabase = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
@@ -174,7 +196,7 @@ export default function CommunityPage() {
         : (data || []);
     },
     staleTime: STALE_TIMES.FRIEND_POSTS,
-    enabled: activeTab === "friends" && !authLoading,
+    enabled: activeTab === "friends",
   });
 
   const loading = activeTab === "author" ? blogLoading : friendLoading;
@@ -310,8 +332,29 @@ export default function CommunityPage() {
           onListingClick={(listing) => setSelectedListing(listing)}
         />
       ) : loading ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-xl border border-border overflow-hidden animate-pulse">
+              <div className="aspect-video bg-surface-light" />
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-surface-light" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-24 bg-surface-light rounded" />
+                    <div className="h-2.5 w-16 bg-surface-light rounded" />
+                  </div>
+                </div>
+                <div className="h-5 w-3/4 bg-surface-light rounded" />
+                <div className="h-3 w-full bg-surface-light rounded" />
+                <div className="h-3 w-2/3 bg-surface-light rounded" />
+                <div className="flex gap-4 pt-1">
+                  <div className="h-3 w-12 bg-surface-light rounded" />
+                  <div className="h-3 w-12 bg-surface-light rounded" />
+                  <div className="h-3 w-12 bg-surface-light rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : activeTab === "author" ? (
         /* Author Section - Blog Posts */
@@ -332,21 +375,22 @@ export default function CommunityPage() {
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
               {blogPosts.map((post, index) => (
-                <motion.div
+                <div
                   key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  className="animate-fadeInUp"
+                  style={{ animationDelay: `${index * 100}ms`, animationFillMode: "both" }}
                 >
                   <Link href={`/community/post/${post.id}`}>
                     <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer h-full">
                       {post.cover_image && (
                         <div className="aspect-video bg-surface-light relative">
-                          <img
+                          <Image
                             src={post.cover_image}
                             alt={post.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `/images/banners/gaming-${(index % 5) + 1}.svg`; }}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            priority={index < 2}
                           />
                           {/* Game badge overlay */}
                           {post.game && (
@@ -424,7 +468,7 @@ export default function CommunityPage() {
                       </CardContent>
                     </Card>
                   </Link>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
@@ -563,11 +607,9 @@ export default function CommunityPage() {
 
               {/* Guest sign-up CTA after posts */}
               {!user && friendPosts.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: friendPosts.length * 0.05 + 0.1 }}
-                  className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/[0.08] to-accent/[0.08] border border-primary/20 p-6 text-center"
+                <div
+                  className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/[0.08] to-accent/[0.08] border border-primary/20 p-6 text-center animate-fadeInUp"
+                  style={{ animationDelay: `${friendPosts.length * 50 + 100}ms`, animationFillMode: "both" }}
                 >
                   <Lock className="h-8 w-8 text-primary mx-auto mb-3" />
                   <h3 className="text-lg font-semibold text-text mb-1">
@@ -586,7 +628,7 @@ export default function CommunityPage() {
                       <Button variant="outline">Sign In</Button>
                     </Link>
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
           )}

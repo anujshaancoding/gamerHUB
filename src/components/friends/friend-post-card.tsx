@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -142,16 +142,15 @@ export function FriendPostCard({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05, duration: 0.3 }}
+      <div
         className={cn(
           "group relative rounded-2xl overflow-hidden transition-all duration-300",
           "backdrop-blur-xl bg-white/[0.03] border border-white/[0.08]",
           "hover:border-primary/20 hover:bg-white/[0.05]",
-          "hover:shadow-lg hover:shadow-primary/5"
+          "hover:shadow-lg hover:shadow-primary/5",
+          "animate-fadeInUp"
         )}
+        style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
       >
         {/* Subtle gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-accent/[0.02] pointer-events-none" />
@@ -208,15 +207,13 @@ export function FriendPostCard({
 
           {/* Image */}
           {post.image_url && (
-            <div className="relative rounded-xl overflow-hidden mb-3 border border-white/[0.06]">
-              <img
+            <div className="relative rounded-xl overflow-hidden mb-3 border border-white/[0.06] aspect-[16/9]">
+              <Image
                 src={post.image_url}
                 alt="Post image"
-                className="w-full max-h-[400px] object-cover"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.style.display = "none";
-                }}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, 600px"
               />
               {/* Subtle bottom shadow overlay */}
               <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -276,7 +273,7 @@ export function FriendPostCard({
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Auth gate modal for guest interactions */}
       <AuthGateModal

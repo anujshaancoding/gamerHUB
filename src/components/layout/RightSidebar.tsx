@@ -165,13 +165,11 @@ export function RightSidebar() {
           </Card>
         ) : (
           onlineFriends.map((friend, index) => (
-            <motion.div
+            <div
               key={friend.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
               onClick={() => openChat(friend)}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light transition-colors cursor-pointer group"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light transition-colors cursor-pointer group animate-fadeInRight"
+              style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
             >
               <div className="relative">
                 {friend.avatarUrl ? (
@@ -200,7 +198,7 @@ export function RightSidebar() {
               <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity px-2">
                 <Gamepad2 className="h-4 w-4" />
               </Button>
-            </motion.div>
+            </div>
           ))
         )}
       </div>

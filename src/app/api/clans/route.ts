@@ -8,7 +8,7 @@ import type { Clan } from "@/types/database";
 // GET - List/search clans
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const search = searchParams.get("search");
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .select(
         `
         *,
-        primary_game:games!clans_primary_game_id_fkey(*),
+        primary_game:games!primary_game_id(*),
         clan_members(count),
         clan_games(
           game:games(*)
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Error fetching clans:", error);
       return NextResponse.json(
-        { error: "Failed to fetch clans" },
+        { error: "Failed to fetch clans", details: error.message, code: error.code },
         { status: 500 }
       );
     }

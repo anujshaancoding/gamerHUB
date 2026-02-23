@@ -177,7 +177,7 @@ export default function CommunityPostPage() {
         .select("id")
         .eq("post_id", postId)
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
       return !!data;
     },
     staleTime: STALE_TIMES.BLOG_POST_DETAIL,

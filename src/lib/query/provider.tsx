@@ -185,7 +185,7 @@ function makeQueryClient() {
         // Retry failed requests 1 time
         retry: 1,
         // Refetch on window focus (but only if stale)
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         // Refetch on mount if data is stale - ensures fresh data on navigation
         refetchOnMount: true,
         // Refetch on reconnect to get latest data after connection loss
