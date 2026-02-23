@@ -33,11 +33,41 @@ export async function GET(request: Request) {
       // Check if user has completed onboarding
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from("profiles")
           .select("username, display_name, gaming_style, region, bio")
           .eq("id", user.id)
           .single();
+
+        // If profile doesn't exist (signup trigger may have failed), create it now
+        if (!profile) {
+          const meta = user.user_metadata || {};
+          const fallbackUsername = "user_" + user.id.substring(0, 8);
+          const { data: created } = await supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              username: fallbackUsername,
+              display_name: meta.full_name || meta.name || null,
+              avatar_url: meta.avatar_url || meta.picture || null,
+            })
+            .select("username, display_name, gaming_style, region, bio")
+            .single();
+          profile = created;
+        }
+
+        // If profile exists but display_name is missing, patch it from Google metadata
+        if (profile && !profile.display_name) {
+          const meta = user.user_metadata || {};
+          const googleName = meta.full_name || meta.name;
+          if (googleName) {
+            await supabase
+              .from("profiles")
+              .update({ display_name: googleName })
+              .eq("id", user.id);
+            profile = { ...profile, display_name: googleName };
+          }
+        }
 
         // If profile exists, has a real username (not auto-generated), and has onboarding fields filled
         const profileData = profile as { username: string | null; display_name: string | null; gaming_style: string | null; region: string | null; bio: string | null } | null;

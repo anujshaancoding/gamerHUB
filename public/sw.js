@@ -43,6 +43,14 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http requests
   if (!event.request.url.startsWith('http')) return;
 
+  const url = new URL(event.request.url);
+
+  // Skip cross-origin requests (external images, CDNs, etc.)
+  if (url.origin !== self.location.origin) return;
+
+  // Skip API routes and Next.js internals — they should not be cached
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/')) return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -70,6 +78,8 @@ self.addEventListener('fetch', (event) => {
           if (event.request.mode === 'navigate') {
             return caches.match('/offline');
           }
+          // Return a proper error response instead of undefined
+          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
         });
       })
   );

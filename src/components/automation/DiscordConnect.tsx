@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -114,8 +115,7 @@ export function DiscordConnect({
         <div className="relative">
           <Avatar className="h-12 w-12">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="" className="object-cover" />
+              <Image src={avatarUrl} alt="" width={48} height={48} className="object-cover" unoptimized />
             ) : (
               <div className="h-full w-full bg-indigo-600 flex items-center justify-center text-white">
                 {connection.discord_username[0].toUpperCase()}

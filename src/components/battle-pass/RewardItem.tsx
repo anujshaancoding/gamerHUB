@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Check, Lock, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,8 +70,7 @@ export function RewardItem({
         )}
       >
         {iconUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={iconUrl} alt={name} className="w-10 h-10 object-contain" />
+          <Image src={iconUrl} alt={name} width={40} height={40} className="w-10 h-10 object-contain" unoptimized />
         ) : (
           <Gift className="w-6 h-6 text-zinc-400" />
         )}

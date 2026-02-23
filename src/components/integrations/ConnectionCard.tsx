@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,8 +79,7 @@ export function ConnectionCard({
         >
           {isConnected && avatarUrl ? (
             <Avatar className="h-10 w-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={avatarUrl} alt={username || provider} className="object-cover" />
+              <Image src={avatarUrl} alt={username || provider} width={40} height={40} className="object-cover" unoptimized />
             </Avatar>
           ) : (
             <span className={cn("text-lg font-bold", info.color)}>

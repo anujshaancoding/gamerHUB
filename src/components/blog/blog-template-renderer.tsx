@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Calendar, Clock, Eye, User, Gamepad2, Tag, ChevronDown } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
@@ -210,7 +211,7 @@ function GameBadge({ post }: { post: BlogPost }) {
       }}
     >
       {post.game.icon_url ? (
-        <img src={post.game.icon_url} alt={post.game.name} className="w-4 h-4 rounded" />
+        <Image src={post.game.icon_url} alt={post.game.name} width={16} height={16} className="w-4 h-4 rounded" unoptimized />
       ) : (
         <Gamepad2 className="w-3.5 h-3.5" />
       )}
@@ -226,7 +227,7 @@ function ClassicTemplate({ post }: { post: BlogPost }) {
       {/* Hero image */}
       {post.featured_image_url && (
         <div className="relative aspect-video rounded-2xl overflow-hidden mb-8">
-          <img src={post.featured_image_url} alt={post.title} className="w-full h-full object-cover" />
+          <Image src={post.featured_image_url} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 768px" unoptimized />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           <div className="absolute bottom-4 left-4 flex items-center gap-2">
             <GameBadge post={post} />
@@ -278,11 +279,14 @@ function MagazineTemplate({ post }: { post: BlogPost }) {
     <article>
       {/* Full-width hero with overlaid title */}
       <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-10">
-        <div className="aspect-[21/9] min-h-[300px] max-h-[500px] overflow-hidden">
-          <img
+        <div className="relative aspect-[21/9] min-h-[300px] max-h-[500px] overflow-hidden">
+          <Image
             src={post.featured_image_url || "/images/defaults/post.svg"}
             alt={post.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="100vw"
+            unoptimized
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
@@ -339,7 +343,7 @@ function CyberpunkTemplate({ post }: { post: BlogPost }) {
       >
         {post.featured_image_url && (
           <div className="relative aspect-video">
-            <img src={post.featured_image_url} alt={post.title} className="w-full h-full object-cover" />
+            <Image src={post.featured_image_url} alt={post.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 1024px" unoptimized />
             {/* Scanline overlay */}
             <div
               className="absolute inset-0 pointer-events-none opacity-20"
@@ -433,8 +437,8 @@ function MinimalTemplate({ post }: { post: BlogPost }) {
 
       {/* Hero image - simple */}
       {post.featured_image_url && (
-        <div className="rounded-lg overflow-hidden mb-10">
-          <img src={post.featured_image_url} alt={post.title} className="w-full" />
+        <div className="relative aspect-video rounded-lg overflow-hidden mb-10">
+          <Image src={post.featured_image_url} alt={post.title} fill className="object-cover" sizes="(max-width: 672px) 100vw, 672px" unoptimized />
         </div>
       )}
 
@@ -470,8 +474,8 @@ function CardGridTemplate({ post }: { post: BlogPost }) {
         }}
       >
         {post.featured_image_url && (
-          <div className="aspect-video rounded-xl overflow-hidden mb-6">
-            <img src={post.featured_image_url} alt={post.title} className="w-full h-full object-cover" />
+          <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
+            <Image src={post.featured_image_url} alt={post.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 1024px" unoptimized />
           </div>
         )}
 
@@ -527,11 +531,14 @@ function GamingStreamTemplate({ post }: { post: BlogPost }) {
     <article className="max-w-5xl mx-auto">
       {/* Stream-style header */}
       <div className="relative rounded-2xl overflow-hidden mb-6">
-        <div className="aspect-video">
-          <img
+        <div className="relative aspect-video">
+          <Image
             src={post.featured_image_url || "/images/defaults/post.svg"}
             alt={post.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            unoptimized
           />
         </div>
 

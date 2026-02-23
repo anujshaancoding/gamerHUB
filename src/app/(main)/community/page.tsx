@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -78,15 +78,16 @@ interface FriendPost {
   };
 }
 
-const supabase = createClient();
-
 export default function CommunityPage() {
   const { user, profile, loading: authLoading } = useAuth();
+  const supabase = useMemo(() => createClient(), []);
   const [activeTab, setActiveTab] = useState<"author" | "tournaments" | "friends">("author");
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const fetchCounterRef = useRef(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const blogFetchIdRef = useRef(0);
+  const friendFetchIdRef = useRef(0);
 
   // Tournament/Giveaway listing state
   const [showCreateListingModal, setShowCreateListingModal] = useState(false);
@@ -99,95 +100,182 @@ export default function CommunityPage() {
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchContent = useCallback(async () => {
-    const fetchId = ++fetchCounterRef.current;
+  // Use ref so fetchFriendPosts doesn't depend on user?.id
+  // (avoids recreating the callback on auth change)
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  const fetchBlogPosts = useCallback(async () => {
+    const fetchId = ++blogFetchIdRef.current;
+    setFetchError(null);
 
     try {
-      if (activeTab === "author") {
-        // Fetch published blog posts (real user-created content only)
-        const { data: posts } = await supabase
-          .from("blog_posts")
-          .select(`
-            id, title, slug, excerpt, featured_image_url, category, tags,
-            published_at, views_count, likes_count, comments_count,
-            created_at,
-            author:profiles!blog_posts_author_id_fkey(id, username, display_name, avatar_url)
-          `)
-          .eq("status", "published")
-          .order("published_at", { ascending: false })
-          .limit(20);
+      console.log("[Community] fetchBlogPosts start, fetchId:", fetchId);
 
-        // Ignore stale result if a newer fetch was triggered
-        if (fetchId !== fetchCounterRef.current) return;
+      const { data: posts, error: queryError } = await supabase
+        .from("blog_posts")
+        .select(`
+          id, title, slug, excerpt, featured_image_url, category, tags,
+          published_at, views_count, likes_count, comments_count,
+          created_at,
+          author:profiles!blog_posts_author_id_fkey(id, username, display_name, avatar_url)
+        `)
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .limit(20);
 
-        const blogPostsMapped: BlogPost[] = (posts || []).map((post: Record<string, unknown>) => ({
-          id: post.id as string,
-          title: post.title as string,
-          excerpt: post.excerpt as string,
-          content: "",
-          cover_image: post.featured_image_url as string | undefined,
-          author_id: "",
-          created_at: post.created_at as string,
-          likes_count: post.likes_count as number,
-          comments_count: post.comments_count as number,
-          views_count: post.views_count as number,
-          category: (post.category as string) || "",
-          tags: post.tags as string[],
-          author: post.author as BlogPost["author"],
-        }));
-
-        setBlogPosts(blogPostsMapped);
-      } else {
-        // Fetch friend posts — guests only see verified/public-figure posts (limited to 4)
-        const isGuest = !user;
-        let query = supabase
-          .from("friend_posts")
-          .select(`
-            *,
-            user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url, is_verified)
-          `)
-          .order("created_at", { ascending: false });
-
-        if (isGuest) {
-          query = query.eq("user.is_verified", true).limit(4);
-        } else {
-          query = query.limit(20);
+      if (queryError) {
+        console.error("[Community] Supabase query error in fetchBlogPosts:", queryError.message, queryError.code, queryError.details);
+        if (fetchId === blogFetchIdRef.current) {
+          setFetchError(`Blog posts query failed: ${queryError.message}`);
         }
-
-        const { data } = await query;
-
-        // Ignore stale result if a newer fetch was triggered
-        if (fetchId !== fetchCounterRef.current) return;
-
-        // Supabase inner-filter on joined table can return rows with user: null, filter those out for guests
-        const posts = isGuest
-          ? (data || []).filter((p: FriendPost) => p.user !== null)
-          : (data || []);
-        setFriendPosts(posts);
+        return;
       }
+
+      // Ignore stale result if a newer fetch was triggered
+      if (fetchId !== blogFetchIdRef.current) {
+        console.log("[Community] fetchBlogPosts stale result discarded, fetchId:", fetchId, "current:", blogFetchIdRef.current);
+        return;
+      }
+
+      console.log("[Community] fetchBlogPosts success, got", posts?.length ?? 0, "posts");
+
+      const blogPostsMapped: BlogPost[] = (posts || []).map((post: Record<string, unknown>) => ({
+        id: post.id as string,
+        title: post.title as string,
+        excerpt: post.excerpt as string,
+        content: "",
+        cover_image: post.featured_image_url as string | undefined,
+        author_id: "",
+        created_at: post.created_at as string,
+        likes_count: post.likes_count as number,
+        comments_count: post.comments_count as number,
+        views_count: post.views_count as number,
+        category: (post.category as string) || "",
+        tags: post.tags as string[],
+        author: post.author as BlogPost["author"],
+      }));
+
+      setBlogPosts(blogPostsMapped);
     } catch (error) {
-      if (fetchId !== fetchCounterRef.current) return;
-      console.error("Error fetching content:", error);
+      if (fetchId !== blogFetchIdRef.current) return;
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("[Community] fetchBlogPosts exception:", errMsg, error);
+      setFetchError(`Blog posts failed: ${errMsg}`);
     } finally {
-      if (fetchId === fetchCounterRef.current) {
+      if (fetchId === blogFetchIdRef.current) {
         setLoading(false);
       }
     }
-  }, [activeTab, user?.id]);
+  }, []);
 
-  // Fetch on mount, tab change, or auth settlement
+  const fetchFriendPosts = useCallback(async () => {
+    const fetchId = ++friendFetchIdRef.current;
+    setFetchError(null);
+
+    try {
+      console.log("[Community] fetchFriendPosts start, fetchId:", fetchId);
+
+      const isGuest = !userRef.current;
+      let query = supabase
+        .from("friend_posts")
+        .select(`
+          *,
+          user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url, is_verified)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (isGuest) {
+        query = query.eq("user.is_verified", true).limit(4);
+      } else {
+        query = query.limit(20);
+      }
+
+      const { data, error: queryError } = await query;
+
+      if (queryError) {
+        console.error("[Community] Supabase query error in fetchFriendPosts:", queryError.message, queryError.code, queryError.details);
+        if (fetchId === friendFetchIdRef.current) {
+          setFetchError(`Friend posts query failed: ${queryError.message}`);
+        }
+        return;
+      }
+
+      // Ignore stale result if a newer fetch was triggered
+      if (fetchId !== friendFetchIdRef.current) {
+        console.log("[Community] fetchFriendPosts stale result discarded, fetchId:", fetchId, "current:", friendFetchIdRef.current);
+        return;
+      }
+
+      console.log("[Community] fetchFriendPosts success, got", data?.length ?? 0, "posts");
+
+      // Supabase inner-filter on joined table can return rows with user: null, filter those out for guests
+      const posts = isGuest
+        ? (data || []).filter((p: FriendPost) => p.user !== null)
+        : (data || []);
+      setFriendPosts(posts);
+    } catch (error) {
+      if (fetchId !== friendFetchIdRef.current) return;
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("[Community] fetchFriendPosts exception:", errMsg, error);
+      setFetchError(`Friend posts failed: ${errMsg}`);
+    } finally {
+      if (fetchId === friendFetchIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  // Combined fetch for backward compat with handleCreatePost's fetchContent call
+  const fetchContent = useCallback(async () => {
+    if (activeTab === "author") {
+      await fetchBlogPosts();
+    } else {
+      await fetchFriendPosts();
+    }
+  }, [activeTab, fetchBlogPosts, fetchFriendPosts]);
+
+  // Blog posts are publicly readable — fetch immediately without waiting for auth
   useEffect(() => {
-    if (authLoading) return;
-    if (activeTab !== "author" && activeTab !== "friends") return;
-
+    if (activeTab !== "author") return;
     setLoading(true);
-    fetchContent();
-  }, [fetchContent, authLoading, activeTab]);
+    fetchBlogPosts();
+  }, [activeTab, fetchBlogPosts]);
 
-  // Safety net: if loading is stuck for 10 seconds, force it off
+  // Friend posts need auth context to determine guest vs logged-in view
+  useEffect(() => {
+    if (activeTab !== "friends") return;
+    if (authLoading) return;
+    setLoading(true);
+    fetchFriendPosts();
+    // Re-fetch when user logs in/out (changes guest vs authenticated view)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, authLoading, user?.id, fetchFriendPosts]);
+
+  // Re-fetch when the browser tab / app becomes visible again.
+  // This fixes content disappearing after tab-switch, app-switch, or navigation.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      console.log("[Community] Tab became visible, re-fetching for tab:", activeTab);
+      if (activeTab === "author") {
+        setLoading(true);
+        fetchBlogPosts();
+      } else if (activeTab === "friends" && !authLoading) {
+        setLoading(true);
+        fetchFriendPosts();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [activeTab, authLoading, fetchBlogPosts, fetchFriendPosts]);
+
+  // Safety net: if loading is stuck for 5 seconds, force it off.
+  // This is a fallback — the root causes (auth delay, missing debounce)
+  // have been fixed, so this should rarely trigger.
   useEffect(() => {
     if (!loading) return;
-    const timer = setTimeout(() => setLoading(false), 10_000);
+    const timer = setTimeout(() => setLoading(false), 5_000);
     return () => clearTimeout(timer);
   }, [loading]);
 
@@ -305,6 +393,13 @@ export default function CommunityPage() {
           </button>
         ))}
       </div>
+
+      {/* Debug: show fetch error if any */}
+      {fetchError && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <strong>Fetch error:</strong> {fetchError}
+        </div>
+      )}
 
       {/* Content */}
       {activeTab === "tournaments" ? (

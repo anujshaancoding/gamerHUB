@@ -114,7 +114,7 @@ export function SuggestedFriendsSection({ className, isExpanded, onToggleExpand 
       ) : (
         <>
           <HorizontalScroll>
-            {visibleSuggestions.map((suggestion) => (
+            {visibleSuggestions.slice(0, 5).map((suggestion) => (
               <SuggestionCard
                 key={suggestion.user_id}
                 suggestion={suggestion}

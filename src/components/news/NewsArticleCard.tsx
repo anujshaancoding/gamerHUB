@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ExternalLink,
@@ -84,11 +85,14 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
             <div className="flex gap-0">
               {/* Thumbnail */}
               {article.thumbnail_url && (
-                <div className="w-[120px] sm:w-[160px] flex-shrink-0 bg-surface-light">
-                  <img
+                <div className="relative w-[120px] sm:w-[160px] flex-shrink-0 bg-surface-light min-h-[100px]">
+                  <Image
                     src={article.thumbnail_url}
                     alt={article.title}
-                    className="w-full h-full object-cover min-h-[100px]"
+                    fill
+                    className="object-cover"
+                    sizes="160px"
+                    unoptimized
                   />
                 </div>
               )}

@@ -98,8 +98,9 @@ async function resumeSubscription(): Promise<void> {
   if (!res.ok) throw new Error("Failed to resume subscription");
 }
 
-export function useSubscription() {
+export function useSubscription(options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
+  const isEnabled = options?.enabled !== false;
 
   // Query for subscription plans
   const plansQuery = useQuery({
@@ -115,6 +116,7 @@ export function useSubscription() {
     queryFn: fetchSubscription,
     staleTime: 1000 * 60, // 1 minute
     retry: 1,
+    enabled: isEnabled,
   });
 
   // Mutation for subscribing

@@ -51,6 +51,7 @@ function getPalette(id?: BlogColorPalette | string | null): CardPalette {
 
 /** Fetch an image and return an ImageBitmap ready for OffscreenCanvas drawing. */
 async function loadImage(url: string): Promise<ImageBitmap> {
+  console.log("[share-cards] loadImage called with:", url);
   let blob: Blob | null = null;
 
   if (url.startsWith("data:")) {
@@ -58,28 +59,55 @@ async function loadImage(url: string): Promise<ImageBitmap> {
     const res = await fetch(url);
     blob = await res.blob();
   } else {
-    // Strategy 1: direct fetch
+    // Strategy 1: direct fetch (works for same-origin / CORS-enabled hosts)
     try {
+      console.log("[share-cards] Strategy 1: direct fetch...");
       const res = await fetch(url);
+      console.log("[share-cards] Strategy 1 response:", res.status, res.ok, res.type);
       if (res.ok) blob = await res.blob();
     } catch (e) {
-      console.warn("[share-cards] Direct fetch failed:", url, e);
+      console.warn("[share-cards] Strategy 1 FAILED (direct fetch):", e);
     }
 
-    // Strategy 2: proxy through Next.js image optimizer (same-origin)
+    // Strategy 2: server-side image proxy (bypasses CORS)
     if (!blob) {
       try {
-        const proxyUrl = `/_next/image?url=${encodeURIComponent(url)}&w=1080&q=90`;
+        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+        console.log("[share-cards] Strategy 2: image proxy...", proxyUrl);
         const res = await fetch(proxyUrl);
+        console.log("[share-cards] Strategy 2 response:", res.status, res.ok, "content-type:", res.headers.get("content-type"));
+        if (res.ok) {
+          blob = await res.blob();
+          console.log("[share-cards] Strategy 2 blob size:", blob.size, "type:", blob.type);
+        } else {
+          const errorText = await res.text();
+          console.error("[share-cards] Strategy 2 error body:", errorText);
+        }
+      } catch (e) {
+        console.warn("[share-cards] Strategy 2 FAILED (image proxy):", e);
+      }
+    }
+
+    // Strategy 3: Next.js image optimizer (same-origin)
+    if (!blob) {
+      try {
+        const nextUrl = `/_next/image?url=${encodeURIComponent(url)}&w=1080&q=90`;
+        console.log("[share-cards] Strategy 3: Next.js image optimizer...", nextUrl);
+        const res = await fetch(nextUrl);
+        console.log("[share-cards] Strategy 3 response:", res.status, res.ok);
         if (res.ok) blob = await res.blob();
       } catch (e) {
-        console.warn("[share-cards] Proxy fetch failed:", url, e);
+        console.warn("[share-cards] Strategy 3 FAILED (next image):", e);
       }
     }
   }
 
-  if (!blob) throw new Error(`Failed to fetch image: ${url}`);
+  if (!blob) {
+    console.error("[share-cards] ALL strategies failed for:", url);
+    throw new Error(`Failed to fetch image: ${url}`);
+  }
 
+  console.log("[share-cards] SUCCESS - blob size:", blob.size, "type:", blob.type);
   return createImageBitmap(blob);
 }
 

@@ -249,7 +249,7 @@ export function RatingModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isExistingEndorsement ? "Update Endorsement" : "Endorse Player"}
+      title={isExistingEndorsement ? "Already Endorsed" : "Endorse Player"}
       size="md"
     >
       <div className="space-y-5">
@@ -268,8 +268,16 @@ export function RatingModal({
           </div>
         </div>
 
+        {/* Already endorsed notice */}
+        {isExistingEndorsement && (
+          <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/30 rounded-lg text-sm text-primary">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span>You have already endorsed this player. Each player can only be endorsed once.</span>
+          </div>
+        )}
+
         {/* Rate limit warning */}
-        {isRateLimited && (
+        {isRateLimited && !isExistingEndorsement && (
           <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm text-warning">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{rateLimit.reason}</span>
@@ -332,15 +340,15 @@ export function RatingModal({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     type="button"
-                    onClick={() => !isRateLimited && toggleNegativeTrait(config.key)}
-                    disabled={!!isRateLimited}
+                    onClick={() => !isRateLimited && !isExistingEndorsement && toggleNegativeTrait(config.key)}
+                    disabled={!!isRateLimited || isExistingEndorsement}
                     className={`
                       w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200
                       border text-left
                       ${isSelected
                         ? "border-opacity-60 bg-opacity-10"
                         : "border-border bg-surface hover:bg-surface-light"}
-                      ${isRateLimited ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                      ${isRateLimited || isExistingEndorsement ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
                     `}
                     style={isSelected ? {
                       borderColor: config.color,
@@ -399,8 +407,8 @@ export function RatingModal({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   type="button"
-                  onClick={() => !isRateLimited && toggleTrait(config.key)}
-                  disabled={!!isRateLimited}
+                  onClick={() => !isRateLimited && !isExistingEndorsement && toggleTrait(config.key)}
+                  disabled={!!isRateLimited || isExistingEndorsement}
                   className={`
                     w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200
                     border text-left
@@ -409,7 +417,7 @@ export function RatingModal({
                         ? "border-opacity-60 bg-opacity-10"
                         : "border-border bg-surface hover:bg-surface-light"
                     }
-                    ${isRateLimited ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                    ${isRateLimited || isExistingEndorsement ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
                   `}
                   style={
                     isSelected
@@ -483,7 +491,7 @@ export function RatingModal({
             value={positiveNote}
             onChange={(e) => setPositiveNote(e.target.value)}
             rows={2}
-            disabled={!!isRateLimited}
+            disabled={!!isRateLimited || isExistingEndorsement}
           />
         )}
 
@@ -500,21 +508,21 @@ export function RatingModal({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            isLoading={submitEndorsement.isPending}
-            disabled={
-              !!isRateLimited ||
-              (tab === "positive"
-                ? !Object.values(traits).some(Boolean)
-                : !Object.values(negativeTraits).some(Boolean))
-            }
-            className="flex-1"
-          >
-            {tab === "positive"
-              ? (isExistingEndorsement ? "Update Endorsement" : "Endorse Player")
-              : "Submit Behavior Report"}
-          </Button>
+          {!isExistingEndorsement && (
+            <Button
+              onClick={handleSubmit}
+              isLoading={submitEndorsement.isPending}
+              disabled={
+                !!isRateLimited ||
+                (tab === "positive"
+                  ? !Object.values(traits).some(Boolean)
+                  : !Object.values(negativeTraits).some(Boolean))
+              }
+              className="flex-1"
+            >
+              {tab === "positive" ? "Endorse Player" : "Submit Behavior Report"}
+            </Button>
+          )}
         </div>
       </div>
     </Modal>

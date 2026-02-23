@@ -40,18 +40,35 @@ const bottomItems = [{ href: "/settings", label: "Settings", icon: Settings }];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const isGuest = !user;
+  const isAuthenticated = !!user;
   const { counts } = useSocialCounts(user?.id);
-  const unreadMessages = useUnreadMessageCount();
-  const { isPremium } = useSubscription();
+  const unreadMessages = useUnreadMessageCount(isAuthenticated);
+  const { isPremium } = useSubscription({ enabled: isAuthenticated });
   const { myStatus } = usePresence();
 
   return (
     <aside className="hidden lg:flex fixed left-[var(--app-inset)] top-16 bottom-0 w-64 bg-surface border-r border-border flex-col">
       {/* Profile Summary for logged in users, Join CTA for guests */}
       <div className="p-4 border-b border-border">
-        {isGuest ? (
+        {authLoading ? (
+          /* Loading skeleton while auth initializes */
+          <div className="animate-pulse space-y-3">
+            <div className="flex items-center gap-3 p-3">
+              <div className="w-12 h-12 rounded-full bg-surface-light flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-surface-light rounded w-24" />
+                <div className="h-3 bg-surface-light rounded w-16" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="h-14 bg-surface-light rounded-lg" />
+              <div className="h-14 bg-surface-light rounded-lg" />
+              <div className="h-14 bg-surface-light rounded-lg" />
+            </div>
+          </div>
+        ) : isGuest ? (
           /* Guest User - Show Join CTA */
           <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
             <div className="text-center mb-4">
@@ -94,13 +111,22 @@ export function Sidebar() {
                 <StatusSelector />
               </div>
               <div className="flex-1 min-w-0">
-                <span className="font-semibold text-text truncate flex items-center gap-1.5">
-                  {profile?.display_name || profile?.username}
-                  {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
-                </span>
-                <p className="text-sm text-text-muted truncate">
-                  @{profile?.username}
-                </p>
+                {profile ? (
+                  <>
+                    <span className="font-semibold text-text truncate flex items-center gap-1.5">
+                      {profile.display_name || profile.username}
+                      {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
+                    </span>
+                    <p className="text-sm text-text-muted truncate">
+                      @{profile.username}
+                    </p>
+                  </>
+                ) : (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 bg-surface-light rounded w-24" />
+                    <div className="h-3 bg-surface-light rounded w-16" />
+                  </div>
+                )}
               </div>
             </Link>
 

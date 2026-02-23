@@ -127,6 +127,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check if user has already endorsed this player (one endorsement per pair)
+    const { data: existingEndorsement } = await supabase
+      .from("trait_endorsements")
+      .select("id")
+      .eq("endorser_id", user.id)
+      .eq("endorsed_id", endorsedId)
+      .maybeSingle();
+
+    if (existingEndorsement) {
+      return NextResponse.json(
+        { error: "You have already endorsed this player" },
+        { status: 409 }
+      );
+    }
+
     // Validate that at least one trait is selected
     if (endorsementType === "negative") {
       const hasNegativeTrait =
@@ -169,12 +184,10 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    // Upsert endorsement (one per endorser-endorsed pair)
+    // Insert endorsement (one per endorser-endorsed pair, no updates allowed)
     const { data, error } = await supabase
       .from("trait_endorsements")
-      .upsert(endorsementData as never, {
-        onConflict: "endorser_id,endorsed_id",
-      })
+      .insert(endorsementData as never)
       .select()
       .single();
 

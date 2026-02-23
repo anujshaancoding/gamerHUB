@@ -153,17 +153,31 @@ body {
   background: linear-gradient(180deg, var(--surface) 0%, var(--background) 100%);
 }
 
-/* Animation classes */
+/* Animation classes — GPU-accelerated where possible */
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+  will-change: filter;
+  transform: translateZ(0); /* Promote to compositing layer */
 }
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 5px var(--primary-glow);
+    filter: drop-shadow(0 0 5px var(--primary-glow));
   }
   50% {
-    box-shadow: 0 0 20px var(--primary-glow), 0 0 30px var(--primary-glow);
+    filter: drop-shadow(0 0 20px var(--primary-glow));
+  }
+}
+
+/* Dropdown reveal animation (replaces framer-motion in Navbar for smaller bundle) */
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -245,6 +259,7 @@ body {
     #ff0000
   );
   animation: rgb-rotate 3s linear infinite;
+  will-change: transform;
   z-index: -1;
 }
 
@@ -269,6 +284,7 @@ body {
 
 .animate-spin-slow {
   animation: spin-slow 4s linear infinite;
+  will-change: transform;
 }
 
 /* Gradient animation */
@@ -284,6 +300,7 @@ body {
 .animate-gradient-xy {
   background-size: 200% 200%;
   animation: gradient-xy 3s ease infinite;
+  will-change: background-position;
 }
 
 /* Pulse subtle animation */
@@ -300,6 +317,7 @@ body {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 /* Gaming stat card hover */
@@ -344,6 +362,7 @@ body {
   );
   background-size: 200% 200%;
   animation: holographic-shift 8s ease-in-out infinite;
+  will-change: background-position;
 }
 
 @keyframes holographic-shift {
@@ -372,6 +391,7 @@ body {
     transparent
   );
   animation: medal-shine 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes medal-shine {
@@ -395,6 +415,7 @@ body {
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Rank badge styles */

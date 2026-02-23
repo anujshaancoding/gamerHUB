@@ -566,7 +566,8 @@ export function ActivityCalendar({
                       dataKey="hours"
                       fill={accentColor}
                       radius={[4, 4, 0, 0]}
-                      opacity={0.8}
+                      opacity={0.6}
+                      activeBar={{ opacity: 1, fill: accentColor }}
                     />
                   </BarChart>
                 </ResponsiveContainer>

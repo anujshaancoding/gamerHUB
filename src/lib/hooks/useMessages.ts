@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database";
 
+// Debounce helper to coalesce rapid-fire realtime events into a single call
+function createDebouncedFn(fn: () => void, delay: number): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(fn, delay);
+  };
+}
+
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface MessageReaction {
@@ -74,55 +83,42 @@ export function useConversations() {
   }, []); // fetchConversations is stable with empty deps
 
   // Realtime: listen for conversation updates + follows changes (friend status)
+  // All events are debounced so rapid-fire changes coalesce into a single refetch.
   useEffect(() => {
     const supabase = createClient();
+    const debouncedFetch = createDebouncedFn(fetchConversations, 300);
 
     const channel = supabase
       .channel("conversations-updates")
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "conversations" },
-        () => {
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "conversations" },
-        () => {
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "conversation_participants" },
-        () => {
-          // Refetch when read status changes
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          // Refetch when new messages arrive (updates unread count)
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
-      // Listen for follows changes to reclassify inbox vs void
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "follows" },
-        () => {
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "follows" },
-        () => {
-          fetchConversations();
-        }
+        () => { debouncedFetch(); }
       )
       .subscribe();
 
@@ -367,25 +363,12 @@ export function useConversationMessages(conversationId: string | null) {
         if (!res.ok) throw new Error("Failed to send message");
         const data = await res.json();
 
-        // Optimistic update: add sent message to state immediately
+        // Add sent message to state immediately — no extra network calls.
+        // Own messages don't render sender avatar/name, so sender profile
+        // is not needed here. The realtime subscription deduplicates by id.
         if (data.message) {
-          const supabase = createClient();
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-          const senderProfile = user
-            ? (
-                await supabase
-                  .from("profiles")
-                  .select("*")
-                  .eq("id", user.id)
-                  .single()
-              ).data
-            : null;
-
           const sentMsg: MessageWithSender = {
             ...data.message,
-            sender: senderProfile || undefined,
             reactions: [],
           };
 
@@ -591,19 +574,20 @@ function startUnreadCountSingleton() {
   // Initial fetch
   fetchCount();
 
-  // Listen for realtime message inserts to update the count
+  // Listen for realtime message inserts to update the count (debounced)
   const supabase = createClient();
+  const debouncedFetchCount = createDebouncedFn(fetchCount, 500);
   const channel = supabase
     .channel("unread-count-singleton")
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "messages" },
-      () => { fetchCount(); }
+      () => { debouncedFetchCount(); }
     )
     .on(
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "conversation_participants" },
-      () => { fetchCount(); }
+      () => { debouncedFetchCount(); }
     )
     .subscribe();
 
@@ -623,10 +607,11 @@ function startUnreadCountSingleton() {
   void channel;
 }
 
-export function useUnreadMessageCount() {
-  const [count, setCount] = useState(lastUnreadCount);
+export function useUnreadMessageCount(enabled: boolean = true) {
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     startUnreadCountSingleton();
     unreadCountListeners.add(setCount);
     // Sync with latest value in case it was updated before this component mounted
@@ -634,9 +619,9 @@ export function useUnreadMessageCount() {
     return () => {
       unreadCountListeners.delete(setCount);
     };
-  }, []);
+  }, [enabled]);
 
-  return count;
+  return enabled ? count : 0;
 }
 
 // ── createConversation ───────────────────────────────────────────────

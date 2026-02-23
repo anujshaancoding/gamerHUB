@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: profile } = await admin
+    const { data: profile } = await (admin as any)
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
@@ -30,17 +30,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = admin
+    let query = (admin as any)
       .from("profiles")
       .select(
-        `
-        id, username, display_name, avatar_url, is_admin, admin_role,
-        gaming_style, region, created_at,
-        account_verifications(
-          verification_level, trust_score, is_flagged, flag_reason,
-          is_restricted, restriction_reason, restriction_expires_at
-        )
-      `,
+        "id, username, display_name, avatar_url, is_admin, admin_role, gaming_style, region, created_at",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })
@@ -62,8 +55,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Fetch account verifications separately to avoid PostgREST join issues
+    let usersWithVerifications = data || [];
+    if (usersWithVerifications.length > 0) {
+      const userIds = usersWithVerifications.map((u: any) => u.id);
+      const { data: verifications } = await (admin as any)
+        .from("account_verifications")
+        .select(
+          "user_id, verification_level, trust_score, is_flagged, flag_reason, is_restricted, restriction_reason, restriction_expires_at"
+        )
+        .in("user_id", userIds);
+
+      const verificationMap = new Map(
+        (verifications || []).map((v: any) => [v.user_id, v])
+      );
+
+      usersWithVerifications = usersWithVerifications.map((user: any) => ({
+        ...user,
+        account_verifications: verificationMap.get(user.id) || null,
+      }));
+    }
+
     return NextResponse.json({
-      users: data || [],
+      users: usersWithVerifications,
       total: count || 0,
       limit,
       offset,
@@ -90,7 +104,7 @@ export async function PATCH(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: profile } = await admin
+    const { data: profile } = await (admin as any)
       .from("profiles")
       .select("is_admin, admin_role")
       .eq("id", user.id)
@@ -113,7 +127,7 @@ export async function PATCH(request: NextRequest) {
     switch (action) {
       case "flag": {
         const { reason } = body;
-        await admin
+        await (admin as any)
           .from("account_verifications")
           .update({
             is_flagged: true,
@@ -125,7 +139,7 @@ export async function PATCH(request: NextRequest) {
         break;
       }
       case "unflag": {
-        await admin
+        await (admin as any)
           .from("account_verifications")
           .update({
             is_flagged: false,
@@ -138,7 +152,7 @@ export async function PATCH(request: NextRequest) {
       }
       case "restrict": {
         const { reason, expires_at } = body;
-        await admin
+        await (admin as any)
           .from("account_verifications")
           .update({
             is_restricted: true,
@@ -149,7 +163,7 @@ export async function PATCH(request: NextRequest) {
         break;
       }
       case "unrestrict": {
-        await admin
+        await (admin as any)
           .from("account_verifications")
           .update({
             is_restricted: false,
@@ -167,7 +181,7 @@ export async function PATCH(request: NextRequest) {
           );
         }
         const { admin_role } = body;
-        await admin
+        await (admin as any)
           .from("profiles")
           .update({
             is_admin: true,
@@ -189,10 +203,34 @@ export async function PATCH(request: NextRequest) {
             { status: 400 }
           );
         }
-        await admin
+        await (admin as any)
           .from("profiles")
           .update({ is_admin: false, admin_role: null })
           .eq("id", user_id);
+        break;
+      }
+      case "delete_user": {
+        if (profile.admin_role !== "super_admin") {
+          return NextResponse.json(
+            { error: "Only super admins can delete users" },
+            { status: 403 }
+          );
+        }
+        if (user_id === user.id) {
+          return NextResponse.json(
+            { error: "You cannot delete your own account" },
+            { status: 400 }
+          );
+        }
+        // Delete the user from Supabase Auth (cascades to profiles via FK)
+        const { error: deleteError } = await admin.auth.admin.deleteUser(user_id);
+        if (deleteError) {
+          console.error("Delete user error:", deleteError);
+          return NextResponse.json(
+            { error: "Failed to delete user" },
+            { status: 500 }
+          );
+        }
         break;
       }
       default:

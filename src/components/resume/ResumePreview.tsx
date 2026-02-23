@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Eye,
@@ -83,10 +84,13 @@ export function ResumePreview({ resume, isOwner = false, onEndorse }: ResumePrev
             {/* Avatar */}
             <div className="w-24 h-24 rounded-xl bg-muted border-4 border-card overflow-hidden">
               {resume.user.avatar_url ? (
-                <img
+                <Image
                   src={resume.user.avatar_url}
                   alt={resume.user.username}
+                  width={96}
+                  height={96}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-primary">
@@ -193,10 +197,13 @@ export function ResumePreview({ resume, isOwner = false, onEndorse }: ResumePrev
                 className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg"
               >
                 {game.gameIcon && (
-                  <img
+                  <Image
                     src={game.gameIcon}
                     alt={game.gameName}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-lg object-cover"
+                    unoptimized
                   />
                 )}
                 <div className="flex-1">
@@ -338,7 +345,7 @@ export function ResumePreview({ resume, isOwner = false, onEndorse }: ResumePrev
               >
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
                   {team.logo ? (
-                    <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                    <Image src={team.logo} alt={team.name} width={48} height={48} className="w-full h-full object-cover" unoptimized />
                   ) : (
                     <Users className="h-6 w-6 text-primary" />
                   )}

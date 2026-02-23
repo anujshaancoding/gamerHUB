@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
 import { GAMING_MOODS, type GamingMood, type MoodIntensity, formatMoodExpiry } from "@/types/mood";
@@ -145,7 +146,7 @@ export function MoodCard({
         {username ? (
           <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+              <Image src={avatarUrl} alt={username} width={40} height={40} className="w-full h-full object-cover" unoptimized />
             ) : (
               <span className="font-bold text-primary">{username[0]?.toUpperCase()}</span>
             )}

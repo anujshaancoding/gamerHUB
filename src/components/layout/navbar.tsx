@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+// Removed framer-motion — using CSS animations for simple dropdown reveals
+// to avoid pulling ~50KB into the always-loaded Navbar bundle.
 import {
   Gamepad2,
   Search,
@@ -81,7 +82,8 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
-  const { isPremium } = useSubscription();
+  const isAuthenticated = !!user;
+  const { isPremium } = useSubscription({ enabled: isAuthenticated });
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -90,14 +92,15 @@ export function Navbar() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Fetch notifications from backend (with error handling)
+  // Fetch notifications from backend (only when authenticated)
   const { data: notificationData, isLoading: notificationsLoading } = useNotifications({
     limit: 5,
+    enabled: isAuthenticated,
   });
 
   const notifications = notificationData?.notifications || [];
   const unreadCount = notificationData?.unreadCount || 0;
-  const unreadMessages = useUnreadMessageCount();
+  const unreadMessages = useUnreadMessageCount(isAuthenticated);
   const { counts } = useSocialCounts(user?.id);
   const markAsReadMutation = useMarkAsRead();
 
@@ -264,10 +267,8 @@ export function Navbar() {
                   </Button>
 
                   {showNotifications && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-auto mt-0 sm:mt-2 sm:w-80 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50"
+                    <div
+                      className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-auto mt-0 sm:mt-2 sm:w-80 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-[fadeSlideDown_150ms_ease-out]"
                     >
                       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                         <h3 className="font-semibold text-text">Notifications</h3>
@@ -343,7 +344,7 @@ export function Navbar() {
                           See all notifications
                         </Link>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
 
@@ -370,10 +371,8 @@ export function Navbar() {
                   </button>
 
                   {showUserMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-lg shadow-lg py-2"
+                    <div
+                      className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-lg shadow-lg py-2 animate-[fadeSlideDown_150ms_ease-out]"
                     >
                       {profile?.username && (
                         <Link
@@ -401,7 +400,7 @@ export function Navbar() {
                         <LogOut className="h-4 w-4" />
                         Sign Out
                       </button>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               </>
@@ -426,10 +425,8 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden bg-surface border-b border-border max-h-[calc(100vh-4rem)] overflow-y-auto"
+        <div
+          className="lg:hidden bg-surface border-b border-border max-h-[calc(100vh-4rem)] overflow-y-auto animate-[fadeSlideDown_150ms_ease-out]"
         >
           <div className="px-4 py-3 space-y-2">
             <div className="relative mb-3">
@@ -518,7 +515,7 @@ export function Navbar() {
               <span className="basis-full text-text-dim/60 mt-1">&copy; {new Date().getFullYear()} ggLobby</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
     </nav>
   );

@@ -236,8 +236,10 @@ async function disconnectDiscord() {
 export function useNotifications(options?: {
   limit?: number;
   unreadOnly?: boolean;
+  enabled?: boolean;
 }) {
   const queryClient = useQueryClient();
+  const isEnabled = options?.enabled !== false;
 
   const query = useQuery<{
     notifications: Notification[];
@@ -246,13 +248,16 @@ export function useNotifications(options?: {
   }>({
     queryKey: ["notifications", options],
     queryFn: () => fetchNotifications(options || {}),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: isEnabled ? 30000 : false, // Refetch every 30 seconds
     retry: false, // Don't retry on failure (e.g., if table doesn't exist)
     staleTime: 1000 * 60, // Consider data stale after 1 minute
+    enabled: isEnabled,
   });
 
-  // Realtime: listen for notification updates
+  // Realtime: listen for notification updates (only when enabled/authenticated)
   useEffect(() => {
+    if (!isEnabled) return;
+
     const supabase = createClient();
 
     const channel = supabase
@@ -261,7 +266,6 @@ export function useNotifications(options?: {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
         () => {
-          // Refetch when new notifications arrive
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
         }
       )
@@ -269,7 +273,6 @@ export function useNotifications(options?: {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "notifications" },
         () => {
-          // Refetch when notifications are marked as read
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
         }
       )
@@ -277,7 +280,6 @@ export function useNotifications(options?: {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "notifications" },
         () => {
-          // Refetch when notifications are deleted/archived
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
         }
       )
@@ -286,7 +288,7 @@ export function useNotifications(options?: {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, isEnabled]);
 
   return query;
 }

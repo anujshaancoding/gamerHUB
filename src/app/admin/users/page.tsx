@@ -14,7 +14,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +37,10 @@ export default function AdminUsersPage() {
     userId: string;
     username: string;
     action: "flag" | "restrict";
+  } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{
+    userId: string;
+    username: string;
   } | null>(null);
   const [reason, setReason] = useState("");
 
@@ -144,7 +150,7 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {user.avatar_url ? (
-                          <img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full" />
+                          <Image src={user.avatar_url} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/40">
                             {(user.username || "?")[0].toUpperCase()}
@@ -302,6 +308,19 @@ export default function AdminUsersPage() {
                                   </DropdownMenuItem>
                                 </>
                               )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setDeleteModal({
+                                    userId: user.id,
+                                    username: user.username,
+                                  })
+                                }
+                                className="text-red-400 focus:text-red-400"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete User
+                              </DropdownMenuItem>
                             </>
                           )}
                         </DropdownMenuContent>
@@ -384,6 +403,39 @@ export default function AdminUsersPage() {
               >
                 {isPerforming && <Loader2 className="h-3 w-3 animate-spin" />}
                 {actionModal.action === "flag" ? "Flag User" : "Restrict User"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0a0a12] border border-white/10 rounded-xl p-6 w-full max-w-md mx-4 space-y-4">
+            <h3 className="text-lg font-semibold text-white">
+              Delete @{deleteModal.username}?
+            </h3>
+            <p className="text-sm text-white/50">
+              This will permanently delete this user&apos;s account and all their data. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 text-sm text-white/50 hover:text-white/70 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await handleAction(deleteModal.userId, "delete_user");
+                  setDeleteModal(null);
+                }}
+                disabled={isPerforming}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+              >
+                {isPerforming && <Loader2 className="h-3 w-3 animate-spin" />}
+                Delete User
               </button>
             </div>
           </div>

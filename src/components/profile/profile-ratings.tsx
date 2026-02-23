@@ -14,6 +14,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent, Button } from "@/components/ui";
 import { RatingModal } from "@/components/ratings/rating-modal";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useMyEndorsement } from "@/lib/hooks/useRatings";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { Profile, TraitEndorsementStats } from "@/types/database";
 
@@ -106,6 +107,10 @@ export function ProfileRatings({
 }: ProfileRatingsProps) {
   const { user } = useAuth();
   const [showEndorseModal, setShowEndorseModal] = useState(false);
+  const { data: myEndorsementData } = useMyEndorsement(
+    !isOwnProfile && user ? profile.id : null
+  );
+  const hasAlreadyEndorsed = !!myEndorsementData?.endorsement;
 
   // Sort traits by endorsement count (most endorsed first)
   const sortedTraits = [...traitConfig].sort(
@@ -171,14 +176,20 @@ export function ProfileRatings({
                   transition={{ delay: 0.7 }}
                   className="pt-3 border-t border-border"
                 >
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEndorseModal(true)}
-                    className="w-full hover:border-primary hover:text-primary transition-colors"
-                    leftIcon={<Plus className="h-4 w-4" />}
-                  >
-                    Endorse Player
-                  </Button>
+                  {hasAlreadyEndorsed ? (
+                    <div className="w-full text-center py-2 text-sm text-text-muted">
+                      You have already endorsed this player
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowEndorseModal(true)}
+                      className="w-full hover:border-primary hover:text-primary transition-colors"
+                      leftIcon={<Plus className="h-4 w-4" />}
+                    >
+                      Endorse Player
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </div>
