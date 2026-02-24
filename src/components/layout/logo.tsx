@@ -29,9 +29,15 @@ function BetaInfoIcon({ size }: { size: "sm" | "md" | "lg" }) {
           </p>
           <p className="text-xs text-text-secondary leading-relaxed">
             This website is currently in the testing/beta phase and may experience failures or crashes. If you encounter any issues, please report them at{" "}
-            <a href="mailto:support@gglobby.in" className="text-primary hover:underline font-medium">
+            <span
+              role="link"
+              tabIndex={0}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = "mailto:support@gglobby.in"; }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); window.location.href = "mailto:support@gglobby.in"; } }}
+              className="text-primary hover:underline font-medium cursor-pointer"
+            >
               support@gglobby.in
-            </a>{" "}
+            </span>{" "}
             or fill out the feedback form on the bottom right corner of the page.
           </p>
         </div>

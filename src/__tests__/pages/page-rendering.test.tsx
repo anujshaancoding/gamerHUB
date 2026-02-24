@@ -52,13 +52,17 @@ describe('Page Rendering', () => {
   describe('Community Page', () => {
     it('should render community page with correct tabs', () => {
       const tabs = [
-        { id: 'author', label: 'Author' },
+        { id: 'news', label: 'News' },
+        { id: 'blog', label: 'Blog' },
+        { id: 'tournaments', label: 'Tournaments/Giveaways' },
         { id: 'friends', label: 'Friends' },
       ];
 
-      expect(tabs).toHaveLength(2);
-      expect(tabs[0].label).toBe('Author');
-      expect(tabs[1].label).toBe('Friends');
+      expect(tabs).toHaveLength(4);
+      expect(tabs[0].label).toBe('News');
+      expect(tabs[1].label).toBe('Blog');
+      expect(tabs[2].label).toBe('Tournaments/Giveaways');
+      expect(tabs[3].label).toBe('Friends');
     });
 
     it('should show loading spinner while fetching posts', () => {
@@ -76,12 +80,12 @@ describe('Page Rendering', () => {
     it('should show empty state when no posts exist', () => {
       render(
         <div>
-          <h3 data-testid="empty-state">No articles yet</h3>
+          <h3 data-testid="empty-state">No blog posts yet</h3>
           <p>Be the first to share your gaming experiences and insights!</p>
         </div>
       );
 
-      expect(screen.getByTestId('empty-state')).toHaveTextContent('No articles yet');
+      expect(screen.getByTestId('empty-state')).toHaveTextContent('No blog posts yet');
     });
 
     it('should correctly format post data', () => {

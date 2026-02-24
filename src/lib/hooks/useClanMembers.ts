@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { ClanMember, Profile, UserGame, Game, ClanMemberRole } from "@/types/database";
+import type { ClanMember, Profile, ClanMemberRole } from "@/types/database";
 
 interface ClanMemberWithProfile extends ClanMember {
   profile: Profile;
-  user_games?: (UserGame & { game: Game })[];
 }
 
 interface UseClanMembersOptions {

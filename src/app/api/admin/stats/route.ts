@@ -27,7 +27,7 @@ export async function GET() {
     }
 
     // Fetch platform stats in parallel
-    const [usersResult, postsResult, pendingPostsResult, pendingReportsResult, messagesResult] = await Promise.all([
+    const [usersResult, postsResult, pendingPostsResult, pendingReportsResult, messagesResult, pendingNewsResult, publishedNewsResult, feedbackResult] = await Promise.all([
       admin
         .from("profiles")
         .select("id", { count: "exact", head: true }),
@@ -46,6 +46,17 @@ export async function GET() {
       admin
         .from("messages")
         .select("id", { count: "exact", head: true }),
+      admin
+        .from("news_articles")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      admin
+        .from("news_articles")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published"),
+      admin
+        .from("beta_feedback")
+        .select("id", { count: "exact", head: true }),
     ]);
 
     return NextResponse.json({
@@ -54,6 +65,9 @@ export async function GET() {
       pendingPosts: pendingPostsResult.count || 0,
       pendingReports: pendingReportsResult.count || 0,
       totalMessages: messagesResult.count || 0,
+      pendingNews: pendingNewsResult.count || 0,
+      publishedNews: publishedNewsResult.count || 0,
+      totalFeedback: feedbackResult.count || 0,
     });
   } catch (error) {
     console.error("Admin stats error:", error);

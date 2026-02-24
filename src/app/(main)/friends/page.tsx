@@ -716,6 +716,13 @@ function FriendsContent() {
                         await navigator.clipboard.writeText(url);
                       }
                     }}
+                    onDelete={async () => {
+                      const res = await fetch(`/api/friend-posts/${post.id}`, {
+                        method: "DELETE",
+                      });
+                      if (!res.ok) throw new Error("Failed to delete post");
+                      queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
+                    }}
                   />
                 ))}
               </div>

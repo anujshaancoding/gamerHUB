@@ -68,7 +68,7 @@ function FindGamersContent() {
     style: selectedStyle,
   }), [selectedGame, selectedRank, selectedRegion, selectedLanguage, selectedStyle]);
 
-  const { data: gamers = [], isLoading: loading } = useQuery({
+  const { data: gamers = [], isLoading: loading, error: gamersError } = useQuery({
     queryKey: queryKeys.findGamers(filterParams),
     queryFn: async () => {
       let query = supabase
@@ -371,6 +371,19 @@ function FindGamersContent() {
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
         </div>
+      ) : gamersError ? (
+        <Card className="text-center py-12">
+          <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-text mb-2">
+            Failed to load gamers
+          </h3>
+          <p className="text-text-muted max-w-md mx-auto mb-4">
+            Something went wrong while fetching gamers. Please try again.
+          </p>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["find-gamers"] })}>
+            Retry
+          </Button>
+        </Card>
       ) : filteredGamers.length === 0 ? (
         <Card className="text-center py-12">
           <Users className="h-16 w-16 text-text-muted mx-auto mb-4" />

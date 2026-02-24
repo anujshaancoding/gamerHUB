@@ -8,7 +8,7 @@ const PRESETS: Record<ImagePreset, { maxWidthOrHeight: number; maxSizeMB: number
   avatar:        { maxWidthOrHeight: 400,  maxSizeMB: 0.15, quality: 0.8 },
   banner:        { maxWidthOrHeight: 1920, maxSizeMB: 0.5,  quality: 0.8 },
   "clan-avatar": { maxWidthOrHeight: 400,  maxSizeMB: 0.15, quality: 0.8 },
-  "clan-banner": { maxWidthOrHeight: 1920, maxSizeMB: 0.5,  quality: 0.8 },
+  "clan-banner": { maxWidthOrHeight: 1280, maxSizeMB: 0.8,  quality: 0.8 },
   media:         { maxWidthOrHeight: 1920, maxSizeMB: 1,    quality: 0.85 },
   thumbnail:     { maxWidthOrHeight: 400,  maxSizeMB: 0.1,  quality: 0.7 },
 };

@@ -1,34 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
-  Gamepad2,
-  ArrowRight,
   ChevronLeft,
-  ChevronRight,
   X,
 } from "lucide-react";
-import { Button, Avatar } from "@/components/ui";
-import { Card } from "@/components/ui/card";
-import { PremiumBadge } from "@/components/premium";
 import { MiniChatBox } from "@/components/messages/mini-chat-box";
 import { useFriends } from "@/lib/hooks/useFriends";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-
-interface Friend {
-  id: string;
-  name: string;
-  game: string;
-  avatar: string;
-  avatarUrl?: string;
-  status: string;
-  username?: string;
-  isPremium?: boolean;
-}
+import { SidebarActivitySection } from "./sidebar/SidebarActivitySection";
+import { SidebarFriendsSection } from "./sidebar/SidebarFriendsSection";
+import type { Friend } from "./sidebar/SidebarFriendsSection";
 
 interface ChatBox {
   friend: Friend;
@@ -69,7 +54,7 @@ export function RightSidebar() {
     .map((f) => ({
       id: f.friend_id,
       name: f.profile?.display_name || f.profile?.username || "Unknown",
-      game: "", // Game status would come from presence/activity system
+      game: "",
       avatar: (f.profile?.display_name || f.profile?.username || "U").slice(0, 2).toUpperCase(),
       avatarUrl: f.profile?.avatar_url || undefined,
       status: getStatusLabel(getUserStatus(f.friend_id)),
@@ -79,15 +64,12 @@ export function RightSidebar() {
 
   const openChat = useCallback((friend: Friend) => {
     setOpenChats((prev) => {
-      // Check if chat already exists
       const existing = prev.find((chat) => chat.friend.id === friend.id);
       if (existing) {
-        // If minimized, expand it
         return prev.map((chat) =>
           chat.friend.id === friend.id ? { ...chat, minimized: false } : chat
         );
       }
-      // Add new chat (max 3 chats)
       const newChats = [{ friend, minimized: false }, ...prev];
       return newChats.slice(0, 3);
     });
@@ -122,92 +104,32 @@ export function RightSidebar() {
 
   // Sidebar content shared between desktop and mobile
   const sidebarContent = (
-    <div className="flex-1 p-4 overflow-y-auto pt-16 2xl:pt-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-accent" />
-          <h3 className="font-semibold text-text">Online Friends</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-muted bg-surface-light px-2 py-1 rounded-full">
-            {onlineFriends.length} online
-          </span>
-          {/* Close button for mobile */}
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="2xl:hidden p-1 rounded-lg hover:bg-surface-light text-text-muted hover:text-text transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <div className="flex flex-col h-full pt-16 2xl:pt-0">
+      {/* Mobile close button */}
+      <div className="2xl:hidden flex justify-end p-2 pb-0">
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="p-1 rounded-lg hover:bg-surface-light text-text-muted hover:text-text transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
-      <div className="space-y-2">
-        {!user ? (
-          <Card className="p-4 text-center">
-            <p className="text-sm text-text-muted mb-2">Sign in to see friends</p>
-            <Link href="/login">
-              <Button variant="outline" size="sm">Log In</Button>
-            </Link>
-          </Card>
-        ) : friendsLoading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-2 animate-pulse">
-              <div className="w-10 h-10 rounded-full bg-surface-light" />
-              <div className="flex-1">
-                <div className="h-4 w-24 bg-surface-light rounded mb-1" />
-                <div className="h-3 w-16 bg-surface-light rounded" />
-              </div>
-            </div>
-          ))
-        ) : onlineFriends.length === 0 ? (
-          <Card className="p-4 text-center">
-            <p className="text-sm text-text-muted">No friends online</p>
-          </Card>
-        ) : (
-          onlineFriends.map((friend, index) => (
-            <div
-              key={friend.id}
-              onClick={() => openChat(friend)}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light transition-colors cursor-pointer group animate-fadeInRight"
-              style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
-            >
-              <div className="relative">
-                {friend.avatarUrl ? (
-                  <Avatar
-                    src={friend.avatarUrl}
-                    alt={friend.name}
-                    size="md"
-                    status={getUserStatus(friend.id)}
-                    showStatus
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">
-                    {friend.avatar}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-text truncate group-hover:text-primary transition-colors flex items-center gap-1">
-                  {friend.name}
-                  {friend.isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
-                </span>
-                <p className="text-xs text-text-muted truncate">
-                  {friend.game ? `${friend.game} • ` : ""}{friend.status}
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity px-2">
-                <Gamepad2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))
-        )}
+
+      {/* Top half: Activity Feed */}
+      <div className="flex-1 min-h-0 overflow-y-auto border-b border-border p-4">
+        <SidebarActivitySection />
       </div>
-      <Link href="/friends">
-        <Button variant="ghost" size="sm" className="w-full mt-3 text-text-muted">
-          View All Friends
-          <ArrowRight className="h-4 w-4 ml-1" />
-        </Button>
-      </Link>
+
+      {/* Bottom half: Online Friends */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4">
+        <SidebarFriendsSection
+          user={user}
+          onlineFriends={onlineFriends}
+          friendsLoading={friendsLoading}
+          getUserStatus={getUserStatus}
+          openChat={openChat}
+        />
+      </div>
     </div>
   );
 

@@ -17,7 +17,7 @@ import {
 import { Modal, Button, Input, Textarea } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { REGIONS } from "@/lib/constants/games";
-import { optimizedUpload } from "@/lib/upload";
+import { optimizedUpload, createPreview } from "@/lib/upload";
 import type { Clan, ClanJoinType } from "@/types/database";
 
 interface ClanSettingsModalProps {
@@ -93,6 +93,8 @@ export function ClanSettingsModal({
     if (!file) return;
     setUploadingAvatar(true);
     setError(null);
+    // Show instant preview while upload happens
+    try { setAvatarUrl(await createPreview(file)); } catch {}
     try {
       const { publicUrl } = await optimizedUpload(file, "clan-avatar", clan.id, clan.avatar_url);
       setAvatarUrl(publicUrl);
@@ -107,6 +109,8 @@ export function ClanSettingsModal({
     if (!file) return;
     setUploadingBanner(true);
     setError(null);
+    // Show instant preview while upload happens
+    try { setBannerUrl(await createPreview(file)); } catch {}
     try {
       const { publicUrl } = await optimizedUpload(file, "clan-banner", clan.id, clan.banner_url);
       setBannerUrl(publicUrl);
@@ -126,7 +130,8 @@ export function ClanSettingsModal({
     if (description !== (clan.description || ""))
       updates.description = description || null;
     if (joinType !== currentJoinType) {
-      // Store join_type in settings JSONB
+      // Update both the dedicated column and the settings JSONB
+      (updates as any).join_type = joinType;
       updates.settings = {
         ...((clan.settings as any) || {}),
         join_type: joinType,

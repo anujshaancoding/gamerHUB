@@ -25,7 +25,6 @@ import {
   Megaphone,
   UserCheck,
   Shield,
-  BookOpen,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -71,7 +70,6 @@ const mobileNavItems = [
   { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
   { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
-  { href: "/blog", label: "Blog", icon: BookOpen, isPremium: true, requiresAuth: true },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },

@@ -22,11 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        profile:profiles(*),
-        user_games:user_games(
-          *,
-          game:games(*)
-        )
+        profile:profiles(*)
       `,
         { count: "exact" }
       )

@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         try {
           // Get current user's friends to exclude them
           const { data: friendsData, error: friendsError } = await supabase
-            .from("friends")
+            .from("friends_view")
             .select("friend_id, user_id")
             .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 

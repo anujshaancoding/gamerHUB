@@ -19,6 +19,9 @@ import {
   ArrowDown,
   UserMinus,
   Clock,
+  MessageSquare,
+  Target,
+  Swords,
 } from "lucide-react";
 import { Card, Button, Badge, Avatar } from "@/components/ui";
 import { ClanHeader } from "@/components/clans/clan-header";
@@ -26,6 +29,9 @@ import { ClanMemberCard } from "@/components/clans/clan-member-card";
 import { ClanJoinModal } from "@/components/clans/clan-join-modal";
 import { ClanInviteModal } from "@/components/clans/clan-invite-modal";
 import { ClanSettingsModal } from "@/components/clans/clan-settings-modal";
+import { ClanWall } from "@/components/clans/clan-wall";
+import { ClanMissions } from "@/components/clans/clan-missions";
+import { ClanScrims } from "@/components/clans/clan-scrims";
 import { useClan } from "@/lib/hooks/useClan";
 import { useClanMembers } from "@/lib/hooks/useClanMembers";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -34,7 +40,7 @@ import { cn, formatRelativeTime } from "@/lib/utils";
 import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { ClanMemberRole, ClanActivityLog } from "@/types/database";
 
-type Tab = "members" | "activity";
+type Tab = "wall" | "members" | "missions" | "scrims" | "activity";
 
 export default function ClanDetailPage() {
   const params = useParams();
@@ -53,7 +59,7 @@ export default function ClanDetailPage() {
 
   const supabase = useMemo(() => createClient(), []);
 
-  const [activeTab, setActiveTab] = useState<Tab>("members");
+  const [activeTab, setActiveTab] = useState<Tab>("wall");
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -288,36 +294,100 @@ export default function ClanDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("wall")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+            activeTab === "wall"
+              ? "border-primary text-primary"
+              : "border-transparent text-text-muted hover:text-text"
+          )}
+        >
+          <MessageSquare className="h-4 w-4 inline mr-1.5" />
+          Wall
+        </button>
         <button
           onClick={() => setActiveTab("members")}
           className={cn(
-            "px-4 py-2.5 text-sm font-medium transition-colors border-b-2",
+            "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
             activeTab === "members"
               ? "border-primary text-primary"
               : "border-transparent text-text-muted hover:text-text"
           )}
         >
-          <Users className="h-4 w-4 inline mr-2" />
+          <Users className="h-4 w-4 inline mr-1.5" />
           Members ({members.length})
         </button>
         {isMember && (
-          <button
-            onClick={() => setActiveTab("activity")}
-            className={cn(
-              "px-4 py-2.5 text-sm font-medium transition-colors border-b-2",
-              activeTab === "activity"
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text"
-            )}
-          >
-            <Activity className="h-4 w-4 inline mr-2" />
-            Activity Log
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab("missions")}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                activeTab === "missions"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text"
+              )}
+            >
+              <Target className="h-4 w-4 inline mr-1.5" />
+              Missions
+            </button>
+            <button
+              onClick={() => setActiveTab("scrims")}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                activeTab === "scrims"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text"
+              )}
+            >
+              <Swords className="h-4 w-4 inline mr-1.5" />
+              Scrims
+            </button>
+            <button
+              onClick={() => setActiveTab("activity")}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                activeTab === "activity"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text"
+              )}
+            >
+              <Activity className="h-4 w-4 inline mr-1.5" />
+              Activity
+            </button>
+          </>
         )}
       </div>
 
       {/* Tab Content */}
+      {activeTab === "wall" && clan && (
+        <ClanWall
+          clanId={clan.id}
+          userRole={userRole}
+          userId={user?.id || null}
+        />
+      )}
+
+      {activeTab === "missions" && isMember && clan && (
+        <ClanMissions clanId={clan.id} userRole={userRole} />
+      )}
+
+      {activeTab === "scrims" && isMember && clan && (
+        <ClanScrims
+          clanId={clan.id}
+          userRole={userRole}
+          userId={user?.id || null}
+          games={
+            (clan as any).clan_games?.map((cg: any) => ({
+              id: cg.game?.id || cg.game_id,
+              name: cg.game?.name || "Unknown",
+            })) || []
+          }
+        />
+      )}
+
       {activeTab === "members" && (
         <div className="space-y-4">
           {/* Invite Button for officers */}

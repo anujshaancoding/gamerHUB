@@ -85,7 +85,7 @@ export function Modal({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               className={cn(
-                "relative w-full rounded-xl bg-surface border border-border shadow-2xl",
+                "relative w-full max-h-[90vh] flex flex-col rounded-xl bg-surface border border-border shadow-2xl",
                 sizes[size],
                 className
               )}
@@ -93,7 +93,7 @@ export function Modal({
             >
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-start justify-between p-4 border-b border-border">
+                <div className="flex items-start justify-between p-4 border-b border-border shrink-0">
                   <div>
                     {title && (
                       <h2 className="text-lg font-semibold text-text">{title}</h2>
@@ -116,7 +116,7 @@ export function Modal({
               )}
 
               {/* Content */}
-              <div className="p-4">{children}</div>
+              <div className="p-4 overflow-y-auto">{children}</div>
             </motion.div>
           </div>
         </Fragment>

@@ -23,8 +23,10 @@ export const STALE_TIMES = {
   CLANS: 1000 * 60 * 5, // 5 minutes
   PROFILES: 1000 * 60 * 5, // 5 minutes
   CLAN_DETAILS: 1000 * 60 * 2, // 2 minutes
+  NEWS_ARTICLES: 1000 * 30, // 30 seconds
   BLOG_POSTS: 1000 * 60 * 2, // 2 minutes
   FRIEND_POSTS: 1000 * 60 * 1, // 1 minute
+  SIDEBAR_ACTIVITY: 1000 * 60 * 2, // 2 minutes
   BLOG_POST_DETAIL: 1000 * 60 * 5, // 5 minutes
   BLOG_COMMENTS: 1000 * 60 * 1, // 1 minute
   FIND_GAMERS: 1000 * 60 * 2, // 2 minutes
@@ -144,6 +146,7 @@ export const queryKeys = {
 
   // Activity
   activity: (userId: string) => ["activity", userId] as const,
+  sidebarActivity: ["sidebar-activity"] as const,
 
   // Messages
   conversations: ["conversations"] as const,

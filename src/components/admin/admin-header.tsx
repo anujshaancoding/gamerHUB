@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui";
 
 const TITLES: Record<string, string> = {
   "/admin": "Dashboard",
+  "/admin/analytics": "Analytics",
   "/admin/blog": "Blog Posts",
   "/admin/blog/new": "New Blog Post",
   "/admin/reports": "Reports",

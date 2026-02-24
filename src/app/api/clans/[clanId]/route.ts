@@ -26,8 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           *,
           game:games(*)
         ),
-        clan_achievements(*),
-        conversation:conversations(*)
+        clan_achievements(*)
       `
       )
       .eq("id", clanId)

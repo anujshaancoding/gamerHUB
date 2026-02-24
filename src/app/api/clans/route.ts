@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 import { isPromoPeriodActive } from "@/lib/promo";
 import type { Clan } from "@/types/database";
 
@@ -67,12 +66,12 @@ export async function GET(request: NextRequest) {
       member_count: clan.clan_members?.[0]?.count || 0,
     }));
 
-    return cachedResponse({
+    return NextResponse.json({
       clans,
       total: count || 0,
       limit,
       offset,
-    }, CACHE_DURATIONS.CLANS);
+    });
   } catch (error) {
     console.error("Clans list error:", error);
     return NextResponse.json(
@@ -286,6 +285,7 @@ export async function POST(request: NextRequest) {
         region: region || null,
         language: language || "en",
         is_public: is_public !== false,
+        join_type: clanJoinType,
         settings: {
           join_type: clanJoinType,
           join_approval_required: clanJoinType === "closed",

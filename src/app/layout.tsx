@@ -10,7 +10,7 @@ import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
 // import { PageLoadTimer } from "@/components/dev/PageLoadTimer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
-import { GoogleAnalytics } from "@/components/analytics";
+import { GoogleAnalytics, PageViewTracker } from "@/components/analytics";
 import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -82,6 +82,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <GoogleAnalytics />
+        <PageViewTracker />
         <JsonLd
           data={[
             {

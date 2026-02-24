@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageCircle,
@@ -12,13 +11,25 @@ import {
   Bookmark,
   CheckCircle,
   Trash2,
+  Send,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, RelativeTime } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
+import {
+  useFriendPostComments,
+  useAddFriendPostComment,
+  useDeleteFriendPostComment,
+  useFriendPostBookmarked,
+  useBookmarkFriendPost,
+  useFriendPostLiked,
+  type FriendPostComment,
+} from "@/lib/hooks/useFriendPosts";
 
 interface FriendPost {
   id: string;
@@ -41,9 +52,7 @@ interface FriendPostCardProps {
   index?: number;
   isGuest?: boolean;
   onLike?: () => Promise<void> | void;
-  onComment?: () => void;
-  onShare?: () => void;
-  onBookmark?: () => void;
+  onShare?: () => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
 }
 
@@ -66,20 +75,59 @@ export function FriendPostCard({
   index = 0,
   isGuest = false,
   onLike,
-  onComment,
   onShare,
-  onBookmark,
   onDelete,
 }: FriendPostCardProps) {
   const { user } = useAuth();
   const { can: permissions } = usePermissions();
-  // Optimistic local state for like
+
+  // Server-backed like state
+  const { data: serverLiked } = useFriendPostLiked(post.id, user?.id);
   const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
+  const [isLiking, setIsLiking] = useState(false);
+
+  // Server-backed bookmark state
+  const { data: serverBookmarked } = useFriendPostBookmarked(post.id, user?.id);
+  const { toggleBookmark } = useBookmarkFriendPost();
+  const [bookmarked, setBookmarked] = useState(false);
+
+  // Comments state
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const commentInputRef = useRef<HTMLInputElement>(null);
+  const { data: comments = [], isLoading: commentsLoading } = useFriendPostComments(post.id, showComments);
+  const { addComment, isAdding: isAddingComment } = useAddFriendPostComment();
+  const { deleteComment } = useDeleteFriendPostComment();
+
+  // Other state
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
   const canDelete = !isGuest && (
     (user && post.user_id === user.id) || permissions.deleteFreeUserPost
   );
+
+  // Sync liked state from server
+  useEffect(() => {
+    if (serverLiked !== undefined) {
+      setLiked(serverLiked);
+    }
+  }, [serverLiked]);
+
+  // Sync bookmark state from server
+  useEffect(() => {
+    if (serverBookmarked !== undefined) {
+      setBookmarked(serverBookmarked);
+    }
+  }, [serverBookmarked]);
+
+  // Sync likes count from server (only when not actively liking)
+  useEffect(() => {
+    if (!isLiking) {
+      setLikesCount(post.likes_count || 0);
+    }
+  }, [post.likes_count, isLiking]);
 
   const handleDelete = async () => {
     if (isDeleting || !onDelete) return;
@@ -90,17 +138,6 @@ export function FriendPostCard({
       setIsDeleting(false);
     }
   };
-  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
-  const [isLiking, setIsLiking] = useState(false);
-  const [showAuthGate, setShowAuthGate] = useState(false);
-
-  // Sync local state with prop when server data changes (e.g. after cache invalidation refetch)
-  // Only sync when not actively liking to avoid overwriting optimistic state
-  useEffect(() => {
-    if (!isLiking) {
-      setLikesCount(post.likes_count || 0);
-    }
-  }, [post.likes_count, isLiking]);
 
   const handleLike = async () => {
     if (isGuest) {
@@ -109,7 +146,6 @@ export function FriendPostCard({
     }
     if (isLiking) return;
 
-    // Toggle instantly
     const wasLiked = liked;
     const prevCount = likesCount;
     setLiked(!wasLiked);
@@ -119,7 +155,6 @@ export function FriendPostCard({
     try {
       await onLike?.();
     } catch {
-      // Revert on failure
       setLiked(wasLiked);
       setLikesCount(prevCount);
     } finally {
@@ -127,9 +162,70 @@ export function FriendPostCard({
     }
   };
 
-  const handleGuestAction = () => {
+  const handleComment = () => {
     if (isGuest) {
       setShowAuthGate(true);
+      return;
+    }
+    setShowComments((prev) => !prev);
+    // Focus input after opening
+    if (!showComments) {
+      setTimeout(() => commentInputRef.current?.focus(), 100);
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    const content = commentText.trim();
+    if (!content || isAddingComment) return;
+
+    try {
+      await addComment({ postId: post.id, content });
+      setCommentText("");
+    } catch {
+      toast.error("Failed to post comment");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment({ postId: post.id, commentId });
+    } catch {
+      toast.error("Failed to delete comment");
+    }
+  };
+
+  const handleShare = async () => {
+    if (isGuest) {
+      setShowAuthGate(true);
+      return;
+    }
+    if (onShare) {
+      try {
+        await onShare();
+        if (!navigator.share) {
+          toast.success("Link copied to clipboard!");
+        }
+      } catch {
+        // navigator.share throws if user cancels
+      }
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (isGuest) {
+      setShowAuthGate(true);
+      return;
+    }
+
+    const wasBookmarked = bookmarked;
+    setBookmarked(!wasBookmarked);
+
+    try {
+      await toggleBookmark(post.id);
+      toast.success(wasBookmarked ? "Removed from saved" : "Post saved!");
+    } catch {
+      setBookmarked(wasBookmarked);
+      toast.error("Failed to save post");
     }
   };
 
@@ -247,8 +343,13 @@ export function FriendPostCard({
 
               {/* Comment */}
               <button
-                onClick={isGuest ? handleGuestAction : onComment}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-all duration-200 group/comment"
+                onClick={handleComment}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 group/comment",
+                  showComments
+                    ? "text-accent bg-accent/10"
+                    : "text-text-muted hover:text-accent hover:bg-accent/10"
+                )}
               >
                 <MessageCircle className="h-[18px] w-[18px] transition-transform group-hover/comment:scale-110" />
                 <span className="text-sm font-medium">{post.comments_count || 0}</span>
@@ -256,7 +357,7 @@ export function FriendPostCard({
 
               {/* Share */}
               <button
-                onClick={onShare}
+                onClick={handleShare}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200 group/share"
               >
                 <Share2 className="h-[18px] w-[18px] transition-transform group-hover/share:scale-110" />
@@ -266,12 +367,125 @@ export function FriendPostCard({
 
             {/* Bookmark */}
             <button
-              onClick={isGuest ? handleGuestAction : onBookmark}
-              className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200"
+              onClick={handleBookmark}
+              className={cn(
+                "p-1.5 rounded-lg transition-all duration-200",
+                bookmarked
+                  ? "text-primary bg-primary/10"
+                  : "text-text-muted hover:text-primary hover:bg-primary/10"
+              )}
             >
-              <Bookmark className="h-[18px] w-[18px]" />
+              <Bookmark className={cn("h-[18px] w-[18px]", bookmarked && "fill-current")} />
             </button>
           </div>
+
+          {/* Comments Section */}
+          {showComments && (
+            <div className="mt-3 space-y-3">
+              <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+
+              {/* Comment input */}
+              <div className="flex items-center gap-2">
+                <Avatar
+                  src={user ? undefined : undefined}
+                  alt="You"
+                  size="sm"
+                />
+                <div className="flex-1 flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2">
+                  <input
+                    ref={commentInputRef}
+                    type="text"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmitComment();
+                      }
+                    }}
+                    placeholder="Write a comment..."
+                    className="flex-1 bg-transparent text-sm text-text placeholder-text-dim outline-none"
+                    maxLength={500}
+                    disabled={isAddingComment}
+                  />
+                  <button
+                    onClick={handleSubmitComment}
+                    disabled={!commentText.trim() || isAddingComment}
+                    className={cn(
+                      "p-1 rounded-lg transition-all",
+                      commentText.trim()
+                        ? "text-primary hover:bg-primary/10"
+                        : "text-text-dim cursor-not-allowed"
+                    )}
+                  >
+                    {isAddingComment ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Comments list */}
+              {commentsLoading ? (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+                </div>
+              ) : comments.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-thin">
+                  {comments.map((comment: FriendPostComment) => (
+                    <div
+                      key={comment.id}
+                      className="flex items-start gap-2 group/cmt px-1"
+                    >
+                      <Link href={`/profile/${comment.user?.username}`} onClick={handleProfileClick}>
+                        <Avatar
+                          src={comment.user?.avatar_url}
+                          alt={comment.user?.display_name || "User"}
+                          size="xs"
+                        />
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white/[0.04] rounded-xl px-3 py-2">
+                          <Link
+                            href={`/profile/${comment.user?.username}`}
+                            onClick={handleProfileClick}
+                            className="text-xs font-semibold text-text hover:text-primary transition-colors inline-flex items-center gap-1"
+                          >
+                            {comment.user?.display_name || comment.user?.username}
+                            {comment.user?.is_verified && (
+                              <CheckCircle className="h-3 w-3 text-primary" />
+                            )}
+                          </Link>
+                          <p className="text-sm text-text-secondary break-words">
+                            {comment.content}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 px-1">
+                          <span className="text-[11px] text-text-dim">
+                            <RelativeTime date={comment.created_at} />
+                          </span>
+                          {user && comment.user_id === user.id && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-[11px] text-text-dim hover:text-red-400 transition-colors opacity-0 group-hover/cmt:opacity-100"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-text-dim text-xs py-2">
+                  No comments yet. Be the first!
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

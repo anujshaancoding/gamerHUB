@@ -5,3 +5,6 @@ export { ClanMemberCard } from "./clan-member-card";
 export { CreateClanForm } from "./create-clan-form";
 export { ClanJoinModal } from "./clan-join-modal";
 export { ClanInviteModal } from "./clan-invite-modal";
+export { ClanWall } from "./clan-wall";
+export { ClanMissions } from "./clan-missions";
+export { ClanScrims } from "./clan-scrims";

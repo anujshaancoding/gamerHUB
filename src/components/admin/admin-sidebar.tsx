@@ -9,16 +9,22 @@ import {
   Flag,
   Users,
   PenTool,
+  Newspaper,
+  MessageSquarePlus,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
+  { href: "/admin/news", label: "News", icon: Newspaper },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquarePlus },
 ];
 
 export function AdminSidebar() {

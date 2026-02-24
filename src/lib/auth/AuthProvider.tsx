@@ -158,7 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(user);
           const { data: { session } } = await supabase.auth.getSession();
           setSession(session);
-          await fetchProfile(user.id);
+          // Don't await — profile loads in the background so it doesn't
+          // block setLoading(false). This prevents the admin page (and
+          // other pages) from getting stuck on "Verifying admin access..."
+          // when fetchProfile retries or the network is slow.
+          fetchProfile(user.id);
         }
       } catch {
         if (isMounted) {
