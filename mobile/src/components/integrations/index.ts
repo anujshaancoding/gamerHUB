@@ -1,1 +1,0 @@
-export { ConnectionCard } from './ConnectionCard';
