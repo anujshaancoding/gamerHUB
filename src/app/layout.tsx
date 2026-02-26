@@ -8,7 +8,7 @@ import { AuthGateProvider } from "@/components/auth/auth-gate-provider";
 import { PWAProvider } from "@/components/pwa/PWAProvider";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
-import { SupabaseHealthProvider } from "@/lib/supabase/SupabaseHealthProvider";
+// import { SupabaseHealthProvider } from "@/lib/supabase/SupabaseHealthProvider";
 // import { PageLoadTimer } from "@/components/dev/PageLoadTimer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { GoogleAnalytics, PageViewTracker } from "@/components/analytics";
@@ -116,7 +116,7 @@ export default function RootLayout({
           ]}
         />
         <QueryProvider>
-          <SupabaseHealthProvider>
+          {/* <SupabaseHealthProvider> */}
           <AuthProvider>
             <PresenceProvider>
             <ThemeProvider>
@@ -132,7 +132,7 @@ export default function RootLayout({
             </ThemeProvider>
           </PresenceProvider>
           </AuthProvider>
-          </SupabaseHealthProvider>
+          {/* </SupabaseHealthProvider> */}
         </QueryProvider>
       </body>
     </html>
