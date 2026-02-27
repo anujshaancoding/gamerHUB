@@ -3,6 +3,16 @@ import type { Database } from "@/types/database";
 
 type SupabaseClient = ReturnType<typeof createBrowserClient<Database>>;
 
+/**
+ * In production, browser clients route through our domain's proxy (/supabase-proxy)
+ * to bypass ISP connectivity issues (e.g., Indian ISPs unable to reach supabase.co).
+ * Server-side rendering and dev mode use the direct Supabase URL.
+ */
+function getSupabaseUrl(): string {
+  if (typeof window === "undefined") return process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  if (process.env.NODE_ENV === "production") return `${window.location.origin}/supabase-proxy`;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL!;
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -47,7 +57,7 @@ export function createClient() {
   if (typeof window === "undefined") {
     // Server-side: always create a new client
     return createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      getSupabaseUrl(),
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
   }
@@ -58,7 +68,7 @@ export function createClient() {
   // conflicts between localStorage and cookie-based sessions.
   if (!globalThis.__supabase_client__) {
     globalThis.__supabase_client__ = createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      getSupabaseUrl(),
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         auth: {
