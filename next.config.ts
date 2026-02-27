@@ -62,6 +62,19 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Proxy Supabase requests through our domain to bypass ISP connectivity issues
+  // (e.g., Indian ISPs unable to reach supabase.co directly)
+  async rewrites() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) return [];
+    return [
+      {
+        source: "/supabase-proxy/:path*",
+        destination: `${supabaseUrl}/:path*`,
+      },
+    ];
+  },
+
   // Optimized caching headers for static assets
   async headers() {
     return [
