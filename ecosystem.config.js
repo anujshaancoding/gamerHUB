@@ -2,8 +2,7 @@ module.exports = {
   apps: [
     {
       name: "gglobby",
-      script: "node_modules/.bin/ts-node",
-      args: "--transpile-only server.ts",
+      script: "server.mjs",
       cwd: "/var/www/gglobby",
       instances: 1,
       autorestart: true,
