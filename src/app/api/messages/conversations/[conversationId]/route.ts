@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get single conversation details with participants
 export async function GET(
@@ -7,10 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   const { conversationId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +17,7 @@ export async function GET(
 
   try {
     // Get conversation
-    const { data: conversation, error: cError } = await supabase
+    const { data: conversation, error: cError } = await db
       .from("conversations")
       .select("*")
       .eq("id", conversationId)
@@ -32,7 +31,7 @@ export async function GET(
     }
 
     // Get participants with profiles
-    const { data: participants, error: pError } = await supabase
+    const { data: participants, error: pError } = await db
       .from("conversation_participants")
       .select("user_id, last_read_at")
       .eq("conversation_id", conversationId);
@@ -47,7 +46,7 @@ export async function GET(
 
     // Get profiles
     const userIds = (participants || []).map((p) => p.user_id);
-    const { data: profiles } = await supabase
+    const { data: profiles } = await db
       .from("profiles")
       .select("id, username, display_name, avatar_url, is_online, last_seen, bio, gaming_style, region")
       .in("id", userIds);
@@ -61,7 +60,7 @@ export async function GET(
         (p) => p.user_id !== user.id
       )?.user_id;
       if (otherUserId) {
-        const { data: areFriendsResult } = await supabase.rpc("are_friends", {
+        const { data: areFriendsResult } = await db.rpc("are_friends", {
           user1_id: user.id,
           user2_id: otherUserId,
         } as unknown as undefined);

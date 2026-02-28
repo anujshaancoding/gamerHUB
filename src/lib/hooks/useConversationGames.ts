@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { SUPPORTED_GAMES } from "@/lib/constants/games";
 
 export function useConversationGames(
@@ -21,14 +21,14 @@ export function useConversationGames(
     }
 
     const fetchGames = async () => {
-      const supabase = createClient();
+      const db = createClient();
 
       const [myGames, theirGames] = await Promise.all([
-        supabase
+        db
           .from("user_games")
           .select("game_id, games:game_id(slug)")
           .eq("user_id", currentUserId),
-        supabase
+        db
           .from("user_games")
           .select("game_id, games:game_id(slug)")
           .eq("user_id", otherUserId),

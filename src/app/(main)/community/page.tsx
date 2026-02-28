@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import {
   CommunityPageClient,
   type BlogPost,
@@ -8,12 +8,12 @@ import {
 import type { NewsArticle } from "@/types/news";
 
 export default async function CommunityPage() {
-  const supabase = await createClient();
+  const db = createClient();
   const admin = createAdminClient();
 
   // Pre-fetch all three data sources in parallel for fastest initial load
   const [rawBlogPosts, rawFriendPosts, rawNewsArticles] = await Promise.all([
-    supabase
+    db
       .from("blog_posts")
       .select(`
         id, title, slug, excerpt, featured_image_url, category, tags,
@@ -26,7 +26,7 @@ export default async function CommunityPage() {
       .limit(20)
       .then((r) => r.data),
 
-    supabase
+    db
       .from("friend_posts")
       .select(`
         *,

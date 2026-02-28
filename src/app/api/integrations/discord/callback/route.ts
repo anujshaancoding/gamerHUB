@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   exchangeDiscordCode,
   getDiscordUser,
@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
     }));
 
     // Store in database
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check if Discord account is already connected to another user
-    const { data: existingConnection } = await supabase
+    const { data: existingConnection } = await db
       .from("discord_settings")
       .select("user_id")
       .eq("discord_user_id", discordUser.id)
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert Discord settings
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await db
       .from("discord_settings")
       .upsert({
         user_id: userId,

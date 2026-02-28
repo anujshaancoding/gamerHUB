@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
+import { getUser } from "@/lib/auth/get-user";
   getRelationshipStatus,
   areFriends as checkAreFriends,
   removeFriend,
-} from "@/lib/supabase/rpc-types";
+} from "@/lib/db/rpc-types";
 
 interface RouteParams {
   params: Promise<{ userId: string }>;
@@ -13,12 +14,10 @@ interface RouteParams {
 // GET - Get relationship status with a user
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { userId: targetUserId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Get relationship status
     const { data, error } = await getRelationshipStatus(
-      supabase,
+      db,
       user.id,
       targetUserId
     );
@@ -63,12 +62,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // DELETE - Remove friend
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { userId: friendId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -83,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Check if they are actually friends
     const { data: areFriendsResult } = await checkAreFriends(
-      supabase,
+      db,
       user.id,
       friendId
     );
@@ -96,7 +93,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Remove friend
-    const { error } = await removeFriend(supabase, user.id, friendId);
+    const { error } = await removeFriend(db, user.id, friendId);
 
     if (error) {
       console.error("Error removing friend:", error);

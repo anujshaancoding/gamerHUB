@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 // GET - Get a user's public game stats
 export async function GET(
@@ -8,12 +8,12 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("gameId");
 
     // Fetch user's game stats (public)
-    let query = supabase
+    let query = db
       .from("game_stats")
       .select(`
         id,
@@ -47,7 +47,7 @@ export async function GET(
     }
 
     // Also fetch recent match history
-    let matchQuery = supabase
+    let matchQuery = db
       .from("game_match_history")
       .select("*")
       .eq("user_id", userId)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     // Try to get the authenticated user (optional)
     let userId: string | null = null;
     try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const db = createClient();
+      const user = await getUser();
       userId = user?.id || null;
     } catch {
       // Not authenticated — that's fine

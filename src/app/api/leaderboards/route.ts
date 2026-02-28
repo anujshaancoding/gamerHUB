@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 
 // GET - Get leaderboard entries
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const seasonId = searchParams.get("season_id");
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // If no season_id provided, get current active season
     let targetSeasonId = seasonId;
     if (!targetSeasonId) {
-      const { data: currentSeason } = await supabase
+      const { data: currentSeason } = await db
         .from("seasons")
         .select("id")
         .eq("status", "active")
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       targetSeasonId = season.id;
     }
 
-    let query = supabase
+    let query = db
       .from("season_points")
       .select(
         `

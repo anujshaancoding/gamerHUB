@@ -17,7 +17,7 @@ import {
 import { Button, Input, LegacySelect as Select, Card, Badge } from "@/components/ui";
 import { GamerCard } from "@/components/gamers/gamer-card";
 import { SuggestedFriendsSection, ProPlayersSection } from "@/components/suggestions";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useFriends } from "@/lib/hooks/useFriends";
@@ -34,7 +34,7 @@ const PROFILES_PER_LOAD = 3;
 function FindGamersContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -71,7 +71,7 @@ function FindGamersContent() {
   const { data: gamers = [], isLoading: loading, error: gamersError } = useQuery({
     queryKey: queryKeys.findGamers(filterParams),
     queryFn: async () => {
-      let query = supabase
+      let query = db
         .from("profiles")
         .select(`
           *,

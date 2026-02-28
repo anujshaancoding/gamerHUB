@@ -29,7 +29,7 @@ import {
   Badge,
   RelativeTime,
 } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { cn } from "@/lib/utils";
 import { ShareCardModal } from "@/components/blog/share-card-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -86,7 +86,7 @@ export default function CommunityPostPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const supabase = useMemo(() => createClient(), []);
+  const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const { can: permissions } = usePermissions();
   const [bookmarked, setBookmarked] = useState(false);
@@ -103,7 +103,7 @@ export default function CommunityPostPage() {
   } = useQuery({
     queryKey: blogKeys.postById(postId),
     queryFn: async () => {
-      const { data: postData, error: postError } = await supabase
+      const { data: postData, error: postError } = await db
         .from("blog_posts")
         .select(`
           *,
@@ -133,9 +133,9 @@ export default function CommunityPostPage() {
     const viewKey = `viewed_blog_${post.slug}`;
     if (!sessionStorage.getItem(viewKey)) {
       sessionStorage.setItem(viewKey, "1");
-      supabase.rpc("increment_blog_view", { post_slug: post.slug }).then();
+      db.rpc("increment_blog_view", { post_slug: post.slug }).then();
     }
-  }, [post?.slug, supabase]);
+  }, [post?.slug, db]);
 
   // Fetch comments with React Query
   const {
@@ -143,7 +143,7 @@ export default function CommunityPostPage() {
   } = useQuery({
     queryKey: blogKeys.commentsById(postId),
     queryFn: async () => {
-      const { data: commentsData, error } = await supabase
+      const { data: commentsData, error } = await db
         .from("blog_comments")
         .select(`
           id,
@@ -172,7 +172,7 @@ export default function CommunityPostPage() {
   const { data: liked = false } = useQuery({
     queryKey: blogKeys.postLiked(postId),
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from("blog_likes")
         .select("id")
         .eq("post_id", postId)

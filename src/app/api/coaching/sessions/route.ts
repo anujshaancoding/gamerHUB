@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { BookSessionRequest, SessionStatus } from "@/types/coaching";
 import { SESSION_TYPES } from "@/types/coaching";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List sessions (as coach or student)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,13 +22,13 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
 
     // Get user's coach profile if exists
-    const { data: coachProfile } = await supabase
+    const { data: coachProfile } = await db
       .from("coach_profiles")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    let query = supabase
+    let query = db
       .from("coaching_sessions")
       .select(`
         *,
@@ -115,10 +114,8 @@ export async function GET(request: NextRequest) {
 // POST - Book a new session
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -135,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get coach profile
-    const { data: coach } = await supabase
+    const { data: coach } = await db
       .from("coach_profiles")
       .select("*")
       .eq("id", body.coach_id)
@@ -176,7 +173,7 @@ export async function POST(request: NextRequest) {
     // Check for conflicting sessions
     const sessionEnd = new Date(scheduledAt.getTime() + body.duration_minutes * 60 * 1000);
 
-    const { data: conflicts } = await supabase
+    const { data: conflicts } = await db
       .from("coaching_sessions")
       .select("id")
       .eq("coach_id", body.coach_id)
@@ -192,7 +189,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session
-    const { data: session, error } = await supabase
+    const { data: session, error } = await db
       .from("coaching_sessions")
       .insert({
         coach_id: body.coach_id,

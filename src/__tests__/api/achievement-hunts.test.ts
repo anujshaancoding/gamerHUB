@@ -460,7 +460,7 @@ describe('Achievement Hunts API', () => {
 
     describe('Rollback on member insert failure', () => {
       it('should delete hunt if member insert fails', () => {
-        // The API has: if (memberError) { await supabase.from("achievement_hunts").delete().eq("id", hunt.id); }
+        // The API has: if (memberError) { await db.from("achievement_hunts").delete().eq("id", hunt.id); }
         const memberInsertFailed = true;
         const shouldRollback = memberInsertFailed;
         expect(shouldRollback).toBe(true);

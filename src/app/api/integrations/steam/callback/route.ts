@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { verifySteamAuth, getSteamUser } from "@/lib/integrations/steam";
 import { cookies } from "next/headers";
 
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Store connection in database
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await db
       .from("game_connections")
       .upsert(
         {

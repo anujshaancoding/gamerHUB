@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UpdateAccessibilitySettingsRequest } from "@/types/accessibility";
 import { DEFAULT_ACCESSIBILITY_SETTINGS } from "@/types/accessibility";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current accessibility settings
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: settings, error } = await supabase
+    const { data: settings, error } = await db
       .from("accessibility_settings")
       .select("*")
       .eq("user_id", user.id)
@@ -48,10 +47,8 @@ export async function GET() {
 // POST - Create or update accessibility settings
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -99,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if settings exist
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("accessibility_settings")
       .select("id")
       .eq("user_id", user.id)
@@ -109,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // Update existing
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("accessibility_settings")
         .update({
           ...body,
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
       settings = data;
     } else {
       // Create new
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("accessibility_settings")
         .insert({
           user_id: user.id,
@@ -164,16 +161,14 @@ export async function POST(request: NextRequest) {
 // DELETE - Reset to defaults
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("accessibility_settings")
       .delete()
       .eq("user_id", user.id);

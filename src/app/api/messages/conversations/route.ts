@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List all conversations for the current user
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +13,7 @@ export async function GET() {
 
   try {
     // Get all conversation IDs the user participates in
-    const { data: participations, error: pError } = await supabase
+    const { data: participations, error: pError } = await db
       .from("conversation_participants")
       .select("conversation_id, last_read_at")
       .eq("user_id", user.id);
@@ -30,7 +29,7 @@ export async function GET() {
     );
 
     // Get conversation details
-    const { data: conversations, error: cError } = await supabase
+    const { data: conversations, error: cError } = await db
       .from("conversations")
       .select("*")
       .in("id", conversationIds)
@@ -39,7 +38,7 @@ export async function GET() {
     if (cError) throw cError;
 
     // Get participants for all conversations
-    const { data: allParticipants, error: apError } = await supabase
+    const { data: allParticipants, error: apError } = await db
       .from("conversation_participants")
       .select("conversation_id, user_id, last_read_at")
       .in("conversation_id", conversationIds);
@@ -50,7 +49,7 @@ export async function GET() {
     const userIds = [
       ...new Set((allParticipants || []).map((p) => p.user_id)),
     ];
-    const { data: profiles } = await supabase
+    const { data: profiles } = await db
       .from("profiles")
       .select("id, username, display_name, avatar_url, is_online, last_seen")
       .in("id", userIds);
@@ -73,12 +72,12 @@ export async function GET() {
     let friendSet = new Set<string>();
     if (uniqueOtherUserIds.length > 0) {
       const [{ data: iFollow }, { data: followMe }] = await Promise.all([
-        supabase
+        db
           .from("follows")
           .select("following_id")
           .eq("follower_id", user.id)
           .in("following_id", uniqueOtherUserIds),
-        supabase
+        db
           .from("follows")
           .select("follower_id")
           .eq("following_id", user.id)
@@ -93,7 +92,7 @@ export async function GET() {
     // Get last message for each conversation
     const lastMessages = await Promise.all(
       conversationIds.map(async (cid) => {
-        const { data } = await supabase
+        const { data } = await db
           .from("messages")
           .select("*")
           .eq("conversation_id", cid)
@@ -169,10 +168,8 @@ export async function GET() {
 
 // POST - Create or find a direct conversation
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -195,7 +192,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: conversationId, error } = await supabase.rpc(
+    const { data: conversationId, error } = await db.rpc(
       "create_direct_conversation",
       { other_user_id: otherUserId }
     );

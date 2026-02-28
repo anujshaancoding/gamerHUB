@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get("unread_only") === "true";
 
     // Query notifications table directly
-    let query = supabase
+    let query = db
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unread count separately
-    const { count: unreadCount } = await supabase
+    const { count: unreadCount } = await db
       .from("notifications")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
@@ -66,14 +64,11 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -82,7 +77,7 @@ export async function PATCH(request: NextRequest) {
 
     if (markAllRead) {
       // Mark all as read
-      const { error, count } = await supabase
+      const { error, count } = await db
         .from("notifications")
         .update({ is_read: true })
         .eq("user_id", user.id)
@@ -100,7 +95,7 @@ export async function PATCH(request: NextRequest) {
 
     if (notificationIds && Array.isArray(notificationIds)) {
       // Mark specific notifications as read
-      const { error, count } = await supabase
+      const { error, count } = await db
         .from("notifications")
         .update({ is_read: true })
         .eq("user_id", user.id)
@@ -131,14 +126,11 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -147,7 +139,7 @@ export async function DELETE(request: NextRequest) {
 
     if (notificationId) {
       // Archive specific notification
-      const { error } = await supabase
+      const { error } = await db
         .from("notifications")
         .update({ is_archived: true })
         .eq("id", notificationId)
@@ -161,7 +153,7 @@ export async function DELETE(request: NextRequest) {
       }
     } else {
       // Archive all read notifications
-      const { error } = await supabase
+      const { error } = await db
         .from("notifications")
         .update({ is_archived: true })
         .eq("user_id", user.id)

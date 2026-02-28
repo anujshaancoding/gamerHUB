@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
 import { isPromoPeriodActive, PROMO_END_DATE } from "@/lib/promo";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's current subscription
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Try to get subscription from database
     let subscription = null;
-    const { data: subData, error: subError } = await supabase
+    const { data: subData, error: subError } = await db
       .from("user_subscriptions" as any)
       .select(`*, plan:subscription_plans(*)`)
       .eq("user_id", user.id)
@@ -46,7 +44,7 @@ export async function GET() {
     let isPremium = false;
     let premiumUntil: string | null = null;
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("profiles")
       .select("is_premium, premium_until")
       .eq("id", user.id)

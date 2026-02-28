@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { stripe } from "@/lib/stripe";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if customer already exists
-    const { data: existingCustomer } = await supabase
+    const { data: existingCustomer } = await db
       .from("stripe_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
@@ -28,7 +26,7 @@ export async function POST() {
     }
 
     // Get user profile for name and email
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("profiles")
       .select("username, display_name")
       .eq("id", user.id)
@@ -39,13 +37,13 @@ export async function POST() {
       email: user.email,
       name: profile?.display_name || profile?.username || undefined,
       metadata: {
-        supabase_user_id: user.id,
+        user_id: user.id,
         username: profile?.username || "",
       },
     });
 
     // Save to database
-    const { error: insertError } = await supabase
+    const { error: insertError } = await db
       .from("stripe_customers")
       .insert({
         user_id: user.id,

@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { isPromoPeriodActive } from "@/lib/promo";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Equip a theme
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // If theme_id is null, unequip current theme
     if (theme_id === null) {
-      const { error } = await supabase
+      const { error } = await db
         .from("user_progression")
         .update({ active_theme_id: null } as never)
         .eq("user_id", user.id);
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if theme requires premium
-    const { data: themeData } = await supabase
+    const { data: themeData } = await db
       .from("profile_themes")
       .select("unlock_type")
       .eq("id", theme_id)
@@ -45,14 +43,14 @@ export async function POST(request: NextRequest) {
 
     if (themeData?.unlock_type !== "default") {
       if (!isPromoPeriodActive()) {
-        const { data: sub } = await supabase
+        const { data: sub } = await db
           .from("user_subscriptions" as any)
           .select("status")
           .eq("user_id", user.id)
           .in("status", ["active", "trialing"])
           .single();
 
-        const { data: profile } = await supabase
+        const { data: profile } = await db
           .from("profiles")
           .select("is_premium")
           .eq("id", user.id)
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user owns this theme
-    const { data: userTheme } = await supabase
+    const { data: userTheme } = await db
       .from("user_themes")
       .select("id")
       .eq("user_id", user.id)
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update active theme
-    const { error } = await supabase
+    const { error } = await db
       .from("user_progression")
       .update({ active_theme_id: theme_id } as never)
       .eq("user_id", user.id);

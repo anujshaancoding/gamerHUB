@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Assign quests to user
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Call the assign_quests function
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)("assign_quests", {
+    const { data, error } = await (db.rpc as any)("assign_quests", {
       p_user_id: user.id,
       p_quest_type: quest_type,
     });

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get combined feed (friends + following activities)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Build query - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = (db as any)
       .from("activity_feed")
       .select(
         `
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest) {
     // If logged in, include friend activities
     if (user) {
       // Get list of users the current user follows
-      const { data: following } = await supabase
+      const { data: following } = await db
         .from("follows")
         .select("following_id")
         .eq("follower_id", user.id);
@@ -68,7 +67,7 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const activityIds = (activities as any[]).map((a) => a.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: reactions } = await (supabase as any)
+      const { data: reactions } = await (db as any)
         .from("activity_reactions")
         .select("activity_id, reaction_type")
         .eq("user_id", user.id)

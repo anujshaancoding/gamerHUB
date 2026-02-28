@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 interface RouteParams {
   params: Promise<{ tournamentId: string }>;
@@ -8,14 +8,14 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const round = searchParams.get("round");
     const bracketType = searchParams.get("bracket_type");
     const status = searchParams.get("status");
 
-    let query = supabase
+    let query = db
       .from("tournament_matches")
       .select(
         `

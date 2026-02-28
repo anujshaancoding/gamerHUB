@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,9 +10,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: post, error } = await supabase
+    const { data: post, error } = await db
       .from("lfg_posts")
       .select(
         `
@@ -54,18 +55,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify ownership
-    const { data: existingPost } = await supabase
+    const { data: existingPost } = await db
       .from("lfg_posts")
       .select("creator_id")
       .eq("id", id)
@@ -99,7 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
     updates.updated_at = new Date().toISOString();
 
-    const { data: post, error: updateError } = await supabase
+    const { data: post, error: updateError } = await db
       .from("lfg_posts")
       .update(updates as never)
       .eq("id", id)
@@ -138,18 +136,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify ownership
-    const { data: existingPost } = await supabase
+    const { data: existingPost } = await db
       .from("lfg_posts")
       .select("creator_id")
       .eq("id", id)
@@ -163,7 +158,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete by setting status to cancelled
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await db
       .from("lfg_posts")
       .update({ status: "cancelled", updated_at: new Date().toISOString() } as never)
       .eq("id", id);

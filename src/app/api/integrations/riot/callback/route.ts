@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { exchangeRiotCode, getRiotAccount } from "@/lib/integrations/riot";
 import { cookies } from "next/headers";
 
@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
     const account = await getRiotAccount(tokens.access_token);
 
     // Store connection in database
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await db
       .from("game_connections")
       .upsert(
         {

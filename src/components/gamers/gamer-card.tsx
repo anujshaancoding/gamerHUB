@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Card, Avatar, Badge, Button, Modal } from "@/components/ui";
 import { getRegionLabel, getLanguageLabel } from "@/lib/constants/games";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelationship } from "@/lib/hooks/useFriends";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ interface GamerCardProps {
 export function GamerCard({ gamer }: GamerCardProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
-  const supabase = createClient();
+  const db = createClient();
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
   const gamerStatus = getUserStatus(gamer.id);
@@ -81,13 +81,13 @@ export function GamerCard({ gamer }: GamerCardProps) {
     try {
       const wasFollowing = relationship?.is_following;
       if (wasFollowing) {
-        await supabase
+        await db
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", gamer.id);
       } else {
-        await supabase.from("follows").insert({
+        await db.from("follows").insert({
           follower_id: user.id,
           following_id: gamer.id,
         } as never);

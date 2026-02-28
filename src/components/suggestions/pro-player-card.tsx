@@ -5,7 +5,7 @@ import Link from "next/link";
 import { UserPlus, UserCheck, Users, Gamepad2, Trophy } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { ProPlayer } from "@/app/api/pro-players/route";
 
@@ -18,7 +18,7 @@ interface ProPlayerCardProps {
 export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
-  const supabase = createClient();
+  const db = createClient();
   const [loading, setLoading] = useState(false);
   const [isFollowed, setIsFollowed] = useState(player.is_followed_by_viewer);
   const { profile, follower_count, common_games } = player;
@@ -31,14 +31,14 @@ export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProp
     setLoading(true);
     try {
       if (isFollowed) {
-        await supabase
+        await db
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", profile.id);
         setIsFollowed(false);
       } else {
-        await supabase.from("follows").insert({
+        await db.from("follows").insert({
           follower_id: user.id,
           following_id: profile.id,
         } as never);

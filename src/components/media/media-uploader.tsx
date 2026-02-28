@@ -9,7 +9,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Textarea } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { SUPPORTED_GAMES } from "@/lib/constants/games";
 import { optimizedMediaUpload, createPreview } from "@/lib/upload";
@@ -23,7 +23,7 @@ const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
 export function MediaUploader({ onSuccess }: MediaUploaderProps) {
   const { user } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -90,27 +90,22 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("media")
-          .upload(fileName, file, {
-            cacheControl: "31536000",
-            upsert: false,
-          });
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+        uploadFormData.append("path", `media/${fileName}`);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+        const uploadData = await uploadRes.json();
 
-        if (uploadError) throw uploadError;
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("media")
-          .getPublicUrl(fileName);
-
-        url = publicUrl;
+        url = uploadData.publicUrl;
         fileSize = file.size;
       }
 
       // Get game ID
       let gameId: string | null = null;
       if (formData.game) {
-        const { data: game } = await supabase
+        const { data: game } = await db
           .from("games")
           .select("id")
           .eq("slug", formData.game)
@@ -119,7 +114,7 @@ export function MediaUploader({ onSuccess }: MediaUploaderProps) {
       }
 
       // Create media record
-      const { error: mediaError } = await supabase.from("media").insert({
+      const { error: mediaError } = await db.from("media").insert({
         user_id: user.id,
         game_id: gameId,
         type: isImage ? "image" : "video",

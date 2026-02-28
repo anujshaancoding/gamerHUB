@@ -38,7 +38,7 @@ Each milestone has:
 | 3 | Write Community Guidelines | 1 hour | BLOCKER |
 | 4 | Add age gate (13+ DOB check) to registration | 1 hour | BLOCKER |
 | 5 | Register domain (gglobby.com or .gg) | 30 min | BLOCKER |
-| 6 | Deploy to Vercel, configure env vars | 1 hour | BLOCKER |
+| 6 | Deploy to VPS, configure env vars | 1 hour | BLOCKER |
 | 7 | Fix SELECT * in top 5 list API routes | 2 hours | HIGH |
 | 8 | Add `sitemap.ts` and `robots.ts` | 1 hour | HIGH |
 | 9 | Add per-page metadata to all public routes | 2 hours | HIGH |
@@ -106,7 +106,7 @@ All blockers resolved. Site is live. You can register, create a profile, find ga
 ### Metrics to Track
 | Metric | Target | How to Measure |
 |--------|--------|---------------|
-| Total signups | 100 | Supabase auth dashboard |
+| Total signups | 100 | PostgreSQL / Auth.js dashboard |
 | Profile completion rate | > 60% | Custom query: profiles with avatar + 1 game |
 | D7 retention | > 20% | Users active 7 days after signup |
 | First action after signup | Track what users do first | PostHog event tracking |
@@ -119,7 +119,7 @@ All blockers resolved. Site is live. You can register, create a profile, find ga
 3. **Why do users leave?** (Ask churned users directly)
 4. **Is the LFG system being used?** (Core value prop validation)
 
-### Budget: $26/month (Supabase Pro + domain)
+### Budget: $15/month (VPS + domain)
 
 ### Exit Criteria
 - 100 registered users
@@ -183,7 +183,7 @@ All blockers resolved. Site is live. You can register, create a profile, find ga
 | Pro conversion | 3-5% of MAU | Revenue validation |
 | MRR | > $150 | Covers infrastructure costs |
 
-### Budget: $55/month (Supabase Pro + Vercel Pro + domain)
+### Budget: $25/month (VPS servers + domain)
 
 ### Exit Criteria
 - 1,000 registered users, 200+ monthly active
@@ -288,7 +288,7 @@ All blockers resolved. Site is live. You can register, create a profile, find ga
 
 **Product**
 - Implement event-driven architecture (decouple write operations)
-- Add read replicas or upgrade Supabase tier
+- Add PostgreSQL read replicas or upgrade VPS resources
 - Implement image CDN pipeline (Bunny CDN or Cloudflare Images)
 - Add sponsored tournament system
 - Launch "Verified Pro" program for known competitive players

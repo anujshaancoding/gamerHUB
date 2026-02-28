@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List clan challenges
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get("status");
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("clan_challenges")
       .select(
         `
@@ -77,13 +78,10 @@ export async function GET(request: NextRequest) {
 // POST - Create clan challenge
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -108,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is an officer in the challenger clan
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", challenger_clan_id)
@@ -126,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // Validate challenged clan exists if specified
     if (challenged_clan_id) {
-      const { data: challengedClan } = await supabase
+      const { data: challengedClan } = await db
         .from("clans")
         .select("id")
         .eq("id", challenged_clan_id)
@@ -149,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     // Create challenge
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = (await supabase
+    const { data, error } = (await db
       .from("clan_challenges")
       .insert({
         challenger_clan_id,
@@ -187,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     // Log activity
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from("clan_activity_log").insert({
+    await db.from("clan_activity_log").insert({
       clan_id: challenger_clan_id,
       user_id: user.id,
       activity_type: "challenge_created",

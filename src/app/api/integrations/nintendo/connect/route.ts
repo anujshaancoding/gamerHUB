@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { validateNintendoFriendCode, formatNintendoFriendCode } from "@/types/console";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get Nintendo connection status
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: connection } = await supabase
+    const { data: connection } = await db
       .from("console_connections")
       .select("*")
       .eq("user_id", user.id)
@@ -39,10 +38,8 @@ export async function GET() {
 // POST - Connect Nintendo with Friend Code
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if Friend Code is already linked to another account
-    const { data: existingConnection } = await supabase
+    const { data: existingConnection } = await db
       .from("console_connections")
       .select("user_id")
       .eq("platform", "nintendo")
@@ -84,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert the connection
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("console_connections")
       .upsert({
         user_id: user.id,
@@ -126,10 +123,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update Nintendo username/nickname
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -137,7 +132,7 @@ export async function PATCH(request: NextRequest) {
 
     const { nickname } = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("console_connections")
       .update({
         platform_username: nickname?.trim() || null,
@@ -172,16 +167,14 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Disconnect Nintendo
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("console_connections")
       .delete()
       .eq("user_id", user.id)

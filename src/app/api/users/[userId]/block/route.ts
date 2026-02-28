@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ userId: string }>;
@@ -9,13 +10,10 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user exists
-    const { data: targetUser } = await supabase
+    const { data: targetUser } = await db
       .from("profiles")
       .select("id, username")
       .eq("id", userId)
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { reason } = body;
 
     // Check if already blocked
-    const { data: existingBlock } = await supabase
+    const { data: existingBlock } = await db
       .from("blocked_users")
       .select("id")
       .eq("blocker_id", user.id)
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Create block
-    const { error: blockError } = await supabase
+    const { error: blockError } = await db
       .from("blocked_users")
       .insert({
         blocker_id: user.id,
@@ -76,7 +74,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Remove any follows between the users
-    await supabase
+    await db
       .from("follows")
       .delete()
       .or(
@@ -84,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
 
     // Remove any friend relationships
-    await supabase
+    await db
       .from("friends")
       .delete()
       .or(
@@ -92,7 +90,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
 
     // Cancel any pending friend requests
-    await supabase
+    await db
       .from("friend_requests")
       .delete()
       .or(
@@ -116,17 +114,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await db
       .from("blocked_users")
       .delete()
       .eq("blocker_id", user.id)
@@ -157,18 +152,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if either user has blocked the other
-    const { data: block } = await supabase
+    const { data: block } = await db
       .from("blocked_users")
       .select("id, blocker_id")
       .or(

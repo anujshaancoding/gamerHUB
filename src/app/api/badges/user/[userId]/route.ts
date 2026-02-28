@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UserBadgeWithDetails } from "@/types/database";
 
 // GET - Get specific user's earned badges
@@ -9,13 +9,13 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const rarity = searchParams.get("rarity");
 
-    const { data: badges, error } = await supabase
+    const { data: badges, error } = await db
       .from("user_badges")
       .select(
         `

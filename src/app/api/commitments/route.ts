@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateContractRequest, CommitmentStatus } from "@/types/commitment";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List user's commitments
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +18,7 @@ export async function GET(request: NextRequest) {
     const includeCompleted = searchParams.get("include_completed") === "true";
 
     // Get contracts where user is a participant
-    const { data: participations } = await supabase
+    const { data: participations } = await db
       .from("commitment_participants")
       .select("contract_id")
       .eq("user_id", user.id);
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ contracts: [] });
     }
 
-    let query = supabase
+    let query = db
       .from("commitment_contracts")
       .select(`
         *,
@@ -90,10 +89,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new commitment contract
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -134,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create contract
-    const { data: contract, error: contractError } = await supabase
+    const { data: contract, error: contractError } = await db
       .from("commitment_contracts")
       .insert({
         title: body.title.trim(),
@@ -182,13 +179,13 @@ export async function POST(request: NextRequest) {
         })),
     ];
 
-    const { error: participantError } = await supabase
+    const { error: participantError } = await db
       .from("commitment_participants")
       .insert(participants);
 
     if (participantError) {
       // Rollback contract creation
-      await supabase.from("commitment_contracts").delete().eq("id", contract.id);
+      await db.from("commitment_contracts").delete().eq("id", contract.id);
       throw participantError;
     }
 

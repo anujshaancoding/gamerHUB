@@ -9,7 +9,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { Call, CallParticipant, Profile } from "@/types/database";
 
@@ -61,7 +61,7 @@ interface CallProviderProps {
 
 export function CallProvider({ children }: CallProviderProps) {
   const { user } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
 
   const [activeCall, setActiveCall] = useState<CallWithDetails | null>(null);
   const [incomingCall, setIncomingCall] = useState<CallWithDetails | null>(
@@ -82,7 +82,7 @@ export function CallProvider({ children }: CallProviderProps) {
   // Fetch call with details
   const fetchCallDetails = useCallback(
     async (callId: string): Promise<CallWithDetails | null> => {
-      const { data: call } = await supabase
+      const { data: call } = await db
         .from("calls")
         .select(
           `
@@ -99,14 +99,14 @@ export function CallProvider({ children }: CallProviderProps) {
 
       return call as CallWithDetails | null;
     },
-    [supabase]
+    [db]
   );
 
   // Subscribe to incoming calls — stable effect that reads state via refs
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    const channel = db
       .channel("call_notifications")
       .on(
         "postgres_changes",
@@ -166,9 +166,9 @@ export function CallProvider({ children }: CallProviderProps) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }, [user?.id, supabase, fetchCallDetails]);
+  }, [user?.id, db, fetchCallDetails]);
 
   const initiateCall = useCallback(
     async (conversationId: string, type: "voice" | "video") => {

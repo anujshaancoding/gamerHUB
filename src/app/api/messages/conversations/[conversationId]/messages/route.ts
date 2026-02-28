@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Paginated messages for a conversation
 export async function GET(
@@ -7,10 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   const { conversationId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,7 +21,7 @@ export async function GET(
   const after = searchParams.get("after");
 
   try {
-    let query = supabase
+    let query = db
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
@@ -46,7 +45,7 @@ export async function GET(
       ...new Set((messages || []).map((m) => m.sender_id).filter(Boolean)),
     ];
 
-    const { data: profiles } = await supabase
+    const { data: profiles } = await db
       .from("profiles")
       .select("id, username, display_name, avatar_url, is_online")
       .in("id", senderIds as string[]);
@@ -55,7 +54,7 @@ export async function GET(
 
     // Get reactions for all messages
     const messageIds = (messages || []).map((m) => m.id);
-    const { data: reactions } = await supabase
+    const { data: reactions } = await db
       .from("message_reactions")
       .select("*")
       .in("message_id", messageIds);

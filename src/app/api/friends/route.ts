@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getFriends, sendFriendRequest } from "@/lib/supabase/rpc-types";
+import { createClient } from "@/lib/db/client";
+import { getFriends, sendFriendRequest } from "@/lib/db/rpc-types";
 import type { FriendWithProfile, Profile } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List friends
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     // Get friends using the database function
     const { data: friendIds, error: friendsError } = await getFriends(
-      supabase,
+      db,
       userId
     );
 
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get friend profiles
-    let query = supabase
+    let query = db
       .from("profiles")
       .select("*", { count: "exact" })
       .in(
@@ -102,10 +101,8 @@ export async function GET(request: NextRequest) {
 // POST - Send friend request
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     // Use the database function to send friend request
     const { data: requestId, error } = await sendFriendRequest(
-      supabase,
+      db,
       user.id,
       recipientId,
       message

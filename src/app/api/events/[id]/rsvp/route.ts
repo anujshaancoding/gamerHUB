@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { EventRSVPStatus } from "@/types/community";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - RSVP to an event
 export async function POST(
@@ -9,10 +10,8 @@ export async function POST(
 ) {
   try {
     const { id: eventId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,7 +28,7 @@ export async function POST(
     }
 
     // Get the event
-    const { data: event, error: eventError } = await supabase
+    const { data: event, error: eventError } = await db
       .from("community_events")
       .select("id, rsvp_count, max_attendees, status")
       .eq("id", eventId)
@@ -47,7 +46,7 @@ export async function POST(
     }
 
     // Check existing RSVP
-    const { data: existingRsvp } = await supabase
+    const { data: existingRsvp } = await db
       .from("event_rsvps")
       .select("id, status")
       .eq("event_id", eventId)
@@ -72,7 +71,7 @@ export async function POST(
 
     if (existingRsvp) {
       // Update existing RSVP
-      await supabase
+      await db
         .from("event_rsvps")
         .update({
           status,
@@ -82,7 +81,7 @@ export async function POST(
         .eq("id", existingRsvp.id);
     } else {
       // Create new RSVP
-      await supabase.from("event_rsvps").insert({
+      await db.from("event_rsvps").insert({
         event_id: eventId,
         user_id: user.id,
         status,
@@ -100,14 +99,14 @@ export async function POST(
     }
 
     if (newRsvpCount !== event.rsvp_count) {
-      await supabase
+      await db
         .from("community_events")
         .update({ rsvp_count: newRsvpCount })
         .eq("id", eventId);
     }
 
     // Fetch updated event
-    const { data: updatedEvent } = await supabase
+    const { data: updatedEvent } = await db
       .from("community_events")
       .select(`
         *,
@@ -137,17 +136,15 @@ export async function DELETE(
 ) {
   try {
     const { id: eventId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get existing RSVP
-    const { data: existingRsvp } = await supabase
+    const { data: existingRsvp } = await db
       .from("event_rsvps")
       .select("id, status")
       .eq("event_id", eventId)
@@ -159,18 +156,18 @@ export async function DELETE(
     }
 
     // Delete RSVP
-    await supabase.from("event_rsvps").delete().eq("id", existingRsvp.id);
+    await db.from("event_rsvps").delete().eq("id", existingRsvp.id);
 
     // Update RSVP count if was "going"
     if (existingRsvp.status === "going") {
-      const { data: event } = await supabase
+      const { data: event } = await db
         .from("community_events")
         .select("rsvp_count")
         .eq("id", eventId)
         .single();
 
       if (event) {
-        await supabase
+        await db
           .from("community_events")
           .update({ rsvp_count: Math.max(0, event.rsvp_count - 1) })
           .eq("id", eventId);

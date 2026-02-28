@@ -8,7 +8,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
 
-// Mock Supabase
+// Mock DB client
 const mockGetUser = jest.fn();
 const mockGetSession = jest.fn();
 const mockSignInWithPassword = jest.fn();
@@ -19,7 +19,7 @@ const mockOnAuthStateChange = jest.fn();
 const mockFromSelect = jest.fn();
 const mockFromUpdate = jest.fn();
 
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock('@/lib/db/client-browser', () => ({
   createClient: () => ({
     auth: {
       getUser: mockGetUser,

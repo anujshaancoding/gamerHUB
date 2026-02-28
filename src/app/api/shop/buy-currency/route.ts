@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { stripe } from "@/lib/stripe";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Create checkout for buying currency pack
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get currency pack details
-    const { data: pack, error: packError } = await supabase
+    const { data: pack, error: packError } = await db
       .from("currency_packs")
       .select("*")
       .eq("id", packId)
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create Stripe customer
-    let { data: stripeCustomer } = await supabase
+    let { data: stripeCustomer } = await db
       .from("stripe_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
@@ -50,10 +48,10 @@ export async function POST(request: NextRequest) {
     if (!stripeCustomer) {
       const customer = await stripe.customers.create({
         email: user.email,
-        metadata: { supabase_user_id: user.id },
+        metadata: { user_id: user.id },
       });
 
-      await supabase.from("stripe_customers").insert({
+      await db.from("stripe_customers").insert({
         user_id: user.id,
         stripe_customer_id: customer.id,
         email: user.email,

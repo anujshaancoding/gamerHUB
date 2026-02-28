@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { GamerCard } from '@/components/gamers/gamer-card';
 
 // Mock dependencies
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock('@/lib/db/client-browser', () => ({
   createClient: () => ({
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),

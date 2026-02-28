@@ -47,7 +47,7 @@ ggLobby has 50+ features. For launch, market it as **ONE thing**: "The best way 
 | r/gamingsuggestions | 400K+ | Answer "where to find teammates" questions |
 | r/IndieGaming | 300K+ | Share development journey posts (people love seeing indie projects being built) |
 | r/SideProject | 100K+ | Post the technical story of building ggLobby |
-| r/webdev | 1M+ | "I built a gaming social platform with Next.js 16 and Supabase — here's what I learned" |
+| r/webdev | 1M+ | "I built a gaming social platform with Next.js 16 and PostgreSQL on a VPS — here's what I learned" |
 
 **Timeline:**
 - Week 1-2: Be active on these subreddits. Comment helpfully. Build karma.
@@ -191,7 +191,7 @@ Gaming content performs exceptionally well on short-form video. You do NOT need 
 
 **Post between 8-10 AM ET on a weekday.**
 
-**Title format that works**: "Show HN: I built a gaming social platform with Next.js 16, Supabase, and LiveKit"
+**Title format that works**: "Show HN: I built a gaming social platform with Next.js 16, PostgreSQL, and LiveKit on a self-hosted VPS"
 
 **What HN values:**
 - Technical depth (talk about your architecture decisions)

@@ -7,15 +7,15 @@
 ## Current Architecture
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   Browser    │────>│   Vercel Edge    │────>│   Supabase       │
-│   (React)    │     │   (Next.js SSR   │     │   - PostgreSQL   │
-│              │     │    + API Routes) │     │   - Auth         │
-│   Mobile     │     │                  │     │   - Storage      │
-│   (Expo RN)  │     │   150+ serverless│     │   - Realtime     │
-│              │     │   functions      │     │                  │
-│   PWA        │     │                  │     │   Free Tier      │
-└─────────────┘     └──────────────────┘     └──────────────────┘
+┌─────────────┐     ┌──────────────────────────────────────────┐
+│   Browser    │────>│           VPS (Self-Hosted)               │
+│   (React)    │     │   Next.js SSR + API Routes               │
+│              │     │   PostgreSQL (database)                   │
+│   Mobile     │     │   Auth.js (authentication)               │
+│   (Expo RN)  │     │   Socket.io (realtime)                   │
+│              │     │   File Storage                            │
+│   PWA        │     │                                          │
+└─────────────┘     └──────────────────────────────────────────┘
                                                       │
                                               ┌───────┼───────┐
                                               │       │       │
@@ -34,7 +34,7 @@
 | Offset-based pagination | Every list endpoint | O(n) scan at large offsets |
 | No view deduplication | Blog/news view increment | Inflated counts, unnecessary DB writes |
 | No background jobs | All routes synchronous | Slow responses, no retry on failure |
-| Single-region media serving | Supabase Storage | High latency for distant users |
+| Single-region media serving | VPS file storage | High latency for distant users |
 
 ---
 
@@ -100,9 +100,9 @@ if (!sessionStorage.getItem(viewKey)) {
 
 ### 1.4 Remove Redundant Polling
 
-**Problem**: `useNotifications.ts` has both `refetchInterval: 30000` AND a Realtime subscription. The Realtime subscription already triggers refetches.
+**Problem**: `useNotifications.ts` has both `refetchInterval: 30000` AND a Socket.io subscription. The Socket.io subscription already triggers refetches.
 
-**Fix**: Remove the `refetchInterval` from the notifications query. The Realtime subscription handles updates.
+**Fix**: Remove the `refetchInterval` from the notifications query. The Socket.io subscription handles updates.
 
 **Impact**: Eliminates ~2 API calls per minute per active user.
 
@@ -110,7 +110,7 @@ if (!sessionStorage.getItem(viewKey)) {
 
 **Problem**: `useReplayRoom.ts` and `useVerifiedQueue.ts` poll every 5 seconds.
 
-**Fix**: Replace 5-second polling with Supabase Realtime subscriptions for these tables, or increase interval to 30 seconds minimum.
+**Fix**: Replace 5-second polling with Socket.io subscriptions for these tables, or increase interval to 30 seconds minimum.
 
 **Impact**: 6x reduction in API calls for these features.
 
@@ -180,16 +180,16 @@ useInfiniteQuery({
 
 ```typescript
 // BEFORE: One channel for everyone
-const channel = supabase.channel('online-users');
+socket.join('online-users');
 
 // AFTER: Per-page or per-friend-list channels
 // Only track presence for users whose profiles are currently visible
-const channel = supabase.channel(`presence:friends:${userId}`);
+socket.join(`presence:friends:${userId}`);
 // Or per-page:
-const channel = supabase.channel(`presence:page:${currentRoute}`);
+socket.join(`presence:page:${currentRoute}`);
 ```
 
-**Impact**: 100x reduction in Realtime message volume at 1,000 users.
+**Impact**: 100x reduction in Socket.io message volume at 1,000 users.
 
 ### 2.3 Add On-Demand ISR Revalidation
 
@@ -235,11 +235,11 @@ ORDER BY ts_rank(search_vector, plainto_tsquery('english', $1)) DESC;
 
 ### 2.5 Add CDN for Media
 
-**Problem**: Supabase Storage serves from a single region. Users far from your Supabase region get slow image loads.
+**Problem**: VPS file storage serves from a single region. Users far from your VPS get slow image loads.
 
-**Fix**: Put Cloudflare (free) in front of your Supabase Storage URLs.
+**Fix**: Put Cloudflare (free) in front of your VPS storage URLs.
 
-1. Set up a CNAME subdomain: `media.gglobby.com` → your Supabase Storage URL
+1. Set up a CNAME subdomain: `media.gglobby.com` → your VPS media endpoint
 2. Enable Cloudflare proxy (orange cloud)
 3. Cloudflare will cache at 200+ edge locations worldwide
 4. Your images already have `cacheControl: "31536000"` (1 year) which is perfect for CDN caching
@@ -258,13 +258,13 @@ ORDER BY ts_rank(search_vector, plainto_tsquery('english', $1)) DESC;
 
 | Approach | Cost | Complexity | Best For |
 |----------|------|-----------|----------|
-| Vercel Cron Jobs | Included in Pro | Low | Scheduled tasks (daily digests, cleanup) |
-| Supabase Edge Functions | Included in Pro | Medium | Event-triggered work (database hooks) |
-| Supabase Database Webhooks | Included | Medium | React to INSERT/UPDATE/DELETE events |
+| Node.js cron (node-cron) | Free (self-hosted) | Low | Scheduled tasks (daily digests, cleanup) |
+| PostgreSQL LISTEN/NOTIFY | Free (built-in) | Medium | Event-triggered work (database hooks) |
+| BullMQ (Redis queues) | Free (self-hosted) | Medium | React to INSERT/UPDATE/DELETE events |
 | Inngest (serverless queues) | Free tier: 25K events/month | Low | Complex workflows with retries |
 | Trigger.dev | Free tier available | Medium | Background jobs with dashboard |
 
-**Recommended approach**: Supabase Database Webhooks + Vercel Cron Jobs.
+**Recommended approach**: PostgreSQL LISTEN/NOTIFY + BullMQ + node-cron on VPS.
 
 ```
 User creates post
@@ -304,19 +304,19 @@ When someone creates an activity:
 
 ### 3.3 Connection Pooling
 
-**Problem**: Each serverless function creates a new database connection. With 150+ API routes, cold starts create connection storms.
+**Problem**: Each request creates a new database connection. With 150+ API routes, high traffic creates connection storms.
 
-**Fix**: Ensure you're using Supabase's built-in Supavisor connection pooler.
+**Fix**: Use PgBouncer or the built-in PostgreSQL connection pooling.
 
 ```typescript
-// Use the pooler URL, not the direct connection
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, // This should already use the pooler
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Use a pooled connection URL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum connections in pool
+});
 ```
 
-Verify in your Supabase dashboard that connection pooling is enabled and you're using the pooled connection string for server-side operations.
+Set up PgBouncer on the VPS for efficient connection pooling, especially under high concurrency.
 
 ### 3.4 Separate Read and Write API Logic
 
@@ -343,50 +343,49 @@ export async function POST() {
 }
 ```
 
-### 3.5 Upgrade Supabase to Pro
+### 3.5 Upgrade VPS Resources
 
-At 10K users, the free tier limits will be hit:
-- 500 MB database → You'll likely be at 1-2 GB
-- 200 Realtime connections → You'll need 500+
-- 1 GB storage → You'll be at 10-50 GB
+At 10K users, the initial VPS will need more resources:
+- CPU and RAM for handling concurrent connections
+- Disk space for growing database and media storage
+- Socket.io connection capacity
 
-Upgrade to Pro ($25/month) for:
-- 8 GB database
-- 500 Realtime connections
-- 100 GB storage
-- 250 GB bandwidth
+Upgrade VPS or add dedicated servers:
+- Separate database server (more RAM for PostgreSQL)
+- Larger disk or object storage (S3-compatible) for media
+- Consider a dedicated Redis server for caching and Socket.io adapter
 
 ---
 
 ## Stage 4: 50,000-500,000 Users (Plan at 30K, Implement at 50K)
 
-### 4.1 Evaluate Stack Migration
+### 4.1 Evaluate Infrastructure Scaling
 
-At this scale, evaluate whether Vercel + managed Supabase is still cost-effective.
+At this scale, evaluate whether a single VPS is still sufficient.
 
 **Decision matrix:**
 
-| Stay on Vercel + Supabase Pro | Self-host on VPS |
-|-------------------------------|-----------------|
-| $200-400/month | $50-100/month |
-| Zero DevOps | Requires DevOps knowledge |
-| Auto-scaling | Manual scaling |
-| Managed backups | DIY backups |
-| Best option if revenue supports it | Best option if bootstrapping |
+| Single VPS | Multi-Server Setup |
+|------------|-------------------|
+| $30-80/month | $100-300/month |
+| Simple management | Requires orchestration |
+| Vertical scaling limits | Horizontal scaling possible |
+| Single point of failure | Redundancy available |
+| Best option if traffic is manageable | Best option for high availability |
 
-**If self-hosting makes sense:**
-- Hetzner CX41 (4 vCPU, 16 GB RAM): ~$15/month for DB
+**Recommended multi-server setup:**
+- Hetzner CX41 (4 vCPU, 16 GB RAM): ~$15/month for DB server
 - Hetzner CX31 (2 vCPU, 8 GB RAM): ~$8/month for app server
-- Self-hosted Supabase (Docker): Free
+- Separate Redis server: ~$5/month
 - Coolify (PaaS for self-hosting): Free
-- Total: ~$25/month vs ~$300/month
+- Total: ~$28/month with better reliability
 
 ### 4.2 Read Replicas
 
-Enable Supabase read replicas to separate read and write workloads:
+Enable PostgreSQL read replicas to separate read and write workloads:
 - Writes go to primary database
 - Reads go to replica(s)
-- Available on Supabase Team tier ($599/month) or self-hosted
+- Self-hosted with PostgreSQL streaming replication
 
 ### 4.3 Event-Driven Architecture
 
@@ -403,7 +402,7 @@ Example: "user_joined_clan"
   → Consumer 5: Send Discord webhook
 ```
 
-Use Supabase Realtime as the event bus initially, or add a dedicated system (Upstash Kafka, AWS SQS) when needed.
+Use PostgreSQL LISTEN/NOTIFY + Socket.io as the event bus initially, or add a dedicated system (BullMQ, Upstash Kafka, AWS SQS) when needed.
 
 ### 4.4 Image Processing Pipeline
 
@@ -411,7 +410,7 @@ Move from client-side compression to a proper pipeline:
 
 ```
 User uploads image
-  → Store original in cold storage (Supabase Storage / S3)
+  → Store original in cold storage (VPS storage / S3)
   → Generate variants via worker:
     - Thumbnail: 150px, WebP, quality 60
     - Card: 600px, WebP, quality 75
@@ -432,8 +431,8 @@ At this scale, you're a real company with an engineering team. These are the dec
 |----------|---------|
 | Database sharding | Horizontal partitioning by user_id or region |
 | Microservices | Separate services for chat, feed, notifications, matchmaking |
-| Geo-distributed databases | CockroachDB, PlanetScale, or Supabase regions |
-| Real-time infrastructure | Dedicated WebSocket servers (Ably, Pusher, or self-hosted) |
+| Geo-distributed databases | CockroachDB, PlanetScale, or multi-region PostgreSQL |
+| Real-time infrastructure | Scaled Socket.io with Redis adapter, or dedicated services (Ably, Pusher) |
 | Search infrastructure | Elasticsearch, Meilisearch, or Typesense |
 | AI infrastructure | Dedicated GPU instances for matchmaking models |
 | Observability | Datadog, Grafana + Prometheus, or equivalent |
@@ -449,14 +448,14 @@ Set these up early to know when scaling is needed:
 
 | What to Monitor | Tool | Alert Threshold |
 |----------------|------|----------------|
-| API response times | Vercel Analytics (free) | P95 > 2 seconds |
+| API response times | Grafana / custom monitoring | P95 > 2 seconds |
 | Error rate | Sentry (free tier) | > 1% of requests |
-| Database query time | Supabase Dashboard > Logs | Any query > 500ms |
-| Realtime connections | Supabase Dashboard | > 80% of tier limit |
-| Storage usage | Supabase Dashboard | > 80% of tier limit |
-| Bandwidth usage | Vercel + Supabase Dashboard | > 80% of tier limit |
+| Database query time | pg_stat_statements / Grafana | Any query > 500ms |
+| Socket.io connections | Server metrics | Approaching server limits |
+| Storage usage | Disk monitoring | > 80% of disk capacity |
+| Bandwidth usage | VPS provider dashboard | > 80% of plan limit |
 | Core Web Vitals | Google Search Console | LCP > 2.5s, CLS > 0.1 |
-| Database size | Supabase Dashboard | > 80% of tier limit |
+| Database size | PostgreSQL monitoring | Approaching disk limits |
 
 ---
 

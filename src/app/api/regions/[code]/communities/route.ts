@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { REGIONS, type Region, type JoinRegionalCommunityRequest } from "@/types/localization";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get communities for a specific region
 export async function GET(
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { code: regionCode } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
     const language = searchParams.get("language");
     const page = parseInt(searchParams.get("page") || "1");
@@ -24,12 +25,10 @@ export async function GET(
       );
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     // Build query
-    let query = supabase
+    let query = db
       .from("regional_communities")
       .select(`
         *,
@@ -59,7 +58,7 @@ export async function GET(
 
         // Get online count (users active in last 15 minutes)
         const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-        const { count: onlineCount } = await supabase
+        const { count: onlineCount } = await db
           .from("regional_community_members")
           .select("*", { count: "exact", head: true })
           .eq("community_id", community.id)
@@ -68,7 +67,7 @@ export async function GET(
         // Check if user is a member
         let isMember = false;
         if (user) {
-          const { data: membership } = await supabase
+          const { data: membership } = await db
             .from("regional_community_members")
             .select("id")
             .eq("community_id", community.id)
@@ -114,10 +113,8 @@ export async function POST(
 ) {
   try {
     const { code: regionCode } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -143,7 +140,7 @@ export async function POST(
     }
 
     // Verify community exists and is in the correct region
-    const { data: community, error: communityError } = await supabase
+    const { data: community, error: communityError } = await db
       .from("regional_communities")
       .select("id, name, region_code, is_active")
       .eq("id", communityId)
@@ -165,7 +162,7 @@ export async function POST(
     }
 
     // Check if already a member
-    const { data: existingMembership } = await supabase
+    const { data: existingMembership } = await db
       .from("regional_community_members")
       .select("id")
       .eq("community_id", communityId)
@@ -180,7 +177,7 @@ export async function POST(
     }
 
     // Join the community
-    const { data: membership, error } = await supabase
+    const { data: membership, error } = await db
       .from("regional_community_members")
       .insert({
         community_id: communityId,
@@ -222,10 +219,8 @@ export async function DELETE(
 ) {
   try {
     const { code: regionCode } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -242,7 +237,7 @@ export async function DELETE(
     }
 
     // Leave the community
-    const { error } = await supabase
+    const { error } = await db
       .from("regional_community_members")
       .delete()
       .eq("community_id", communityId)

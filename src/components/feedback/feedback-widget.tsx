@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { MessageSquarePlus, X, Send, ImagePlus, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 const CATEGORIES = [
@@ -66,22 +65,20 @@ export function FeedbackWidget() {
 
       // Upload image if attached
       if (imageFile) {
-        const supabase = createClient();
         const ext = imageFile.name.split(".").pop() || "png";
         const path = `feedback/${Date.now()}.${ext}`;
 
-        const { error: uploadErr } = await supabase.storage
-          .from("media")
-          .upload(path, imageFile, { cacheControl: "31536000", upsert: false });
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", imageFile);
+        uploadFormData.append("path", `media/${path}`);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+        const uploadData = await uploadRes.json();
 
-        if (uploadErr) {
-          console.error("Image upload failed:", uploadErr);
+        if (!uploadRes.ok) {
+          console.error("Image upload failed:", uploadData.error);
           // Continue without image — feedback text is more important
         } else {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("media").getPublicUrl(path);
-          imageUrl = publicUrl;
+          imageUrl = uploadData.publicUrl;
         }
       }
 

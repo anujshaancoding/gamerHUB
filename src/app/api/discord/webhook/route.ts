@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/db/admin";
 import {
   verifyDiscordInteraction,
   DiscordInteraction,
@@ -23,11 +23,11 @@ async function handleLinkCommand(
     });
   }
 
-  const supabase = createAdminClient();
+  const adminDb = createAdminClient();
 
   // Check if already linked - eslint-disable for untyped table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: connection } = await (supabase as any)
+  const { data: connection } = await (adminDb as any)
     .from("discord_connections")
     .select(`
       user_id,
@@ -55,11 +55,11 @@ async function handleLinkCommand(
 async function handleLeaderboardCommand(
   interaction: DiscordInteraction
 ): Promise<object> {
-  const supabase = createAdminClient();
+  const adminDb = createAdminClient();
 
   // Get top 10 players by XP - eslint-disable for admin client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: leaderboard, error } = await (supabase as any)
+  const { data: leaderboard, error } = await (adminDb as any)
     .from("profiles")
     .select("username, display_name, total_xp, level")
     .order("total_xp", { ascending: false })
@@ -93,11 +93,11 @@ async function handleLeaderboardCommand(
 async function handleTournamentCommand(
   interaction: DiscordInteraction
 ): Promise<object> {
-  const supabase = createAdminClient();
+  const adminDb = createAdminClient();
 
   // Get upcoming tournaments - eslint-disable for admin client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: tournaments, error } = await (supabase as any)
+  const { data: tournaments, error } = await (adminDb as any)
     .from("tournaments")
     .select("id, name, game, start_date, max_participants, current_participants")
     .eq("status", "registration_open")
@@ -142,11 +142,11 @@ async function handleMatchCommand(
     });
   }
 
-  const supabase = createAdminClient();
+  const adminDb = createAdminClient();
 
   // Get linked GamerHub account - eslint-disable for untyped table
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: connectionData } = await (supabase as any)
+  const { data: connectionData } = await (adminDb as any)
     .from("discord_connections")
     .select("user_id")
     .eq("discord_user_id", discordUserId)
@@ -163,7 +163,7 @@ async function handleMatchCommand(
 
   // Get upcoming matches - eslint-disable for admin client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: matches, error } = await (supabase as any)
+  const { data: matches, error } = await (adminDb as any)
     .from("matches")
     .select(`
       id,
@@ -217,14 +217,14 @@ async function handleProfileCommand(
     (o) => o.name === "user"
   )?.value as string | undefined;
 
-  const supabase = createAdminClient();
+  const adminDb = createAdminClient();
 
   let userId = targetUser;
 
   // If no target, use the command issuer
   if (!userId && discordUserId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: connectionData } = await (supabase as any)
+    const { data: connectionData } = await (adminDb as any)
       .from("discord_connections")
       .select("user_id")
       .eq("discord_user_id", discordUserId)
@@ -250,7 +250,7 @@ async function handleProfileCommand(
 
   // Get profile - eslint-disable for admin client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile, error } = await (supabase as any)
+  const { data: profile, error } = await (adminDb as any)
     .from("profiles")
     .select("username, display_name, avatar_url, level, total_xp, bio")
     .eq("id", userId)
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
       const commandName = interaction.data?.name;
 
       // Log interaction
-      const supabase = createAdminClient();
+      const adminDb = createAdminClient();
 
       // Get linked user if exists
       const discordUserId = interaction.member?.user.id || interaction.user?.id;
@@ -324,7 +324,7 @@ export async function POST(request: NextRequest) {
 
       if (discordUserId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: connectionData } = await (supabase as any)
+        const { data: connectionData } = await (adminDb as any)
           .from("discord_connections")
           .select("user_id")
           .eq("discord_user_id", discordUserId)
@@ -338,7 +338,7 @@ export async function POST(request: NextRequest) {
 
       // Log the interaction - eslint-disable for untyped table
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("discord_interactions").insert({
+      await (adminDb as any).from("discord_interactions").insert({
         interaction_id: interaction.id,
         interaction_type: interaction.type,
         guild_id: interaction.guild_id,

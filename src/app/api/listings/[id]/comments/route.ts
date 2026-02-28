@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get comments for a community listing
 export async function GET(
@@ -8,14 +9,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
     // Verify listing exists and is visible
-    const { data: listing } = await supabase
+    const { data: listing } = await db
       .from("community_listings")
       .select("id")
       .eq("id", id)
@@ -27,12 +28,10 @@ export async function GET(
     }
 
     // Get current user for like status
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     // Get top-level comments (no parent)
-    const { data: comments, error, count } = await supabase
+    const { data: comments, error, count } = await db
       .from("community_listing_comments")
       .select(
         `
@@ -60,7 +59,7 @@ export async function GET(
     // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       (comments || []).map(async (comment: Record<string, unknown>) => {
-        const { data: replies } = await supabase
+        const { data: replies } = await db
           .from("community_listing_comments")
           .select(
             `
@@ -77,7 +76,7 @@ export async function GET(
         // Check if user has liked this comment
         let userHasLiked = false;
         if (user) {
-          const { data: like } = await supabase
+          const { data: like } = await db
             .from("community_listing_comment_likes")
             .select("id")
             .eq("comment_id", comment.id as string)
@@ -115,18 +114,15 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify listing exists and is visible
-    const { data: listing } = await supabase
+    const { data: listing } = await db
       .from("community_listings")
       .select("id")
       .eq("id", id)
@@ -156,7 +152,7 @@ export async function POST(
 
     // Verify parent comment exists if replying
     if (parent_id) {
-      const { data: parentComment } = await supabase
+      const { data: parentComment } = await db
         .from("community_listing_comments")
         .select("id")
         .eq("id", parent_id)
@@ -171,7 +167,7 @@ export async function POST(
       }
     }
 
-    const { data: comment, error: commentError } = await supabase
+    const { data: comment, error: commentError } = await db
       .from("community_listing_comments")
       .insert({
         listing_id: id,

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { sendWebhookMessage, buildEmbed, EMBED_COLORS } from "@/lib/integrations/discord";
 import type { CrosspostRequest } from "@/types/discord";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Crosspost content to Discord
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's Discord settings
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from("discord_settings")
       .select("*")
       .eq("user_id", user.id)
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: webhook } = await supabase
+    const { data: webhook } = await db
       .from("discord_webhooks")
       .select("*")
       .eq("user_id", user.id)
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (body.content_type === "lfg_post") {
-      const { data: lfgPost } = await supabase
+      const { data: lfgPost } = await db
         .from("lfg_posts")
         .select(`
           *,
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
         url: `${appUrl}/lfg/${lfgPost.id}`,
       });
     } else if (body.content_type === "tournament") {
-      const { data: tournament } = await supabase
+      const { data: tournament } = await db
         .from("tournaments")
         .select(`
           *,
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
         url: `${appUrl}/tournaments/${tournament.slug}`,
       });
     } else if (body.content_type === "clan_recruitment") {
-      const { data: clan } = await supabase
+      const { data: clan } = await db
         .from("clans")
         .select("*")
         .eq("id", body.content_id)
@@ -179,7 +178,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Record crosspost
-      const { data: crosspost, error: crosspostError } = await supabase
+      const { data: crosspost, error: crosspostError } = await db
         .from("discord_crossposts")
         .insert({
           user_id: user.id,
@@ -205,7 +204,7 @@ export async function POST(request: NextRequest) {
       console.error("Webhook send error:", webhookError);
 
       // Record failed crosspost
-      await supabase.from("discord_crossposts").insert({
+      await db.from("discord_crossposts").insert({
         user_id: user.id,
         content_type: body.content_type,
         content_id: body.content_id,
@@ -232,10 +231,8 @@ export async function POST(request: NextRequest) {
 // GET - Get crosspost history
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -245,7 +242,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    const { data: crossposts, error, count } = await supabase
+    const { data: crossposts, error, count } = await db
       .from("discord_crossposts")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)

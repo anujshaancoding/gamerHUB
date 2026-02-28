@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Claim a battle pass reward
 export async function POST(
@@ -7,13 +8,10 @@ export async function POST(
   { params }: { params: Promise<{ rewardId: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -21,7 +19,7 @@ export async function POST(
 
     // Call the claim function - use type cast for RPC
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("claim_battle_pass_reward", {
+    const { data, error } = await (db as any).rpc("claim_battle_pass_reward", {
       p_user_id: user.id,
       p_reward_id: rewardId,
     });

@@ -2,9 +2,8 @@
 
 ## Why We Did This
 
-On Feb 26, 2026, Supabase reported a DNS issue affecting customers using Custom Domains.
-Although our Supabase project uses the default `*.supabase.co` domain (not affected),
-we moved DNS to Cloudflare for better protection, performance, and resilience.
+On Feb 26, 2026, we moved DNS to Cloudflare for better protection, performance, and resilience
+for our self-hosted VPS infrastructure.
 
 ---
 
@@ -12,8 +11,8 @@ we moved DNS to Cloudflare for better protection, performance, and resilience.
 
 - **Domain Registrar:** Hostinger (gglobby.in + gglobby.com)
 - **DNS Provider:** Hostinger (default nameservers)
-- **Hosting:** Vercel (Next.js app)
-- **A Record:** gglobby.in → 216.198.79.1 (Hostinger IP - wrong, should point to Vercel)
+- **Hosting:** VPS (Next.js app + PostgreSQL + Auth.js + Socket.io)
+- **A Record:** gglobby.in → 216.198.79.1 (Hostinger IP - wrong, should point to VPS)
 - **Email:** Hostinger email (MX records)
 
 ---
@@ -39,7 +38,7 @@ we moved DNS to Cloudflare for better protection, performance, and resilience.
 - A record: `gglobby.in` → `216.198.79.1` (old Hostinger IP)
 
 **Added:**
-- CNAME: `@` → `cname.vercel-dns.com` (Proxied - orange cloud ON)
+- A record: `@` → VPS IP address (Proxied - orange cloud ON)
 
 **Kept as-is (imported automatically):**
 - CNAME: `www` → `gglobby.in` (Proxied)
@@ -59,17 +58,14 @@ we moved DNS to Cloudflare for better protection, performance, and resilience.
 2. Set encryption mode to **Full (Strict)**
 3. This ensures encrypted connection on both sides:
    - Browser ↔ Cloudflare (HTTPS)
-   - Cloudflare ↔ Vercel origin server (HTTPS)
+   - Cloudflare ↔ VPS origin server (HTTPS)
 
-### Step 5 - Verified Vercel Domain Configuration
+### Step 5 - Verified VPS Domain Configuration
 
-Checked Vercel Dashboard → Project Settings → Domains:
-- `gglobby.com` → 307 redirect to `www.gglobby.in` ✅
-- `gglobby.in` → 307 redirect to `www.gglobby.in` ✅
-- `www.gglobby.in` → Production ✅
-- `gamer-hub-one.vercel.app` → Production ✅
-
-All showing "Valid Configuration".
+Verified DNS resolution and SSL for:
+- `gglobby.com` → redirect to `www.gglobby.in`
+- `gglobby.in` → redirect to `www.gglobby.in`
+- `www.gglobby.in` → Production (VPS)
 
 ---
 
@@ -86,14 +82,8 @@ User visits gglobby.in or www.gglobby.in
         │
         ▼
    ┌──────────┐
-   │  Vercel   │  ← Hosts the Next.js app
+   │   VPS     │  ← Hosts Next.js + PostgreSQL + Auth.js + Socket.io
    │ (Origin)  │
-   └────┬─────┘
-        │
-        ▼
-   ┌──────────┐
-   │ Supabase  │  ← Backend (trbmdbvnydxdmvnddort.supabase.co)
-   │ (Default) │
    └──────────┘
 
 Email: Still handled by Hostinger (MX records untouched)
@@ -108,8 +98,7 @@ Domain Registration: Still on Hostinger
 |------------|-------------------------------------------|
 | Hostinger  | Domain registrar + Email (MX records)     |
 | Cloudflare | DNS management + CDN + Proxy + SSL + DDoS |
-| Vercel     | App hosting (Next.js)                     |
-| Supabase   | Database + Auth + Storage (default domain)|
+| VPS        | App hosting (Next.js + PostgreSQL + Auth.js + Socket.io) |
 
 ---
 
@@ -120,7 +109,7 @@ Domain Registration: Still on Hostinger
 3. **SSL/TLS Full Strict** - End-to-end encryption
 4. **DNS Resilience** - Cloudflare's DNS is more reliable than Hostinger's
 5. **Bot Protection** - Cloudflare's bot fight mode
-6. **Future-proof** - If Supabase DNS issues happen again, Cloudflare can help route around them
+6. **Future-proof** - If upstream DNS issues happen, Cloudflare can help route around them
 
 ---
 

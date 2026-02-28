@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateClipRequest } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get creator's clips
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
     const creatorId = searchParams.get("creatorId");
     const visibility = searchParams.get("visibility");
@@ -14,12 +15,10 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "12"), 50);
     const offset = (page - 1) * limit;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     // Build query
-    let query = supabase
+    let query = db
       .from("creator_clips")
       .select(`
         *,
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
       query = query.eq("creator_id", creatorId);
 
       // Non-owners can only see public clips
-      const { data: profile } = await supabase
+      const { data: profile } = await db
         .from("creator_profiles")
         .select("user_id")
         .eq("id", creatorId)
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest) {
       }
     } else if (user) {
       // Get current user's own clips
-      const { data: profile } = await supabase
+      const { data: profile } = await db
         .from("creator_profiles")
         .select("id")
         .eq("user_id", user.id)
@@ -100,17 +99,15 @@ export async function GET(request: NextRequest) {
 // POST - Create a new clip
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -149,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Validate game if provided
     if (body.game_id) {
-      const { data: game, error: gameError } = await supabase
+      const { data: game, error: gameError } = await db
         .from("games")
         .select("id")
         .eq("id", body.game_id)
@@ -163,7 +160,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data: clip, error } = await supabase
+    const { data: clip, error } = await db
       .from("creator_clips")
       .insert({
         creator_id: profile.id,
@@ -205,10 +202,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update a clip
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -225,7 +220,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get creator profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -239,7 +234,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify clip belongs to user
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("creator_clips")
       .select("id")
       .eq("id", clipId)
@@ -276,7 +271,7 @@ export async function PATCH(request: NextRequest) {
     if (body.tags !== undefined) updates.tags = body.tags;
     if (body.visibility !== undefined) updates.visibility = body.visibility;
 
-    const { data: clip, error } = await supabase
+    const { data: clip, error } = await db
       .from("creator_clips")
       .update(updates)
       .eq("id", clipId)
@@ -307,10 +302,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete a clip
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -327,7 +320,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get creator profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -341,7 +334,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete clip (RLS will verify ownership)
-    const { error } = await supabase
+    const { error } = await db
       .from("creator_clips")
       .delete()
       .eq("id", clipId)

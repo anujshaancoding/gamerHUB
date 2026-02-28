@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ProfileTheme } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List all themes
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: themes, error } = await supabase
+    const { data: themes, error } = await db
       .from("profile_themes")
       .select("*")
       .eq("is_active", true)
@@ -22,13 +23,11 @@ export async function GET() {
     }
 
     // Get current user's unlocked themes
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     let unlockedThemeIds: string[] = [];
     if (user) {
-      const { data: userThemes } = await supabase
+      const { data: userThemes } = await db
         .from("user_themes")
         .select("theme_id")
         .eq("user_id", user.id);

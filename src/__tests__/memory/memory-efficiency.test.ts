@@ -131,7 +131,7 @@ describe('Memory Efficiency', () => {
       expect(unsubscribe).toHaveBeenCalledTimes(1);
     });
 
-    it('should clean up Supabase realtime subscriptions', () => {
+    it('should clean up realtime subscriptions', () => {
       const removeChannel = jest.fn();
       const channel = {
         subscribe: jest.fn(),

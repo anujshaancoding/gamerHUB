@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's wallet balance
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get or create wallet using RPC
-    const { data: wallet, error } = await supabase.rpc("get_or_create_wallet", {
+    const { data: wallet, error } = await db.rpc("get_or_create_wallet", {
       p_user_id: user.id,
     });
 

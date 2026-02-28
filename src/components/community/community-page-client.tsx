@@ -33,7 +33,7 @@ import {
   RelativeTime,
 } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { cn } from "@/lib/utils";
 import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { STALE_TIMES } from "@/lib/query/provider";
@@ -127,7 +127,7 @@ export function CommunityPageClient({
   initialNewsArticles,
 }: CommunityPageClientProps) {
   const { user, profile } = useAuth();
-  const supabase = useMemo(() => createClient(), []);
+  const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
   const [activeTab, setActiveTab] = useState<TabId>("news");
@@ -169,7 +169,7 @@ export function CommunityPageClient({
   } = useQuery({
     queryKey: blogKeys.posts(),
     queryFn: async () => {
-      const { data: posts, error: queryError } = await supabase
+      const { data: posts, error: queryError } = await db
         .from("blog_posts")
         .select(`
           id, title, slug, excerpt, featured_image_url, category, tags,
@@ -213,7 +213,7 @@ export function CommunityPageClient({
   } = useQuery({
     queryKey: friendPostKeys.list(isGuest),
     queryFn: async () => {
-      let query = supabase
+      let query = db
         .from("friend_posts")
         .select(`
           *,
@@ -278,19 +278,18 @@ export function CommunityPageClient({
       if (selectedImage) {
         const fileExt = selectedImage.name.split(".").pop();
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const { error: uploadError, data } = await supabase.storage
-          .from("post-images")
-          .upload(fileName, selectedImage);
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", selectedImage);
+        uploadFormData.append("path", `post-images/${fileName}`);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+        const uploadData = await uploadRes.json();
 
-        if (!uploadError && data) {
-          const { data: publicUrl } = supabase.storage
-            .from("post-images")
-            .getPublicUrl(fileName);
-          imageUrl = publicUrl.publicUrl;
+        if (uploadRes.ok && uploadData.publicUrl) {
+          imageUrl = uploadData.publicUrl;
         }
       }
 
-      const { error } = await supabase.from("friend_posts").insert({
+      const { error } = await db.from("friend_posts").insert({
         user_id: user.id,
         content: newPostContent,
         image_url: imageUrl,

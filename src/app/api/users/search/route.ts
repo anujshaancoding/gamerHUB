@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse } from "@/lib/api/cache-headers";
 
 // GET - Search user profiles by username or display name
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const q = searchParams.get("q");
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data, error, count } = await supabase
+    const { data, error, count } = await db
       .from("profiles")
       .select(
         "id, username, display_name, avatar_url, level, is_online, is_premium, region",

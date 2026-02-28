@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List winners for a listing
 export async function GET(
@@ -8,9 +9,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("community_listing_winners")
       .select("*")
       .eq("listing_id", id)
@@ -40,18 +41,15 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify the user is the listing creator
-    const { data: listing } = await supabase
+    const { data: listing } = await db
       .from("community_listings")
       .select("id, creator_id")
       .eq("id", id)
@@ -71,7 +69,7 @@ export async function POST(
       );
     }
 
-    const { data: winner, error } = await supabase
+    const { data: winner, error } = await db
       .from("community_listing_winners")
       .insert({
         listing_id: id,
@@ -92,7 +90,7 @@ export async function POST(
     }
 
     // Mark listing as completed when winners are added
-    await supabase
+    await db
       .from("community_listings")
       .update({ status: "completed" } as never)
       .eq("id", id);
@@ -114,13 +112,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -135,7 +130,7 @@ export async function DELETE(
     }
 
     // RLS handles the creator check via the policy
-    const { error } = await supabase
+    const { error } = await db
       .from("community_listing_winners")
       .delete()
       .eq("id", winner_id)

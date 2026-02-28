@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string; postId: string }>;
@@ -9,13 +10,10 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +21,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Handle reaction toggle separately
     if (body.reaction) {
-      const { data: post } = await supabase
+      const { data: post } = await db
         .from("clan_wall_posts")
         .select("reactions")
         .eq("id", postId)
@@ -45,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         reactions[emoji] = [...userList, user.id];
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_wall_posts")
         .update({ reactions } as never)
         .eq("id", postId)
@@ -70,7 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Handle pin/unpin (leaders/co-leaders only)
     if (body.is_pinned !== undefined) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -87,7 +85,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_wall_posts")
         .update({ is_pinned: body.is_pinned } as never)
         .eq("id", postId)
@@ -112,7 +110,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Handle content edit (author only)
     if (body.content !== undefined) {
-      const { data: post } = await supabase
+      const { data: post } = await db
         .from("clan_wall_posts")
         .select("user_id")
         .eq("id", postId)
@@ -140,7 +138,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_wall_posts")
         .update({
           content: body.content.trim(),
@@ -183,18 +181,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is post author or leader/co-leader
-    const { data: post } = await supabase
+    const { data: post } = await db
       .from("clan_wall_posts")
       .select("user_id")
       .eq("id", postId)
@@ -206,7 +201,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     if ((post as any).user_id !== user.id) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -224,7 +219,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_wall_posts")
       .delete()
       .eq("id", postId)

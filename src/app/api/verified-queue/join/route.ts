@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
+import { getUser } from "@/lib/auth/get-user";
   type JoinQueueRequest,
   canAccessVerifiedQueue,
 } from "@/types/verified-queue";
@@ -8,10 +9,8 @@ import {
 // POST /api/verified-queue/join - Join the verified queue
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check verified profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("verified_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing queue entry
-    const { data: existingEntry } = await supabase
+    const { data: existingEntry } = await db
       .from("verified_queue_entries")
       .select("*")
       .eq("user_id", user.id)
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create queue entry
-    const { data: entry, error: entryError } = await supabase
+    const { data: entry, error: entryError } = await db
       .from("verified_queue_entries")
       .insert({
         user_id: user.id,
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to find matches (simplified matching logic)
-    const { data: potentialMatches } = await supabase
+    const { data: potentialMatches } = await db
       .from("verified_queue_entries")
       .select(
         `
@@ -137,17 +136,15 @@ export async function POST(request: NextRequest) {
 // DELETE /api/verified-queue/join - Leave the queue
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Cancel any searching entries
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("verified_queue_entries")
       .update({ status: "cancelled" })
       .eq("user_id", user.id)
@@ -178,17 +175,15 @@ export async function DELETE(request: NextRequest) {
 // GET /api/verified-queue/join - Get current queue status
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get current queue entries
-    const { data: entries, error } = await supabase
+    const { data: entries, error } = await db
       .from("verified_queue_entries")
       .select("*")
       .eq("user_id", user.id)

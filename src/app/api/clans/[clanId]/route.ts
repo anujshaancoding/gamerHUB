@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { Clan, ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string }>;
@@ -10,9 +11,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clans")
       .select(
         `
@@ -56,18 +57,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is leader or co-leader
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -114,7 +112,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clans")
       .update(updates as never)
       .eq("id", clanId)
@@ -130,7 +128,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Log settings update
-    await supabase.from("clan_activity_log").insert({
+    await db.from("clan_activity_log").insert({
       clan_id: clanId,
       user_id: user.id,
       activity_type: "settings_updated",
@@ -152,18 +150,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is leader
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -180,7 +175,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get conversation ID before deleting clan
-    const { data: clanData } = await supabase
+    const { data: clanData } = await db
       .from("clans")
       .select("conversation_id")
       .eq("id", clanId)
@@ -189,7 +184,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const clan = clanData as unknown as Pick<Clan, "conversation_id"> | null;
 
     // Delete clan (cascade will handle members, games, etc.)
-    const { error } = await supabase.from("clans").delete().eq("id", clanId);
+    const { error } = await db.from("clans").delete().eq("id", clanId);
 
     if (error) {
       console.error("Failed to delete clan:", error);
@@ -201,7 +196,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Delete conversation
     if (clan?.conversation_id) {
-      await supabase
+      await db
         .from("conversations")
         .delete()
         .eq("id", clan.conversation_id);

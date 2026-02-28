@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateMemeRequest } from "@/types/community";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List memes
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("game_id");
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("memes")
       .select(`
         *,
@@ -62,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     if (user && memes && memes.length > 0) {
       const memeIds = memes.map((m) => m.id);
-      const { data: likes } = await supabase
+      const { data: likes } = await db
         .from("meme_likes")
         .select("meme_id")
         .eq("user_id", user.id)
@@ -95,10 +94,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new meme
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -120,7 +117,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: meme, error } = await supabase
+    const { data: meme, error } = await db
       .from("memes")
       .insert({
         creator_id: user.id,

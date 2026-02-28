@@ -15,15 +15,15 @@
 | **Animation** | Framer Motion | Working |
 | **State Management** | Zustand + React Query (TanStack) | Working |
 | **Rich Text Editor** | TipTap (ProseMirror) | Working |
-| **Database** | Supabase (PostgreSQL) | Free tier |
-| **Authentication** | Supabase Auth (email + OAuth) | Working |
-| **Real-time** | Supabase Realtime | Working |
-| **File Storage** | Supabase Storage | Working |
+| **Database** | PostgreSQL (self-hosted on VPS) | Production-ready |
+| **Authentication** | Auth.js (email + OAuth) | Working |
+| **Real-time** | Socket.io (WebSocket) | Working |
+| **File Storage** | VPS file storage | Working |
 | **Payments** | Stripe | Integrated |
 | **Voice/Video Calls** | LiveKit | Integrated |
 | **Mobile** | React Native + Expo | Scaffolded |
 | **PWA** | Service Worker + Manifest | Configured |
-| **Hosting** | Vercel (implied) | Not yet deployed |
+| **Hosting** | VPS (self-hosted) | Production-ready |
 | **Testing** | Jest + Playwright | Configured |
 
 ---
@@ -38,10 +38,10 @@
 | OAuth login (Discord, Steam, Twitch) | `src/app/auth/callback/route.ts` | Built |
 | 3-step onboarding wizard | `src/app/(auth)/onboarding/page.tsx` | Built |
 | Password reset flow | `src/app/(auth)/reset-password/` | Built |
-| Email verification | Via Supabase Auth | Built |
+| Email verification | Via Auth.js | Built |
 | Phone verification | `src/app/api/verification/` | Built |
 | Auth gate (protected routes) | `src/components/auth/auth-gate-provider.tsx` | Built |
-| Session refresh middleware | `src/lib/supabase/middleware.ts` | Built |
+| Session refresh middleware | `src/lib/supabase/middleware.ts` (Auth.js) | Built |
 
 ### B. User Profiles
 
@@ -88,7 +88,7 @@
 | Group conversations | `src/app/api/messages/conversations/route.ts` | Built |
 | Message reactions | `supabase/migrations/048_message_reactions.sql` | Built |
 | Read receipts | `src/components/chat/chat-window.tsx` | Built |
-| Typing indicators | Via Supabase Realtime presence | Built |
+| Typing indicators | Via Socket.io presence | Built |
 | Voice/video calls | `src/components/call/call-room.tsx` (LiveKit) | Built |
 | Screen sharing | `src/components/call/screen-share-view.tsx` | Built |
 | New conversation modal | `src/components/messages/new-conversation-modal.tsx` | Built |
@@ -276,7 +276,7 @@
 
 ### Nice to Have (Fix Before 10K Users)
 
-11. **No CDN for media** — Supabase Storage serves from single region
+11. **No CDN for media** — VPS file storage serves from single region
 12. **No read/write separation** — GET/POST/PATCH all in same route handlers
 13. **Blog content stored as HTML** — Should store TipTap JSON for portability
 14. **No full-text search** — Uses ILIKE which cannot use indexes

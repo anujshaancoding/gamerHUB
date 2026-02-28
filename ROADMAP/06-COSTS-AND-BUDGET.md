@@ -10,8 +10,8 @@ Before looking at numbers, understand WHAT generates costs in our app:
 
 | Cost Driver | Where in Code | Why It Matters |
 |-------------|--------------|---------------|
-| **Realtime connections** | `PresenceProvider.tsx`, `useMessages.ts`, `chat-window.tsx`, `useNotifications.ts` | Every logged-in user opens 3-6 Realtime channels |
-| **API route invocations** | 150+ routes in `src/app/api/` | Each is a Vercel serverless function |
+| **Socket.io connections** | `PresenceProvider.tsx`, `useMessages.ts`, `chat-window.tsx`, `useNotifications.ts` | Every logged-in user opens 3-6 Socket.io channels |
+| **API route invocations** | 150+ routes in `src/app/api/` | Each is a server-side API handler |
 | **Media storage** | `src/lib/upload.ts` (avatars, banners, posts) | WebP compressed but accumulates |
 | **Database size** | 100+ tables, messages, posts, feeds | Grows with user activity |
 | **OpenAI calls** | Matchmaking (3 routes), translation | Per-token billing |
@@ -23,38 +23,36 @@ Before looking at numbers, understand WHAT generates costs in our app:
 
 ## Cost at Each Stage
 
-### Stage 0: Development (Current — $0-1/month)
+### Stage 0: Development (Current — $5-15/month)
 
 | Service | Tier | Cost |
 |---------|------|------|
-| Supabase | Free | $0 |
-| Vercel | Hobby | $0 |
+| VPS (app + DB + Socket.io) | Entry-level | $5-10/month |
 | GitHub | Free | $0 |
 | Domain (.com) | — | ~$12/year = $1/month |
+| Cloudflare | Free | $0 |
 | OpenAI | — | $0 (not active yet) |
 | LiveKit | — | $0 (not active yet) |
 | Stripe | — | $0 (no transactions) |
-| **Total** | | **~$1/month** |
+| **Total** | | **~$6-11/month** |
 
-**Free tier limits you'll hit:**
-| Resource | Supabase Free Limit | Estimate When Hit |
-|----------|-------------------|-------------------|
-| Database | 500 MB | ~5,000-10,000 active users |
-| Storage | 1 GB | ~200-500 users (with avatar + banner uploads) |
-| Bandwidth | 5 GB | ~500-1,000 daily active users |
-| Realtime connections | 200 concurrent | ~35-65 simultaneous users |
-| Vercel bandwidth | 100 GB | ~10,000 daily page loads |
+**VPS resource limits to watch:**
+| Resource | Entry VPS Limit | Estimate When Hit |
+|----------|----------------|-------------------|
+| CPU/RAM | 2 vCPU / 4 GB | ~500-1,000 concurrent users |
+| Disk | 40-80 GB SSD | ~5,000-10,000 active users (with media) |
+| Bandwidth | 20 TB/month typical | Not a concern until very high scale |
+| Socket.io connections | ~2,000-5,000 per server | ~500-1,500 concurrent users |
 
-**The first limit you'll hit is Realtime connections (200).** With 3-6 channels per user, you max out at ~35-65 concurrent users on the free tier. This is your trigger to upgrade.
+**The first limit you'll hit is CPU/RAM.** High concurrent users with Socket.io + PostgreSQL + Next.js will saturate a small VPS. This is your trigger to upgrade.
 
 ---
 
-### Stage 1: Launch (0-1,000 Users — ~$50-70/month)
+### Stage 1: Launch (0-1,000 Users — ~$25-50/month)
 
 | Service | Tier | Cost | Notes |
 |---------|------|------|-------|
-| Supabase | Pro | $25/month | 8 GB DB, 100 GB storage, 500 Realtime connections |
-| Vercel | Pro (1 developer) | $20/month | 1 TB bandwidth, 1000 GB-hrs serverless |
+| VPS (app + DB + Socket.io) | Mid-tier (4 GB RAM) | $10-15/month | Handles Next.js + PostgreSQL + Socket.io |
 | Domain | .com | $1/month | |
 | Email (Resend) | Free | $0 | 100 emails/day, 3,000/month |
 | Error monitoring (Sentry) | Free | $0 | 5K errors/month |
@@ -62,23 +60,19 @@ Before looking at numbers, understand WHAT generates costs in our app:
 | OpenAI | Pay-as-you-go | $5-15/month | Matchmaking + translation |
 | LiveKit | Free tier | $0-10/month | 50 participant-minutes free |
 | CDN (Cloudflare) | Free | $0 | DNS + CDN proxy |
-| **Total** | | **$51-71/month** |
+| **Total** | | **$16-41/month** |
 
-**When to upgrade from free to this**: As soon as you have 30+ concurrent users regularly.
+**When to upgrade VPS**: As soon as you have 100+ concurrent users regularly.
 
 ---
 
-### Stage 2: Growing (1,000-10,000 Users — ~$150-350/month)
+### Stage 2: Growing (1,000-10,000 Users — ~$80-200/month)
 
 | Service | Tier | Cost | Notes |
 |---------|------|------|-------|
-| Supabase Pro | Base | $25 | |
-| Supabase Compute add-on | Small (2 GB RAM) | $5 | For connection pooling |
-| Supabase bandwidth overage | ~50-100 GB extra | $5-9 | $0.09/GB |
-| Supabase storage overage | ~50 GB extra | $1 | $0.021/GB |
-| Supabase Realtime add-on | Extra 500 connections | $10 | For concurrent users |
-| Vercel Pro | 1-2 developers | $20-40 | |
-| Vercel bandwidth overage | ~200 GB extra | $30 | $0.15/GB |
+| VPS (app server) | 8 GB RAM | $15-25/month | Next.js + Socket.io |
+| VPS (DB server) | 8 GB RAM | $15-25/month | Dedicated PostgreSQL |
+| Redis server | Small | $5-10/month | Caching + Socket.io adapter |
 | Domain | .com + .gg (optional) | $1-5/month | |
 | Email (Resend) | Pro | $20/month | Higher volume |
 | Error monitoring (Sentry) | Team | $26/month | More error quota |
@@ -86,24 +80,20 @@ Before looking at numbers, understand WHAT generates costs in our app:
 | OpenAI | Moderate usage | $30-60/month | More matchmaking/translation |
 | LiveKit | Pay-as-you-go | $20-50/month | $0.004/participant-minute |
 | CDN (Cloudflare) | Free | $0 | |
-| **Total** | | **$193-246/month typical** |
+| **Total** | | **$132-221/month typical** |
 
 **Key decision point at 5K users**: Is revenue covering costs? If Pro subscriptions at 5% conversion = $1,250/month revenue vs ~$250/month costs, you're profitable.
 
 ---
 
-### Stage 3: Scaling (10,000-50,000 Users — ~$500-1,500/month)
+### Stage 3: Scaling (10,000-50,000 Users — ~$200-600/month)
 
 | Service | Tier | Cost | Notes |
 |---------|------|------|-------|
-| Supabase Pro | Base | $25 | |
-| Supabase Compute add-on | Medium (4 GB RAM) | $10 | |
-| Supabase bandwidth | ~500 GB total | $23 | |
-| Supabase storage | ~200 GB | $2 | |
-| Supabase Realtime | Extra connections | $20-40 | |
-| Vercel Pro | 2-3 developers | $40-60 | |
-| Vercel bandwidth | ~2 TB total | $150 | |
-| Vercel serverless overage | | $20-50 | |
+| VPS (app servers x2) | 16 GB RAM each | $50-100 | Load-balanced Next.js + Socket.io |
+| VPS (DB server) | 16 GB RAM | $30-50 | Dedicated PostgreSQL with replicas |
+| Redis server | Medium | $10-20 | Caching + queues + Socket.io adapter |
+| Object storage (S3-compatible) | ~200 GB | $5-10 | Media files |
 | Domain(s) | .com + .gg | $5 | |
 | Email (Resend) | Business | $50-100 | |
 | Error monitoring (Sentry) | Team | $26 | |
@@ -111,33 +101,23 @@ Before looking at numbers, understand WHAT generates costs in our app:
 | OpenAI | Heavy usage | $80-200 | |
 | LiveKit | Growth | $100-300 | Voice/video at scale |
 | CDN (Bunny) | Standard | $10-30 | For global media delivery |
-| **Total** | | **$561-1,071/month typical** |
-
-**OR upgrade to Supabase Team ($599/month):**
-
-| Service | Cost |
-|---------|------|
-| Supabase Team | $599 |
-| Supabase overages | $50-200 |
-| Vercel Pro (3 devs) | $60 |
-| Vercel overages | $100-200 |
-| Other services | $200-400 |
-| **Total** | **$1,009-1,459/month** |
+| **Total** | | **$366-891/month typical** |
 
 ---
 
-### Stage 4: Scale (100,000+ Users — ~$2,000-4,000/month)
+### Stage 4: Scale (100,000+ Users — ~$800-2,500/month)
 
 | Service | Cost Range | Notes |
 |---------|-----------|-------|
-| Supabase Team + overages | $599-1,000 | Or Enterprise custom pricing |
-| Vercel Pro + overages | $200-500 | Or Enterprise |
+| VPS cluster (app + DB + workers) | $200-600 | Multiple servers, load balanced |
+| Managed PostgreSQL (optional) | $100-300 | For HA and automated backups |
+| Redis cluster | $30-80 | High availability |
 | OpenAI | $200-500 | Cache aggressively to reduce |
 | LiveKit | $500-2,000 | Major cost at scale |
 | Email | $100-200 | High volume transactional |
 | CDN (Bunny/Cloudflare Pro) | $30-100 | |
-| Monitoring stack | $100-200 | Sentry + PostHog + custom |
-| **Total** | **$1,729-4,500/month** |
+| Monitoring stack | $100-200 | Sentry + PostHog + Grafana |
+| **Total** | **$1,260-3,980/month** |
 
 **Revenue at this scale** (conservative): $79,000/month. Costs are ~2-6% of revenue.
 
@@ -147,44 +127,30 @@ Before looking at numbers, understand WHAT generates costs in our app:
 
 If bootstrapping on a very tight budget:
 
-### Absolute Minimum Stack ($1-25/month)
+### Absolute Minimum Stack ($6-10/month)
 
 | Service | Cost | Trade-off |
 |---------|------|-----------|
-| Supabase Free | $0 | Limited to 200 Realtime, 500 MB DB |
-| Vercel Hobby | $0 | No commercial use (technically) |
+| Entry VPS (2 vCPU, 2 GB RAM) | $5/month | Limited concurrent users |
 | Cloudflare DNS | $0 | |
 | Domain (.com) | $1/month | |
-| **Total: $1/month** | | **Max ~50-60 concurrent users** |
+| **Total: $6/month** | | **Max ~50-100 concurrent users** |
 
-### Budget Stack for Launch ($25-45/month)
+### Budget Stack for Launch ($14-25/month)
 
 | Service | Cost | Notes |
 |---------|------|-------|
-| Supabase Pro | $25 | 500 Realtime, 8 GB DB |
-| Vercel Hobby | $0 | Fine until you need commercial use |
-| Cloudflare Free | $0 | CDN + DNS |
+| Hetzner CX31 (app + DB) | $8/month | 2 vCPU, 8 GB RAM, 80 GB SSD |
+| Hetzner CX21 (DB) | $5/month | 2 vCPU, 4 GB RAM, 40 GB SSD |
+| Coolify (PaaS) | $0 | Self-hosted deployment manager |
+| Cloudflare Free | $0 | CDN + DNS + SSL |
 | Domain | $1 | |
 | Resend Free | $0 | 100 emails/day |
 | Sentry Free | $0 | 5K errors |
 | PostHog Free | $0 | 1M events |
-| **Total: $26/month** | | **Handles up to ~1,000 users** |
+| **Total: $14/month** | | **Handles up to ~5,000-10,000 users** |
 
-### Self-Hosted Budget Stack ($15-30/month)
-
-If you're willing to manage servers:
-
-| Service | Cost | Notes |
-|---------|------|-------|
-| Hetzner CX31 (app server) | $8/month | 2 vCPU, 8 GB RAM, 80 GB SSD |
-| Hetzner CX21 (DB) | $5/month | 2 vCPU, 4 GB RAM, 40 GB SSD |
-| Self-hosted Supabase (Docker) | $0 | On the DB server |
-| Coolify (PaaS) | $0 | Self-hosted deployment manager |
-| Cloudflare Free | $0 | CDN + DNS + SSL |
-| Domain | $1 | |
-| **Total: $14/month** | | **Handles up to ~10,000 users** |
-
-**Trade-off**: You become your own DevOps team. No auto-scaling. DIY backups. If the server goes down at 3 AM, you fix it.
+**Trade-off**: You manage your own infrastructure. DIY backups. If the server goes down at 3 AM, you fix it. But you have full control and no vendor limits.
 
 ---
 
@@ -292,12 +258,12 @@ Only consider raising money if:
 
 Quick wins to reduce costs at any stage:
 
-- [ ] **Fix global presence channel** — Single biggest Realtime cost driver
-- [ ] **Remove duplicate Realtime subscriptions** — 50% less connection usage
-- [ ] **Replace 5-second polling with Realtime** — 6x fewer API calls
+- [ ] **Fix global presence channel** — Single biggest Socket.io cost driver
+- [ ] **Remove duplicate Socket.io subscriptions** — 50% less connection usage
+- [ ] **Replace 5-second polling with Socket.io** — 6x fewer API calls
 - [ ] **Cache OpenAI responses** — 80% fewer AI API calls
-- [ ] **Add Cloudflare in front of everything** — Free CDN, reduces Vercel bandwidth
-- [ ] **Use Supabase connection pooler** — Fewer DB connections, lower compute needs
+- [ ] **Add Cloudflare in front of everything** — Free CDN, reduces VPS bandwidth
+- [ ] **Use PgBouncer for connection pooling** — Fewer DB connections, lower compute needs
 - [ ] **Compress API responses** — Already using WebP for images, ensure gzip on API
 - [ ] **Lazy load heavy components** — Reduce initial bundle, fewer serverless invocations
 

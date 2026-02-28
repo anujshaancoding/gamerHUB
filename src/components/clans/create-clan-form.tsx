@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, Globe, MapPin, Gamepad2 } from "lucide-react";
 import { Card, Button, Input, Textarea, LegacySelect as Select, SelectWithOther } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useClans } from "@/lib/hooks/useClans";
 import { REGIONS, LANGUAGES } from "@/lib/constants/games";
 import type { Game } from "@/types/database";
@@ -12,7 +12,7 @@ import type { Game } from "@/types/database";
 export function CreateClanForm() {
   const router = useRouter();
   const { createClan } = useClans();
-  const supabase = createClient();
+  const db = createClient();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,14 +32,14 @@ export function CreateClanForm() {
 
   useEffect(() => {
     const fetchGames = async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from("games")
         .select("*")
         .order("name");
       if (data) setGames(data);
     };
     fetchGames();
-  }, [supabase]);
+  }, [db]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

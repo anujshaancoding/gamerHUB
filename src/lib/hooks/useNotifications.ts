@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { queryKeys } from "@/lib/query";
 
 // Types
@@ -259,9 +259,9 @@ export function useNotifications(options?: {
   useEffect(() => {
     if (!isEnabled) return;
 
-    const supabase = createClient();
+    const db = createClient();
 
-    const channel = supabase
+    const channel = db
       .channel("notifications-updates")
       .on(
         "postgres_changes",
@@ -287,7 +287,7 @@ export function useNotifications(options?: {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [queryClient, isEnabled]);
 

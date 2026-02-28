@@ -10,7 +10,7 @@
 
 - [ ] **Privacy Policy page** — Required by law in every jurisdiction. Must cover:
   - Data collected: email, username, avatar, gaming profiles, messages, IP, device info
-  - Third-party processors: Supabase, Vercel, Stripe, LiveKit, OpenAI
+  - Third-party processors: Stripe, LiveKit, OpenAI (self-hosted PostgreSQL + Auth.js on VPS)
   - Data retention periods
   - User rights (access, correction, deletion, export)
   - Cookie usage
@@ -41,17 +41,17 @@
 ### Domain & Deployment
 
 - [ ] **Register domain** — gglobby.com or similar (.gg domain would be ideal for gaming — check gglobby.gg)
-- [ ] **Deploy to Vercel** — Connect GitHub repo, set up production environment
-- [ ] **Configure environment variables** in Vercel:
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] **Deploy to VPS** — Set up production environment with Node.js, PostgreSQL, and reverse proxy
+- [ ] **Configure environment variables** on VPS:
+  - `DATABASE_URL`
+  - `AUTH_SECRET`
+  - `NEXTAUTH_URL`
   - `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET`
   - `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` / `LIVEKIT_URL`
   - `OPENAI_API_KEY`
   - Any Discord/Twitch/Steam OAuth credentials
-- [ ] **SSL certificate** — Automatic with Vercel, verify it's active
-- [ ] **Custom domain DNS** — Point domain to Vercel
+- [ ] **SSL certificate** — Via Cloudflare or Let's Encrypt on VPS, verify it's active
+- [ ] **Custom domain DNS** — Point domain to VPS via Cloudflare
 
 ---
 
@@ -105,7 +105,7 @@
   - API endpoints: 100 requests per minute per user
   - File uploads: 10 per minute per user
 - [ ] **Sanitize user input** — Verify no XSS vectors in blog content, messages, profile fields
-- [ ] **CSRF protection** — Verify Supabase handles this (it does via its auth tokens)
+- [ ] **CSRF protection** — Verify Auth.js handles this (it does via its CSRF tokens)
 - [ ] **Stripe webhook signature verification** — Verify webhook endpoint validates signatures
 
 ### Branding Consistency
@@ -138,13 +138,11 @@
   - Customize (analytics on/off, etc.)
 - [ ] **"Download My Data" button** in Settings — Export all user data as JSON
 - [ ] **"Delete My Account" flow** — Full data purge (not just soft delete):
-  - Delete from Supabase (profile, posts, messages, likes, etc.)
-  - Delete uploaded media from Storage
+  - Delete from PostgreSQL (profile, posts, messages, likes, etc.)
+  - Delete uploaded media from file storage
   - Revoke all sessions
   - Confirmation step: "This action cannot be undone"
 - [ ] **Data Processing Agreements** — Verify DPAs are in place with:
-  - Supabase (available on their website)
-  - Vercel (available on their website)
   - Stripe (available on their website)
   - LiveKit (check their website)
   - OpenAI (available on their website)
@@ -155,7 +153,7 @@
   - Welcome email on registration
   - Friend request notifications (if user opted in)
   - Weekly activity digest (opt-in)
-- [ ] **Verify Supabase auth emails** — Customize email templates in Supabase dashboard for:
+- [ ] **Verify auth emails** — Customize email templates for:
   - Email verification
   - Password reset
   - Magic link (if enabled)
@@ -169,7 +167,7 @@
 
 ### Analytics
 
-- [ ] **Set up PostHog or Vercel Analytics**
+- [ ] **Set up PostHog or similar analytics**
   - PostHog free tier: 1M events/month
   - Track key events: signup, profile_complete, first_friend, first_clan_join, first_post
   - Track feature usage to know what users actually use
@@ -221,8 +219,8 @@ On the day you go live:
 
 1. [ ] Verify production deployment is stable (no 500 errors)
 2. [ ] Verify registration flow works end-to-end
-3. [ ] Verify Supabase free tier limits are not already hit
-4. [ ] Monitor Vercel function logs for errors
+3. [ ] Verify VPS resources (CPU, RAM, disk) are healthy
+4. [ ] Monitor server logs for errors
 5. [ ] Have the beta feedback widget enabled
 6. [ ] Be available to respond to user reports within 1 hour
 7. [ ] Post launch announcement on chosen channels (see Growth Strategy)

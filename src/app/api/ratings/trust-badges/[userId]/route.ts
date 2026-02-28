@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 export async function GET(
   request: NextRequest,
@@ -7,10 +7,10 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // trust_badges is a view that derives public badges from private trust data
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("trust_badges")
       .select("*")
       .eq("user_id", userId)

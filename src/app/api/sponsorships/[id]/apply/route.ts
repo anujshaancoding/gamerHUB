@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ApplySponsorshipRequest } from "@/types/creator";
 import { getCreatorTier, canAccessFeature } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Apply to a sponsorship
 export async function POST(
@@ -10,17 +11,15 @@ export async function POST(
 ) {
   try {
     const { id: sponsorshipId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -34,7 +33,7 @@ export async function POST(
     }
 
     // Check tier eligibility
-    const { count: followerCount } = await supabase
+    const { count: followerCount } = await db
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", user.id);
@@ -50,7 +49,7 @@ export async function POST(
     }
 
     // Get sponsorship details
-    const { data: sponsorship, error: sponsorshipError } = await supabase
+    const { data: sponsorship, error: sponsorshipError } = await db
       .from("sponsorship_opportunities")
       .select("*")
       .eq("id", sponsorshipId)
@@ -92,7 +91,7 @@ export async function POST(
     }
 
     // Check if already applied
-    const { data: existingApplication } = await supabase
+    const { data: existingApplication } = await db
       .from("sponsorship_applications")
       .select("id, status")
       .eq("sponsorship_id", sponsorshipId)
@@ -117,7 +116,7 @@ export async function POST(
     }
 
     // Create application
-    const { data: application, error } = await supabase
+    const { data: application, error } = await db
       .from("sponsorship_applications")
       .insert({
         sponsorship_id: sponsorshipId,
@@ -156,17 +155,15 @@ export async function GET(
 ) {
   try {
     const { id: sponsorshipId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -176,7 +173,7 @@ export async function GET(
       return NextResponse.json({ application: null });
     }
 
-    const { data: application, error } = await supabase
+    const { data: application, error } = await db
       .from("sponsorship_applications")
       .select(`
         *,
@@ -213,17 +210,15 @@ export async function DELETE(
 ) {
   try {
     const { id: sponsorshipId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -237,7 +232,7 @@ export async function DELETE(
     }
 
     // Check application exists and is pending
-    const { data: application } = await supabase
+    const { data: application } = await db
       .from("sponsorship_applications")
       .select("id, status")
       .eq("sponsorship_id", sponsorshipId)
@@ -259,7 +254,7 @@ export async function DELETE(
     }
 
     // Update to withdrawn status
-    const { error } = await supabase
+    const { error } = await db
       .from("sponsorship_applications")
       .update({ status: "withdrawn", updated_at: new Date().toISOString() })
       .eq("id", application.id);

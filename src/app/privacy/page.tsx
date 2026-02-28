@@ -77,8 +77,8 @@ export default function PrivacyPolicyPage() {
               <li><strong>Other Users:</strong> Your public profile, posts, and clan activity are visible to other users as part of the Service.</li>
               <li><strong>Service Providers:</strong> We use trusted third-party services to operate the platform:
                 <ul className="list-disc pl-6 mt-1 space-y-1">
-                  <li>Supabase — Database, authentication, and file storage</li>
-                  <li>Vercel — Hosting and deployment</li>
+                  <li>PostgreSQL — Database</li>
+                  <li>Cloudflare — CDN and DNS</li>
                   <li>Stripe — Payment processing</li>
                   <li>LiveKit — Voice and video communication</li>
                 </ul>

@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   getFriendCount,
   getFollowingOnlyCount,
   getFollowersOnlyCount,
-} from "@/lib/supabase/rpc-types";
+} from "@/lib/db/rpc-types";
 import type { SocialCounts } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get all social counts for a user
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,11 +26,11 @@ export async function GET(request: NextRequest) {
     // so a single failure doesn't crash the whole response.
     const [friendCount, followingCount, followersCount, pendingResult] =
       await Promise.all([
-        getFriendCount(supabase, userId),
-        getFollowingOnlyCount(supabase, userId),
-        getFollowersOnlyCount(supabase, userId),
+        getFriendCount(db, userId),
+        getFollowingOnlyCount(db, userId),
+        getFollowersOnlyCount(db, userId),
         userId === user.id
-          ? supabase
+          ? db
               .from("friend_requests")
               .select("*", { count: "exact", head: true })
               .eq("recipient_id", user.id)

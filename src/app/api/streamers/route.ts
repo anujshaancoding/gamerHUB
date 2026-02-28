@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 
 // GET - Get streamers list (live first, then all)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const filter = searchParams.get("filter") || "all"; // live, all, featured
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("streamer_profiles")
       .select(`
         id,

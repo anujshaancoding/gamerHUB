@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // DELETE - Delete own message
 export async function DELETE(
@@ -7,10 +8,8 @@ export async function DELETE(
   { params }: { params: Promise<{ messageId: string }> }
 ) {
   const { messageId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +17,7 @@ export async function DELETE(
 
   try {
     // Verify ownership
-    const { data: message } = await supabase
+    const { data: message } = await db
       .from("messages")
       .select("sender_id")
       .eq("id", messageId)
@@ -31,7 +30,7 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("messages")
       .delete()
       .eq("id", messageId);

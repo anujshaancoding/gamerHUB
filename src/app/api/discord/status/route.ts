@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get Discord connection - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: connection, error } = await (supabase as any)
+    const { data: connection, error } = await (db as any)
       .from("discord_connections")
       .select("*")
       .eq("user_id", user.id)

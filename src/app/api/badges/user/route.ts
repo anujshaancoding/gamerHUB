@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UserBadgeWithDetails } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current user's earned badges
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,7 +17,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const rarity = searchParams.get("rarity");
 
-    const query = supabase
+    const query = db
       .from("user_badges")
       .select(
         `

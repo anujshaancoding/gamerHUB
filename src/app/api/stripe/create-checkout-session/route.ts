@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { stripe } from "@/lib/stripe";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -25,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create Stripe customer
-    let { data: stripeCustomer } = await supabase
+    let { data: stripeCustomer } = await db
       .from("stripe_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (!stripeCustomer) {
       // Create customer first
-      const { data: profile } = await supabase
+      const { data: profile } = await db
         .from("profiles")
         .select("username, display_name")
         .eq("id", user.id)
@@ -43,12 +41,12 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: profile?.display_name || profile?.username || undefined,
         metadata: {
-          supabase_user_id: user.id,
+          user_id: user.id,
           username: profile?.username || "",
         },
       });
 
-      await supabase.from("stripe_customers").insert({
+      await db.from("stripe_customers").insert({
         user_id: user.id,
         stripe_customer_id: customer.id,
         email: user.email,

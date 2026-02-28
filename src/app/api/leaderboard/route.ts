@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface LeaderboardProfile {
   username: string;
@@ -27,7 +28,7 @@ interface GlobalLeaderboardEntry {
 // GET - Get leaderboard
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const type = searchParams.get("type") || "xp";
@@ -37,13 +38,11 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
 
     // Get current user for highlighting
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (gameId) {
       // Game-specific leaderboard
-      let query = supabase
+      let query = db
         .from("user_game_progression")
         .select(
           `
@@ -91,7 +90,7 @@ export async function GET(request: NextRequest) {
       // Get current user's rank if not in top results
       let userRank = null;
       if (user && !entries.some((e) => e.is_current_user)) {
-        const userXpResult = await supabase
+        const userXpResult = await db
           .from("user_game_progression")
           .select("xp")
           .eq("user_id", user.id)
@@ -99,13 +98,13 @@ export async function GET(request: NextRequest) {
           .single();
         const userXp = (userXpResult.data as { xp: number } | null)?.xp || 0;
 
-        const { count } = await supabase
+        const { count } = await db
           .from("user_game_progression")
           .select("*", { count: "exact", head: true })
           .eq("game_id", gameId)
           .gt("xp", userXp);
 
-        const { data: userProg } = await supabase
+        const { data: userProg } = await db
           .from("user_game_progression")
           .select(
             `
@@ -138,7 +137,7 @@ export async function GET(request: NextRequest) {
       // Global leaderboard
       const orderBy = type === "level" ? "level" : "total_xp";
 
-      let query = supabase
+      let query = db
         .from("user_progression")
         .select(
           `
@@ -192,7 +191,7 @@ export async function GET(request: NextRequest) {
       // Get current user's rank if not in top results
       let userRank = null;
       if (user && !entries.some((e) => e.is_current_user)) {
-        const { data: userProg } = await supabase
+        const { data: userProg } = await db
           .from("user_progression")
           .select(
             `
@@ -208,7 +207,7 @@ export async function GET(request: NextRequest) {
 
         const typedUserProg = userProg as GlobalLeaderboardEntry | null;
         if (typedUserProg) {
-          const { count } = await supabase
+          const { count } = await db
             .from("user_progression")
             .select("*", { count: "exact", head: true })
             .gt(orderBy, orderBy === "level" ? typedUserProg.level : typedUserProg.total_xp);

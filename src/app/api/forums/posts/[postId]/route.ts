@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get a single post with details
 export async function GET(
@@ -8,13 +9,11 @@ export async function GET(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     // Fetch post
-    const { data: post, error } = await supabase
+    const { data: post, error } = await db
       .from("forum_posts")
       .select(`
         id,
@@ -61,7 +60,7 @@ export async function GET(
     // Get user's vote if authenticated
     let userVote = null;
     if (user) {
-      const { data: vote } = await supabase
+      const { data: vote } = await db
         .from("forum_votes")
         .select("vote_type")
         .eq("user_id", user.id)
@@ -72,7 +71,7 @@ export async function GET(
     }
 
     // Increment view count (fire and forget)
-    supabase.rpc("increment_post_views", { p_post_id: postId }).then();
+    db.rpc("increment_post_views", { p_post_id: postId }).then();
 
     return NextResponse.json({
       post: {
@@ -96,17 +95,15 @@ export async function PATCH(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check post ownership
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("forum_posts")
       .select("author_id, is_deleted")
       .eq("id", postId)
@@ -135,7 +132,7 @@ export async function PATCH(
     if (content) updates.content = content;
     if (tags) updates.tags = tags;
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("forum_posts")
       .update(updates)
       .eq("id", postId);
@@ -165,17 +162,15 @@ export async function DELETE(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check post ownership
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("forum_posts")
       .select("author_id, category_id")
       .eq("id", postId)
@@ -190,7 +185,7 @@ export async function DELETE(
     }
 
     // Soft delete
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await db
       .from("forum_posts")
       .update({
         is_deleted: true,
@@ -208,9 +203,9 @@ export async function DELETE(
     }
 
     // Decrement category post count
-    await supabase
+    await db
       .from("forum_categories")
-      .update({ post_count: supabase.rpc("decrement", { x: 1 }) })
+      .update({ post_count: db.rpc("decrement", { x: 1 }) })
       .eq("id", post.category_id);
 
     return NextResponse.json({ success: true });

@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/lib/hooks/useAuth";
 import { REGIONS, LANGUAGES, GAMING_STYLES, SUPPORTED_GAMES } from "@/lib/constants/games";
 import { getGameConfig } from "@/lib/game-configs";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { optimizedUpload, createPreview } from "@/lib/upload";
 import { Logo } from "@/components/layout/logo";
 
@@ -40,7 +40,7 @@ const steps = [
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading: authLoading, updateProfile } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -211,14 +211,14 @@ export default function OnboardingPage() {
       // Link selected games with rank/IGN/role data (don't block navigation on failure)
       for (const [gameSlug, gameData] of Object.entries(selectedGames)) {
         try {
-          const { data: game } = await supabase
+          const { data: game } = await db
             .from("games")
             .select("id")
             .eq("slug", gameSlug)
             .single();
 
           if (game && (game as { id: string }).id) {
-            await supabase.from("user_games").insert({
+            await db.from("user_games").insert({
               user_id: user.id,
               game_id: (game as { id: string }).id,
               game_username: gameData.game_username || null,

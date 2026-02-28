@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string }>;
@@ -9,7 +10,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const weekParam = searchParams.get("week"); // "current" | "YYYY-MM-DD"
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       weekStart = monday.toISOString().split("T")[0];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_weekly_missions")
       .select("*")
       .eq("clan_id", clanId)
@@ -61,18 +62,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is leader/co-leader
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -128,7 +126,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const weekEnd = sunday.toISOString().split("T")[0];
 
     // Check limit: max 5 missions per week
-    const { count } = await supabase
+    const { count } = await db
       .from("clan_weekly_missions")
       .select("*", { count: "exact", head: true })
       .eq("clan_id", clanId)
@@ -141,7 +139,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_weekly_missions")
       .insert({
         clan_id: clanId,

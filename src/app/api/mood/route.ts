@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { SetMoodRequest, GamingMood, MoodIntensity } from "@/types/mood";
 import { GAMING_MOODS, DEFAULT_MOOD_DURATION } from "@/types/mood";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current user's mood
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get current active mood
-    const { data: mood, error } = await supabase
+    const { data: mood, error } = await db
       .from("user_mood")
       .select("*")
       .eq("user_id", user.id)
@@ -45,10 +44,8 @@ export async function GET() {
 // POST - Set current mood
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -78,14 +75,14 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
 
     // First, expire any existing moods
-    await supabase
+    await db
       .from("user_mood")
       .update({ expires_at: new Date().toISOString() })
       .eq("user_id", user.id)
       .gte("expires_at", new Date().toISOString());
 
     // Create new mood entry
-    const { data: mood, error } = await supabase
+    const { data: mood, error } = await db
       .from("user_mood")
       .insert({
         user_id: user.id,
@@ -107,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to mood history
-    await supabase.from("mood_history").insert({
+    await db.from("mood_history").insert({
       user_id: user.id,
       mood: body.mood,
       intensity,
@@ -127,10 +124,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update current mood
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -139,7 +134,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     // Get current mood
-    const { data: currentMood } = await supabase
+    const { data: currentMood } = await db
       .from("user_mood")
       .select("id")
       .eq("user_id", user.id)
@@ -179,7 +174,7 @@ export async function PATCH(request: NextRequest) {
       updates.expires_at = newExpiry.toISOString();
     }
 
-    const { data: mood, error } = await supabase
+    const { data: mood, error } = await db
       .from("user_mood")
       .update(updates)
       .eq("id", currentMood.id)
@@ -203,17 +198,15 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Clear current mood
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Expire all active moods
-    const { error } = await supabase
+    const { error } = await db
       .from("user_mood")
       .update({ expires_at: new Date().toISOString() })
       .eq("user_id", user.id)

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/db/admin";
 import { NewsDetailClient } from "./news-detail-client";
 import type { NewsArticle } from "@/types/news";
 

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateHuntRequest, HuntStatus } from "@/types/achievement-hunting";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List achievement hunts
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const gameId = searchParams.get("game_id");
@@ -14,11 +15,9 @@ export async function GET(request: NextRequest) {
     const myHunts = searchParams.get("my_hunts") === "true";
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    let query = supabase
+    let query = db
       .from("achievement_hunts")
       .select(`
         *,
@@ -67,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     if (myHunts && user) {
       // Get hunts user is part of
-      const { data: memberships } = await supabase
+      const { data: memberships } = await db
         .from("hunt_members")
         .select("hunt_id")
         .eq("user_id", user.id);
@@ -110,10 +109,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new hunt
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -137,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify achievement exists
-    const { data: achievement } = await supabase
+    const { data: achievement } = await db
       .from("achievements")
       .select("id, players_required")
       .eq("id", body.achievement_id)
@@ -157,7 +154,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Create hunt
-    const { data: hunt, error: huntError } = await supabase
+    const { data: hunt, error: huntError } = await db
       .from("achievement_hunts")
       .insert({
         achievement_id: body.achievement_id,
@@ -182,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add creator as leader
-    const { error: memberError } = await supabase
+    const { error: memberError } = await db
       .from("hunt_members")
       .insert({
         hunt_id: hunt.id,
@@ -194,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     if (memberError) {
       // Rollback hunt creation
-      await supabase.from("achievement_hunts").delete().eq("id", hunt.id);
+      await db.from("achievement_hunts").delete().eq("id", hunt.id);
       throw memberError;
     }
 

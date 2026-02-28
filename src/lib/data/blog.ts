@@ -1,14 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createBrowserClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/db/client";
 import type { BlogPost, BlogFilters, BlogCategory } from "@/types/blog";
 
-// Cookie-free client for build-time use (generateStaticParams, sitemap)
-// These functions run outside a request context where cookies() isn't available
+// Build-time client uses the same query builder (no cookies needed, direct DB access)
 function createBuildClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  return createClient();
 }
 
 interface GetBlogPostsOptions extends BlogFilters {
@@ -25,10 +20,10 @@ interface BlogListItem {
 export async function getBlogPosts(
   options: GetBlogPostsOptions = {}
 ): Promise<BlogListItem> {
-  const supabase = await createClient();
+  const db = createClient();
   const { limit = 12, offset = 0, game, category, tag, author, featured, search } = options;
 
-  let query = supabase
+  let query = db
     .from("blog_posts")
     .select(
       `
@@ -51,7 +46,7 @@ export async function getBlogPosts(
 
   // Filter by game slug
   if (game) {
-    const { data: gameData } = await supabase
+    const { data: gameData } = await db
       .from("games")
       .select("id")
       .eq("slug", game)
@@ -74,7 +69,7 @@ export async function getBlogPosts(
 
   // Filter by author username
   if (author) {
-    const { data: authorData } = await supabase
+    const { data: authorData } = await db
       .from("profiles")
       .select("id")
       .eq("username", author)
@@ -115,9 +110,9 @@ export async function getBlogPosts(
 export async function getBlogPostBySlug(
   slug: string
 ): Promise<BlogPost | null> {
-  const supabase = await createClient();
+  const db = createClient();
 
-  const { data: post, error } = await supabase
+  const { data: post, error } = await db
     .from("blog_posts")
     .select(
       `
@@ -139,7 +134,7 @@ export async function getBlogPostBySlug(
   }
 
   // Get blog author role info
-  const { data: blogAuthor } = await supabase
+  const { data: blogAuthor } = await db
     .from("blog_authors")
     .select("*")
     .eq("user_id", post.author_id)
@@ -161,9 +156,9 @@ export async function getBlogPostBySlug(
 export async function getAllPublishedSlugs(): Promise<
   { slug: string; updated_at: string }[]
 > {
-  const supabase = createBuildClient();
+  const db = createBuildClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("blog_posts")
     .select("slug, updated_at")
     .eq("status", "published")
@@ -187,12 +182,12 @@ export async function getRecentPublishedPosts(): Promise<
     tags: string[];
   }[]
 > {
-  const supabase = createBuildClient();
+  const db = createBuildClient();
 
   const twoDaysAgo = new Date();
   twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("blog_posts")
     .select("slug, title, published_at, category, tags")
     .eq("status", "published")
@@ -211,9 +206,9 @@ export async function getRecentPublishedPosts(): Promise<
 export async function getGames(): Promise<
   { id: string; slug: string; name: string; icon_url: string | null }[]
 > {
-  const supabase = await createClient();
+  const db = createClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("games")
     .select("id, slug, name, icon_url")
     .order("name");

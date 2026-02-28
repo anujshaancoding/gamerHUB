@@ -5,7 +5,7 @@ import { Heart, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { SocialShareButtons } from "@/components/blog/social-share-buttons";
 import { ShareCardModal } from "@/components/blog/share-card-modal";
 import { useLikeBlogPost, useBlogPost } from "@/lib/hooks/useBlog";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 
 interface BlogPostActionsProps {
   slug: string;
@@ -34,8 +34,8 @@ export function BlogPostActions({
     const viewKey = `viewed_blog_${slug}`;
     if (!sessionStorage.getItem(viewKey)) {
       sessionStorage.setItem(viewKey, "1");
-      const supabase = createClient();
-      supabase.rpc("increment_blog_view", { post_slug: slug }).then();
+      const db = createClient();
+      db.rpc("increment_blog_view", { post_slug: slug }).then();
     }
   }, [slug]);
 

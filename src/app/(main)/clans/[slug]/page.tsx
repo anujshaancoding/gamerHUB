@@ -35,7 +35,7 @@ import { ClanScrims } from "@/components/clans/clan-scrims";
 import { useClan } from "@/lib/hooks/useClan";
 import { useClanMembers } from "@/lib/hooks/useClanMembers";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { ClanMemberRole, ClanActivityLog } from "@/types/database";
@@ -57,7 +57,7 @@ export default function ClanDetailPage() {
     refetch: refetchMembers,
   } = useClanMembers(clan?.id || null);
 
-  const supabase = useMemo(() => createClient(), []);
+  const db = useMemo(() => createClient(), []);
 
   const [activeTab, setActiveTab] = useState<Tab>("wall");
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -83,7 +83,7 @@ export default function ClanDetailPage() {
   const { data: activityLog = [], isLoading: activityLoading } = useQuery({
     queryKey: queryKeys.clanActivity(clan?.id || ""),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_activity_log")
         .select("*")
         .eq("clan_id", clan!.id)

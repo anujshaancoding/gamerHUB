@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List/search community listings
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const type = searchParams.get("type");
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("community_listings")
       .select(
         `
@@ -71,13 +72,10 @@ export async function GET(request: NextRequest) {
 // POST - Create a new listing
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
     let resolvedGameId = game_id || null;
 
     if (!resolvedGameId && game_slug) {
-      const { data: gameBySlug } = await supabase
+      const { data: gameBySlug } = await db
         .from("games")
         .select("id")
         .eq("slug", game_slug)
@@ -129,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (!resolvedGameId && custom_game_name) {
       // Try to find existing game by name (case-insensitive)
-      const { data: gameByName } = await supabase
+      const { data: gameByName } = await db
         .from("games")
         .select("id")
         .ilike("name", custom_game_name)
@@ -144,7 +142,7 @@ export async function POST(request: NextRequest) {
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
 
-        const { data: newGame } = await supabase
+        const { data: newGame } = await db
           .from("games")
           .insert({
             name: custom_game_name,
@@ -157,7 +155,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("community_listings")
       .insert({
         creator_id: user.id,

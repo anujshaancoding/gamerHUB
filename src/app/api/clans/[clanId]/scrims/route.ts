@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string }>;
@@ -9,17 +10,15 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     const status = searchParams.get("status"); // upcoming, live, completed, cancelled
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("clan_scrims")
       .select(
         `
@@ -89,18 +88,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is officer+
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -143,7 +139,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_scrims")
       .insert({
         clan_id: clanId,
@@ -174,7 +170,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Auto-RSVP creator
-    await supabase.from("clan_scrim_participants").insert({
+    await db.from("clan_scrim_participants").insert({
       scrim_id: data.id,
       user_id: user.id,
       status: "confirmed",

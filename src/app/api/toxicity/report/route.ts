@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
+import { getUser } from "@/lib/auth/get-user";
   type ReportPlayerRequest,
   REPORT_SEVERITY,
   calculateNewScore,
@@ -10,10 +11,8 @@ import {
 // POST /api/toxicity/report - Report a player for toxic behavior
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Check for recent duplicate reports
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data: existingReport } = await supabase
+    const { data: existingReport } = await db
       .from("player_reports")
       .select("id")
       .eq("reporter_id", user.id)
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the report
-    const { data: report, error: reportError } = await supabase
+    const { data: report, error: reportError } = await db
       .from("player_reports")
       .insert({
         reporter_id: user.id,
@@ -86,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update reported user's verified profile (if they have one)
-    const { data: reportedProfile } = await supabase
+    const { data: reportedProfile } = await db
       .from("verified_profiles")
       .select("*")
       .eq("user_id", user_id)
@@ -106,7 +105,7 @@ export async function POST(request: NextRequest) {
       );
       const newRating = getBehaviorRating(newScore);
 
-      await supabase
+      await db
         .from("verified_profiles")
         .update({
           behavior_score: newScore,
@@ -118,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Track reporter's report history (for detecting false reporters)
-    await supabase.from("report_history").insert({
+    await db.from("report_history").insert({
       reporter_id: user.id,
       report_id: report.id,
       reason,
@@ -141,10 +140,8 @@ export async function POST(request: NextRequest) {
 // GET /api/toxicity/report - Get user's reports (submitted and received)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -155,7 +152,7 @@ export async function GET(request: NextRequest) {
 
     if (type === "received") {
       // Get reports received (limited info for privacy)
-      const { data: reports, error } = await supabase
+      const { data: reports, error } = await db
         .from("player_reports")
         .select("id, reason, status, created_at, action_taken")
         .eq("reported_user_id", user.id)
@@ -181,7 +178,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get reports submitted by user
-    const { data: reports, error } = await supabase
+    const { data: reports, error } = await db
       .from("player_reports")
       .select(
         `

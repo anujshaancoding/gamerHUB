@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 // GET - Get current active season
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("seasons")
       .select(
         `
@@ -40,7 +40,7 @@ export async function GET() {
 
     // Get participant count
     const seasonData = data as any;
-    const { count: participantCount } = await supabase
+    const { count: participantCount } = await db
       .from("season_points")
       .select("*", { count: "exact", head: true })
       .eq("season_id", seasonData.id);

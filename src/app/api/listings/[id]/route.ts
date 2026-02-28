@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Fetch single listing with winners
 export async function GET(
@@ -9,9 +10,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("community_listings")
       .select(
         `
@@ -48,19 +49,16 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("community_listings")
       .update(body)
       .eq("id", id)
@@ -99,17 +97,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("community_listings")
       .delete()
       .eq("id", id)

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Lock, Gamepad2, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,8 +18,6 @@ export default function UpdatePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,20 +37,14 @@ export default function UpdatePasswordPage() {
     }
 
     try {
-      // Get user email before updating (recovery session is active)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) throw new Error("Session expired. Please request a new reset link.");
-
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-
-      // Re-authenticate with the new password to get a fresh full session
-      // This ensures the user stays logged in after the recovery session ends
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password,
+      const res = await fetch("/api/auth/update-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, token }),
       });
-      if (signInError) throw signInError;
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update password");
 
       setSuccess(true);
       setTimeout(() => router.push("/community"), 2000);

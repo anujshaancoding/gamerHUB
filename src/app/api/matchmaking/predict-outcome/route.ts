@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { predictMatchOutcome } from "@/lib/matchmaking/openai";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Predict outcome of a match
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Get skill profiles for all players
     const allPlayerIds = [...teamAIds, ...teamBIds];
 
-    const { data: profiles, error: profilesError } = await supabase
+    const { data: profiles, error: profilesError } = await db
       .from("player_skill_profiles")
       .select(`
         *,
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
     );
 
     for (const userId of missingUserIds) {
-      await supabase.rpc("get_or_create_skill_profile", {
+      await db.rpc("get_or_create_skill_profile", {
         p_user_id: userId,
         p_game_id: gameId,
       });
@@ -61,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Fetch again if needed
     let allProfiles = profiles || [];
     if (missingUserIds.length > 0) {
-      const { data: updatedProfiles } = await supabase
+      const { data: updatedProfiles } = await db
         .from("player_skill_profiles")
         .select(`
           *,

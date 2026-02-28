@@ -36,15 +36,9 @@ jest.mock('react-dom', () => ({
   createPortal: (node: any) => node,
 }));
 
-// Mock Supabase client
-jest.mock('@/lib/supabase/client', () => ({
+// Mock database client
+jest.mock('@/lib/db/client-browser', () => ({
   createClient: () => ({
-    auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      signInWithPassword: jest.fn(),
-      signUp: jest.fn(),
-      signOut: jest.fn(),
-    },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
@@ -53,6 +47,12 @@ jest.mock('@/lib/supabase/client', () => ({
       eq: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue({ data: null, error: null }),
     })),
+    rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: jest.fn().mockReturnThis(),
+    })),
+    removeChannel: jest.fn(),
   }),
 }));
 

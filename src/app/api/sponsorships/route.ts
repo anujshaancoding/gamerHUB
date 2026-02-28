@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { SponsorshipCategory, SponsorshipStatus } from "@/types/creator";
 import { getCreatorTier, canAccessFeature } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get available sponsorship opportunities
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Get creator profile and check eligibility
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -37,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check tier eligibility
-    const { count: followerCount } = await supabase
+    const { count: followerCount } = await db
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", user.id);
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    let query = supabase
+    let query = db
       .from("sponsorship_opportunities")
       .select("*", { count: "exact" });
 
@@ -80,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's applications
     const sponsorshipIds = sponsorships?.map(s => s.id) || [];
-    const { data: applications } = await supabase
+    const { data: applications } = await db
       .from("sponsorship_applications")
       .select("sponsorship_id, status")
       .eq("creator_id", profile.id)
@@ -119,17 +118,15 @@ export async function GET(request: NextRequest) {
 // POST - Create a new sponsorship opportunity (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is admin
-    const { data: userData } = await supabase
+    const { data: userData } = await db
       .from("users")
       .select("is_admin")
       .eq("id", user.id)
@@ -166,7 +163,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: sponsorship, error } = await supabase
+    const { data: sponsorship, error } = await db
       .from("sponsorship_opportunities")
       .insert({
         title: body.title.trim(),

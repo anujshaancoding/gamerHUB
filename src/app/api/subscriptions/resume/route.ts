@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { stripe } from "@/lib/stripe";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Resume a canceled subscription
 export async function POST() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get user's subscription that's scheduled to cancel
-    const { data: subscription } = await supabase
+    const { data: subscription } = await db
       .from("user_subscriptions")
       .select("stripe_subscription_id, cancel_at_period_end")
       .eq("user_id", user.id)
@@ -37,7 +35,7 @@ export async function POST() {
     });
 
     // Update local record
-    await supabase
+    await db
       .from("user_subscriptions")
       .update({
         cancel_at_period_end: false,

@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { getDiscordOAuthUrl } from "@/lib/integrations/discord";
 import { nanoid } from "nanoid";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if already connected - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await (db as any)
       .from("discord_connections")
       .select("id")
       .eq("user_id", user.id)
@@ -36,7 +34,7 @@ export async function GET() {
 
     // Store state temporarily (could use Redis in production)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: stateError } = await (supabase as any).from("oauth_states").insert({
+    const { error: stateError } = await (db as any).from("oauth_states").insert({
       state,
       user_id: user.id,
       provider: "discord",

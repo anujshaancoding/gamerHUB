@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { SubmitReviewRequest } from "@/types/coaching";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get reviews for a coach
 export async function GET(
@@ -9,14 +10,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50);
     const offset = parseInt(searchParams.get("offset") || "0");
     const sortBy = searchParams.get("sort") || "recent"; // "recent", "helpful", "rating_high", "rating_low"
 
-    let query = supabase
+    let query = db
       .from("coach_reviews")
       .select(`
         *,
@@ -52,7 +53,7 @@ export async function GET(
     }
 
     // Get rating distribution
-    const { data: ratingDist } = await supabase
+    const { data: ratingDist } = await db
       .from("coach_reviews")
       .select("rating")
       .eq("coach_id", id);
@@ -85,10 +86,8 @@ export async function POST(
 ) {
   try {
     const { id: coachId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -120,7 +119,7 @@ export async function POST(
     }
 
     // Check if coach exists
-    const { data: coach } = await supabase
+    const { data: coach } = await db
       .from("coach_profiles")
       .select("user_id")
       .eq("id", coachId)
@@ -142,7 +141,7 @@ export async function POST(
     }
 
     // Check if user already reviewed this coach
-    const { data: existingReview } = await supabase
+    const { data: existingReview } = await db
       .from("coach_reviews")
       .select("id")
       .eq("coach_id", coachId)
@@ -159,7 +158,7 @@ export async function POST(
     // Check if review is linked to a verified session
     let verifiedSession = false;
     if (body.session_id) {
-      const { data: session } = await supabase
+      const { data: session } = await db
         .from("coaching_sessions")
         .select("id")
         .eq("id", body.session_id)
@@ -172,7 +171,7 @@ export async function POST(
     }
 
     // Create review
-    const { data: review, error } = await supabase
+    const { data: review, error } = await db
       .from("coach_reviews")
       .insert({
         coach_id: coachId,
@@ -199,7 +198,7 @@ export async function POST(
     }
 
     // Update coach average rating
-    const { data: allReviews } = await supabase
+    const { data: allReviews } = await db
       .from("coach_reviews")
       .select("rating")
       .eq("coach_id", coachId);
@@ -208,7 +207,7 @@ export async function POST(
       const avgRating =
         allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
 
-      await supabase
+      await db
         .from("coach_profiles")
         .update({
           average_rating: Math.round(avgRating * 10) / 10,

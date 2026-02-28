@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Vote on a poll
 export async function POST(
@@ -8,10 +9,8 @@ export async function POST(
 ) {
   try {
     const { id: pollId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,7 +26,7 @@ export async function POST(
     }
 
     // Get the poll
-    const { data: poll, error: pollError } = await supabase
+    const { data: poll, error: pollError } = await db
       .from("community_polls")
       .select(`
         *,
@@ -78,7 +77,7 @@ export async function POST(
     }
 
     // Check existing votes
-    const { data: existingVotes } = await supabase
+    const { data: existingVotes } = await db
       .from("poll_votes")
       .select("id, option_id")
       .eq("poll_id", pollId)
@@ -96,7 +95,7 @@ export async function POST(
 
     // Remove old votes
     if (votesToRemove.length > 0) {
-      await supabase
+      await db
         .from("poll_votes")
         .delete()
         .eq("poll_id", pollId)
@@ -109,7 +108,7 @@ export async function POST(
           (o: { id: string }) => o.id === optionId
         );
         if (option) {
-          await supabase
+          await db
             .from("poll_options")
             .update({ vote_count: Math.max(0, option.vote_count - 1) })
             .eq("id", optionId);
@@ -125,7 +124,7 @@ export async function POST(
         user_id: user.id,
       }));
 
-      await supabase.from("poll_votes").insert(newVotes);
+      await db.from("poll_votes").insert(newVotes);
 
       // Increment vote counts
       for (const optionId of votesToAdd) {
@@ -133,7 +132,7 @@ export async function POST(
           (o: { id: string }) => o.id === optionId
         );
         if (option) {
-          await supabase
+          await db
             .from("poll_options")
             .update({ vote_count: option.vote_count + 1 })
             .eq("id", optionId);
@@ -144,14 +143,14 @@ export async function POST(
     // Update total votes
     const voteChange = votesToAdd.length - votesToRemove.length;
     if (voteChange !== 0) {
-      await supabase
+      await db
         .from("community_polls")
         .update({ total_votes: poll.total_votes + voteChange })
         .eq("id", pollId);
     }
 
     // Fetch updated poll
-    const { data: updatedPoll } = await supabase
+    const { data: updatedPoll } = await db
       .from("community_polls")
       .select(`
         *,

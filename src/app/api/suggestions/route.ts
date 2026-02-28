@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getMutualFriends, getSimilarRankPlayers } from "@/lib/supabase/rpc-types";
+import { createClient } from "@/lib/db/client";
+import { getMutualFriends, getSimilarRankPlayers } from "@/lib/db/rpc-types";
 import type { Profile, UserGame, Game } from "@/types/database";
 
 export interface SuggestedUser {
@@ -30,8 +30,8 @@ type ProfileWithGames = Profile & { user_games: (UserGame & { game: Game })[] };
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Get mutual friends suggestions
     if (type === "all" || type === "mutual") {
       const { data: mutualData, error: mutualError } = await getMutualFriends(
-        supabase,
+        db,
         user.id,
         limit
       );
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         const userIds = mutualData.map((m) => m.user_id);
 
         // Fetch profiles for these users
-        const { data: profilesRaw } = await supabase
+        const { data: profilesRaw } = await db
           .from("profiles")
           .select(`
             *,
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
         // Fetch mutual friend names
         const allMutualIds = [...new Set(mutualData.flatMap(m => m.mutual_friend_ids))];
-        const { data: mutualProfilesRaw } = await supabase
+        const { data: mutualProfilesRaw } = await db
           .from("profiles")
           .select("id, username, display_name")
           .in("id", allMutualIds);
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     // Get similar rank suggestions
     if (type === "all" || type === "similar_rank") {
       const { data: similarData, error: similarError } = await getSimilarRankPlayers(
-        supabase,
+        db,
         user.id,
         2,
         limit
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
         const userIds = similarData.map((s) => s.user_id);
 
         // Fetch profiles for these users
-        const { data: profilesRaw2 } = await supabase
+        const { data: profilesRaw2 } = await db
           .from("profiles")
           .select(`
             *,
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
       if (totalSuggestions === 0 || type === "random") {
         try {
           // Get current user's friends to exclude them
-          const { data: friendsData, error: friendsError } = await supabase
+          const { data: friendsData, error: friendsError } = await db
             .from("friends_view")
             .select("friend_id, user_id")
             .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
           );
 
           // Get random users excluding current user and friends
-          const { data: randomProfilesRaw, error: randomError } = await supabase
+          const { data: randomProfilesRaw, error: randomError } = await db
             .from("profiles")
             .select(`
               *,

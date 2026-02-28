@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UpdateCoachProfileRequest } from "@/types/coaching";
 import { getCoachTier } from "@/types/coaching";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get coach profile by ID
 export async function GET(
@@ -10,9 +11,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: coach, error } = await supabase
+    const { data: coach, error } = await db
       .from("coach_profiles")
       .select(`
         *,
@@ -36,7 +37,7 @@ export async function GET(
     }
 
     // Get recent reviews
-    const { data: reviews } = await supabase
+    const { data: reviews } = await db
       .from("coach_reviews")
       .select(`
         *,
@@ -50,7 +51,7 @@ export async function GET(
       .limit(5);
 
     // Get upcoming sessions count
-    const { count: upcomingSessions } = await supabase
+    const { count: upcomingSessions } = await db
       .from("coaching_sessions")
       .select("id", { count: "exact", head: true })
       .eq("coach_id", id)
@@ -83,17 +84,15 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify ownership
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("coach_profiles")
       .select("user_id")
       .eq("id", id)
@@ -154,7 +153,7 @@ export async function PATCH(
 
     if (body.availability !== undefined) {
       // Merge with existing availability
-      const { data: current } = await supabase
+      const { data: current } = await db
         .from("coach_profiles")
         .select("availability")
         .eq("id", id)
@@ -166,7 +165,7 @@ export async function PATCH(
       };
     }
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await db
       .from("coach_profiles")
       .update(updates)
       .eq("id", id)
@@ -194,17 +193,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify ownership
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("coach_profiles")
       .select("user_id")
       .eq("id", id)
@@ -218,7 +215,7 @@ export async function DELETE(
     }
 
     // Check for pending sessions
-    const { count: pendingSessions } = await supabase
+    const { count: pendingSessions } = await db
       .from("coaching_sessions")
       .select("id", { count: "exact", head: true })
       .eq("coach_id", id)
@@ -231,7 +228,7 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("coach_profiles")
       .delete()
       .eq("id", id);

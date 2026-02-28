@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string; missionId: string }>;
@@ -9,18 +10,15 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, missionId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check membership
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -38,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       const amount = Math.max(1, parseInt(body.amount || "1"));
 
       // Check mission exists and is not completed
-      const { data: mission } = await supabase
+      const { data: mission } = await db
         .from("clan_weekly_missions")
         .select("*")
         .eq("id", missionId)
@@ -60,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Record contribution
-      await supabase
+      await db
         .from("clan_mission_contributions")
         .insert({
           mission_id: missionId,
@@ -83,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         updates.completed_at = new Date().toISOString();
       }
 
-      const { data: updated, error } = await supabase
+      const { data: updated, error } = await db
         .from("clan_weekly_missions")
         .update(updates as never)
         .eq("id", missionId)
@@ -101,12 +99,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       if (isCompleted) {
         const xpReward = (mission as any).xp_reward || 0;
         if (xpReward > 0) {
-          await supabase.rpc("increment_clan_xp" as never, {
+          await db.rpc("increment_clan_xp" as never, {
             p_clan_id: clanId,
             p_xp: xpReward,
           } as never).catch(() => {
             // RPC may not exist yet, update directly
-            supabase
+            db
               .from("clans")
               .update({
                 clan_xp: ((mission as any).clan_xp || 0) + xpReward,
@@ -116,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         // Log activity
-        await supabase.from("clan_activity_log").insert({
+        await db.from("clan_activity_log").insert({
           clan_id: clanId,
           user_id: user.id,
           activity_type: "mission_completed",
@@ -158,7 +156,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_weekly_missions")
       .update(updates as never)
       .eq("id", missionId)
@@ -187,17 +185,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, missionId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -214,7 +209,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_weekly_missions")
       .delete()
       .eq("id", missionId)

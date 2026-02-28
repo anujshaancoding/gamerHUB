@@ -47,12 +47,12 @@ describe('LocalStorage Usage', () => {
   });
 
   describe('Auth Token Storage', () => {
-    it('should store auth tokens via Supabase cookie-based auth', () => {
-      // Supabase uses cookies for auth, not localStorage
+    it('should store auth tokens via cookie-based auth (Auth.js)', () => {
+      // Auth.js uses cookies for auth, not localStorage
       // Verify no auth tokens in localStorage
       const keys = Object.keys(localStorage);
       const authKeys = keys.filter(k =>
-        k.includes('supabase') || k.includes('auth') || k.includes('token')
+        k.includes('next-auth') || k.includes('auth') || k.includes('token')
       );
       expect(authKeys).toHaveLength(0);
     });
@@ -110,27 +110,27 @@ describe('LocalStorage Usage', () => {
 });
 
 describe('Cookie Behavior', () => {
-  describe('Supabase Auth Cookies', () => {
+  describe('Auth Cookies', () => {
     it('should use httpOnly cookies for auth (not accessible via JS)', () => {
-      // Supabase SSR uses httpOnly cookies that are NOT accessible via document.cookie
+      // Auth.js uses httpOnly cookies that are NOT accessible via document.cookie
       // This is a security feature - auth tokens should NOT be in JS-accessible cookies
       const jsCookies = document.cookie;
-      expect(jsCookies).not.toContain('sb-access-token');
-      expect(jsCookies).not.toContain('sb-refresh-token');
+      expect(jsCookies).not.toContain('next-auth.session-token');
+      expect(jsCookies).not.toContain('next-auth.csrf-token');
     });
 
     it('should not store auth session in localStorage (cookie-based auth)', () => {
-      // The app uses @supabase/ssr which stores auth in cookies
-      // not in localStorage like the legacy @supabase/auth-helpers
+      // The app uses Auth.js which stores auth in cookies
+      // not in localStorage
       const keys = Object.keys(localStorage);
-      const supabaseKeys = keys.filter(k => k.startsWith('sb-'));
-      expect(supabaseKeys).toHaveLength(0);
+      const authKeys = keys.filter(k => k.startsWith('next-auth'));
+      expect(authKeys).toHaveLength(0);
     });
   });
 
   describe('Cookie-based Session Refresh', () => {
     it('middleware should refresh expired sessions', () => {
-      // The middleware calls supabase.auth.getUser() which refreshes the session
+      // The middleware calls Auth.js getToken() which refreshes the session
       // if the access token is expired but refresh token is still valid
       // This is tested by verifying the middleware configuration exists
 
@@ -196,7 +196,7 @@ describe('Storage Security', () => {
   });
 
   it('should not store PII in localStorage without user consent', () => {
-    // PII should only be in server-side storage (Supabase database)
+    // PII should only be in server-side storage (database)
     const keys = Object.keys(localStorage);
     const piiKeys = keys.filter(k =>
       k.includes('email') || k.includes('phone') || k.includes('address')

@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { isPromoPeriodActive } from "@/lib/promo";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Equip a title
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // If title_id is null, unequip current title
     if (title_id === null) {
-      const { error } = await supabase
+      const { error } = await db
         .from("user_progression")
         .update({ active_title_id: null } as never)
         .eq("user_id", user.id);
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if title requires premium (special/purchase titles are premium-only)
-    const { data: titleData } = await supabase
+    const { data: titleData } = await db
       .from("titles")
       .select("unlock_type")
       .eq("id", title_id)
@@ -45,14 +43,14 @@ export async function POST(request: NextRequest) {
 
     if (titleData?.unlock_type === "special" || titleData?.unlock_type === "purchase") {
       if (!isPromoPeriodActive()) {
-        const { data: sub } = await supabase
+        const { data: sub } = await db
           .from("user_subscriptions" as any)
           .select("status")
           .eq("user_id", user.id)
           .in("status", ["active", "trialing"])
           .single();
 
-        const { data: profile } = await supabase
+        const { data: profile } = await db
           .from("profiles")
           .select("is_premium")
           .eq("id", user.id)
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user owns this title
-    const { data: userTitle } = await supabase
+    const { data: userTitle } = await db
       .from("user_titles")
       .select("id")
       .eq("user_id", user.id)
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update active title
-    const { error } = await supabase
+    const { error } = await db
       .from("user_progression")
       .update({ active_title_id: title_id } as never)
       .eq("user_id", user.id);

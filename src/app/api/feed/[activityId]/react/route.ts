@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Toggle reaction on activity
 export async function POST(
@@ -7,13 +8,10 @@ export async function POST(
   { params }: { params: Promise<{ activityId: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +21,7 @@ export async function POST(
 
     // Toggle reaction using RPC - eslint-disable for untyped RPC
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("toggle_activity_reaction", {
+    const { data, error } = await (db as any).rpc("toggle_activity_reaction", {
       p_user_id: user.id,
       p_activity_id: activityId,
       p_reaction_type: reactionType,

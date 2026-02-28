@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List recruitment posts
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const gameId = searchParams.get("game_id");
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("clan_recruitment_posts")
       .select(
         `
@@ -84,13 +85,10 @@ export async function GET(request: NextRequest) {
 // POST - Create recruitment post
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is an officer in the clan
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clan_id)
@@ -130,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if clan is recruiting
-    const { data: clanData } = await supabase
+    const { data: clanData } = await db
       .from("clans")
       .select("is_recruiting")
       .eq("id", clan_id)
@@ -145,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create recruitment post
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_recruitment_posts")
       .insert({
         clan_id,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,9 +10,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: comments, error } = await supabase
+    const { data: comments, error } = await db
       .from("friend_post_comments")
       .select(`
         id, content, created_at, user_id,
@@ -43,13 +44,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase.rpc("add_friend_post_comment", {
+    const { data, error } = await db.rpc("add_friend_post_comment", {
       p_post_id: postId,
       p_user_id: user.id,
       p_content: content,
@@ -90,13 +88,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 // DELETE - Delete a comment
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -110,7 +105,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase.rpc("delete_friend_post_comment", {
+    const { data, error } = await db.rpc("delete_friend_post_comment", {
       p_comment_id: commentId,
       p_user_id: user.id,
     });

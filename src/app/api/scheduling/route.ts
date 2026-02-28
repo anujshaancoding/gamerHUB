@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { SchedulingPreferenceInput, Region } from "@/types/localization";
 import { REGIONS } from "@/types/localization";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's scheduling preferences
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: preferences, error } = await supabase
+    const { data: preferences, error } = await db
       .from("scheduling_preferences")
       .select("*")
       .eq("user_id", user.id)
@@ -40,10 +39,8 @@ export async function GET() {
 // POST - Create or update scheduling preferences
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -88,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if preferences exist
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("scheduling_preferences")
       .select("id")
       .eq("user_id", user.id)
@@ -98,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // Update existing
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("scheduling_preferences")
         .update({
           available_times: body.available_times || [],
@@ -115,7 +112,7 @@ export async function POST(request: NextRequest) {
       preferences = data;
     } else {
       // Create new
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("scheduling_preferences")
         .insert({
           user_id: user.id,
@@ -144,10 +141,8 @@ export async function POST(request: NextRequest) {
 // Find compatible players based on scheduling
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -164,7 +159,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get user's preferences
-    const { data: userPrefs } = await supabase
+    const { data: userPrefs } = await db
       .from("scheduling_preferences")
       .select("*")
       .eq("user_id", user.id)
@@ -175,7 +170,7 @@ export async function PUT(request: NextRequest) {
     const hour = targetDate.getUTCHours();
 
     // Find users with matching availability
-    const { data: matchingUsers, error } = await supabase
+    const { data: matchingUsers, error } = await db
       .from("scheduling_preferences")
       .select(`
         user_id,
@@ -217,7 +212,7 @@ export async function PUT(request: NextRequest) {
     // If game specified, filter by users who play that game
     let finalUsers = compatibleUsers;
     if (gameId) {
-      const { data: gamePlayers } = await supabase
+      const { data: gamePlayers } = await db
         .from("game_stats")
         .select("user_id")
         .eq("game_id", gameId);

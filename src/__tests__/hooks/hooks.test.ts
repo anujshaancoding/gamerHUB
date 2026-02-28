@@ -18,7 +18,7 @@ jest.mock('@tanstack/react-query', () => ({
   })),
 }));
 
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock('@/lib/db/client-browser', () => ({
   createClient: () => ({
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),

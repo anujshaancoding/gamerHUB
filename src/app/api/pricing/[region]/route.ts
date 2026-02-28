@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { REGIONS, REGIONAL_PRICING, type Region, formatPrice } from "@/types/localization";
 
 // Base prices in INR

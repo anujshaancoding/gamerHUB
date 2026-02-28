@@ -27,7 +27,7 @@ import { FollowCard } from "@/components/friends/follow-card";
 import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { STALE_TIMES } from "@/lib/query/provider";
 import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 
@@ -60,7 +60,7 @@ function FriendsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
   const queryClient = useQueryClient();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
@@ -102,7 +102,7 @@ function FriendsContent() {
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: friendPostKeys.list(false),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("friend_posts")
         .select(`
           *,

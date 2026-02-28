@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/db/admin";
 import type Stripe from "stripe";
 
 // Create admin client for webhook (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const adminDb = createAdminClient();
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -39,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Log the webhook event
-  await supabaseAdmin.from("stripe_webhook_events").insert({
+  await adminDb.from("stripe_webhook_events").insert({
     stripe_event_id: event.id,
     event_type: event.type,
     payload: event.data.object as unknown as Record<string, unknown>,
@@ -83,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark event as processed
-    await supabaseAdmin
+    await adminDb
       .from("stripe_webhook_events")
       .update({ processed: true })
       .eq("stripe_event_id", event.id);
@@ -93,7 +90,7 @@ export async function POST(request: NextRequest) {
     console.error("Webhook handler error:", error);
 
     // Log error
-    await supabaseAdmin
+    await adminDb
       .from("stripe_webhook_events")
       .update({
         processed: false,
@@ -114,7 +111,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Record the transaction
   if (session.payment_intent && typeof session.payment_intent === "string") {
-    await supabaseAdmin.from("payment_transactions").insert({
+    await adminDb.from("payment_transactions").insert({
       user_id: userId,
       stripe_customer_id: session.customer as string,
       stripe_payment_intent_id: session.payment_intent,
@@ -129,7 +126,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   // Get user from Stripe customer
-  const { data: stripeCustomer } = await supabaseAdmin
+  const { data: stripeCustomer } = await adminDb
     .from("stripe_customers")
     .select("user_id")
     .eq("stripe_customer_id", subscription.customer as string)
@@ -144,7 +141,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const priceId = subscription.items.data[0]?.price.id;
 
   // Get plan from price ID
-  const { data: plan } = await supabaseAdmin
+  const { data: plan } = await adminDb
     .from("subscription_plans")
     .select("id")
     .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
@@ -156,7 +153,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     : "monthly";
 
   // Upsert subscription
-  await supabaseAdmin.from("user_subscriptions").upsert(
+  await adminDb.from("user_subscriptions").upsert(
     {
       user_id: userId,
       plan_id: plan?.id || null,
@@ -183,7 +180,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await supabaseAdmin
+  await adminDb
     .from("user_subscriptions")
     .update({
       status: "canceled",
@@ -197,7 +194,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (!invoice.subscription) return;
 
   // Get user from Stripe customer
-  const { data: stripeCustomer } = await supabaseAdmin
+  const { data: stripeCustomer } = await adminDb
     .from("stripe_customers")
     .select("user_id")
     .eq("stripe_customer_id", invoice.customer as string)
@@ -206,7 +203,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (!stripeCustomer) return;
 
   // Record successful payment
-  await supabaseAdmin.from("payment_transactions").insert({
+  await adminDb.from("payment_transactions").insert({
     user_id: stripeCustomer.user_id,
     stripe_customer_id: invoice.customer as string,
     stripe_payment_intent_id: invoice.payment_intent as string,
@@ -224,7 +221,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   // Get user from Stripe customer
-  const { data: stripeCustomer } = await supabaseAdmin
+  const { data: stripeCustomer } = await adminDb
     .from("stripe_customers")
     .select("user_id")
     .eq("stripe_customer_id", invoice.customer as string)
@@ -233,7 +230,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (!stripeCustomer) return;
 
   // Record failed payment
-  await supabaseAdmin.from("payment_transactions").insert({
+  await adminDb.from("payment_transactions").insert({
     user_id: stripeCustomer.user_id,
     stripe_customer_id: invoice.customer as string,
     stripe_payment_intent_id: invoice.payment_intent as string,
@@ -250,7 +247,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   // Update subscription status to past_due
   if (invoice.subscription) {
-    await supabaseAdmin
+    await adminDb
       .from("user_subscriptions")
       .update({ status: "past_due", updated_at: new Date().toISOString() })
       .eq("stripe_subscription_id", invoice.subscription as string);

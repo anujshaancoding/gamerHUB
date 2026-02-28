@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { queryKeys, STALE_TIMES } from "@/lib/query";
 import type {
   Clan,
@@ -21,14 +21,14 @@ interface ClanWithDetails extends Clan {
 }
 
 async function fetchClanData(clanIdOrSlug: string): Promise<ClanWithDetails> {
-  const supabase = createClient();
+  const db = createClient();
 
   // Try by ID first, then by slug
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     clanIdOrSlug
   );
 
-  let query = supabase
+  let query = db
     .from("clans")
     .select(
       `

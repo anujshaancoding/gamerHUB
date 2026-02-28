@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { Call, Profile } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface CallWithConversation extends Call {
   conversation: {
@@ -11,13 +12,10 @@ interface CallWithConversation extends Call {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is participant in the call's conversation
-    const { data: callData, error: callError } = await supabase
+    const { data: callData, error: callError } = await db
       .from("calls")
       .select(
         `
@@ -60,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch user profile for display name
-    const { data: profileData } = await supabase
+    const { data: profileData } = await db
       .from("profiles")
       .select("username, display_name, avatar_url")
       .eq("id", user.id)

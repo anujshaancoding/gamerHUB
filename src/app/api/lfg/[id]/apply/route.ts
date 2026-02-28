@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,18 +10,15 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if post exists and is active
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("lfg_posts")
       .select("id, creator_id, status, current_players, max_players, expires_at")
       .eq("id", postId)
@@ -66,7 +64,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check for existing application
-    const { data: existingApp } = await supabase
+    const { data: existingApp } = await db
       .from("lfg_applications")
       .select("id, status")
       .eq("post_id", postId)
@@ -84,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { applicant_role, applicant_rating, applicant_is_unranked, message } = body;
 
     // Create application
-    const { data: application, error: appError } = await supabase
+    const { data: application, error: appError } = await db
       .from("lfg_applications")
       .insert({
         post_id: postId,
@@ -126,17 +124,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await db
       .from("lfg_applications")
       .delete()
       .eq("post_id", postId)

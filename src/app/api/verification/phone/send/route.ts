@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST /api/verification/phone/send - Send verification code
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if phone is already verified by another user
-    const { data: existingPhone } = await supabase
+    const { data: existingPhone } = await db
       .from("phone_verifications")
       .select("user_id, verified_at")
       .eq("phone_number", phone_number)
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check rate limiting (can only send once per 60 seconds)
-    const { data: existingVerification } = await supabase
+    const { data: existingVerification } = await db
       .from("phone_verifications")
       .select("*")
       .eq("user_id", user.id)
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     // Upsert phone verification record
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("phone_verifications")
       .upsert(
         {

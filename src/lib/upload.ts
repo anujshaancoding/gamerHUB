@@ -1,5 +1,5 @@
 import imageCompression from "browser-image-compression";
-import { createClient } from "@/lib/supabase/client";
+import { storagePathFromUrl } from "@/lib/storage";
 
 // ── Size & quality presets ──────────────────────────────────────────
 export type ImagePreset = "avatar" | "banner" | "clan-avatar" | "clan-banner" | "media" | "thumbnail";
@@ -92,15 +92,7 @@ async function compressImage(file: File, preset: ImagePreset): Promise<File> {
   });
 }
 
-/** Extract the storage path from a full Supabase public URL (everything after /object/public/media/). */
-function storagePathFromUrl(publicUrl: string): string | null {
-  const marker = "/object/public/media/";
-  const idx = publicUrl.indexOf(marker);
-  if (idx === -1) return null;
-  // Strip any query params (e.g. ?v=… cache-busting) before extracting the path
-  const raw = publicUrl.substring(idx + marker.length).split("?")[0];
-  return decodeURIComponent(raw);
-}
+// storagePathFromUrl is imported from @/lib/storage
 
 /** Build the stable storage path for a given upload type. */
 function buildStoragePath(
@@ -166,38 +158,29 @@ export async function optimizedUpload(
   // 4. Build stable storage path
   const storagePath = buildStoragePath(preset, ownerId);
 
-  const supabase = createClient();
+  // 5. Get old path for cleanup
+  const oldPath = oldUrl ? storagePathFromUrl(oldUrl) : null;
 
-  // 5. Delete old file if it exists and has a different path
-  if (oldUrl) {
-    const oldPath = storagePathFromUrl(oldUrl);
-    if (oldPath && oldPath !== storagePath) {
-      // Fire-and-forget; don't block upload if delete fails
-      supabase.storage.from("media").remove([oldPath]).catch(() => {});
-    }
+  // 6. Upload via our API endpoint
+  const formData = new FormData();
+  formData.append("file", compressed);
+  formData.append("path", storagePath);
+  if (oldPath && oldPath !== storagePath) {
+    formData.append("oldPath", oldPath);
   }
 
-  // 6. Upload (upsert so stable filenames overwrite)
-  const { error: uploadError } = await supabase.storage
-    .from("media")
-    .upload(storagePath, compressed, {
-      cacheControl: "31536000", // 1 year (versioned by content)
-      upsert: true,
-      contentType: "image/webp",
-    });
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
 
-  if (uploadError) throw uploadError;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Upload failed" }));
+    throw new Error(err.error || "Upload failed");
+  }
 
-  // 7. Get public URL with cache-busting query param.
-  // Avatar/banner paths are stable (e.g. avatars/{id}/avatar.webp) so the
-  // browser would otherwise serve the old cached image for up to 1 year.
-  const { data: { publicUrl: rawUrl } } = supabase.storage
-    .from("media")
-    .getPublicUrl(storagePath);
-
-  const publicUrl = `${rawUrl}?v=${Date.now()}`;
-
-  return { publicUrl, fileSize: compressed.size };
+  const { publicUrl, fileSize } = await res.json();
+  return { publicUrl, fileSize: fileSize || compressed.size };
 }
 
 /**

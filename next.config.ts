@@ -33,8 +33,8 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/**",
+        hostname: "gglobby.in",
+        pathname: "/uploads/**",
       },
       {
         protocol: "https",
@@ -60,19 +60,6 @@ const nextConfig: NextConfig = {
   // Types are valid (tsc --noEmit passes with 0 errors). Use tsc directly for type checking.
   typescript: {
     ignoreBuildErrors: true,
-  },
-
-  // Proxy Supabase requests through our domain to bypass ISP connectivity issues
-  // (e.g., Indian ISPs unable to reach supabase.co directly)
-  async rewrites() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) return [];
-    return [
-      {
-        source: "/supabase-proxy/:path*",
-        destination: `${supabaseUrl}/:path*`,
-      },
-    ];
   },
 
   // Optimized caching headers for static assets

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Purchase shop item with virtual currency
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the purchase function
-    const { data, error } = await supabase.rpc("purchase_shop_item", {
+    const { data, error } = await db.rpc("purchase_shop_item", {
       p_user_id: user.id,
       p_item_id: itemId,
       p_currency_type: currencyType,

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { AnalyticsTimeRange } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get creator analytics
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
     const timeRange = (searchParams.get("range") || "30d") as AnalyticsTimeRange;
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -59,14 +58,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current period analytics
-    const { data: currentAnalytics } = await supabase
+    const { data: currentAnalytics } = await db
       .from("creator_analytics")
       .select("*")
       .eq("creator_id", profile.id)
       .gte("date", startDate.toISOString().split("T")[0]);
 
     // Get previous period analytics for comparison
-    const { data: previousAnalytics } = await supabase
+    const { data: previousAnalytics } = await db
       .from("creator_analytics")
       .select("*")
       .eq("creator_id", profile.id)
@@ -109,19 +108,19 @@ export async function GET(request: NextRequest) {
     };
 
     // Get total follower count
-    const { count: totalFollowers } = await supabase
+    const { count: totalFollowers } = await db
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", user.id);
 
     // Get total clip count
-    const { count: totalClips } = await supabase
+    const { count: totalClips } = await db
       .from("creator_clips")
       .select("*", { count: "exact", head: true })
       .eq("creator_id", profile.id);
 
     // Get total likes on clips
-    const { data: clipLikes } = await supabase
+    const { data: clipLikes } = await db
       .from("creator_clips")
       .select("likes_count")
       .eq("creator_id", profile.id);
@@ -142,7 +141,7 @@ export async function GET(request: NextRequest) {
     })).sort((a, b) => a.date.localeCompare(b.date));
 
     // Get top performing content
-    const { data: topClips } = await supabase
+    const { data: topClips } = await db
       .from("creator_clips")
       .select("id, title, thumbnail_url, views_count, likes_count")
       .eq("creator_id", profile.id)
@@ -159,7 +158,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get audience insights
-    const { data: followerGames } = await supabase
+    const { data: followerGames } = await db
       .from("follows")
       .select(`
         follower:users!follows_follower_id_fkey(
@@ -226,7 +225,7 @@ export async function GET(request: NextRequest) {
 // POST - Record analytics event
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const body = await request.json();
 
     const { creator_id, event_type, metadata } = body;
@@ -241,7 +240,7 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split("T")[0];
 
     // Get or create today's analytics record
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("creator_analytics")
       .select("*")
       .eq("creator_id", creator_id)
@@ -267,7 +266,7 @@ export async function POST(request: NextRequest) {
           break;
       }
 
-      await supabase
+      await db
         .from("creator_analytics")
         .update(updates)
         .eq("id", existing.id);
@@ -282,7 +281,7 @@ export async function POST(request: NextRequest) {
         engagements: event_type === "engagement" ? 1 : 0,
       };
 
-      await supabase.from("creator_analytics").insert(newRecord);
+      await db.from("creator_analytics").insert(newRecord);
     }
 
     return NextResponse.json({ success: true });

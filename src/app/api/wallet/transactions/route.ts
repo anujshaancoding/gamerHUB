@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get wallet transaction history
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const currencyType = searchParams.get("currency"); // 'coins' | 'gems' | null for all
 
-    let query = supabase
+    let query = db
       .from("wallet_transactions")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)

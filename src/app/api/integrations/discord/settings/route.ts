@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UpdateDiscordSettingsRequest, DiscordConnectionStatus } from "@/types/discord";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get Discord connection status and settings
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from("discord_settings")
       .select("*")
       .eq("user_id", user.id)
@@ -71,10 +70,8 @@ export async function GET() {
 // PATCH - Update Discord settings
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -83,7 +80,7 @@ export async function PATCH(request: NextRequest) {
     const body: UpdateDiscordSettingsRequest = await request.json();
 
     // Validate that user has Discord connected
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("discord_settings")
       .select("id")
       .eq("user_id", user.id)
@@ -97,7 +94,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update settings
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("discord_settings")
       .update({
         cross_post_lfg: body.cross_post_lfg,
@@ -136,17 +133,15 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Disconnect Discord
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Delete Discord settings (cascade will delete related data)
-    const { error } = await supabase
+    const { error } = await db
       .from("discord_settings")
       .delete()
       .eq("user_id", user.id);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
+import { getUser } from "@/lib/auth/get-user";
 
 // Must match the coupons in validate/route.ts
 const REDEEMABLE_COUPONS: Record<
@@ -20,13 +21,10 @@ const REDEEMABLE_COUPONS: Record<
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: "You must be logged in to redeem a coupon" },
         { status: 401 }
@@ -92,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Also try to update the profiles table (if columns exist)
     try {
-      await (supabase.from("profiles") as any)
+      await (db.from("profiles") as any)
         .update({
           is_premium: true,
           premium_until: premiumUntil.toISOString(),

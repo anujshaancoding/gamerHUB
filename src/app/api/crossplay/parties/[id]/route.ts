@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { JoinCrossplayPartyRequest, UpdatePartyMemberRequest } from "@/types/console";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get party details or join by invite code
 export async function GET(
@@ -9,12 +10,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check if id is an invite code (6 alphanumeric) or UUID
     const isInviteCode = /^[A-Z0-9]{6}$/.test(id);
 
-    let query = supabase
+    let query = db
       .from("crossplay_parties")
       .select(`
         *,
@@ -75,10 +76,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -88,7 +87,7 @@ export async function POST(
 
     // Find the party
     const isInviteCode = /^[A-Z0-9]{6}$/.test(id);
-    let partyQuery = supabase.from("crossplay_parties").select("*");
+    let partyQuery = db.from("crossplay_parties").select("*");
 
     if (isInviteCode) {
       partyQuery = partyQuery.eq("invite_code", id);
@@ -134,7 +133,7 @@ export async function POST(
     }
 
     // Check if user is already in the party
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await db
       .from("crossplay_party_members")
       .select("id")
       .eq("party_id", party.id)
@@ -150,7 +149,7 @@ export async function POST(
     }
 
     // Add user to party
-    const { error: memberError } = await supabase
+    const { error: memberError } = await db
       .from("crossplay_party_members")
       .insert({
         party_id: party.id,
@@ -174,7 +173,7 @@ export async function POST(
     const newMemberCount = party.current_members + 1;
     const newStatus = newMemberCount >= party.max_members ? "full" : "open";
 
-    await supabase
+    await db
       .from("crossplay_parties")
       .update({
         current_members: newMemberCount,
@@ -184,7 +183,7 @@ export async function POST(
       .eq("id", party.id);
 
     // Fetch updated party
-    const { data: updatedParty } = await supabase
+    const { data: updatedParty } = await db
       .from("crossplay_parties")
       .select(`
         *,
@@ -235,10 +234,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -247,7 +244,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Get the party
-    const { data: party } = await supabase
+    const { data: party } = await db
       .from("crossplay_parties")
       .select("*, members:crossplay_party_members(*)")
       .eq("id", id)
@@ -280,7 +277,7 @@ export async function PATCH(
         updateData.platform_username = body.platform_username;
       }
 
-      await supabase
+      await db
         .from("crossplay_party_members")
         .update(updateData)
         .eq("id", userMember.id);
@@ -297,7 +294,7 @@ export async function PATCH(
       if (body.status) partyUpdates.status = body.status;
 
       if (Object.keys(partyUpdates).length > 0) {
-        await supabase
+        await db
           .from("crossplay_parties")
           .update({
             ...partyUpdates,
@@ -314,12 +311,12 @@ export async function PATCH(
         );
 
         if (newLeader) {
-          await supabase
+          await db
             .from("crossplay_party_members")
             .update({ is_leader: false })
             .eq("id", userMember.id);
 
-          await supabase
+          await db
             .from("crossplay_party_members")
             .update({ is_leader: true, can_invite: true })
             .eq("id", newLeader.id);
@@ -328,7 +325,7 @@ export async function PATCH(
     }
 
     // Fetch updated party
-    const { data: updatedParty } = await supabase
+    const { data: updatedParty } = await db
       .from("crossplay_parties")
       .select(`
         *,
@@ -379,17 +376,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get the party
-    const { data: party } = await supabase
+    const { data: party } = await db
       .from("crossplay_parties")
       .select("*, members:crossplay_party_members(*)")
       .eq("id", id)
@@ -415,7 +410,7 @@ export async function DELETE(
     // If leader wants to close the party
     if (userMember.is_leader) {
       // Close the party
-      await supabase
+      await db
         .from("crossplay_parties")
         .update({
           status: "closed",
@@ -424,7 +419,7 @@ export async function DELETE(
         .eq("id", id);
 
       // Mark all members as left
-      await supabase
+      await db
         .from("crossplay_party_members")
         .update({ left_at: new Date().toISOString() })
         .eq("party_id", id)
@@ -437,7 +432,7 @@ export async function DELETE(
     }
 
     // Regular member leaving
-    await supabase
+    await db
       .from("crossplay_party_members")
       .update({ left_at: new Date().toISOString() })
       .eq("id", userMember.id);
@@ -446,7 +441,7 @@ export async function DELETE(
     const newMemberCount = party.current_members - 1;
     const newStatus = newMemberCount < party.max_members ? "open" : "full";
 
-    await supabase
+    await db
       .from("crossplay_parties")
       .update({
         current_members: newMemberCount,

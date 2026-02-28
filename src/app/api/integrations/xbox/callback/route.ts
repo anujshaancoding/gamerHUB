@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 const XBOX_CONFIG = {
   clientId: process.env.XBOX_CLIENT_ID!,
@@ -147,10 +147,10 @@ export async function GET(request: NextRequest) {
     const profile = await getXboxProfile(tokens.access_token);
 
     // Store in database
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check if XUID is already linked
-    const { data: existingConnection } = await supabase
+    const { data: existingConnection } = await db
       .from("console_connections")
       .select("user_id")
       .eq("platform", "xbox")
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert connection
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await db
       .from("console_connections")
       .upsert({
         user_id: userId,

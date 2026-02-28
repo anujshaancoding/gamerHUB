@@ -28,10 +28,10 @@ export async function GET(req: NextRequest) {
 
   console.log("[image-proxy] Hostname:", parsed.hostname);
 
-  // Also allow any *.supabase.co or *.googleusercontent.com host
+  // Also allow our own domain and *.googleusercontent.com host
   const isAllowed =
     ALLOWED_HOSTS.has(parsed.hostname) ||
-    parsed.hostname.endsWith(".supabase.co") ||
+    parsed.hostname === "gglobby.in" ||
     parsed.hostname.endsWith(".googleusercontent.com");
 
   if (!isAllowed) {

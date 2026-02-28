@@ -83,19 +83,19 @@ Every major platform follows this model:
 
 - **Frontend:** Next.js 15 (App Router) + React 19
 - **Data Fetching:** TanStack React Query v5
-- **Backend/DB:** Supabase (PostgreSQL) with Supabase Realtime
-- **Real-Time:** Supabase Realtime (Postgres Changes + Presence channels)
+- **Backend/DB:** PostgreSQL (self-hosted on VPS)
+- **Real-Time:** Socket.io (WebSocket events + Presence channels)
 
 ### How Data Flows
 
 ```
                     +------------------+
-                    |  Supabase (DB)   |
+                    | PostgreSQL (DB)  |
                     +--------+---------+
                              |
               +--------------+--------------+
               |                             |
-     API Routes (/api/*)          Direct Supabase Client
+     API Routes (/api/*)          Direct DB Client
               |                             |
      useMutation (React Query)    Raw .insert()/.update()
               |                             |
@@ -141,15 +141,15 @@ Both systems are now cross-invalidated: mutations in `useBlog.ts` also invalidat
 | Matches, online users | 30 seconds | Near real-time |
 | Messages | 10 seconds | Fallback polling (Realtime is primary) |
 
-### Supabase Realtime Usage
+### Socket.io Realtime Usage
 
 | Feature | Tables Subscribed | Channel Type |
 |---------|-------------------|-------------|
-| Messaging | `messages`, `conversations`, `conversation_participants` | postgres_changes |
-| Notifications | `notifications` | postgres_changes |
+| Messaging | `messages`, `conversations`, `conversation_participants` | Socket.io events |
+| Notifications | `notifications` | Socket.io events |
 | Presence/Online | `profiles` | Presence channel |
-| Calls | `calls`, `call_participants` | postgres_changes |
-| Tournaments | `tournaments`, `tournament_participants`, `tournament_matches` | postgres_changes |
+| Calls | `calls`, `call_participants` | Socket.io events |
+| Tournaments | `tournaments`, `tournament_participants`, `tournament_matches` | Socket.io events |
 
 **Not using Realtime (relying on stale-time + refetchOnWindowFocus):**
 - Blog post likes/comments
@@ -185,7 +185,7 @@ Our tiered stale times (24h for static, 2-5min for social, 30s for real-time) al
 `queryKeys` in `provider.tsx` provides a single source of truth for cache keys across the app, preventing typos and making invalidation predictable.
 
 ### Realtime for Chat/Messaging
-Messages use Supabase Realtime subscriptions (not polling), which is the correct approach. Messages need sub-second delivery, and we deliver that.
+Messages use Socket.io subscriptions (not polling), which is the correct approach. Messages need sub-second delivery, and we deliver that.
 
 ### RefetchOnWindowFocus
 Enabled globally. When a user switches back to the tab, stale data is refreshed automatically. This is a high-value, zero-effort freshness mechanism that all major platforms implement.
@@ -239,16 +239,16 @@ useMutation({
 });
 ```
 
-### Direct Supabase Mutations Without Cache Invalidation
+### Direct Database Mutations Without Cache Invalidation
 
-Several components write directly to Supabase without going through React Query mutations:
+Several components write directly to the database without going through React Query mutations:
 
 | Component | Action | Problem |
 |-----------|--------|---------|
 | `profile-header.tsx` | Follow/Unfollow | Updates local state but never invalidates `useRelationship()` or `useSocialCounts()` cache |
 | `gamer-card.tsx` | Follow/Unfollow | Same issue as profile-header |
 | `chat-window.tsx` | Send message | Direct insert, relies on Realtime subscription for UI update |
-| `community/page.tsx` | Like friend post | Direct Supabase update (now fixed with cache invalidation) |
+| `community/page.tsx` | Like friend post | Direct database update (now fixed with cache invalidation) |
 
 **Risk:** Other components showing the same data (e.g., follower counts) will show stale values until their stale time expires or the window is refocused.
 
@@ -280,15 +280,15 @@ Two separate key namespaces exist for the same blog data (`blogKeys` vs `queryKe
 | RefetchOnWindowFocus | Done | Enabled globally |
 | RefetchOnReconnect | Done | Enabled globally |
 | Retry on failure | Done | 1 retry configured |
-| Realtime for chat/messaging | Done | Supabase Realtime channels |
-| Realtime for notifications | Done | Supabase Realtime + 30s polling fallback |
+| Realtime for chat/messaging | Done | Socket.io channels |
+| Realtime for notifications | Done | Socket.io + 30s polling fallback |
 | Optimistic updates for likes | Not Done | All mutations are pessimistic |
-| Optimistic updates for follows | Not Done | Direct Supabase calls, no cache update |
+| Optimistic updates for follows | Not Done | Direct database calls, no cache update |
 | Realtime for social interactions | Not Done | Relies on stale time only |
-| All mutations through useMutation | Not Done | ~7 direct Supabase mutations exist |
+| All mutations through useMutation | Not Done | ~7 direct database mutations exist |
 | Unified query key namespace | Partial | Two systems, cross-invalidated |
 | Thundering herd protection | N/A | Not yet at scale to need this |
-| Supabase cache helpers library | Not Used | Manual cache management throughout |
+| Cache helpers library | Not Used | Manual cache management throughout |
 
 ---
 
@@ -313,22 +313,17 @@ Move these out of components into proper hooks with cache invalidation:
 
 **Why:** Prevents cache desync bugs. Every write should flow through React Query.
 
-### Priority 3: Supabase Realtime for Blog/Social Updates
+### Priority 3: Socket.io Realtime for Blog/Social Updates
 
-Add Realtime subscriptions that trigger `invalidateQueries`:
+Add Socket.io subscriptions that trigger `invalidateQueries`:
 ```typescript
 // In community page or a shared hook:
-supabase
-  .channel('blog-updates')
-  .on('postgres_changes',
-    { event: '*', schema: 'public', table: 'blog_posts' },
-    () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] })
-  )
-  .on('postgres_changes',
-    { event: '*', schema: 'public', table: 'friend_posts' },
-    () => queryClient.invalidateQueries({ queryKey: ["friend-posts"] })
-  )
-  .subscribe();
+socket.on('blog_posts:change', () => {
+  queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
+});
+socket.on('friend_posts:change', () => {
+  queryClient.invalidateQueries({ queryKey: ["friend-posts"] });
+});
 ```
 
 **Why:** Reduces the update gap from 2 minutes to seconds. Other users see likes/comments almost immediately.

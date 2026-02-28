@@ -1,9 +1,10 @@
 // @ts-nocheck
-// TypeScript checking disabled due to incomplete Supabase type definitions
-// TODO: Regenerate types with `supabase gen types typescript`
+// @ts-nocheck — complex tournament types
+// TODO: Regenerate types with `db gen types typescript`
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 function generateSlug(name: string): string {
   return name
@@ -14,7 +15,7 @@ function generateSlug(name: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get("status");
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("tournaments")
       .select(
         `
@@ -85,12 +86,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // If organizing as a clan, verify user is officer+
     if (organizer_clan_id) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", organizer_clan_id)
@@ -144,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique slug
     let slug = generateSlug(name);
-    const { data: existingSlugs } = await supabase
+    const { data: existingSlugs } = await db
       .from("tournaments")
       .select("slug")
       .ilike("slug", `${slug}%`);
@@ -154,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create tournament
-    const { data: tournament, error } = await supabase
+    const { data: tournament, error } = await db
       .from("tournaments")
       .insert({
         name,
@@ -210,7 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log activity
-    await supabase.from("tournament_activity_log").insert({
+    await db.from("tournament_activity_log").insert({
       tournament_id: tournament.id,
       user_id: user.id,
       activity_type: "tournament_created",

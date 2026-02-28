@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
     // Auth is optional — allow anonymous feedback too
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     const body = await request.json();
     const { message, category, image_url, page_url } = body;
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
     const validCategories = ["bug", "feature", "general", "design"];
     const safeCategory = validCategories.includes(category) ? category : "general";
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await db
       .from("beta_feedback")
       .insert({
         user_id: user?.id ?? null,

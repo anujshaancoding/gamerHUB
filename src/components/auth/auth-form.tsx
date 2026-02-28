@@ -79,7 +79,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
         const { data, error } = await signUpWithEmail(email, password, username);
         if (error) throw error;
-        // If Supabase returns a session, the user is immediately authenticated
+        // If sign-in succeeds, the user is immediately authenticated
         const signUpData = data as { session?: unknown } | null;
         if (signUpData?.session) {
           router.push("/onboarding");

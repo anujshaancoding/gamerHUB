@@ -198,7 +198,7 @@ describe('RLS Security Policies (Migration 067)', () => {
         const endorserId = 'user-alice';
         const targetId = 'user-bob';
         expect(endorserId).not.toBe(targetId);
-        // The query: supabase.from('account_trust').select('is_frozen').eq('user_id', targetId)
+        // The query: db.from('account_trust').select('is_frozen').eq('user_id', targetId)
         // Now succeeds with public SELECT
       });
     });

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List LFG posts with filters
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const game = searchParams.get("game");
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("lfg_posts")
       .select(
         `
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by creator (for "my posts")
     if (creatorId) {
-      query = supabase
+      query = db
         .from("lfg_posts")
         .select(
           `
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by available slots
     if (hasSlots) {
-      query = query.lt("current_players", supabase.rpc("get_max_players"));
+      query = query.lt("current_players", db.rpc("get_max_players"));
     }
 
     const { data, error, count } = await query;
@@ -144,13 +145,10 @@ export async function GET(request: NextRequest) {
 // POST - Create new LFG post
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -190,7 +188,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing active post
-    const { data: existingPost } = await supabase
+    const { data: existingPost } = await db
       .from("lfg_posts")
       .select("id")
       .eq("creator_id", user.id)
@@ -217,7 +215,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
     // Create post
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("lfg_posts")
       .insert({
         creator_id: user.id,

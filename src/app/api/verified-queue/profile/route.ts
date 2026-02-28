@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { getBehaviorRating } from "@/types/verified-queue";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's verified profile
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get or create verified profile
-    let { data: profile, error } = await supabase
+    let { data: profile, error } = await db
       .from("verified_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -23,7 +22,7 @@ export async function GET() {
 
     if (error && error.code === "PGRST116") {
       // Create new profile
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: createError } = await db
         .from("verified_profiles")
         .insert({
           user_id: user.id,
@@ -52,7 +51,7 @@ export async function GET() {
     }
 
     // Get recent endorsements received
-    const { data: recentEndorsements } = await supabase
+    const { data: recentEndorsements } = await db
       .from("player_endorsements")
       .select(`
         type,
@@ -67,7 +66,7 @@ export async function GET() {
       .limit(10);
 
     // Get endorsement counts by type
-    const { data: endorsementCounts } = await supabase
+    const { data: endorsementCounts } = await db
       .from("player_endorsements")
       .select("type")
       .eq("to_user_id", user.id);
@@ -94,17 +93,15 @@ export async function GET() {
 // POST - Request verification
 export async function POST() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("verified_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -136,7 +133,7 @@ export async function POST() {
     }
 
     // Update status to pending
-    const { data: updatedProfile, error } = await supabase
+    const { data: updatedProfile, error } = await db
       .from("verified_profiles")
       .update({
         status: "pending",
@@ -152,7 +149,7 @@ export async function POST() {
     // In a real app, this would trigger a verification process
     // For now, auto-verify after a short delay (simulate)
     setTimeout(async () => {
-      await supabase
+      await db
         .from("verified_profiles")
         .update({
           status: "verified",

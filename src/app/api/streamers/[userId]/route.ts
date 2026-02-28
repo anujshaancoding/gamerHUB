@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get a specific streamer's profile
 export async function GET(
@@ -8,13 +9,11 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     // Fetch streamer profile
-    const { data: streamer, error } = await supabase
+    const { data: streamer, error } = await db
       .from("streamer_profiles")
       .select(`
         id,
@@ -59,7 +58,7 @@ export async function GET(
     // Check if current user is following
     let isFollowing = false;
     if (user) {
-      const { data: follow } = await supabase
+      const { data: follow } = await db
         .from("streamer_follows")
         .select("id")
         .eq("user_id", user.id)
@@ -70,7 +69,7 @@ export async function GET(
     }
 
     // Get stream schedule
-    const { data: schedule } = await supabase
+    const { data: schedule } = await db
       .from("stream_schedules")
       .select("*")
       .eq("streamer_id", streamer.id)
@@ -78,7 +77,7 @@ export async function GET(
       .order("start_time");
 
     // Get recent streams
-    const { data: recentStreams } = await supabase
+    const { data: recentStreams } = await db
       .from("stream_history")
       .select("*")
       .eq("streamer_id", streamer.id)

@@ -1,8 +1,9 @@
 // @ts-nocheck
-// TypeScript checking disabled due to incomplete Supabase type definitions
-// TODO: Regenerate types with `supabase gen types typescript`
+// @ts-nocheck — complex tournament types
+// TODO: Regenerate types with `db gen types typescript`
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ tournamentId: string }>;
@@ -11,9 +12,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: participants, error } = await supabase
+    const { data: participants, error } = await db
       .from("tournament_participants")
       .select(
         `
@@ -48,12 +49,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get tournament
-    const { data: tournament } = await supabase
+    const { data: tournament } = await db
       .from("tournaments")
       .select("id, status, max_teams, team_size")
       .eq("id", tournamentId)
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is officer+ of the clan
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clan_id)
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if already registered
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("tournament_participants")
       .select("id")
       .eq("tournament_id", tournamentId)
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if tournament is full
-    const { count } = await supabase
+    const { count } = await db
       .from("tournament_participants")
       .select("*", { count: "exact", head: true })
       .eq("tournament_id", tournamentId);
@@ -137,7 +136,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Register clan
-    const { data: participant, error } = await supabase
+    const { data: participant, error } = await db
       .from("tournament_participants")
       .insert({
         tournament_id: tournamentId,

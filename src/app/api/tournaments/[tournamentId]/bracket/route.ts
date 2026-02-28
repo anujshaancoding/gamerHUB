@@ -1,8 +1,9 @@
 // @ts-nocheck
-// TypeScript checking disabled due to incomplete Supabase type definitions
-// TODO: Regenerate types with `supabase gen types typescript`
+// @ts-nocheck — complex tournament types
+// TODO: Regenerate types with `db gen types typescript`
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ tournamentId: string }>;
@@ -40,10 +41,10 @@ function shuffleArray<T>(array: T[]): T[] {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Get matches with team info
-    const { data: matches, error } = await supabase
+    const { data: matches, error } = await db
       .from("tournament_matches")
       .select(
         `
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get tournament bracket_data for additional info
-    const { data: tournament } = await supabase
+    const { data: tournament } = await db
       .from("tournaments")
       .select("bracket_data, format, settings")
       .eq("id", tournamentId)
@@ -100,18 +101,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get tournament
-    const { data: tournament } = await supabase
+    const { data: tournament } = await db
       .from("tournaments")
       .select("id, organizer_user_id, organizer_clan_id, status, format, settings")
       .eq("id", tournamentId)
@@ -127,7 +126,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Check permission
     let hasPermission = tournament.organizer_user_id === user.id;
     if (!hasPermission && tournament.organizer_clan_id) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", tournament.organizer_clan_id)
@@ -154,7 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get participants
-    const { data: participants } = await supabase
+    const { data: participants } = await db
       .from("tournament_participants")
       .select("id, clan_id, seed")
       .eq("tournament_id", tournamentId)
@@ -168,7 +167,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete existing matches
-    await supabase
+    await db
       .from("tournament_matches")
       .delete()
       .eq("tournament_id", tournamentId);
@@ -186,7 +185,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Assign seeds
     for (let i = 0; i < seededParticipants.length; i++) {
-      await supabase
+      await db
         .from("tournament_participants")
         .update({ seed: i + 1 })
         .eq("id", seededParticipants[i].id);
@@ -263,7 +262,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Insert matches
-    const { data: insertedMatches, error: insertError } = await supabase
+    const { data: insertedMatches, error: insertError } = await db
       .from("tournament_matches")
       .insert(matches)
       .select("id, round, match_number, bracket_type");
@@ -296,7 +295,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
           if (nextMatchId) {
             const slot = match.match_number % 2 === 1 ? "team1" : "team2";
-            await supabase
+            await db
               .from("tournament_matches")
               .update({
                 winner_advances_to: nextMatchId,
@@ -305,7 +304,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               .eq("id", match.id);
 
             // Also update the next match to know where teams come from
-            await supabase
+            await db
               .from("tournament_matches")
               .update({
                 [`${slot}_from_match`]: match.id,
@@ -316,7 +315,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       // Handle byes - advance teams with byes
-      const { data: byeMatches } = await supabase
+      const { data: byeMatches } = await db
         .from("tournament_matches")
         .select("id, team1_id, team2_id, winner_advances_to")
         .eq("tournament_id", tournamentId)
@@ -325,7 +324,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       for (const byeMatch of byeMatches || []) {
         const winnerId = byeMatch.team1_id || byeMatch.team2_id;
         if (winnerId) {
-          await supabase
+          await db
             .from("tournament_matches")
             .update({
               winner_id: winnerId,
@@ -339,7 +338,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update tournament status and bracket_data
-    await supabase
+    await db
       .from("tournaments")
       .update({
         status: "seeding",
@@ -353,7 +352,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .eq("id", tournamentId);
 
     // Log activity
-    await supabase.from("tournament_activity_log").insert({
+    await db.from("tournament_activity_log").insert({
       tournament_id: tournamentId,
       user_id: user.id,
       activity_type: "bracket_generated",
@@ -366,7 +365,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     // Fetch complete bracket to return
-    const { data: fullBracket } = await supabase
+    const { data: fullBracket } = await db
       .from("tournament_matches")
       .select(
         `

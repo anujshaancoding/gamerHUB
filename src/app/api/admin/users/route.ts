@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -93,10 +92,8 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -222,7 +219,7 @@ export async function PATCH(request: NextRequest) {
             { status: 400 }
           );
         }
-        // Delete the user from Supabase Auth (cascades to profiles via FK)
+        // Delete the user (cascades to profiles via FK)
         const { error: deleteError } = await admin.auth.admin.deleteUser(user_id);
         if (deleteError) {
           console.error("Delete user error:", deleteError);

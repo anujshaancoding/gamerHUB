@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import type { Profile } from "@/types/database";
 
 // Debounce helper to coalesce rapid-fire realtime events into a single call
@@ -85,10 +85,10 @@ export function useConversations() {
   // Realtime: listen for conversation updates + follows changes (friend status)
   // All events are debounced so rapid-fire changes coalesce into a single refetch.
   useEffect(() => {
-    const supabase = createClient();
+    const db = createClient();
     const debouncedFetch = createDebouncedFn(fetchConversations, 300);
 
-    const channel = supabase
+    const channel = db
       .channel("conversations-updates")
       .on(
         "postgres_changes",
@@ -123,7 +123,7 @@ export function useConversations() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // fetchConversations is stable, setup once on mount
@@ -231,9 +231,9 @@ export function useConversationMessages(conversationId: string | null) {
   useEffect(() => {
     if (!conversationId) return;
 
-    const supabase = createClient();
+    const db = createClient();
 
-    const channel = supabase
+    const channel = db
       .channel(`conversation:${conversationId}`)
       .on(
         "postgres_changes",
@@ -244,7 +244,7 @@ export function useConversationMessages(conversationId: string | null) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
-          const { data: sender } = await supabase
+          const { data: sender } = await db
             .from("profiles")
             .select("*")
             .eq("id", payload.new.sender_id)
@@ -283,7 +283,7 @@ export function useConversationMessages(conversationId: string | null) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [conversationId]);
 
@@ -291,9 +291,9 @@ export function useConversationMessages(conversationId: string | null) {
   useEffect(() => {
     if (!conversationId) return;
 
-    const supabase = createClient();
+    const db = createClient();
 
-    const channel = supabase.channel(`typing:${conversationId}`, {
+    const channel = db.channel(`typing:${conversationId}`, {
       config: { presence: { key: "typing" } },
     });
 
@@ -311,7 +311,7 @@ export function useConversationMessages(conversationId: string | null) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [conversationId]);
 
@@ -461,17 +461,17 @@ export function useConversationMessages(conversationId: string | null) {
   );
 
   const setTyping = useCallback(
-    async (isTyping: boolean, currentUser: Profile) => {
+    async (isTyping: boolean, _currentUser: Profile) => {
       if (!conversationId) return;
-      const supabase = createClient();
-      const channel = supabase.channel(`typing:${conversationId}`, {
-        config: { presence: { key: "typing" } },
-      });
-
-      if (isTyping) {
-        await channel.track({ user: currentUser });
-      } else {
-        await channel.untrack();
+      // Typing indicators will be handled via Socket.io in production
+      try {
+        await fetch(`/api/messages/conversations/${conversationId}/typing`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isTyping }),
+        });
+      } catch {
+        // Typing is non-critical, silently ignore errors
       }
     },
     [conversationId]
@@ -479,23 +479,18 @@ export function useConversationMessages(conversationId: string | null) {
 
   const markAsRead = useCallback(async () => {
     if (!conversationId) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const now = new Date().toISOString();
-    await supabase
-      .from("conversation_participants")
-      .update({ last_read_at: now } as never)
-      .eq("conversation_id", conversationId)
-      .eq("user_id", user.id);
+    try {
+      await fetch(`/api/messages/conversations/${conversationId}/read`, {
+        method: "POST",
+      });
+    } catch {
+      // Non-critical
+    }
 
     // Notify conversation list to clear unread badge immediately
     window.dispatchEvent(
       new CustomEvent("messages-read", {
-        detail: { conversationId, readAt: now },
+        detail: { conversationId, readAt: new Date().toISOString() },
       })
     );
   }, [conversationId]);
@@ -575,9 +570,9 @@ function startUnreadCountSingleton() {
   fetchCount();
 
   // Listen for realtime message inserts to update the count (debounced)
-  const supabase = createClient();
+  const db = createClient();
   const debouncedFetchCount = createDebouncedFn(fetchCount, 500);
-  const channel = supabase
+  const channel = db
     .channel("unread-count-singleton")
     .on(
       "postgres_changes",

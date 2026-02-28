@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { Profile } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface FollowData {
   follower_id: string;
@@ -11,12 +12,10 @@ interface FollowData {
 // GET - List all users who follow this person
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
 
     // Get all users who follow this person
-    const { data: followersDataRaw, error: followersError } = await supabase
+    const { data: followersDataRaw, error: followersError } = await db
       .from("follows")
       .select("follower_id, created_at")
       .eq("following_id", userId);
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // Exclude mutual friends: get users this person also follows back
     const followerIds = followersData.map((f) => f.follower_id);
-    const { data: mutualRaw } = await supabase
+    const { data: mutualRaw } = await db
       .from("follows")
       .select("following_id")
       .eq("follower_id", userId)
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get profiles for followers-only users (excluding mutual friends)
-    let query = supabase
+    let query = db
       .from("profiles")
       .select("*", { count: "exact" })
       .in(

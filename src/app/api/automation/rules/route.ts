@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // Type for membership query result
 interface MembershipResult {
@@ -35,14 +36,11 @@ const VALID_ACTIONS = [
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is clan admin
-    const { data: membershipData } = await supabase
+    const { data: membershipData } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -71,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     // Get automation rules - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rules, error } = await (supabase as any)
+    const { data: rules, error } = await (db as any)
       .from("automation_rules")
       .select(`
         *,
@@ -90,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     // Get Discord guild connection - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: discordGuildData } = await (supabase as any)
+    const { data: discordGuildData } = await (db as any)
       .from("discord_guild_connections")
       .select("guild_id, guild_name, is_active")
       .eq("clan_id", clanId)
@@ -114,14 +112,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -161,7 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is clan admin
-    const { data: membershipData } = await supabase
+    const { data: membershipData } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -176,7 +171,7 @@ export async function POST(request: NextRequest) {
     // Check if Discord is connected for Discord actions
     if (actionType.startsWith("send_discord") || actionType === "update_channel_topic") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: discordGuildData } = await (supabase as any)
+      const { data: discordGuildData } = await (db as any)
         .from("discord_guild_connections")
         .select("is_active")
         .eq("clan_id", clanId)
@@ -193,7 +188,7 @@ export async function POST(request: NextRequest) {
 
     // Create rule - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rule, error } = await (supabase as any)
+    const { data: rule, error } = await (db as any)
       .from("automation_rules")
       .insert({
         clan_id: clanId,

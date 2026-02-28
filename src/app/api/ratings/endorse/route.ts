@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Negative endorsements require premium+
     if (endorsementType === "negative") {
-      const permCtx = await getUserPermissionContext(supabase);
+      const permCtx = await getUserPermissionContext(db);
       const tier = permCtx ? getUserTier(permCtx) : "free";
       if (!can.giveNegativeEndorsement(tier)) {
         return NextResponse.json(
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if target user is frozen
-    const { data: targetTrust } = await supabase
+    const { data: targetTrust } = await db
       .from("account_trust")
       .select("is_frozen")
       .eq("user_id", endorsedId)
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check rate limits
-    const { data: rateLimitResult } = await supabase.rpc(
+    const { data: rateLimitResult } = await db.rpc(
       "check_endorsement_rate_limit",
       { endorser_user_id: user.id }
     );
@@ -102,13 +101,13 @@ export async function POST(request: NextRequest) {
 
     // Anti-mob detection: check for patterns
     const mobCheckResults = await detectMobPatterns(
-      supabase,
+      db,
       user.id,
       endorsedId
     );
     if (mobCheckResults.flagged) {
       // Insert flag record
-      await supabase.from("rating_flags").insert({
+      await db.from("rating_flags").insert({
         target_user_id: endorsedId,
         flag_type: mobCheckResults.flagType,
         evidence: mobCheckResults.evidence,
@@ -117,7 +116,7 @@ export async function POST(request: NextRequest) {
 
       // If severe, freeze the target's endorsement acceptance
       if (mobCheckResults.severity === "high") {
-        await supabase
+        await db
           .from("account_trust")
           .update({
             is_frozen: true,
@@ -128,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has already endorsed this player (one endorsement per pair)
-    const { data: existingEndorsement } = await supabase
+    const { data: existingEndorsement } = await db
       .from("trait_endorsements")
       .select("id")
       .eq("endorser_id", user.id)
@@ -185,7 +184,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert endorsement (one per endorser-endorsed pair, no updates allowed)
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("trait_endorsements")
       .insert(endorsementData as never)
       .select()
@@ -194,7 +193,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
 
     // Update rate limit counter
-    await supabase.from("rating_limits").upsert(
+    await db.from("rating_limits").upsert(
       {
         user_id: user.id,
         date: new Date().toISOString().split("T")[0],
@@ -225,7 +224,7 @@ export async function POST(request: NextRequest) {
 
 // Anti-mob detection logic
 async function detectMobPatterns(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: Awaited<ReturnType<typeof createClient>>,
   endorserId: string,
   endorsedId: string
 ): Promise<{
@@ -237,7 +236,7 @@ async function detectMobPatterns(
   // 1. Same clan mob: 5+ endorsements from same clan to same target in 24h
   try {
     // Get endorser's clan
-    const { data: endorserClans } = await supabase
+    const { data: endorserClans } = await db
       .from("clan_members")
       .select("clan_id")
       .eq("user_id", endorserId);
@@ -251,14 +250,14 @@ async function detectMobPatterns(
       ).toISOString();
 
       for (const clanId of clanIds) {
-        const { data: clanMembers } = await supabase
+        const { data: clanMembers } = await db
           .from("clan_members")
           .select("user_id")
           .eq("clan_id", clanId);
 
         if (clanMembers) {
           const memberIds = clanMembers.map((m) => m.user_id);
-          const { count } = await supabase
+          const { count } = await db
             .from("trait_endorsements")
             .select("*", { count: "exact", head: true })
             .eq("endorsed_id", endorsedId)
@@ -286,7 +285,7 @@ async function detectMobPatterns(
 
   // 2. Time burst: 10+ endorsements for target in last hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count: burstCount } = await supabase
+  const { count: burstCount } = await db
     .from("trait_endorsements")
     .select("*", { count: "exact", head: true })
     .eq("endorsed_id", endorsedId)
@@ -308,7 +307,7 @@ async function detectMobPatterns(
   const sevenDaysAgo = new Date(
     Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
-  const { count: weekCount } = await supabase
+  const { count: weekCount } = await db
     .from("trait_endorsements")
     .select("*", { count: "exact", head: true })
     .eq("endorsed_id", endorsedId)
@@ -316,7 +315,7 @@ async function detectMobPatterns(
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const { count: todayCount } = await supabase
+  const { count: todayCount } = await db
     .from("trait_endorsements")
     .select("*", { count: "exact", head: true })
     .eq("endorsed_id", endorsedId)

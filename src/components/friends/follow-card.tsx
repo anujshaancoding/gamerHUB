@@ -12,7 +12,7 @@ import {
 import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/premium";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Profile } from "@/types/database";
@@ -34,7 +34,7 @@ export function FollowCard({
 }: FollowCardProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
-  const supabase = createClient();
+  const db = createClient();
   const [loading, setLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(type === "following");
   const profileStatus = getUserStatus(profile.id);
@@ -48,14 +48,14 @@ export function FollowCard({
     setLoading(true);
     try {
       if (isFollowing) {
-        await supabase
+        await db
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", profile.id);
         setIsFollowing(false);
       } else {
-        const { error } = await supabase.from("follows").insert({
+        const { error } = await db.from("follows").insert({
           follower_id: user.id,
           following_id: profile.id,
         } as never);

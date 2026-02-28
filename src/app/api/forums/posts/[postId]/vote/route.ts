@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Vote on a post
 export async function POST(
@@ -8,10 +9,8 @@ export async function POST(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,7 +28,7 @@ export async function POST(
     }
 
     // Check if post exists
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("forum_posts")
       .select("id, is_deleted, author_id")
       .eq("id", postId)
@@ -55,7 +54,7 @@ export async function POST(
     }
 
     // Toggle vote
-    const { data: result, error: voteError } = await supabase.rpc(
+    const { data: result, error: voteError } = await db.rpc(
       "toggle_forum_vote",
       {
         p_user_id: user.id,

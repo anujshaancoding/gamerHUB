@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanInvite, ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string; inviteId: string }>;
@@ -10,13 +11,10 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, inviteId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -31,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get invite details
-    const { data: inviteData } = await supabase
+    const { data: inviteData } = await db
       .from("clan_invites")
       .select("*")
       .eq("id", inviteId)
@@ -53,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Check if invite has expired
     if (new Date(invite.expires_at) < new Date()) {
-      await supabase
+      await db
         .from("clan_invites")
         .update({ status: "expired" } as never)
         .eq("id", inviteId);
@@ -72,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     } else {
       // Join request - only officers can respond
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -92,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const newStatus = action === "accept" ? "accepted" : "declined";
 
     // Update invite status
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("clan_invites")
       .update({
         status: newStatus,
@@ -111,7 +109,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // If accepted, add user to clan
     if (action === "accept") {
       // Check if user is already a member of THIS clan
-      const { data: existingMember } = await supabase
+      const { data: existingMember } = await db
         .from("clan_members")
         .select("id")
         .eq("clan_id", clanId)
@@ -126,7 +124,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Check clan member limit
-      const { data: clanData } = await supabase
+      const { data: clanData } = await db
         .from("clans")
         .select("max_members")
         .eq("id", clanId)
@@ -134,14 +132,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
       const clan = clanData as { max_members: number } | null;
 
-      const { count: memberCount } = await supabase
+      const { count: memberCount } = await db
         .from("clan_members")
         .select("*", { count: "exact", head: true })
         .eq("clan_id", clanId);
 
       if (clan && memberCount && memberCount >= clan.max_members) {
         // Revert invite status
-        await supabase
+        await db
           .from("clan_invites")
           .update({ status: "pending", responded_at: null } as never)
           .eq("id", inviteId);
@@ -153,7 +151,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Add member
-      const { error: memberError } = await supabase
+      const { error: memberError } = await db
         .from("clan_members")
         .insert({
           clan_id: clanId,
@@ -164,7 +162,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       if (memberError) {
         console.error("Failed to add member:", memberError);
         // Revert invite status
-        await supabase
+        await db
           .from("clan_invites")
           .update({ status: "pending", responded_at: null } as never)
           .eq("id", inviteId);
@@ -194,18 +192,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, inviteId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get invite details
-    const { data: inviteData } = await supabase
+    const { data: inviteData } = await db
       .from("clan_invites")
       .select("*")
       .eq("id", inviteId)
@@ -225,7 +220,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!canDelete) {
       // Check if user is an officer
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -243,7 +238,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete invite
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_invites")
       .delete()
       .eq("id", inviteId);

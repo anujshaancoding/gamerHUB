@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ slug: string; commentId: string }>;
@@ -12,13 +13,10 @@ interface RouteParams {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug, commentId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -60,7 +58,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const isPostAuthor = post.author_id === user.id;
 
     if (!isCommentAuthor && !isPostAuthor) {
-      const permCtx = await getUserPermissionContext(supabase);
+      const permCtx = await getUserPermissionContext(db);
       const tier = permCtx ? getUserTier(permCtx) : "free";
       if (!can.deleteAnyComment(tier)) {
         return NextResponse.json(

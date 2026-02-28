@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Send a message
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const db = createClient();
+  const user = await getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     // Insert message
-    const { data: message, error: mError } = await supabase
+    const { data: message, error: mError } = await db
       .from("messages")
       .insert({
         conversation_id: conversationId,
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
     if (mError) throw mError;
 
     // Update conversation timestamp
-    await supabase
+    await db
       .from("conversations")
       .update({ updated_at: new Date().toISOString() } as never)
       .eq("id", conversationId);

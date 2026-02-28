@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { GamingMood, MoodStatsResponse } from "@/types/mood";
 import { GAMING_MOODS } from "@/types/mood";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get mood history and stats
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     since.setDate(since.getDate() - days);
 
     // Get mood history
-    const { data: history, error } = await supabase
+    const { data: history, error } = await db
       .from("mood_history")
       .select("*")
       .eq("user_id", user.id)
@@ -107,10 +106,8 @@ export async function GET(request: NextRequest) {
 // PATCH - Update a history entry (e.g., to add outcome)
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -143,7 +140,7 @@ export async function PATCH(request: NextRequest) {
       updates.duration_minutes = Math.max(0, body.duration_minutes);
     }
 
-    const { data: entry, error } = await supabase
+    const { data: entry, error } = await db
       .from("mood_history")
       .update(updates)
       .eq("id", entryId)

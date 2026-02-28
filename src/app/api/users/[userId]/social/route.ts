@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   getUserFriendsList,
-} from "@/lib/supabase/rpc-types";
+} from "@/lib/db/rpc-types";
 import type { Profile } from "@/types/database";
 
 export interface ProfileWithRelationship extends Profile {
@@ -32,8 +32,8 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const listType = searchParams.get("type") as "friends" | "followers" | "following";
@@ -56,7 +56,7 @@ export async function GET(
     if (listType === "friends") {
       // Friends use the RPC function (works with friend_requests table)
       const { data, error } = await getUserFriendsList(
-        supabase,
+        db,
         userId,
         user?.id || null,
         limit,
@@ -78,14 +78,14 @@ export async function GET(
       targetUserIds = listData.map((item) => item.friend_id!).filter(Boolean);
 
       // Get friend count
-      const { count: friendTotal } = await supabase.rpc("get_friend_count", {
+      const { count: friendTotal } = await db.rpc("get_friend_count", {
         p_user_id: userId,
       } as never);
       total = (friendTotal as number) || listData.length;
 
     } else if (listType === "followers") {
       // Query follows table directly: people who follow this user
-      let query = supabase
+      let query = db
         .from("follows")
         .select("follower_id, created_at", { count: "exact" })
         .eq("following_id", userId)
@@ -105,7 +105,7 @@ export async function GET(
 
       // If searching, filter by profile username/display_name
       if (search && filteredIds.length > 0) {
-        const { data: matchedProfiles } = await supabase
+        const { data: matchedProfiles } = await db
           .from("profiles")
           .select("id")
           .in("id", filteredIds)
@@ -119,14 +119,14 @@ export async function GET(
       const viewerFollowingIds = new Set<string>();
       const viewerFriendIds = new Set<string>();
       if (user && filteredIds.length > 0) {
-        const { data: viewerFollows } = await supabase
+        const { data: viewerFollows } = await db
           .from("follows")
           .select("following_id")
           .eq("follower_id", user.id)
           .in("following_id", filteredIds);
         (viewerFollows || []).forEach((f: { following_id: string }) => viewerFollowingIds.add(f.following_id));
 
-        const { data: viewerFriendRequests } = await supabase
+        const { data: viewerFriendRequests } = await db
           .from("friend_requests")
           .select("sender_id, recipient_id")
           .eq("status", "accepted")
@@ -157,7 +157,7 @@ export async function GET(
 
     } else if (listType === "following") {
       // Query follows table directly: people this user follows
-      let query = supabase
+      let query = db
         .from("follows")
         .select("following_id, created_at", { count: "exact" })
         .eq("follower_id", userId)
@@ -176,7 +176,7 @@ export async function GET(
 
       // If searching, filter by profile username/display_name
       if (search && filteredIds.length > 0) {
-        const { data: matchedProfiles } = await supabase
+        const { data: matchedProfiles } = await db
           .from("profiles")
           .select("id")
           .in("id", filteredIds)
@@ -190,14 +190,14 @@ export async function GET(
       const viewerFollowingIds = new Set<string>();
       const viewerFriendIds = new Set<string>();
       if (user && filteredIds.length > 0) {
-        const { data: viewerFollows } = await supabase
+        const { data: viewerFollows } = await db
           .from("follows")
           .select("following_id")
           .eq("follower_id", user.id)
           .in("following_id", filteredIds);
         (viewerFollows || []).forEach((f: { following_id: string }) => viewerFollowingIds.add(f.following_id));
 
-        const { data: viewerFriendRequests } = await supabase
+        const { data: viewerFriendRequests } = await db
           .from("friend_requests")
           .select("sender_id, recipient_id")
           .eq("status", "accepted")
@@ -230,7 +230,7 @@ export async function GET(
     // Fetch profiles for all users
     let profiles: Profile[] = [];
     if (targetUserIds.length > 0) {
-      const { data: profileDataRaw } = await supabase
+      const { data: profileDataRaw } = await db
         .from("profiles")
         .select("*")
         .in("id", targetUserIds);
@@ -241,7 +241,7 @@ export async function GET(
     // Check pending friend requests if user is logged in
     let pendingRequestIds = new Set<string>();
     if (user && targetUserIds.length > 0) {
-      const { data: pendingDataRaw } = await supabase
+      const { data: pendingDataRaw } = await db
         .from("friend_requests")
         .select("recipient_id")
         .eq("sender_id", user.id)

@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get all user's game connections
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get connections with their stats
-    const { data: connections, error } = await supabase
+    const { data: connections, error } = await db
       .from("game_connections")
       .select(`
         id,
@@ -49,7 +48,7 @@ export async function GET() {
     }
 
     // Get supported games for reference
-    const { data: supportedGames } = await supabase
+    const { data: supportedGames } = await db
       .from("supported_games")
       .select("*")
       .eq("is_active", true)

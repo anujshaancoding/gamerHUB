@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET /api/verification/status - Get user's verification status
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get account verification status
-    const { data: verification, error: verificationError } = await supabase
+    const { data: verification, error: verificationError } = await db
       .from("account_verifications")
       .select("*")
       .eq("user_id", user.id)
@@ -31,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // If no verification record exists, create one
     if (!verification) {
-      const { data: newVerification, error: createError } = await supabase
+      const { data: newVerification, error: createError } = await db
         .from("account_verifications")
         .insert({ user_id: user.id })
         .select()
@@ -60,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get verified badges
-    const { data: badges } = await supabase
+    const { data: badges } = await db
       .from("verified_badges")
       .select(
         `
@@ -102,13 +100,10 @@ export async function GET(request: NextRequest) {
 // POST /api/verification/status - Update verification (mark email verified, etc.)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -126,7 +121,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update verification status
-        const { error } = await supabase
+        const { error } = await db
           .from("account_verifications")
           .update({
             email_verified: true,
@@ -143,7 +138,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create badge
-        await supabase.from("verified_badges").upsert(
+        await db.from("verified_badges").upsert(
           {
             user_id: user.id,
             badge_type: "email_verified",
@@ -155,7 +150,7 @@ export async function POST(request: NextRequest) {
         );
 
         // Recalculate trust score
-        await supabase.rpc("calculate_trust_score", { p_user_id: user.id });
+        await db.rpc("calculate_trust_score", { p_user_id: user.id });
 
         return NextResponse.json({
           success: true,
@@ -164,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "recalculate_trust": {
-        const { data: score } = await supabase.rpc("calculate_trust_score", {
+        const { data: score } = await db.rpc("calculate_trust_score", {
           p_user_id: user.id,
         });
 

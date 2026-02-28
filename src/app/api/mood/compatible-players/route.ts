@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { GamingMood, MoodIntensity } from "@/types/mood";
 import { GAMING_MOODS, calculateMoodCompatibility } from "@/types/mood";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Find players with compatible moods
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
 
     // Get current user's mood
-    const { data: userMood } = await supabase
+    const { data: userMood } = await db
       .from("user_mood")
       .select("mood, intensity")
       .eq("user_id", user.id)
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
     const myIntensity = (userMood?.intensity || 3) as MoodIntensity;
 
     // Build query for active moods
-    let query = supabase
+    let query = db
       .from("user_mood")
       .select(`
         id,

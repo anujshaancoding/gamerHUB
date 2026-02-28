@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
+import { getUser } from "@/lib/auth/get-user";
   acceptFriendRequest,
   declineFriendRequest,
   cancelFriendRequest,
-} from "@/lib/supabase/rpc-types";
+} from "@/lib/db/rpc-types";
 
 interface RouteParams {
   params: Promise<{ requestId: string }>;
@@ -13,18 +14,16 @@ interface RouteParams {
 // GET - Get single friend request
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { requestId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("friend_requests")
       .select(
         `
@@ -58,12 +57,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PATCH - Accept or decline friend request
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { requestId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (action === "accept") {
       const { error } = await acceptFriendRequest(
-        supabase,
+        db,
         requestId,
         user.id
       );
@@ -100,7 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       });
     } else {
       const { error } = await declineFriendRequest(
-        supabase,
+        db,
         requestId,
         user.id
       );
@@ -130,18 +127,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 // DELETE - Cancel friend request (only sender can cancel)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { requestId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await cancelFriendRequest(supabase, requestId, user.id);
+    const { error } = await cancelFriendRequest(db, requestId, user.id);
 
     if (error) {
       console.error("Error canceling friend request:", error);

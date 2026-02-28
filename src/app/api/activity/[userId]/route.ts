@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const days = Math.min(parseInt(searchParams.get("days") || "365"), 365);
@@ -15,7 +15,7 @@ export async function GET(
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split("T")[0];
 
-    const { data: activityDays, error } = await supabase
+    const { data: activityDays, error } = await db
       .from("user_activity_days" as never)
       .select("*")
       .eq("user_id" as never, userId)

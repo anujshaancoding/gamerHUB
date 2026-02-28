@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileGames } from "@/components/profile/profile-games";
 import { ProfileMedals } from "@/components/profile/profile-medals";
@@ -24,10 +25,10 @@ interface ProfilePageProps {
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
-  const supabase = await createClient();
+  const db = createClient();
 
   // Fetch profile from main profiles table
-  const { data: profileData } = await supabase
+  const { data: profileData } = await db
     .from("profiles")
     .select("*")
     .eq("username", username)
@@ -40,14 +41,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const profile = profileData as unknown as Profile;
 
   // Fetch user games
-  const { data: userGames } = await supabase
+  const { data: userGames } = await db
     .from("user_games")
     .select("*, game:games(*)")
     .eq("user_id", profile.id)
     .eq("is_public", true);
 
   // Fetch achievements
-  const { data: achievements } = await supabase
+  const { data: achievements } = await db
     .from("achievements")
     .select("*, game:games(*)")
     .eq("user_id", profile.id)
@@ -56,7 +57,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .limit(12);
 
   // Fetch trait endorsements (new system - not in auto-generated types)
-  const { data: endorsements } = await supabase
+  const { data: endorsements } = await db
     .from("trait_endorsements" as never)
     .select("friendly, team_player, leader, communicative, reliable" as never)
     .eq("endorsed_id" as never, profile.id);
@@ -92,7 +93,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     is_community_pillar: boolean;
     is_established: boolean;
   };
-  const { data: trustBadgeRaw } = await supabase
+  const { data: trustBadgeRaw } = await db
     .from("trust_badges" as never)
     .select("*")
     .eq("user_id" as never, profile.id)
@@ -129,7 +130,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     clan_participation_score: number;
     verification_bonus: number;
   };
-  const { data: accountTrustRaw } = await supabase
+  const { data: accountTrustRaw } = await db
     .from("account_trust" as never)
     .select("account_age_score, activity_score, community_score, report_score, interaction_depth_score, repeat_play_score, clan_participation_score, verification_bonus" as never)
     .eq("user_id" as never, profile.id)
@@ -150,7 +151,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     : null;
 
   // Fetch user badges
-  const { data: userBadges } = await supabase
+  const { data: userBadges } = await db
     .from("user_profile_badges")
     .select("*, badge:profile_badges(*)")
     .eq("user_id", profile.id)
@@ -161,27 +162,25 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // User stats for progress bars are derived from already-fetched profile data below.
 
   // Fetch follow counts
-  const { count: followersCount } = await supabase
+  const { count: followersCount } = await db
     .from("follows")
     .select("*", { count: "exact", head: true })
     .eq("following_id", profile.id);
 
-  const { count: followingCount } = await supabase
+  const { count: followingCount } = await db
     .from("follows")
     .select("*", { count: "exact", head: true })
     .eq("follower_id", profile.id);
 
   // Check if current user follows this profile
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   let isFollowing = false;
   let isOwnProfile = false;
 
   if (user) {
     isOwnProfile = user.id === profile.id;
     if (!isOwnProfile) {
-      const { data: follow } = await supabase
+      const { data: follow } = await db
         .from("follows")
         .select("id")
         .eq("follower_id", user.id)
@@ -191,18 +190,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
   }
 
-  // Determine premium status (check DB column, fall back to auth metadata)
-  let isPremium = profile.is_premium ?? false;
-  if (!isPremium && user && isOwnProfile) {
-    const metaPremiumUntil = user.app_metadata?.premium_until;
-    if (user.app_metadata?.is_premium && metaPremiumUntil && new Date(metaPremiumUntil) > new Date()) {
-      isPremium = true;
-    }
-  }
+  // Determine premium status from profile DB column
+  const isPremium = profile.is_premium ?? false;
 
   // Log profile view (if not own profile)
   if (user && !isOwnProfile) {
-    await supabase.from("profile_views").insert({
+    await db.from("profile_views").insert({
       profile_id: profile.id,
       viewer_id: user.id,
       source: "direct",
@@ -217,7 +210,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   };
   let recentViewers: ProfileViewRow[] = [];
   if (isOwnProfile) {
-    const { data: viewerData } = await supabase
+    const { data: viewerData } = await db
       .from("profile_views" as never)
       .select("viewer_id, viewed_at, viewer:profiles!profile_views_viewer_id_fkey(id, username, display_name, avatar_url)" as never)
       .eq("profile_id" as never, profile.id)
@@ -239,13 +232,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const primaryGameSlug = userGames?.[0]?.game?.slug ?? null;
 
   // Fetch clan memberships for profile display
-  const { data: clanMemberships } = await supabase
+  const { data: clanMemberships } = await db
     .from("clan_members")
     .select("*, clan:clans(id, name, tag, slug, avatar_url, banner_url)")
     .eq("user_id", profile.id);
 
   // Fetch rank history for timeline
-  const { data: rankHistoryRaw } = await supabase
+  const { data: rankHistoryRaw } = await db
     .from("rank_history" as never)
     .select("id, rank, achieved_at, season, game_id, game:games(name, slug, icon_url)" as never)
     .eq("user_id" as never, profile.id)
@@ -273,7 +266,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }));
 
   // Fetch activity data for power level and calendar
-  const { data: activityDataRaw } = await supabase
+  const { data: activityDataRaw } = await db
     .from("user_activity_days" as never)
     .select("activity_date, minutes_online, first_seen_at, last_seen_at" as never)
     .eq("user_id" as never, profile.id)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanChallenge, ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ challengeId: string }>;
@@ -10,9 +11,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { challengeId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_challenges")
       .select(
         `
@@ -54,13 +55,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { challengeId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -68,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { action, status, winner_clan_id, result, scheduled_at } = body;
 
     // Get current challenge
-    const { data: challengeData } = await supabase
+    const { data: challengeData } = await db
       .from("clan_challenges")
       .select("*")
       .eq("id", challengeId)
@@ -84,7 +82,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check user's clan membership
-    const { data: memberships } = await supabase
+    const { data: memberships } = await db
       .from("clan_members")
       .select("clan_id, role")
       .eq("user_id", user.id)
@@ -133,7 +131,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         updates.challenged_clan_id = userMembership.clan_id;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_challenges")
         .update(updates as never)
         .eq("id", challengeId)
@@ -149,7 +147,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Log activity for both clans
-      await supabase.from("clan_activity_log").insert([
+      await db.from("clan_activity_log").insert([
         {
           clan_id: challenge.challenger_clan_id,
           user_id: user.id,
@@ -184,7 +182,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("clan_challenges")
         .update({ status: "cancelled" } as never)
         .eq("id", challengeId)
@@ -257,7 +255,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             ? challenge.challenged_clan_id
             : challenge.challenger_clan_id;
 
-        await supabase.from("clan_activity_log").insert([
+        await db.from("clan_activity_log").insert([
           {
             clan_id: winner_clan_id,
             user_id: user.id,
@@ -291,7 +289,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_challenges")
       .update(updates as never)
       .eq("id", challengeId)
@@ -328,18 +326,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { challengeId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get challenge
-    const { data: challengeData } = await supabase
+    const { data: challengeData } = await db
       .from("clan_challenges")
       .select("*")
       .eq("id", challengeId)
@@ -355,7 +350,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only challenger clan officers can delete
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", challenge.challenger_clan_id)
@@ -379,7 +374,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_challenges")
       .delete()
       .eq("id", challengeId);

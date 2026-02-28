@@ -376,7 +376,7 @@ describe('Communication API', () => {
   });
 
   describe('Real-time Subscriptions', () => {
-    describe('Supabase Real-time', () => {
+    describe('Real-time', () => {
       it('should subscribe to message updates', () => {
         const subscription = {
           table: 'messages',

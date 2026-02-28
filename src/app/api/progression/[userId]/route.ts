@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 // GET - Get specific user's progression
 export async function GET(
@@ -8,9 +8,9 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: progression, error } = await supabase
+    const { data: progression, error } = await db
       .from("user_progression")
       .select(
         `

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UserQuestWithDetails } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Claim quest rewards
 export async function POST(
@@ -9,18 +10,15 @@ export async function POST(
 ) {
   try {
     const { questId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get the user quest
-    const { data: userQuestData, error: questError } = await supabase
+    const { data: userQuestData, error: questError } = await db
       .from("user_quests")
       .select(
         `
@@ -58,7 +56,7 @@ export async function POST(
 
     if (xpReward > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: xpError } = await (supabase.rpc as any)("award_xp", {
+      const { data, error: xpError } = await (db.rpc as any)("award_xp", {
         p_user_id: user.id,
         p_amount: xpReward,
         p_source_type: "quest",
@@ -75,7 +73,7 @@ export async function POST(
     }
 
     // Update quest status to claimed
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("user_quests")
       .update({
         status: "claimed",
@@ -93,7 +91,7 @@ export async function POST(
 
     // Update user progression stats
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.rpc as any)("update_progression_stats", {
+    await (db.rpc as any)("update_progression_stats", {
       p_user_id: user.id,
       p_stat_key: "quests_completed",
       p_increment: 1,

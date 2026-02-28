@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Join a challenge
 export async function POST(
@@ -8,19 +9,16 @@ export async function POST(
 ) {
   try {
     const { challengeId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get challenge details
-    const { data: challengeData, error: challengeError } = await supabase
+    const { data: challengeData, error: challengeError } = await db
       .from("community_challenges")
       .select("*")
       .eq("id", challengeId)
@@ -57,7 +55,7 @@ export async function POST(
     }
 
     // Check if user already joined
-    const { data: existingProgress } = await supabase
+    const { data: existingProgress } = await db
       .from("challenge_progress")
       .select("id")
       .eq("challenge_id", challengeId)
@@ -73,7 +71,7 @@ export async function POST(
 
     // Check max participants
     if (challenge.max_participants) {
-      const { count } = await supabase
+      const { count } = await db
         .from("challenge_progress")
         .select("*", { count: "exact", head: true })
         .eq("challenge_id", challengeId);
@@ -96,7 +94,7 @@ export async function POST(
     }));
 
     // Create progress entry
-    const { data: progress, error: progressError } = await supabase
+    const { data: progress, error: progressError } = await db
       .from("challenge_progress")
       .insert({
         challenge_id: challengeId,

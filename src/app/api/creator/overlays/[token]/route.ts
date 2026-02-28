@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 // GET - Get overlay by public token (for OBS/streaming software)
 export async function GET(
@@ -8,10 +8,10 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Get overlay by token
-    const { data: overlay, error } = await supabase
+    const { data: overlay, error } = await db
       .from("streamer_overlays")
       .select(`
         *,
@@ -50,7 +50,7 @@ export async function GET(
     switch (overlay.type) {
       case "lfg_status": {
         // Get current LFG status
-        const { data: lfgPost } = await supabase
+        const { data: lfgPost } = await db
           .from("lfg_posts")
           .select(`
             *,
@@ -66,7 +66,7 @@ export async function GET(
 
         // Get user's current game stats if available
         if (lfgPost?.game_id) {
-          const { data: stats } = await supabase
+          const { data: stats } = await db
             .from("game_stats")
             .select("*")
             .eq("user_id", userId)
@@ -82,7 +82,7 @@ export async function GET(
         // Get game stats for configured games
         const gamesConfig = overlay.config?.statsConfig?.games || [];
         if (gamesConfig.length > 0) {
-          const { data: stats } = await supabase
+          const { data: stats } = await db
             .from("game_stats")
             .select(`
               *,
@@ -98,7 +98,7 @@ export async function GET(
 
       case "social": {
         // Get creator's social links
-        const { data: profile } = await supabase
+        const { data: profile } = await db
           .from("creator_profiles")
           .select("social_links, streaming_platforms")
           .eq("user_id", userId)
@@ -111,7 +111,7 @@ export async function GET(
 
       case "schedule": {
         // Get user's scheduled sessions
-        const { data: schedule } = await supabase
+        const { data: schedule } = await db
           .from("lfg_posts")
           .select(`
             id,
@@ -136,7 +136,7 @@ export async function GET(
         const activities: unknown[] = [];
 
         if (alertTypes.includes("follower")) {
-          const { data: recentFollows } = await supabase
+          const { data: recentFollows } = await db
             .from("follows")
             .select(`
               created_at,
@@ -156,7 +156,7 @@ export async function GET(
         }
 
         if (alertTypes.includes("lfg_join")) {
-          const { data: recentJoins } = await supabase
+          const { data: recentJoins } = await db
             .from("lfg_responses")
             .select(`
               created_at,
@@ -188,7 +188,7 @@ export async function GET(
     }
 
     // Track view for analytics (don't await)
-    supabase.rpc("increment_overlay_views", {
+    db.rpc("increment_overlay_views", {
       overlay_id: overlay.id
     }).then(() => {}).catch(() => {});
 

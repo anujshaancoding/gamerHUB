@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // PATCH - Equip or unequip a reward
 export async function PATCH(
@@ -8,14 +9,11 @@ export async function PATCH(
 ) {
   try {
     const { rewardId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -30,7 +28,7 @@ export async function PATCH(
     }
 
     // Get the reward
-    const { data: rewardData, error: rewardError } = await supabase
+    const { data: rewardData, error: rewardError } = await db
       .from("user_rewards")
       .select("*")
       .eq("id", rewardId)
@@ -54,7 +52,7 @@ export async function PATCH(
     // If equipping, unequip other rewards of the same type
     if (equip) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from("user_rewards") as any)
+      await (db.from("user_rewards") as any)
         .update({ is_equipped: false })
         .eq("user_id", user.id)
         .eq("reward_type", reward.reward_type)
@@ -62,7 +60,7 @@ export async function PATCH(
     }
 
     // Update equip status
-    const { data: updatedReward, error: updateError } = await supabase
+    const { data: updatedReward, error: updateError } = await db
       .from("user_rewards")
       .update({ is_equipped: equip } as never)
       .eq("id", rewardId)

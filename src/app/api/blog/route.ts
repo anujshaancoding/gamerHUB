@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List published blog posts with filters
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const game = searchParams.get("game");
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const cursor = searchParams.get("cursor"); // ISO date string of last item's published_at
 
-    let query = supabase
+    let query = db
       .from("blog_posts")
       .select(
         `
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by game
     if (game) {
-      const { data: gameData } = await supabase
+      const { data: gameData } = await db
         .from("games")
         .select("id")
         .eq("slug", game)
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by author
     if (author) {
-      const { data: authorData } = await supabase
+      const { data: authorData } = await db
         .from("profiles")
         .select("id")
         .eq("username", author)
@@ -138,18 +139,15 @@ export async function GET(request: NextRequest) {
 // POST - Create new blog post
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is a blog author
-    const { data: author } = await supabase
+    const { data: author } = await db
       .from("blog_authors")
       .select("id, can_publish_directly")
       .eq("user_id", user.id)
@@ -190,7 +188,7 @@ export async function POST(request: NextRequest) {
 
     // Restrict "news" category to editors and admins only
     if (category === "news") {
-      const permCtx = await getUserPermissionContext(supabase);
+      const permCtx = await getUserPermissionContext(db);
       const tier = permCtx ? getUserTier(permCtx) : "free";
       if (!can.useNewsCategory(tier)) {
         return NextResponse.json(
@@ -250,7 +248,7 @@ export async function POST(request: NextRequest) {
     `;
 
     // Try with all optional columns first
-    let { data: post, error: postError } = await supabase
+    let { data: post, error: postError } = await db
       .from("blog_posts")
       .insert({ ...coreData, ...optionalExtras } as never)
       .select(selectQuery)
@@ -263,7 +261,7 @@ export async function POST(request: NextRequest) {
       // Use a different slug for the retry to avoid unique constraint conflicts
       const retryData = { ...coreData, slug: `${slug}-${Date.now()}` };
 
-      const retry = await supabase
+      const retry = await db
         .from("blog_posts")
         .insert(retryData as never)
         .select(selectQuery)

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { isPromoPeriodActive } from "@/lib/promo";
 import type { Clan } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List/search clans
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createAdminClient();
+    const adminDb = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const search = searchParams.get("search");
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = adminDb
       .from("clans")
       .select(
         `
@@ -84,13 +85,10 @@ export async function GET(request: NextRequest) {
 // POST - Create new clan
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -99,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     if (!isPremium) {
       // 1. Check user_subscriptions table
-      const { data: subscription } = await supabase
+      const { data: subscription } = await db
         .from("user_subscriptions")
         .select("status")
         .eq("user_id", user.id)
@@ -112,7 +110,7 @@ export async function POST(request: NextRequest) {
 
       // 2. Check profiles.is_premium flag
       if (!isPremium) {
-        const { data: profile } = await supabase
+        const { data: profile } = await db
           .from("profiles")
           .select("is_premium, premium_until")
           .eq("id", user.id)
@@ -157,7 +155,7 @@ export async function POST(request: NextRequest) {
     let resolvedGameId = primary_game_id || null;
 
     if (!resolvedGameId && primary_game_slug) {
-      const { data: gameBySlug } = await supabase
+      const { data: gameBySlug } = await db
         .from("games")
         .select("id")
         .eq("slug", primary_game_slug)
@@ -167,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     if (!resolvedGameId && custom_game_name) {
       // Try to find existing game by name (case-insensitive)
-      const { data: gameByName } = await supabase
+      const { data: gameByName } = await db
         .from("games")
         .select("id")
         .ilike("name", custom_game_name)
@@ -182,7 +180,7 @@ export async function POST(request: NextRequest) {
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
 
-        const { data: newGame } = await supabase
+        const { data: newGame } = await db
           .from("games")
           .insert({
             name: custom_game_name,
@@ -212,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if tag is unique
-    const { data: existingClan } = await supabase
+    const { data: existingClan } = await db
       .from("clans")
       .select("id")
       .eq("tag", tag.toUpperCase())
@@ -235,7 +233,7 @@ export async function POST(request: NextRequest) {
     let finalSlug = slug;
     let slugCounter = 1;
     while (true) {
-      const { data: existingSlug } = await supabase
+      const { data: existingSlug } = await db
         .from("clans")
         .select("id")
         .eq("slug", finalSlug)

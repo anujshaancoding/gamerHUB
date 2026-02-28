@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanMember, ClanRecruitmentPost } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ postId: string }>;
@@ -10,9 +11,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_recruitment_posts")
       .select(
         `
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Increment views count
     const postData = data as { views_count?: number };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase
+    await (db
       .from("clan_recruitment_posts") as any)
       .update({ views_count: (postData.views_count || 0) + 1 })
       .eq("id", postId);
@@ -65,18 +66,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get post to check clan_id
-    const { data: postData } = await supabase
+    const { data: postData } = await db
       .from("clan_recruitment_posts")
       .select("clan_id")
       .eq("id", postId)
@@ -92,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is an officer
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", post.clan_id)
@@ -133,7 +131,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_recruitment_posts")
       .update(updates as never)
       .eq("id", postId)
@@ -169,18 +167,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get post to check clan_id
-    const { data: postData } = await supabase
+    const { data: postData } = await db
       .from("clan_recruitment_posts")
       .select("clan_id")
       .eq("id", postId)
@@ -196,7 +191,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is an officer
-    const { data: membership } = await supabase
+    const { data: membership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", post.clan_id)
@@ -212,7 +207,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_recruitment_posts")
       .delete()
       .eq("id", postId);

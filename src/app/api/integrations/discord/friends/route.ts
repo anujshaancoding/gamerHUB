@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ImportFriendsResponse } from "@/types/discord";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get imported Discord friends
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const matchedOnly = searchParams.get("matched") === "true";
 
-    let query = supabase
+    let query = db
       .from("discord_friends")
       .select(`
         *,
@@ -62,17 +61,15 @@ export async function GET(request: NextRequest) {
 // POST - Import/refresh Discord friends
 export async function POST() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get Discord settings
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from("discord_settings")
       .select("discord_user_id, access_token, token_expires_at, import_friends_enabled")
       .eq("user_id", user.id)
@@ -98,7 +95,7 @@ export async function POST() {
     // who might be mutual contacts
 
     // Find other users who have connected Discord and are in the same guilds
-    const { data: potentialFriends } = await supabase
+    const { data: potentialFriends } = await db
       .from("discord_settings")
       .select(`
         discord_user_id,
@@ -136,7 +133,7 @@ export async function POST() {
     const importedFriends = [];
 
     for (const friend of mutualGuildUsers) {
-      const { data: existing } = await supabase
+      const { data: existing } = await db
         .from("discord_friends")
         .select("id")
         .eq("user_id", user.id)
@@ -144,7 +141,7 @@ export async function POST() {
         .single();
 
       if (!existing) {
-        const { data: inserted, error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await db
           .from("discord_friends")
           .insert({
             user_id: user.id,
@@ -172,7 +169,7 @@ export async function POST() {
         }
       } else {
         // Update existing
-        const { data: updated } = await supabase
+        const { data: updated } = await db
           .from("discord_friends")
           .update({
             discord_friend_username: friend.discord_username,
@@ -217,10 +214,8 @@ export async function POST() {
 // POST - Send invite to Discord friend
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -236,7 +231,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get the friend record
-    const { data: friend, error: friendError } = await supabase
+    const { data: friend, error: friendError } = await db
       .from("discord_friends")
       .select("*")
       .eq("id", friend_id)
@@ -258,7 +253,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Mark invite as sent
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("discord_friends")
       .update({
         invite_sent: true,

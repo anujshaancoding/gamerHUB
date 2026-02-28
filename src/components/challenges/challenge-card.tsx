@@ -14,7 +14,7 @@ import {
   Gift,
 } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Challenge, Game, Profile } from "@/types/database";
 
@@ -31,7 +31,7 @@ interface ChallengeCardProps {
 
 export function ChallengeCard({ challenge, currentUserId }: ChallengeCardProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const db = createClient();
   const [loading, setLoading] = useState(false);
 
   const isCreator = challenge.creator_id === currentUserId;
@@ -43,7 +43,7 @@ export function ChallengeCard({ challenge, currentUserId }: ChallengeCardProps) 
 
     try {
       // Update challenge
-      const { error: challengeError } = await supabase
+      const { error: challengeError } = await db
         .from("challenges")
         .update({
           status: "accepted",
@@ -54,7 +54,7 @@ export function ChallengeCard({ challenge, currentUserId }: ChallengeCardProps) 
       if (challengeError) throw challengeError;
 
       // Create a match for this challenge
-      const { data: match, error: matchError } = await supabase
+      const { data: match, error: matchError } = await db
         .from("matches")
         .insert({
           title: `Challenge: ${challenge.title}`,
@@ -74,13 +74,13 @@ export function ChallengeCard({ challenge, currentUserId }: ChallengeCardProps) 
       if (!matchId) throw new Error("Failed to create match");
 
       // Add both participants
-      await supabase.from("match_participants").insert([
+      await db.from("match_participants").insert([
         { match_id: matchId, user_id: challenge.creator_id, status: "accepted" },
         { match_id: matchId, user_id: currentUserId, status: "accepted" },
       ] as never);
 
       // Update challenge with match ID
-      await supabase
+      await db
         .from("challenges")
         .update({ match_id: matchId, status: "in_progress" } as never)
         .eq("id", challenge.id);

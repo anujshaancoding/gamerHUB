@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string }>;
@@ -10,14 +11,14 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const role = searchParams.get("role");
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("clan_members")
       .select(
         `
@@ -72,13 +73,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -88,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const targetUserId = user_id || user.id;
 
     // Check if user is already a member of THIS clan
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await db
       .from("clan_members")
       .select("id")
       .eq("clan_id", clanId)
@@ -103,7 +101,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check clan member limit
-    const { data: clanData } = await supabase
+    const { data: clanData } = await db
       .from("clans")
       .select("max_members")
       .eq("id", clanId)
@@ -111,7 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const clan = clanData as { max_members: number } | null;
 
-    const { count: memberCount } = await supabase
+    const { count: memberCount } = await db
       .from("clan_members")
       .select("*", { count: "exact", head: true })
       .eq("clan_id", clanId);
@@ -125,7 +123,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // If adding another user, check permissions
     if (user_id && user_id !== user.id) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -143,7 +141,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Add member
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_members")
       .insert({
         clan_id: clanId,

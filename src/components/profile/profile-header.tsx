@@ -28,7 +28,7 @@ import {
   Crown,
 } from "lucide-react";
 import { Button, Avatar, Badge } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelationship, useSocialCounts } from "@/lib/hooks/useFriends";
 import { LevelBadge, BadgeShowcase } from "@/components/gamification";
@@ -100,7 +100,7 @@ export function ProfileHeader({
   recentViewers = [],
 }: ProfileHeaderProps) {
   const { user } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
   const { isPremium: isCurrentUserPremium } = useSubscription();
   const { getUserStatus } = usePresence();
   const { theme: gameTheme } = useGameTheme();
@@ -151,14 +151,14 @@ export function ProfileHeader({
 
     try {
       if (relationship?.is_following) {
-        await supabase
+        await db
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", profile.id);
         setFollowers((prev) => prev - 1);
       } else {
-        await supabase.from("follows").insert({
+        await db.from("follows").insert({
           follower_id: user.id,
           following_id: profile.id,
         } as never);

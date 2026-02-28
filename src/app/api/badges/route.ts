@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { privateCachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 import type { BadgeDefinition } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List all badge definitions
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const category = searchParams.get("category");
     const rarity = searchParams.get("rarity");
     const gameId = searchParams.get("game_id");
 
-    let query = supabase
+    let query = db
       .from("badge_definitions")
       .select("*")
       .eq("is_active", true)
@@ -42,13 +43,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out secret badges that user hasn't earned
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     let earnedBadgeIds: Set<string> = new Set();
     if (user) {
-      const { data: userBadges } = await supabase
+      const { data: userBadges } = await db
         .from("user_badges")
         .select("badge_id")
         .eq("user_id", user.id);

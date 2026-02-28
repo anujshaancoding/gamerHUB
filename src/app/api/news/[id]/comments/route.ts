@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,14 +10,14 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: articleId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
     // Verify article exists and is published
-    const { data: article } = await supabase
+    const { data: article } = await db
       .from("news_articles")
       .select("id")
       .eq("id", articleId)
@@ -28,12 +29,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get current user for like status
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     // Get top-level comments
-    const { data: comments, error, count } = await supabase
+    const { data: comments, error, count } = await db
       .from("news_article_comments")
       .select(
         `
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       (comments || []).map(async (comment: Record<string, unknown>) => {
-        const { data: replies } = await supabase
+        const { data: replies } = await db
           .from("news_article_comments")
           .select(
             `
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         // Check if user has liked this comment
         let user_has_liked = false;
         if (user) {
-          const { data: like } = await supabase
+          const { data: like } = await db
             .from("news_article_comment_likes")
             .select("id")
             .eq("comment_id", comment.id as string)
@@ -113,18 +112,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: articleId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify article exists and is published
-    const { data: article } = await supabase
+    const { data: article } = await db
       .from("news_articles")
       .select("id")
       .eq("id", articleId)
@@ -154,7 +150,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Verify parent comment if replying
     if (parent_id) {
-      const { data: parentComment } = await supabase
+      const { data: parentComment } = await db
         .from("news_article_comments")
         .select("id")
         .eq("id", parent_id)
@@ -169,7 +165,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const { data: comment, error: commentError } = await supabase
+    const { data: comment, error: commentError } = await db
       .from("news_article_comments")
       .insert({
         article_id: articleId,

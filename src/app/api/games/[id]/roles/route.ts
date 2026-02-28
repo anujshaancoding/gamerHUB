@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,7 +9,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check if id is a UUID or slug
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let gameId = id;
     if (!isUUID) {
       // Get game ID from slug
-      const { data: game } = await supabase
+      const { data: game } = await db
         .from("games")
         .select("id")
         .eq("slug", id)
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       gameId = game.id;
     }
 
-    const { data: roles, error } = await supabase
+    const { data: roles, error } = await db
       .from("game_roles")
       .select("*")
       .eq("game_id", gameId)

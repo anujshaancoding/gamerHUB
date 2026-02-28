@@ -1,23 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's battle pass progress
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get active battle pass ID - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: activeBPData } = await (supabase as any)
+    const { data: activeBPData } = await (db as any)
       .from("battle_passes")
       .select("id")
       .eq("status", "active")
@@ -31,7 +29,7 @@ export async function GET() {
 
     // Get user's progress - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: progress, error } = await (supabase as any)
+    const { data: progress, error } = await (db as any)
       .from("user_battle_passes")
       .select("*")
       .eq("user_id", user.id)

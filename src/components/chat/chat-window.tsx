@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button, Input, Avatar, Card } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { formatRelativeTime } from "@/lib/utils";
 import { useCall } from "@/components/call";
 import type { Conversation, Profile, Message } from "@/types/database";
@@ -40,7 +40,7 @@ export function ChatWindow({
   currentUserId,
   onBack,
 }: ChatWindowProps) {
-  const supabase = createClient();
+  const db = createClient();
   const { getUserStatus } = usePresence();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +68,7 @@ export function ChatWindow({
   // Realtime: listen for read status updates
   useEffect(() => {
     if (!otherParticipant?.user?.id) return;
-    const channel = supabase
+    const channel = db
       .channel(`read-receipts-chat:${conversation.id}`)
       .on(
         "postgres_changes",
@@ -87,14 +87,14 @@ export function ChatWindow({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }, [supabase, conversation.id, otherParticipant?.user?.id]);
+  }, [db, conversation.id, otherParticipant?.user?.id]);
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("messages")
         .select(`
           *,
@@ -110,7 +110,7 @@ export function ChatWindow({
     } finally {
       setLoading(false);
     }
-  }, [supabase, conversation.id]);
+  }, [db, conversation.id]);
 
   useEffect(() => {
     fetchMessages();
@@ -118,7 +118,7 @@ export function ChatWindow({
 
   // Realtime subscription
   useEffect(() => {
-    const channel = supabase
+    const channel = db
       .channel(`conversation:${conversation.id}`)
       .on(
         "postgres_changes",
@@ -130,7 +130,7 @@ export function ChatWindow({
         },
         async (payload) => {
           // Fetch sender details
-          const { data: sender } = await supabase
+          const { data: sender } = await db
             .from("profiles")
             .select("*")
             .eq("id", payload.new.sender_id)
@@ -148,9 +148,9 @@ export function ChatWindow({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }, [supabase, conversation.id]);
+  }, [db, conversation.id]);
 
   // Scroll to bottom on new messages (only if user hasn't manually scrolled)
   useEffect(() => {
@@ -163,7 +163,7 @@ export function ChatWindow({
   useEffect(() => {
     const updateLastRead = async () => {
       const now = new Date().toISOString();
-      await supabase
+      await db
         .from("conversation_participants")
         .update({ last_read_at: now } as never)
         .eq("conversation_id", conversation.id)
@@ -177,14 +177,14 @@ export function ChatWindow({
       );
     };
     updateLastRead();
-  }, [supabase, conversation.id, currentUserId, messages]);
+  }, [db, conversation.id, currentUserId, messages]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
     try {
-      const { error } = await supabase.from("messages").insert({
+      const { error } = await db.from("messages").insert({
         conversation_id: conversation.id,
         sender_id: currentUserId,
         content: newMessage.trim(),
@@ -194,7 +194,7 @@ export function ChatWindow({
       if (error) throw error;
 
       // Update conversation timestamp
-      await supabase
+      await db
         .from("conversations")
         .update({ updated_at: new Date().toISOString() } as never)
         .eq("id", conversation.id);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import type { ClanMember, Clan, ClanMemberRole } from "@/types/database";
 
 interface ClanMembershipData extends ClanMember {
@@ -13,7 +13,7 @@ export function useClanMembership(userId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const db = createClient();
 
   const fetchMembership = useCallback(async () => {
     if (!userId) {
@@ -26,7 +26,7 @@ export function useClanMembership(userId: string | null) {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from("clan_members")
         .select(
           `
@@ -52,7 +52,7 @@ export function useClanMembership(userId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [userId, supabase]);
+  }, [userId, db]);
 
   useEffect(() => {
     fetchMembership();

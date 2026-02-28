@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List active community challenges
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const seasonId = searchParams.get("season_id");
@@ -16,11 +17,9 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
 
     // Get current user for progress info
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    let query = supabase
+    let query = db
       .from("community_challenges")
       .select(
         `
@@ -69,7 +68,7 @@ export async function GET(request: NextRequest) {
     const challengeData = data as any[];
     if (user && challengeData) {
       const challengeIds = challengeData.map((c: any) => c.id);
-      const { data: progressData } = await supabase
+      const { data: progressData } = await db
         .from("challenge_progress")
         .select("*")
         .eq("user_id", user.id)
@@ -89,7 +88,7 @@ export async function GET(request: NextRequest) {
     // Get completion counts
     const completionCounts = await Promise.all(
       (challengeData || []).map(async (challenge: any) => {
-        const { count: completedCount } = await supabase
+        const { count: completedCount } = await db
           .from("challenge_progress")
           .select("*", { count: "exact", head: true })
           .eq("challenge_id", challenge.id)

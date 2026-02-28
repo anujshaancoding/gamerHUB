@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { randomBytes } from "crypto";
 import type { CreateOverlayRequest, UpdateOverlayRequest } from "@/types/creator";
 import { getCreatorTier, getMaxOverlays } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get all overlays for current user
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -30,7 +29,7 @@ export async function GET() {
       );
     }
 
-    const { data: overlays, error } = await supabase
+    const { data: overlays, error } = await db
       .from("streamer_overlays")
       .select("*")
       .eq("creator_id", profile.id)
@@ -53,17 +52,15 @@ export async function GET() {
 // POST - Create a new overlay
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -77,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check overlay limit based on tier
-    const { count: followerCount } = await supabase
+    const { count: followerCount } = await db
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", user.id);
@@ -85,7 +82,7 @@ export async function POST(request: NextRequest) {
     const tier = getCreatorTier(followerCount || 0);
     const maxOverlays = getMaxOverlays(tier);
 
-    const { count: currentOverlays } = await supabase
+    const { count: currentOverlays } = await db
       .from("streamer_overlays")
       .select("*", { count: "exact", head: true })
       .eq("creator_id", profile.id);
@@ -121,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Generate unique token for overlay access
     const token = randomBytes(16).toString("hex");
 
-    const { data: overlay, error } = await supabase
+    const { data: overlay, error } = await db
       .from("streamer_overlays")
       .insert({
         creator_id: profile.id,
@@ -155,10 +152,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update an overlay
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -175,7 +170,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get creator profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -189,7 +184,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify overlay belongs to user
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await db
       .from("streamer_overlays")
       .select("id, config")
       .eq("id", overlayId)
@@ -229,7 +224,7 @@ export async function PATCH(request: NextRequest) {
       updates.is_active = body.is_active;
     }
 
-    const { data: overlay, error } = await supabase
+    const { data: overlay, error } = await db
       .from("streamer_overlays")
       .update(updates)
       .eq("id", overlayId)
@@ -257,10 +252,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete an overlay
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -277,7 +270,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get creator profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -291,7 +284,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete overlay (RLS will verify ownership)
-    const { error } = await supabase
+    const { error } = await db
       .from("streamer_overlays")
       .delete()
       .eq("id", overlayId)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateEventRequest } from "@/types/community";
+import { getUser } from "@/lib/auth/get-user";
 
 function generateSlug(title: string): string {
   return title
@@ -13,10 +14,8 @@ function generateSlug(title: string): string {
 // GET - List events
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("game_id");
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("community_events")
       .select(`
         *,
@@ -75,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     if (user && events && events.length > 0) {
       const eventIds = events.map((e) => e.id);
-      const { data: rsvps } = await supabase
+      const { data: rsvps } = await db
         .from("event_rsvps")
         .select("event_id, status")
         .eq("user_id", user.id)
@@ -110,10 +109,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new event
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -140,7 +137,7 @@ export async function POST(request: NextRequest) {
     let attempts = 0;
 
     while (attempts < 5) {
-      const { data: existingSlug } = await supabase
+      const { data: existingSlug } = await db
         .from("community_events")
         .select("id")
         .eq("slug", slug)
@@ -152,7 +149,7 @@ export async function POST(request: NextRequest) {
       attempts++;
     }
 
-    const { data: event, error } = await supabase
+    const { data: event, error } = await db
       .from("community_events")
       .insert({
         organizer_id: user.id,

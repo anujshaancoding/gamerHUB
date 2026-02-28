@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ id: string; appId: string }>;
@@ -9,18 +10,15 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId, appId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user owns the post
-    const { data: post, error: postError } = await supabase
+    const { data: post, error: postError } = await db
       .from("lfg_posts")
       .select("id, creator_id, status, current_players, max_players")
       .eq("id", postId)
@@ -41,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get the application
-    const { data: application } = await supabase
+    const { data: application } = await db
       .from("lfg_applications")
       .select("id, status")
       .eq("id", appId)
@@ -81,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update application
-    const { data: updatedApp, error: updateError } = await supabase
+    const { data: updatedApp, error: updateError } = await db
       .from("lfg_applications")
       .update({
         status,

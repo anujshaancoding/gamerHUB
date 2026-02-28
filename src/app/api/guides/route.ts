@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateGuideRequest } from "@/types/community";
+import { getUser } from "@/lib/auth/get-user";
 
 function generateSlug(title: string): string {
   return title
@@ -13,7 +14,7 @@ function generateSlug(title: string): string {
 // GET - List guides
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const gameId = searchParams.get("game_id");
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("guides")
       .select(`
         *,
@@ -90,10 +91,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new guide
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest) {
     let attempts = 0;
 
     while (attempts < 5) {
-      const { data: existingSlug } = await supabase
+      const { data: existingSlug } = await db
         .from("guides")
         .select("id")
         .eq("slug", slug)
@@ -139,7 +138,7 @@ export async function POST(request: NextRequest) {
     const estimatedReadMinutes = Math.max(1, Math.ceil(totalWords / 200));
 
     // Create the guide
-    const { data: guide, error: guideError } = await supabase
+    const { data: guide, error: guideError } = await db
       .from("guides")
       .insert({
         author_id: user.id,
@@ -176,14 +175,14 @@ export async function POST(request: NextRequest) {
       media_url: section.media_url || null,
     }));
 
-    const { error: sectionsError } = await supabase
+    const { error: sectionsError } = await db
       .from("guide_sections")
       .insert(sectionsToInsert);
 
     if (sectionsError) {
       console.error("Create sections error:", sectionsError);
       // Clean up the guide if sections fail
-      await supabase.from("guides").delete().eq("id", guide.id);
+      await db.from("guides").delete().eq("id", guide.id);
       return NextResponse.json(
         { error: "Failed to create guide sections" },
         { status: 500 }
@@ -191,7 +190,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch complete guide
-    const { data: fullGuide } = await supabase
+    const { data: fullGuide } = await db
       .from("guides")
       .select(`
         *,

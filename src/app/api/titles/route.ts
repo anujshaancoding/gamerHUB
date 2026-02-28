@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { Title } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List all titles
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: titles, error } = await supabase
+    const { data: titles, error } = await db
       .from("titles")
       .select("*")
       .eq("is_active", true)
@@ -22,13 +23,11 @@ export async function GET() {
     }
 
     // Get current user's unlocked titles
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     let unlockedTitleIds: string[] = [];
     if (user) {
-      const { data: userTitles } = await supabase
+      const { data: userTitles } = await db
         .from("user_titles")
         .select("title_id")
         .eq("user_id", user.id);

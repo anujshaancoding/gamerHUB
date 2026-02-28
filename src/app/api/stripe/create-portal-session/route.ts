@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { stripe } from "@/lib/stripe";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -18,7 +16,7 @@ export async function POST(request: NextRequest) {
     const { returnUrl } = body;
 
     // Get Stripe customer
-    const { data: stripeCustomer } = await supabase
+    const { data: stripeCustomer } = await db
       .from("stripe_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)

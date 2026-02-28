@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import type {
   TournamentMatchWithTeams,
   TournamentFormat,
@@ -23,7 +23,7 @@ export function useTournamentBracket(tournamentId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const db = createClient();
 
   const fetchBracket = useCallback(async () => {
     if (!tournamentId) {
@@ -63,7 +63,7 @@ export function useTournamentBracket(tournamentId: string | null) {
   useEffect(() => {
     if (!tournamentId) return;
 
-    const channel = supabase
+    const channel = db
       .channel(`bracket-${tournamentId}`)
       .on(
         "postgres_changes",
@@ -80,9 +80,9 @@ export function useTournamentBracket(tournamentId: string | null) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }, [tournamentId, supabase, fetchBracket]);
+  }, [tournamentId, db, fetchBracket]);
 
   const updateMatch = async (
     matchId: string,

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 // GET - Get count of available players matching filters
 // This is used for the live "X players available" badge when creating a post
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const game = searchParams.get("game");
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get game ID from slug
-    const { data: gameData } = await supabase
+    const { data: gameData } = await db
       .from("games")
       .select("id")
       .eq("slug", game)
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Query user_games to find players with matching criteria
-    let query = supabase
+    let query = db
       .from("user_games")
       .select(
         `

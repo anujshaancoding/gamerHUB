@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { suggestTeammates, generatePlayerEmbedding, generatePlaystyleSummary } from "@/lib/matchmaking/openai";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Get AI-suggested teammates
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create user's skill profile
-    const { data: profileId } = await supabase.rpc(
+    const { data: profileId } = await db.rpc(
       "get_or_create_skill_profile",
       {
         p_user_id: user.id,
@@ -34,7 +33,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Get user's profile
-    const { data: userProfile } = await supabase
+    const { data: userProfile } = await db
       .from("player_skill_profiles")
       .select("*, profiles!user_id(username)")
       .eq("id", profileId)
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
         generatePlaystyleSummary(playerData),
       ]);
 
-      await supabase
+      await db
         .from("player_skill_profiles")
         .update({
           ai_embedding: JSON.stringify(embedding),
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find candidate teammates (similar skill level, not already in a suggestion)
-    const { data: candidates } = await supabase
+    const { data: candidates } = await db
       .from("player_skill_profiles")
       .select(`
         *,
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     // Store suggestions in database
     for (const suggestion of suggestions) {
-      await supabase.from("match_suggestions").insert({
+      await db.from("match_suggestions").insert({
         user_id: user.id,
         game_id: gameId,
         suggestion_type: "teammate",

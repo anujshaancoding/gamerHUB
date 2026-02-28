@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Claim a reward
 export async function POST(
@@ -8,19 +9,16 @@ export async function POST(
 ) {
   try {
     const { rewardId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get the reward
-    const { data: rewardData, error: rewardError } = await supabase
+    const { data: rewardData, error: rewardError } = await db
       .from("user_rewards")
       .select("*")
       .eq("id", rewardId)
@@ -51,7 +49,7 @@ export async function POST(
 
     if (reward.expires_at && new Date(reward.expires_at) < new Date()) {
       // Mark as expired
-      await supabase
+      await db
         .from("user_rewards")
         .update({ status: "expired" } as never)
         .eq("id", rewardId);
@@ -63,7 +61,7 @@ export async function POST(
     }
 
     // Claim the reward
-    const { data: updatedReward, error: updateError } = await supabase
+    const { data: updatedReward, error: updateError } = await db
       .from("user_rewards")
       .update({
         status: "claimed",

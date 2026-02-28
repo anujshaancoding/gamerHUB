@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { privateCachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current user's progression
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: progression, error } = await supabase
+    const { data: progression, error } = await db
       .from("user_progression")
       .select(
         `
@@ -30,7 +28,7 @@ export async function GET() {
 
     if (error) {
       // Create progression if doesn't exist
-      const { data: newProgression, error: createError } = await supabase
+      const { data: newProgression, error: createError } = await db
         .from("user_progression")
         .insert({ user_id: user.id } as never)
         .select(
@@ -66,13 +64,10 @@ export async function GET() {
 // PATCH - Update user's progression (customization)
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -85,7 +80,7 @@ export async function PATCH(request: NextRequest) {
     if (active_title_id !== undefined) {
       // Verify user owns this title
       if (active_title_id !== null) {
-        const { data: userTitle } = await supabase
+        const { data: userTitle } = await db
           .from("user_titles")
           .select("id")
           .eq("user_id", user.id)
@@ -105,7 +100,7 @@ export async function PATCH(request: NextRequest) {
     if (active_frame_id !== undefined) {
       // Verify user owns this frame
       if (active_frame_id !== null) {
-        const { data: userFrame } = await supabase
+        const { data: userFrame } = await db
           .from("user_frames")
           .select("id")
           .eq("user_id", user.id)
@@ -125,7 +120,7 @@ export async function PATCH(request: NextRequest) {
     if (active_theme_id !== undefined) {
       // Verify user owns this theme
       if (active_theme_id !== null) {
-        const { data: userTheme } = await supabase
+        const { data: userTheme } = await db
           .from("user_themes")
           .select("id")
           .eq("user_id", user.id)
@@ -145,7 +140,7 @@ export async function PATCH(request: NextRequest) {
     if (showcase_badges !== undefined) {
       // Validate showcase badges (max 5, must be owned)
       if (Array.isArray(showcase_badges) && showcase_badges.length <= 5) {
-        const { data: userBadges } = await supabase
+        const { data: userBadges } = await db
           .from("user_badges")
           .select("badge_id")
           .eq("user_id", user.id);
@@ -167,7 +162,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { data: progression, error } = await supabase
+    const { data: progression, error } = await db
       .from("user_progression")
       .update(updateData as never)
       .eq("user_id", user.id)

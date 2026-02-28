@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -13,14 +14,12 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Get current user for like status
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    const { data: post, error } = await supabase
+    const { data: post, error } = await db
       .from("blog_posts")
       .select(
         `
@@ -46,13 +45,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (user) {
       const [likeResult, bookmarkResult] = await Promise.all([
-        supabase
+        db
           .from("blog_likes")
           .select("id")
           .eq("post_id", post.id)
           .eq("user_id", user.id)
           .maybeSingle(),
-        supabase
+        db
           .from("blog_bookmarks")
           .select("id")
           .eq("post_id", post.id)
@@ -68,7 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // to prevent inflated counts from bots, crawlers, and repeat visits
 
     // Get blog author info
-    const { data: blogAuthor } = await supabase
+    const { data: blogAuthor } = await db
       .from("blog_authors")
       .select("*")
       .eq("user_id", post.author_id)
@@ -98,18 +97,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get post and verify ownership
-    const { data: existingPost } = await supabase
+    const { data: existingPost } = await db
       .from("blog_posts")
       .select("id, author_id, status")
       .eq("slug", slug)
@@ -121,7 +117,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (existingPost.author_id !== user.id) {
       // Check if user is an editor/admin
-      const { data: author } = await supabase
+      const { data: author } = await db
         .from("blog_authors")
         .select("role")
         .eq("user_id", user.id)
@@ -157,7 +153,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Editor+ can set editor_notes on blog posts
     if (body.editor_notes !== undefined) {
-      const permCtx = await getUserPermissionContext(supabase);
+      const permCtx = await getUserPermissionContext(db);
       const tier = permCtx ? getUserTier(permCtx) : "free";
       if (can.suggestEdits(tier)) {
         allowedFields.push("editor_notes");
@@ -166,7 +162,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Restrict "news" category to editors and admins only
     if (body.category === "news") {
-      const permCtx = await getUserPermissionContext(supabase);
+      const permCtx = await getUserPermissionContext(db);
       const tier = permCtx ? getUserTier(permCtx) : "free";
       if (!can.useNewsCategory(tier)) {
         return NextResponse.json(
@@ -200,7 +196,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     `;
 
-    let { data: post, error: updateError } = await supabase
+    let { data: post, error: updateError } = await db
       .from("blog_posts")
       .update(updates as never)
       .eq("slug", slug)
@@ -213,7 +209,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       delete updates.template;
       delete updates.color_palette;
 
-      const retry = await supabase
+      const retry = await db
         .from("blog_posts")
         .update(updates as never)
         .eq("slug", slug)
@@ -251,18 +247,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get post and verify ownership
-    const { data: existingPost } = await supabase
+    const { data: existingPost } = await db
       .from("blog_posts")
       .select("id, author_id, status")
       .eq("slug", slug)
@@ -279,12 +272,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!isAuthor || !isDraft) {
       // Check if user is a blog editor/admin or a site admin
       const [{ data: author }, { data: profile }] = await Promise.all([
-        supabase
+        db
           .from("blog_authors")
           .select("role")
           .eq("user_id", user.id)
           .single(),
-        supabase
+        db
           .from("profiles")
           .select("is_admin")
           .eq("id", user.id)

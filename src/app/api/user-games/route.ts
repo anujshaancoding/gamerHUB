@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Fetch current user's games
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("user_games")
       .select("*, game:games(*)")
       .eq("user_id", user.id)
@@ -35,10 +34,8 @@ export async function GET() {
 // POST - Create a new user game profile (self-reported)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -90,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve game_slug to game_id
-    const { data: game, error: gameError } = await supabase
+    const { data: game, error: gameError } = await db
       .from("games")
       .select("id")
       .eq("slug", game_slug)
@@ -101,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("user_games")
       .select("id")
       .eq("user_id", user.id)
@@ -124,7 +121,7 @@ export async function POST(request: NextRequest) {
       if (stats.matches_played != null) cleanStats.matches_played = Number(stats.matches_played);
     }
 
-    const { data: created, error: insertError } = await supabase
+    const { data: created, error: insertError } = await db
       .from("user_games")
       .insert({
         user_id: user.id,
@@ -158,10 +155,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update an existing user game profile
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -175,7 +170,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify ownership
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing, error: fetchError } = await db
       .from("user_games")
       .select("*")
       .eq("id", id)
@@ -240,7 +235,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await db
       .from("user_games")
       .update(updatePayload as never)
       .eq("id", id)
@@ -267,10 +262,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Remove a user game profile
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -283,7 +276,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("user_games")
       .delete()
       .eq("id", id)

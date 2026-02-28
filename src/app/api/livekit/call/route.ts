@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { nanoid } from "nanoid";
 import type { Call, CallParticipant } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 // Initiate a call
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is in the conversation
-    const { data: participant, error: participantError } = await supabase
+    const { data: participant, error: participantError } = await db
       .from("conversation_participants")
       .select("*")
       .eq("conversation_id", conversationId)
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing active call in this conversation
-    const { data: existingCall } = await supabase
+    const { data: existingCall } = await db
       .from("calls")
       .select("*")
       .eq("conversation_id", conversationId)
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
     const roomName = `call_${conversationId}_${nanoid(10)}`;
 
     // Create call record
-    const { data: callData, error: callError } = await supabase
+    const { data: callData, error: callError } = await db
       .from("calls")
       .insert({
         conversation_id: conversationId,
@@ -91,7 +89,7 @@ export async function POST(request: NextRequest) {
     const call = callData as unknown as Call;
 
     // Get all conversation participants
-    const { data: participantsData } = await supabase
+    const { data: participantsData } = await db
       .from("conversation_participants")
       .select("user_id")
       .eq("conversation_id", conversationId);
@@ -107,7 +105,7 @@ export async function POST(request: NextRequest) {
         joined_at: p.user_id === user.id ? new Date().toISOString() : null,
       }));
 
-      await supabase
+      await db
         .from("call_participants")
         .insert(callParticipants as unknown as never);
     }
@@ -129,13 +127,10 @@ export async function POST(request: NextRequest) {
 // Update call status
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -149,7 +144,7 @@ export async function PATCH(request: NextRequest) {
     // Handle different actions
     if (action === "join") {
       // Update call status to active if first non-initiator joining
-      const { data: callData } = await supabase
+      const { data: callData } = await db
         .from("calls")
         .select("status")
         .eq("id", callId)
@@ -158,7 +153,7 @@ export async function PATCH(request: NextRequest) {
       const call = callData as unknown as Pick<Call, "status"> | null;
 
       if (call?.status === "ringing") {
-        await supabase
+        await db
           .from("calls")
           .update({
             status: "active",
@@ -168,7 +163,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Update participant status
-      await supabase
+      await db
         .from("call_participants")
         .update({
           status: "joined",
@@ -181,7 +176,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "leave") {
-      await supabase
+      await db
         .from("call_participants")
         .update({
           status: "left",
@@ -191,7 +186,7 @@ export async function PATCH(request: NextRequest) {
         .eq("user_id", user.id);
 
       // Check if all participants have left
-      const { data: activeParticipants } = await supabase
+      const { data: activeParticipants } = await db
         .from("call_participants")
         .select("*")
         .eq("call_id", callId)
@@ -199,7 +194,7 @@ export async function PATCH(request: NextRequest) {
 
       if (!activeParticipants || activeParticipants.length === 0) {
         // End the call
-        const { data: callData } = await supabase
+        const { data: callData } = await db
           .from("calls")
           .select("started_at")
           .eq("id", callId)
@@ -213,7 +208,7 @@ export async function PATCH(request: NextRequest) {
             )
           : null;
 
-        await supabase
+        await db
           .from("calls")
           .update({
             status: "ended",
@@ -227,21 +222,21 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "decline") {
-      await supabase
+      await db
         .from("call_participants")
         .update({ status: "declined" } as unknown as never)
         .eq("call_id", callId)
         .eq("user_id", user.id);
 
       // Check if all invited participants declined
-      const { data: pendingParticipants } = await supabase
+      const { data: pendingParticipants } = await db
         .from("call_participants")
         .select("*")
         .eq("call_id", callId)
         .in("status", ["invited", "ringing"]);
 
       // Also check if there are any joined participants (the initiator)
-      const { data: joinedParticipants } = await supabase
+      const { data: joinedParticipants } = await db
         .from("call_participants")
         .select("*")
         .eq("call_id", callId)
@@ -252,7 +247,7 @@ export async function PATCH(request: NextRequest) {
         joinedParticipants &&
         joinedParticipants.length <= 1
       ) {
-        await supabase
+        await db
           .from("calls")
           .update({
             status: "declined",
@@ -266,7 +261,7 @@ export async function PATCH(request: NextRequest) {
 
     // Generic status update
     if (status) {
-      await supabase
+      await db
         .from("calls")
         .update({ status } as unknown as never)
         .eq("id", callId);

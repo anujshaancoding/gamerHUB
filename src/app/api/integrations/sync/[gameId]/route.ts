@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   getRiotAccountByPuuid,
   getValorantRank,
@@ -22,6 +22,7 @@ import {
   DOTA2_RANKS,
 } from "@/lib/integrations/steam";
 import {
+import { getUser } from "@/lib/auth/get-user";
   getPlayer as getCocPlayer,
   calculateCocStats,
   getCocLeagueName,
@@ -36,10 +37,8 @@ export async function POST(
 ) {
   try {
     const { gameId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,7 +54,7 @@ export async function POST(
     const provider = "riot";
 
     // Get connection for this provider
-    const { data: connection, error: connError } = await supabase
+    const { data: connection, error: connError } = await db
       .from("game_connections")
       .select("*")
       .eq("user_id", user.id)
@@ -71,7 +70,7 @@ export async function POST(
     }
 
     // Create sync job
-    const { data: syncJob, error: jobError } = await supabase.rpc(
+    const { data: syncJob, error: jobError } = await db.rpc(
       "start_game_sync",
       {
         p_user_id: user.id,
@@ -95,7 +94,7 @@ export async function POST(
           connection.provider_user_id,
           user.id,
           connection.id,
-          supabase
+          db
         );
         stats = result.stats;
         rankInfo = result.rankInfo;
@@ -103,14 +102,14 @@ export async function POST(
       }
 
       // Update connection last_synced_at
-      await supabase
+      await db
         .from("game_connections")
         .update({ last_synced_at: new Date().toISOString() })
         .eq("id", connection.id);
 
       // Complete sync job
       if (syncJob) {
-        await supabase
+        await db
           .from("game_sync_jobs")
           .update({
             status: "completed",
@@ -131,7 +130,7 @@ export async function POST(
     } catch (syncError) {
       // Mark sync job as failed
       if (syncJob) {
-        await supabase
+        await db
           .from("game_sync_jobs")
           .update({
             status: "failed",
@@ -158,7 +157,7 @@ async function syncValorantStats(
   puuid: string,
   userId: string,
   connectionId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  db: Awaited<ReturnType<typeof createClient>>
 ) {
   // Get account info
   const account = await getRiotAccountByPuuid(puuid);
@@ -188,7 +187,7 @@ async function syncValorantStats(
       const team = match.teams.find((t) => t.teamId === player?.teamId);
 
       if (player) {
-        await supabase.from("game_match_history").upsert(
+        await db.from("game_match_history").upsert(
           {
             user_id: userId,
             connection_id: connectionId,
@@ -225,7 +224,7 @@ async function syncValorantStats(
   const stats = calculateValorantStats(matches, puuid);
 
   // Upsert stats
-  await supabase.rpc("upsert_game_stats", {
+  await db.rpc("upsert_game_stats", {
     p_user_id: userId,
     p_connection_id: connectionId,
     p_game_id: "valorant",
@@ -243,7 +242,7 @@ async function syncLoLStats(
   puuid: string,
   userId: string,
   connectionId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  db: Awaited<ReturnType<typeof createClient>>
 ) {
   // Get summoner info
   const summoner = await getLolSummonerByPuuid(puuid, "na1");
@@ -280,7 +279,7 @@ async function syncLoLStats(
           (t) => t.teamId === participant.teamId
         );
 
-        await supabase.from("game_match_history").upsert(
+        await db.from("game_match_history").upsert(
           {
             user_id: userId,
             connection_id: connectionId,
@@ -317,7 +316,7 @@ async function syncLoLStats(
   const stats = calculateLolStats(matches, puuid);
 
   // Upsert stats
-  await supabase.rpc("upsert_game_stats", {
+  await db.rpc("upsert_game_stats", {
     p_user_id: userId,
     p_connection_id: connectionId,
     p_game_id: "lol",
@@ -335,7 +334,7 @@ async function syncCS2Stats(
   steamId: string,
   userId: string,
   connectionId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  db: Awaited<ReturnType<typeof createClient>>
 ) {
   // Get CS2 stats from Steam
   const rawStats = await getCS2Stats(steamId);
@@ -359,7 +358,7 @@ async function syncCS2Stats(
   };
 
   // Upsert stats
-  await supabase.rpc("upsert_game_stats", {
+  await db.rpc("upsert_game_stats", {
     p_user_id: userId,
     p_connection_id: connectionId,
     p_game_id: "cs2",
@@ -377,7 +376,7 @@ async function syncDota2Stats(
   steamId: string,
   userId: string,
   connectionId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  db: Awaited<ReturnType<typeof createClient>>
 ) {
   // Get Dota 2 profile from OpenDota
   const profile = await getDota2Profile(steamId);
@@ -400,7 +399,7 @@ async function syncDota2Stats(
     const won =
       (isRadiant && match.radiant_win) || (!isRadiant && !match.radiant_win);
 
-    await supabase.from("game_match_history").upsert(
+    await db.from("game_match_history").upsert(
       {
         user_id: userId,
         connection_id: connectionId,
@@ -426,7 +425,7 @@ async function syncDota2Stats(
   const stats = calculateDota2Stats(matches);
 
   // Upsert stats
-  await supabase.rpc("upsert_game_stats", {
+  await db.rpc("upsert_game_stats", {
     p_user_id: userId,
     p_connection_id: connectionId,
     p_game_id: "dota2",
@@ -444,7 +443,7 @@ async function syncCocStats(
   playerTag: string,
   userId: string,
   connectionId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  db: Awaited<ReturnType<typeof createClient>>
 ) {
   // Get full player profile from CoC API
   const player = await getCocPlayer(playerTag);
@@ -463,7 +462,7 @@ async function syncCocStats(
   };
 
   // Upsert main village stats
-  await supabase.rpc("upsert_game_stats", {
+  await db.rpc("upsert_game_stats", {
     p_user_id: userId,
     p_connection_id: connectionId,
     p_game_id: "coc",
@@ -481,7 +480,7 @@ async function syncCocStats(
       const warMatches = mapWarLogToMatches(warLog, player.clan.tag);
 
       for (const war of warMatches.slice(0, 10)) {
-        await supabase.from("game_match_history").upsert(
+        await db.from("game_match_history").upsert(
           {
             user_id: userId,
             connection_id: connectionId,
@@ -514,7 +513,7 @@ async function syncCocStats(
   }
 
   if (Object.keys(heroStats).length > 0) {
-    await supabase.rpc("upsert_game_stats", {
+    await db.rpc("upsert_game_stats", {
       p_user_id: userId,
       p_connection_id: connectionId,
       p_game_id: "coc",

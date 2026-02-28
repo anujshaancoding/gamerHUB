@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   cachedResponse,
   privateCachedResponse,
   CACHE_DURATIONS,
 } from "@/lib/api/cache-headers";
 import type { SidebarActivityItem } from "@/types/sidebar-activity";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "15"), 30);
 
     // Build parallel queries
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = db as any;
 
     const queries: Promise<unknown>[] = [
       // 1. News articles (published)
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
     // 4. Friend posts (only for logged-in users, filtered by follows/friends)
     let friendPostPromise: Promise<unknown> | null = null;
     if (user) {
-      const { data: following } = await supabase
+      const { data: following } = await db
         .from("follows")
         .select("following_id")
         .eq("follower_id", user.id);

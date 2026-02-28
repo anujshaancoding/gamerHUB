@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Mark a reply as the solution
 export async function POST(
@@ -8,17 +9,15 @@ export async function POST(
 ) {
   try {
     const { replyId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get reply and its post
-    const { data: reply, error: replyError } = await supabase
+    const { data: reply, error: replyError } = await db
       .from("forum_replies")
       .select("id, post_id, is_deleted")
       .eq("id", replyId)
@@ -36,7 +35,7 @@ export async function POST(
     }
 
     // Mark as solution (function checks ownership)
-    const { data: success, error: solError } = await supabase.rpc(
+    const { data: success, error: solError } = await db.rpc(
       "mark_reply_as_solution",
       {
         p_post_id: reply.post_id,

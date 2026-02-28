@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type {
   CreateCreatorProfileRequest,
   UpdateCreatorProfileRequest,
 } from "@/types/creator";
 import { getCreatorTier } from "@/types/creator";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current user's creator profile or by custom URL
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
     const customUrl = searchParams.get("url");
     const userId = searchParams.get("userId");
 
     // If custom URL provided, fetch by that
     if (customUrl) {
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await db
         .from("creator_profiles")
         .select(`
           *,
@@ -36,20 +37,20 @@ export async function GET(request: NextRequest) {
       }
 
       // Get follower count
-      const { count: followerCount } = await supabase
+      const { count: followerCount } = await db
         .from("follows")
         .select("*", { count: "exact", head: true })
         .eq("following_id", profile.user_id);
 
       // Get clip count
-      const { count: clipCount } = await supabase
+      const { count: clipCount } = await db
         .from("creator_clips")
         .select("*", { count: "exact", head: true })
         .eq("creator_id", profile.id)
         .eq("visibility", "public");
 
       // Get recent clips
-      const { data: recentClips } = await supabase
+      const { data: recentClips } = await db
         .from("creator_clips")
         .select("*")
         .eq("creator_id", profile.id)
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // If userId provided, fetch by that
     if (userId) {
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await db
         .from("creator_profiles")
         .select(`
           *,
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
         throw error;
       }
 
-      const { count: followerCount } = await supabase
+      const { count: followerCount } = await db
         .from("follows")
         .select("*", { count: "exact", head: true })
         .eq("following_id", profile.user_id);
@@ -104,15 +105,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current user's profile
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await db
       .from("creator_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -126,17 +125,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get stats
-    const { count: followerCount } = await supabase
+    const { count: followerCount } = await db
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", user.id);
 
-    const { count: clipCount } = await supabase
+    const { count: clipCount } = await db
       .from("creator_clips")
       .select("*", { count: "exact", head: true })
       .eq("creator_id", profile.id);
 
-    const { data: totalViews } = await supabase
+    const { data: totalViews } = await db
       .from("creator_analytics")
       .select("profile_views, clip_views")
       .eq("creator_id", profile.id);
@@ -167,17 +166,15 @@ export async function GET(request: NextRequest) {
 // POST - Create creator profile
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if profile already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("creator_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -200,7 +197,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await db
       .from("creator_profiles")
       .insert({
         user_id: user.id,
@@ -235,10 +232,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update creator profile
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -247,7 +242,7 @@ export async function PATCH(request: NextRequest) {
     const body: UpdateCreatorProfileRequest = await request.json();
 
     // Get current profile
-    const { data: currentProfile, error: fetchError } = await supabase
+    const { data: currentProfile, error: fetchError } = await db
       .from("creator_profiles")
       .select("*")
       .eq("user_id", user.id)
@@ -263,7 +258,7 @@ export async function PATCH(request: NextRequest) {
     // Validate custom URL if provided
     if (body.custom_url) {
       // Check tier eligibility
-      const { count: followerCount } = await supabase
+      const { count: followerCount } = await db
         .from("follows")
         .select("*", { count: "exact", head: true })
         .eq("following_id", user.id);
@@ -286,7 +281,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Check if URL is taken
-      const { data: existing } = await supabase
+      const { data: existing } = await db
         .from("creator_profiles")
         .select("id")
         .eq("custom_url", body.custom_url)
@@ -323,7 +318,7 @@ export async function PATCH(request: NextRequest) {
     if (body.games !== undefined) updates.games = body.games;
     if (body.custom_url !== undefined) updates.custom_url = body.custom_url;
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await db
       .from("creator_profiles")
       .update(updates)
       .eq("user_id", user.id)

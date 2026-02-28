@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // PlayStation OAuth configuration
 const PSN_CONFIG = {
@@ -12,10 +13,8 @@ const PSN_CONFIG = {
 // GET - Initiate PlayStation OAuth flow or show manual entry option
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,10 +39,8 @@ export async function GET() {
 // POST - Manual PSN ID connection
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if PSN ID is already linked to another account
-    const { data: existingConnection } = await supabase
+    const { data: existingConnection } = await db
       .from("console_connections")
       .select("user_id")
       .eq("platform", "playstation")
@@ -75,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert the connection
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("console_connections")
       .upsert({
         user_id: user.id,
@@ -117,16 +114,14 @@ export async function POST(request: NextRequest) {
 // DELETE - Disconnect PlayStation
 export async function DELETE() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("console_connections")
       .delete()
       .eq("user_id", user.id)

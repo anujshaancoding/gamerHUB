@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string; userId: string }>;
@@ -10,18 +11,15 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get current user's role
-    const { data: currentMembership } = await supabase
+    const { data: currentMembership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -38,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get target member's current role
-    const { data: targetMembership } = await supabase
+    const { data: targetMembership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -85,7 +83,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Demote current leader to co-leader
-      await supabase
+      await db
         .from("clan_members")
         .update({ role: "co_leader", promoted_at: new Date().toISOString() } as never)
         .eq("clan_id", clanId)
@@ -93,7 +91,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update target member's role
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("clan_members")
       .update({ role, promoted_at: new Date().toISOString() } as never)
       .eq("clan_id", clanId)
@@ -128,20 +126,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const isSelfLeaving = user.id === userId;
 
     // Get target member info
-    const { data: targetMembership } = await supabase
+    const { data: targetMembership } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", clanId)
@@ -157,7 +152,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Leader cannot leave without transferring leadership
     if (isSelfLeaving && targetMember.role === "leader") {
       // Check if there are other members
-      const { count } = await supabase
+      const { count } = await db
         .from("clan_members")
         .select("*", { count: "exact", head: true })
         .eq("clan_id", clanId);
@@ -170,7 +165,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
 
       // If leader is the only member, delete the clan
-      const { data: clanData } = await supabase
+      const { data: clanData } = await db
         .from("clans")
         .select("conversation_id")
         .eq("id", clanId)
@@ -178,10 +173,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
       const clan = clanData as { conversation_id: string | null } | null;
 
-      await supabase.from("clans").delete().eq("id", clanId);
+      await db.from("clans").delete().eq("id", clanId);
 
       if (clan?.conversation_id) {
-        await supabase
+        await db
           .from("conversations")
           .delete()
           .eq("id", clan.conversation_id);
@@ -192,7 +187,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // If kicking someone else, check permissions
     if (!isSelfLeaving) {
-      const { data: currentMembership } = await supabase
+      const { data: currentMembership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -218,7 +213,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
 
       // Log kick activity
-      await supabase.from("clan_activity_log").insert({
+      await db.from("clan_activity_log").insert({
         clan_id: clanId,
         user_id: userId,
         activity_type: "member_kicked",
@@ -228,7 +223,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Remove member
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_members")
       .delete()
       .eq("clan_id", clanId)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateCrossplayPartyRequest } from "@/types/console";
+import { getUser } from "@/lib/auth/get-user";
 
 // Generate a 6-character invite code
 function generateInviteCode(): string {
@@ -15,10 +16,8 @@ function generateInviteCode(): string {
 // GET - List crossplay parties
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("game_id");
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("crossplay_parties")
       .select(`
         *,
@@ -109,10 +108,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new crossplay party
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -128,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify game exists
-    const { data: game } = await supabase
+    const { data: game } = await db
       .from("games")
       .select("id, name")
       .eq("id", body.game_id)
@@ -139,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has an active party for this game
-    const { data: existingParty } = await supabase
+    const { data: existingParty } = await db
       .from("crossplay_parties")
       .select("id")
       .eq("creator_id", user.id)
@@ -160,7 +157,7 @@ export async function POST(request: NextRequest) {
     let attempts = 0;
 
     while (attempts < 5) {
-      const { data: existingCode } = await supabase
+      const { data: existingCode } = await db
         .from("crossplay_parties")
         .select("id")
         .eq("invite_code", inviteCode)
@@ -176,7 +173,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 4); // 4-hour expiry
 
-    const { data: party, error: partyError } = await supabase
+    const { data: party, error: partyError } = await db
       .from("crossplay_parties")
       .insert({
         creator_id: user.id,
@@ -204,7 +201,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add creator as first member and leader
-    const { error: memberError } = await supabase
+    const { error: memberError } = await db
       .from("crossplay_party_members")
       .insert({
         party_id: party.id,
@@ -218,7 +215,7 @@ export async function POST(request: NextRequest) {
     if (memberError) {
       console.error("Add member error:", memberError);
       // Clean up the party if member creation fails
-      await supabase.from("crossplay_parties").delete().eq("id", party.id);
+      await db.from("crossplay_parties").delete().eq("id", party.id);
       return NextResponse.json(
         { error: "Failed to create party" },
         { status: 500 }
@@ -226,7 +223,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the complete party with relations
-    const { data: fullParty } = await supabase
+    const { data: fullParty } = await db
       .from("crossplay_parties")
       .select(`
         *,

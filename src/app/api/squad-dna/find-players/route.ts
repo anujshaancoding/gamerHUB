@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { FindPlayersRequest, DNATraits, DNAWeights } from "@/types/squad-dna";
 import { calculateCompatibility } from "@/types/squad-dna";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Find compatible players
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
     const limit = Math.min(body.limit || 20, 50);
 
     // Get current user's DNA profile
-    let userProfileQuery = supabase
+    let userProfileQuery = db
       .from("squad_dna_profiles")
       .select("*")
       .eq("user_id", user.id);
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get all other users' DNA profiles
-    let candidatesQuery = supabase
+    let candidatesQuery = db
       .from("squad_dna_profiles")
       .select(`
         *,
@@ -86,7 +85,7 @@ export async function POST(request: NextRequest) {
     const topMatches = filteredMatches.slice(0, limit);
 
     // Fetch common games
-    const { data: userGames } = await supabase
+    const { data: userGames } = await db
       .from("game_stats")
       .select("game_id, games(name)")
       .eq("user_id", user.id);
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     const enrichedMatches = await Promise.all(
       topMatches.map(async (match) => {
-        const { data: matchGames } = await supabase
+        const { data: matchGames } = await db
           .from("game_stats")
           .select("game_id, games(name)")
           .eq("user_id", match.user.id);

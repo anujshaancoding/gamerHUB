@@ -1,8 +1,9 @@
 // @ts-nocheck
-// TypeScript checking disabled due to incomplete Supabase type definitions
-// TODO: Regenerate types with `supabase gen types typescript`
+// @ts-nocheck — complex tournament types
+// TODO: Regenerate types with `db gen types typescript`
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ tournamentId: string; matchId: string }>;
@@ -11,9 +12,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { matchId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: match, error } = await supabase
+    const { data: match, error } = await db
       .from("tournament_matches")
       .select(
         `
@@ -53,18 +54,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { tournamentId, matchId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
     // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get match with tournament info
-    const { data: match } = await supabase
+    const { data: match } = await db
       .from("tournament_matches")
       .select(
         `
@@ -94,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     let isParticipant = false;
 
     if (!isOrganizer && tournament.organizer_clan_id) {
-      const { data: orgMembership } = await supabase
+      const { data: orgMembership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", tournament.organizer_clan_id)
@@ -110,14 +109,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!isOrganizer) {
       const teamIds = [match.team1_id, match.team2_id].filter(Boolean);
       if (teamIds.length > 0) {
-        const { data: participants } = await supabase
+        const { data: participants } = await db
           .from("tournament_participants")
           .select("clan_id")
           .in("id", teamIds);
 
         if (participants) {
           for (const p of participants) {
-            const { data: membership } = await supabase
+            const { data: membership } = await db
               .from("clan_members")
               .select("role")
               .eq("clan_id", p.clan_id)
@@ -218,7 +217,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updates.completed_at = new Date().toISOString();
     }
 
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await db
       .from("tournament_matches")
       .update(updates)
       .eq("id", matchId)

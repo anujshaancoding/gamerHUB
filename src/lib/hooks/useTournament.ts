@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import type {
   TournamentWithDetails,
   TournamentParticipantWithClan,
@@ -15,7 +15,7 @@ export function useTournament(tournamentIdOrSlug: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const db = createClient();
 
   const fetchTournament = useCallback(async () => {
     if (!tournamentIdOrSlug) {
@@ -52,7 +52,7 @@ export function useTournament(tournamentIdOrSlug: string | null) {
   useEffect(() => {
     if (!tournament?.id) return;
 
-    const channel = supabase
+    const channel = db
       .channel(`tournament-${tournament.id}`)
       .on(
         "postgres_changes",
@@ -81,9 +81,9 @@ export function useTournament(tournamentIdOrSlug: string | null) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }, [tournament?.id, supabase, fetchTournament]);
+  }, [tournament?.id, db, fetchTournament]);
 
   const updateTournament = async (
     updates: Partial<TournamentWithDetails>

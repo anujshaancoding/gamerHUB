@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(
   request: NextRequest,
@@ -7,16 +8,14 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("trait_endorsements")
       .select("*")
       .eq("endorser_id", user.id)
@@ -26,7 +25,7 @@ export async function GET(
     if (error && error.code !== "PGRST116") throw error;
 
     // Also get rate limit info
-    const { data: rateLimitResult } = await supabase.rpc(
+    const { data: rateLimitResult } = await db.rpc(
       "check_endorsement_rate_limit",
       { endorser_user_id: user.id }
     );

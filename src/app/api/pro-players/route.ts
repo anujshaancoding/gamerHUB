@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getProPlayersByGames, getPopularProPlayers } from "@/lib/supabase/rpc-types";
+import { createClient } from "@/lib/db/client";
+import { getProPlayersByGames, getPopularProPlayers } from "@/lib/db/rpc-types";
 import type { Profile, UserGame, Game } from "@/types/database";
 
 export interface ProPlayer {
@@ -26,8 +26,8 @@ type ProfileWithGames = Profile & { user_games: (UserGame & { game: Game })[] };
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("game_id");
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (user) {
       // Get pro players who play user's games
       const { data: proData, error: proError } = await getProPlayersByGames(
-        supabase,
+        db,
         user.id,
         limit
       );
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         const userIds = proData.map((p) => p.user_id);
 
         // Fetch profiles
-        let profilesQuery = supabase
+        let profilesQuery = db
           .from("profiles")
           .select(`
             *,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         const profiles = profilesRaw as ProfileWithGames[] | null;
 
         // Check which ones the user follows
-        const { data: followDataRaw } = await supabase
+        const { data: followDataRaw } = await db
           .from("follows")
           .select("following_id")
           .eq("follower_id", user.id)
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     // If no pro players found (user not logged in or no games), get popular pro players
     if (proPlayers.length === 0) {
       const { data: popularData, error: popularError } = await getPopularProPlayers(
-        supabase,
+        db,
         limit
       );
 
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         const userIds = popularData.map((p) => p.user_id);
 
         // Fetch profiles
-        let profilesQuery = supabase
+        let profilesQuery = db
           .from("profiles")
           .select(`
             *,
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
         // Check follows if user is logged in
         let followedIds = new Set<string>();
         if (user) {
-          const { data: followDataRaw } = await supabase
+          const { data: followDataRaw } = await db
             .from("follows")
             .select("following_id")
             .eq("follower_id", user.id)

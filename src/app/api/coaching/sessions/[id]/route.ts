@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { SessionStatus } from "@/types/coaching";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get session details
 export async function GET(
@@ -9,16 +10,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: session, error } = await supabase
+    const { data: session, error } = await db
       .from("coaching_sessions")
       .select(`
         *,
@@ -53,7 +52,7 @@ export async function GET(
     }
 
     // Check if user is coach or student
-    const { data: coachProfile } = await supabase
+    const { data: coachProfile } = await db
       .from("coach_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -102,17 +101,15 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get session and verify access
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("coaching_sessions")
       .select("*, coach_profiles!coach_id(user_id)")
       .eq("id", id)
@@ -182,7 +179,7 @@ export async function PATCH(
 
       // Update coach stats on completion
       if (newStatus === "completed") {
-        await supabase.rpc("increment_coach_sessions", {
+        await db.rpc("increment_coach_sessions", {
           p_coach_id: session.coach_id,
         });
       }
@@ -224,7 +221,7 @@ export async function PATCH(
       updates.status = "pending"; // Requires re-confirmation
     }
 
-    const { data: updatedSession, error } = await supabase
+    const { data: updatedSession, error } = await db
       .from("coaching_sessions")
       .update(updates)
       .eq("id", id)
@@ -252,17 +249,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get session
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("coaching_sessions")
       .select("*, coach_profiles!coach_id(user_id)")
       .eq("id", id)
@@ -293,7 +288,7 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("coaching_sessions")
       .update({
         status: "cancelled",

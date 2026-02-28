@@ -183,7 +183,7 @@ The main work is:
 ### Dependencies
 - Phase 1 (complete)
 - API credentials from game providers
-- Background job infrastructure (e.g., Supabase Edge Functions, cron)
+- Background job infrastructure (e.g., node-cron, BullMQ on VPS)
 
 ---
 

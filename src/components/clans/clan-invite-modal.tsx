@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, UserPlus, X } from "lucide-react";
 import { Modal, Button, Input, Avatar, Badge } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import type { Profile } from "@/types/database";
 
 interface ClanInviteModalProps {
@@ -20,7 +20,7 @@ export function ClanInviteModal({
   clanId,
   onInvite,
 }: ClanInviteModalProps) {
-  const supabase = createClient();
+  const db = createClient();
   const { getUserStatus } = usePresence();
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<Profile[]>([]);
@@ -39,7 +39,7 @@ export function ClanInviteModal({
       setLoading(true);
       try {
         // Search for users not in any clan
-        const { data: profiles } = await supabase
+        const { data: profiles } = await db
           .from("profiles")
           .select("*")
           .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`)
@@ -48,7 +48,7 @@ export function ClanInviteModal({
         if (profiles) {
           // Filter out users already in a clan
           const profileList = profiles as Profile[];
-          const { data: clanMembers } = await supabase
+          const { data: clanMembers } = await db
             .from("clan_members")
             .select("user_id")
             .in(
@@ -69,7 +69,7 @@ export function ClanInviteModal({
 
     const debounce = setTimeout(searchUsers, 300);
     return () => clearTimeout(debounce);
-  }, [search, supabase]);
+  }, [search, db]);
 
   const handleInvite = async (userId: string) => {
     setInviting(userId);

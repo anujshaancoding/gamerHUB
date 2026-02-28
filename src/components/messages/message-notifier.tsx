@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui";
@@ -99,8 +99,8 @@ export function MessageNotifier() {
       if (pathnameRef.current === `/messages/${conversationId}`) return;
 
       // Fetch sender profile
-      const supabase = createClient();
-      const { data: sender } = await supabase
+      const db = createClient();
+      const { data: sender } = await db
         .from("profiles")
         .select("*")
         .eq("id", senderId)
@@ -109,7 +109,7 @@ export function MessageNotifier() {
       if (!sender) return;
 
       // Check if sender is a friend — suppress all notifications for non-friends (The Void)
-      const { data: areFriendsResult } = await supabase.rpc("are_friends", {
+      const { data: areFriendsResult } = await db.rpc("are_friends", {
         user1_id: user.id,
         user2_id: senderId,
       } as unknown as undefined);
@@ -165,9 +165,9 @@ export function MessageNotifier() {
   useEffect(() => {
     if (!user) return;
 
-    const supabase = createClient();
+    const db = createClient();
 
-    const channel = supabase
+    const channel = db
       .channel("global-message-notifications")
       .on(
         "postgres_changes",
@@ -183,7 +183,7 @@ export function MessageNotifier() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [user, handleNewMessage]);
 

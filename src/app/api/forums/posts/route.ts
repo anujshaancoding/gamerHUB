@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get forum posts
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const categoryId = searchParams.get("categoryId");
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
 
     // Build query
-    let query = supabase
+    let query = db
       .from("forum_posts")
       .select(`
         id,
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
       query = query.eq("category_id", categoryId);
     } else if (categorySlug) {
       // Get category ID from slug
-      const { data: category } = await supabase
+      const { data: category } = await db
         .from("forum_categories")
         .select("id")
         .eq("slug", categorySlug)
@@ -134,10 +135,8 @@ export async function GET(request: NextRequest) {
 // POST - Create a new forum post
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -169,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if category exists and is not locked
-    const { data: category, error: catError } = await supabase
+    const { data: category, error: catError } = await db
       .from("forum_categories")
       .select("id, is_locked")
       .eq("id", categoryId)
@@ -190,7 +189,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create post using function
-    const { data: postId, error: postError } = await supabase.rpc(
+    const { data: postId, error: postError } = await db.rpc(
       "create_forum_post",
       {
         p_category_id: categoryId,
@@ -211,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the created post
-    const { data: post } = await supabase
+    const { data: post } = await db
       .from("forum_posts")
       .select(`
         id,

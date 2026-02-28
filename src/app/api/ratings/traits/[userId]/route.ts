@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 
 export async function GET(
   request: NextRequest,
@@ -7,9 +7,9 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: endorsements, error } = await supabase
+    const { data: endorsements, error } = await db
       .from("trait_endorsements")
       .select("friendly, team_player, leader, communicative, reliable")
       .eq("endorsed_id", userId);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ clanId: string; scrimId: string }>;
@@ -9,13 +10,10 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, scrimId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -24,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Handle RSVP (any member)
     if (body.rsvp !== undefined) {
       // Check membership
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -45,13 +43,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
       // Check slot availability
       if (rsvpStatus === "confirmed") {
-        const { data: scrim } = await supabase
+        const { data: scrim } = await db
           .from("clan_scrims")
           .select("max_slots")
           .eq("id", scrimId)
           .single();
 
-        const { count: confirmedCount } = await supabase
+        const { count: confirmedCount } = await db
           .from("clan_scrim_participants")
           .select("*", { count: "exact", head: true })
           .eq("scrim_id", scrimId)
@@ -71,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Upsert participant
-      const { error } = await supabase
+      const { error } = await db
         .from("clan_scrim_participants")
         .upsert(
           {
@@ -94,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Handle scrim update (creator or leaders only)
-    const { data: scrim } = await supabase
+    const { data: scrim } = await db
       .from("clan_scrims")
       .select("created_by")
       .eq("id", scrimId)
@@ -107,7 +105,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const isCreator = (scrim as any).created_by === user.id;
     if (!isCreator) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -151,7 +149,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await db
       .from("clan_scrims")
       .update(updates as never)
       .eq("id", scrimId)
@@ -180,17 +178,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { clanId, scrimId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: scrim } = await supabase
+    const { data: scrim } = await db
       .from("clan_scrims")
       .select("created_by")
       .eq("id", scrimId)
@@ -203,7 +198,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const isCreator = (scrim as any).created_by === user.id;
     if (!isCreator) {
-      const { data: membership } = await supabase
+      const { data: membership } = await db
         .from("clan_members")
         .select("role")
         .eq("clan_id", clanId)
@@ -221,7 +216,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("clan_scrims")
       .delete()
       .eq("id", scrimId)

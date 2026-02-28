@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import {
   exchangeTwitchCode,
   getTwitchUser,
@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
     const twitchUser = await getTwitchUser(tokens.access_token);
 
     // Store in database
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await db
       .from("streamer_profiles")
       .upsert(
         {
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       const appToken = await getAppAccessToken();
 
       // Get the streamer profile ID
-      const { data: profile } = await supabase
+      const { data: profile } = await db
         .from("streamer_profiles")
         .select("id")
         .eq("user_id", userId)
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
         );
 
         // Store subscription IDs
-        await supabase.from("twitch_eventsub_subscriptions").insert([
+        await db.from("twitch_eventsub_subscriptions").insert([
           {
             twitch_subscription_id: onlineSub.id,
             streamer_id: profile.id,

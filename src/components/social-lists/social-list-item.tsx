@@ -5,7 +5,7 @@ import Link from "next/link";
 import { UserPlus, UserCheck, Users, Clock } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { formatRelativeTime } from "@/lib/utils";
 import type { ProfileWithRelationship } from "@/app/api/users/[userId]/social/route";
@@ -19,7 +19,7 @@ interface SocialListItemProps {
 export function SocialListItem({ profile, listType, onActionComplete }: SocialListItemProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
-  const supabase = createClient();
+  const db = createClient();
   const [loading, setLoading] = useState(false);
   const [localRelationship, setLocalRelationship] = useState(profile.relationship_to_viewer);
 
@@ -29,14 +29,14 @@ export function SocialListItem({ profile, listType, onActionComplete }: SocialLi
     setLoading(true);
     try {
       if (localRelationship?.is_following) {
-        await supabase
+        await db
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", profile.id);
         setLocalRelationship((prev) => prev ? { ...prev, is_following: false } : null);
       } else {
-        await supabase.from("follows").insert({
+        await db.from("follows").insert({
           follower_id: user.id,
           following_id: profile.id,
         } as never);

@@ -108,7 +108,9 @@ ggLobby combines everything a gamer needs in one platform:
 | **Framework** | [Next.js 16](https://nextjs.org) (App Router) |
 | **Language** | [TypeScript](https://www.typescriptlang.org/) |
 | **Styling** | [Tailwind CSS 4](https://tailwindcss.com/) |
-| **Backend & Database** | [Supabase](https://supabase.com/) (PostgreSQL, Auth, Storage, Realtime) |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) (self-hosted on VPS) |
+| **Authentication** | [Auth.js](https://authjs.dev/) (email + OAuth) |
+| **Real-time** | [Socket.io](https://socket.io/) (WebSocket) |
 | **State Management** | [Zustand](https://zustand-demo.pmnd.rs/) + [React Query](https://tanstack.com/query/latest) |
 | **Animations** | [Framer Motion](https://www.framer.com/motion/) |
 | **UI Components** | [Radix UI](https://www.radix-ui.com/) + Custom gaming-themed components |
@@ -123,7 +125,7 @@ ggLobby combines everything a gamer needs in one platform:
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18.17 or later
-- A [Supabase](https://supabase.com/) project (free tier works)
+- A [PostgreSQL](https://www.postgresql.org/) database (self-hosted or managed)
 - npm, yarn, or pnpm
 
 ### Installation
@@ -138,7 +140,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+# Edit .env.local with your database and Auth.js credentials
 ```
 
 ### Environment Variables
@@ -146,20 +148,17 @@ cp .env.example .env.local
 See [`.env.example`](.env.example) for the full list. At minimum you need:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+DATABASE_URL=your_postgresql_connection_string
+AUTH_SECRET=your_auth_js_secret
+NEXTAUTH_URL=http://localhost:3000
 ```
 
 ### Database Setup
 
-Apply the Supabase migrations in order:
+Apply the database migrations in order:
 
 ```bash
-# If using Supabase CLI
-supabase db push
-
-# Or apply migrations manually in the Supabase SQL editor
+# Apply migrations to your PostgreSQL database
 # Files are in supabase/migrations/ — apply in numerical order
 ```
 
@@ -221,32 +220,32 @@ gglobby/
 │   ├── lib/                    # Utilities & business logic
 │   │   ├── auth/               # Auth context provider
 │   │   ├── hooks/              # Custom React hooks (58 files)
-│   │   ├── supabase/           # Supabase client setup
+│   │   ├── supabase/           # Database client setup
 │   │   ├── theme/              # Theme system
 │   │   └── utils/              # Helper functions
 │   └── types/                  # TypeScript type definitions
 ├── public/                     # Static assets & PWA icons
-├── supabase/                   # Database migrations (60+ files)
+├── supabase/                   # PostgreSQL migrations (60+ files)
 ├── mobile/                     # React Native / Expo mobile app
 └── ROADMAP/                    # Project roadmap & planning docs
 ```
 
 ## Deployment
 
-ggLobby is designed to deploy on [Vercel](https://vercel.com):
+ggLobby is designed to deploy on a self-hosted VPS:
 
 1. Push your repo to GitHub
-2. Import the project in Vercel
-3. Set all environment variables from `.env.example`
-4. Deploy — Vercel handles SSL, CDN, and serverless functions automatically
+2. Set up your VPS with Node.js, PostgreSQL, and a reverse proxy (e.g., Nginx/Caddy)
+3. Configure all environment variables from `.env.example`
+4. Deploy — use PM2 or Docker for process management, Cloudflare for CDN and SSL
 
 ### Production Checklist
 
 - [ ] All environment variables configured
-- [ ] Supabase production project with migrations applied
+- [ ] PostgreSQL database with migrations applied
 - [ ] Custom domain configured with DNS
 - [ ] Stripe webhooks pointed to production URL
-- [ ] OAuth redirect URLs updated in Supabase dashboard
+- [ ] OAuth redirect URLs updated in Auth.js configuration
 - [ ] RLS policies reviewed and enabled on all tables
 
 ## Why It's Worth Trying

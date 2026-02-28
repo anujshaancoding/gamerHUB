@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { EndorsePlayerRequest } from "@/types/verified-queue";
 import {
+import { getUser } from "@/lib/auth/get-user";
   ENDORSEMENT_TYPES,
   getBehaviorRating,
   calculateNewScore,
@@ -10,10 +11,8 @@ import {
 // POST - Endorse a player
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Check if already endorsed recently (within 24 hours)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const { data: recentEndorsement } = await supabase
+    const { data: recentEndorsement } = await db
       .from("player_endorsements")
       .select("id")
       .eq("from_user_id", user.id)
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create endorsement
-    const { data: endorsement, error: endorseError } = await supabase
+    const { data: endorsement, error: endorseError } = await db
       .from("player_endorsements")
       .insert({
         from_user_id: user.id,
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update recipient's behavior score
-    const { data: recipientProfile } = await supabase
+    const { data: recipientProfile } = await db
       .from("verified_profiles")
       .select("behavior_score, positive_endorsements, games_played")
       .eq("user_id", body.user_id)
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
         totalInteractions
       );
 
-      await supabase
+      await db
         .from("verified_profiles")
         .update({
           behavior_score: newScore,

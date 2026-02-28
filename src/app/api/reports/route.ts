@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
 import type { ReportType } from "@/types/verification";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET /api/reports - Get user's submitted reports
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,7 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("user_reports")
       .select(
         `
@@ -67,18 +65,15 @@ export async function GET(request: NextRequest) {
 // POST /api/reports - Create a new report
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Restrict reporting to premium users and above
-    const permCtx = await getUserPermissionContext(supabase);
+    const permCtx = await getUserPermissionContext(db);
     const tier = permCtx ? getUserTier(permCtx) : "free";
     if (!can.reportUser(tier)) {
       return NextResponse.json(
@@ -140,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if reported user exists
-    const { data: reportedUser } = await supabase
+    const { data: reportedUser } = await db
       .from("profiles")
       .select("id")
       .eq("id", reported_user_id)
@@ -155,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     // Check for duplicate reports (same reporter, same user, same type within 24h)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: existingReport } = await supabase
+    const { data: existingReport } = await db
       .from("user_reports")
       .select("id")
       .eq("reporter_id", user.id)
@@ -184,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the report
-    const { data: report, error: createError } = await supabase
+    const { data: report, error: createError } = await db
       .from("user_reports")
       .insert({
         reporter_id: user.id,
@@ -215,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Record behavioral signal for the reported user
-    await supabase.from("behavioral_signals").insert({
+    await db.from("behavioral_signals").insert({
       user_id: reported_user_id,
       signal_type: "user_report_received",
       signal_data: {

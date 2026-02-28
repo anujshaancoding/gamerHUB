@@ -26,7 +26,7 @@ This is not a generic startup guide. Every section is written specifically for g
 | Metric | Value |
 |--------|-------|
 | **Platform Name** | ggLobby |
-| **Tech Stack** | Next.js 16 + Supabase + Vercel + Stripe + LiveKit |
+| **Tech Stack** | Next.js 16 + PostgreSQL + Auth.js + Socket.io + VPS + Stripe + LiveKit |
 | **Total Features Built** | 50+ major features across social, gaming, content, monetization |
 | **Database Tables** | 100+ tables across 59 migrations |
 | **API Endpoints** | 150+ serverless routes |

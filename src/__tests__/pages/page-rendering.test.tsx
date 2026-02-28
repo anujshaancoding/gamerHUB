@@ -255,7 +255,7 @@ describe('Page Rendering', () => {
 
 describe('Data Loading Patterns', () => {
   describe('Client-side Data Fetching', () => {
-    it('should handle Supabase query errors gracefully', async () => {
+    it('should handle database query errors gracefully', async () => {
       const mockQuery = jest.fn().mockResolvedValue({
         data: null,
         error: { message: 'Table not found', code: '42P01' },

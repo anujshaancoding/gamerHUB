@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Avatar, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { formatRelativeTime } from "@/lib/utils";
 import { useProgression } from "@/lib/hooks/useProgression";
 import { PremiumBadge } from "@/components/premium";
@@ -47,7 +47,7 @@ export default function DashboardPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const { progression, loading: progressionLoading } = useProgression();
   const { dailyQuests, weeklyQuests, claimQuest, loading: questsLoading, resets } = useQuests();
-  const supabase = useMemo(() => createClient(), []);
+  const db = useMemo(() => createClient(), []);
 
   const userId = user?.id;
 
@@ -57,32 +57,32 @@ export default function DashboardPage() {
       if (!userId) throw new Error("No user");
 
       const [gamesResult, matchesResult, challengesResult, followersResult, totalMatchesResult, gamersResult] = await Promise.all([
-        supabase
+        db
           .from("user_games")
           .select("*, game:games(*)")
           .eq("user_id", userId),
-        supabase
+        db
           .from("matches")
           .select("*")
           .or(`creator_id.eq.${userId}`)
           .eq("status", "upcoming")
           .order("scheduled_at", { ascending: true })
           .limit(5),
-        supabase
+        db
           .from("challenges")
           .select("*")
           .eq("creator_id", userId)
           .eq("status", "open")
           .limit(5),
-        supabase
+        db
           .from("follows")
           .select("*", { count: "exact", head: true })
           .eq("following_id", userId),
-        supabase
+        db
           .from("match_participants")
           .select("*", { count: "exact", head: true })
           .eq("user_id", userId),
-        supabase
+        db
           .from("profiles")
           .select("*")
           .neq("id", userId)

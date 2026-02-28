@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { UpdateRoomRequest } from "@/types/replay";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get room details
 export async function GET(
@@ -9,15 +10,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     // Check if ID is a code or UUID
     const isCode = id.length === 6 && !id.includes("-");
 
-    let query = supabase
+    let query = db
       .from("replay_rooms")
       .select(`
         *,
@@ -119,17 +118,15 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get room
-    const { data: room } = await supabase
+    const { data: room } = await db
       .from("replay_rooms")
       .select("host_id, status")
       .eq("id", id)
@@ -183,7 +180,7 @@ export async function PATCH(
       );
     }
 
-    const { data: updatedRoom, error } = await supabase
+    const { data: updatedRoom, error } = await db
       .from("replay_rooms")
       .update(updates)
       .eq("id", id)
@@ -211,17 +208,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify host
-    const { data: room } = await supabase
+    const { data: room } = await db
       .from("replay_rooms")
       .select("host_id")
       .eq("id", id)
@@ -242,7 +237,7 @@ export async function DELETE(
     }
 
     // Mark as ended instead of deleting
-    const { error } = await supabase
+    const { error } = await db
       .from("replay_rooms")
       .update({
         status: "ended",

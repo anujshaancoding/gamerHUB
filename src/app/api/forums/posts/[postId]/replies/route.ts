@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get replies for a post
 export async function GET(
@@ -8,10 +9,8 @@ export async function GET(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     const { searchParams } = new URL(request.url);
     const sort = searchParams.get("sort") || "oldest"; // oldest, newest, top
@@ -20,7 +19,7 @@ export async function GET(
 
     // Build query - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = (db as any)
       .from("forum_replies")
       .select(`
         id,
@@ -80,7 +79,7 @@ export async function GET(
     if (user && repliesArray && repliesArray.length > 0) {
       const replyIds = repliesArray.map((r) => r.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: votes } = await (supabase as any)
+      const { data: votes } = await (db as any)
         .from("forum_votes")
         .select("reply_id, vote_type")
         .eq("user_id", user.id)
@@ -137,10 +136,8 @@ export async function POST(
 ) {
   try {
     const { postId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -148,7 +145,7 @@ export async function POST(
 
     // Check if post exists and is not locked - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: post, error: postError } = await (supabase as any)
+    const { data: post, error: postError } = await (db as any)
       .from("forum_posts")
       .select("id, is_locked, is_deleted")
       .eq("id", postId)
@@ -185,7 +182,7 @@ export async function POST(
     // If replying to another reply, verify parent exists
     if (parentId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: parentReply } = await (supabase as any)
+      const { data: parentReply } = await (db as any)
         .from("forum_replies")
         .select("id, is_deleted")
         .eq("id", parentId)
@@ -202,7 +199,7 @@ export async function POST(
 
     // Create reply using function - eslint-disable for untyped RPC
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: replyId, error: replyError } = await (supabase as any).rpc(
+    const { data: replyId, error: replyError } = await (db as any).rpc(
       "create_forum_reply",
       {
         p_post_id: postId,
@@ -222,7 +219,7 @@ export async function POST(
 
     // Fetch the created reply - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: reply } = await (supabase as any)
+    const { data: reply } = await (db as any)
       .from("forum_replies")
       .select(`
         id,

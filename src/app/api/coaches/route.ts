@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { CreateCoachProfileRequest, CoachingStatus } from "@/types/coaching";
 import { getCoachTier } from "@/types/coaching";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - List coaches with filters
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
     const gameId = searchParams.get("game_id");
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
+    let query = db
       .from("coach_profiles")
       .select(`
         *,
@@ -94,17 +95,15 @@ export async function GET(request: NextRequest) {
 // POST - Create coach profile (become a coach)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user already has a coach profile
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("coach_profiles")
       .select("id")
       .eq("user_id", user.id)
@@ -142,14 +141,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user info
-    const { data: userInfo } = await supabase
+    const { data: userInfo } = await db
       .from("users")
       .select("username")
       .eq("id", user.id)
       .single();
 
     // Create coach profile
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await db
       .from("coach_profiles")
       .insert({
         user_id: user.id,

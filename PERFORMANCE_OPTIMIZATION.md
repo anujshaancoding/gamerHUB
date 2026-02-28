@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-23
 **Scope:** Full codebase audit (excluding /mobile)
-**Platform:** Next.js 16 + React 18 + Supabase + TanStack Query
+**Platform:** Next.js 16 + React 18 + PostgreSQL + Auth.js + Socket.io + TanStack Query
 
 ---
 
@@ -24,7 +24,7 @@ When a user navigates to ggLobby, the following sequence occurs:
 1. Middleware redirects / → /community (server-side, good)
 2. Root layout renders 7 nested providers (all client-side)
 3. AuthProvider starts with loading=true
-4. AuthProvider calls supabase.auth.getUser() (network call)
+4. AuthProvider calls auth session check (network call)
 5. If profile not found → waits 1,500ms → retries → possibly creates profile
 6. Only THEN sets loading=false
 7. Meanwhile: Navbar, Sidebar, Community page ALL mount and start fetching
@@ -55,7 +55,7 @@ This blocks the entire auth initialization for 1.5 seconds when the profile isn'
 **File:** `src/lib/hooks/useMessages.ts:76-133`
 **Severity:** CRITICAL
 
-The `useConversations` hook subscribes to 6 different Postgres change events, ALL of which call `fetchConversations()` without any debouncing:
+The `useConversations` hook subscribes to 6 different Socket.io events, ALL of which call `fetchConversations()` without any debouncing:
 
 - conversations INSERT
 - conversations UPDATE
@@ -70,7 +70,7 @@ If multiple events fire within milliseconds (e.g., a new message triggers both a
 
 ---
 
-### Issue #3: Module-Level Supabase Client in Community Page
+### Issue #3: Module-Level Database Client in Community Page
 
 **File:** `src/app/(main)/community/page.tsx:81`
 **Severity:** HIGH
@@ -79,7 +79,7 @@ If multiple events fire within milliseconds (e.g., a new message triggers both a
 const supabase = createClient(); // Outside component!
 ```
 
-This creates a Supabase client at module evaluation time, before React's lifecycle begins. If the module loads before cookies are available, the client may have no auth session, causing all subsequent queries to fail silently.
+This creates a database client at module evaluation time, before React's lifecycle begins. If the module loads before cookies are available, the client may have no auth session, causing all subsequent queries to fail silently.
 
 **Fix:** Moved client creation inside the component using `useMemo`.
 
@@ -110,7 +110,7 @@ This masks the real loading issue instead of fixing it. Users see a blank page a
 **File:** `src/lib/hooks/useNotifications.ts:258-292`
 **Severity:** MEDIUM
 
-The notification hook's `useEffect` subscribes to a Supabase realtime channel unconditionally — even when the user is not authenticated. This creates unnecessary WebSocket connections for guest users and can trigger errors when the notifications table has RLS policies.
+The notification hook's `useEffect` subscribes to a Socket.io realtime channel unconditionally — even when the user is not authenticated. This creates unnecessary WebSocket connections for guest users and can trigger errors when the notifications table has RLS policies.
 
 **Fix:** Added auth guard — only subscribe to realtime when enabled.
 
@@ -126,7 +126,7 @@ The notification hook's `useEffect` subscribes to a Supabase realtime channel un
 void channel;
 ```
 
-The module-level singleton creates a Supabase realtime channel that persists forever. If the user logs out and back in, a stale channel remains. More importantly, it calls `fetchCount()` (which hits `/api/messages/conversations`) even for guest users.
+The module-level singleton creates a Socket.io realtime channel that persists forever. If the user logs out and back in, a stale channel remains. More importantly, it calls `fetchCount()` (which hits `/api/messages/conversations`) even for guest users.
 
 **Fix:** Added auth-awareness — only start the singleton when authenticated, don't fetch for guests.
 
@@ -246,7 +246,7 @@ Thanks to TanStack Query's deduplication, these don't create duplicate network r
 |---|-------|----------|-----|
 | 1 | AuthProvider 1.5s delay | CRITICAL | Fast polling retry (500ms x 3) |
 | 2 | No debounce on realtime refetch | CRITICAL | Added debounce to useConversations |
-| 3 | Module-level supabase client | HIGH | Moved inside component with useMemo |
+| 3 | Module-level database client | HIGH | Moved inside component with useMemo |
 | 4 | 10-second timeout hack | HIGH | Removed (root cause fixed) |
 | 5 | Notifications realtime without auth | MEDIUM | Added auth guard |
 | 6 | Unread singleton no cleanup | MEDIUM | Added auth-awareness |

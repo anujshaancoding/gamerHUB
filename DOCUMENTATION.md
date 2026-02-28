@@ -192,9 +192,9 @@ CURRENT GAMER PAIN POINTS
 | **UI Library** | React | 19.2.x |
 | **Language** | TypeScript | 5.x |
 | **Styling** | Tailwind CSS | 4.x |
-| **Database** | Supabase (PostgreSQL) | Latest |
-| **Auth** | Supabase Auth | Built-in |
-| **Realtime** | Supabase Realtime (WebSocket) | Built-in |
+| **Database** | PostgreSQL (self-hosted on VPS) | Latest |
+| **Auth** | Auth.js (email + OAuth) | Latest |
+| **Realtime** | Socket.io (WebSocket) | Latest |
 | **Voice/Video** | LiveKit | 2.x |
 | **Payments** | Stripe | 20.x |
 | **AI** | OpenAI | 6.x |
@@ -292,7 +292,7 @@ CURRENT GAMER PAIN POINTS
 
 | Feature | Description |
 |---------|-------------|
-| **Real-time Chat** | Direct messaging and group chat via Supabase Realtime |
+| **Real-time Chat** | Direct messaging and group chat via Socket.io |
 | **Clan Chat** | Auto-managed chat for clan members |
 | **Voice & Video Calls** | Peer-to-peer calls via LiveKit with screen sharing |
 
@@ -330,11 +330,11 @@ CURRENT GAMER PAIN POINTS
             │                  │                  │
             ▼                  ▼                  ▼
   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-  │    SUPABASE     │ │    LIVEKIT      │ │     STRIPE      │
-  │  PostgreSQL     │ │    Server       │ │   Payments      │
-  │  Auth + RLS     │ │  (Voice/Video)  │ │  Subscriptions  │
-  │  Realtime WS    │ └─────────────────┘ └─────────────────┘
-  │  Storage        │
+  │   POSTGRESQL    │ │    LIVEKIT      │ │     STRIPE      │
+  │   (Self-hosted) │ │    Server       │ │   Payments      │
+  │   Auth.js       │ │  (Voice/Video)  │ │  Subscriptions  │
+  │   Socket.io     │ └─────────────────┘ └─────────────────┘
+  │   File Storage  │
   └─────────────────┘         ┌─────────────────┐
                               │    OPENAI API    │
             ┌─────────────────│  AI Matchmaking  │
@@ -359,13 +359,13 @@ CURRENT GAMER PAIN POINTS
 ```
 READ FLOW (React Query)
 ───────────────────────
-Component ──▶ useQuery Hook ──▶ API Route ──▶ Supabase ──▶ PostgreSQL
+Component ──▶ useQuery Hook ──▶ API Route ──▶ PostgreSQL
     ▲                                                          │
     └──────────────────── Cached Data ◀────────────────────────┘
 
 WRITE FLOW (Mutations)
 ──────────────────────
-User Action ──▶ useMutation ──▶ API Route ──▶ Supabase ──▶ PostgreSQL
+User Action ──▶ useMutation ──▶ API Route ──▶ PostgreSQL
                                     │                          │
                                     │       ┌──────────────────┘
                                     │       │ Triggers Execute
@@ -377,7 +377,7 @@ User Action ──▶ useMutation ──▶ API Route ──▶ Supabase ──�
 
 REALTIME FLOW (Subscriptions)
 ─────────────────────────────
-PostgreSQL Change ──▶ Supabase Realtime ──▶ Client Subscription
+PostgreSQL Change ──▶ Socket.io ──▶ Client Subscription
                                                      │
                                                      ▼
                                                Zustand Store
@@ -389,7 +389,7 @@ PostgreSQL Change ──▶ Supabase Realtime ──▶ Client Subscription
 ```
 RootLayout
   └── QueryProvider (TanStack React Query)
-        └── AuthProvider (Supabase Auth)
+        └── AuthProvider (Auth.js)
               └── ThemeProvider (Custom theme engine)
                     └── PWAProvider (Service worker + install prompt)
                           └── AuthGateProvider (Route protection)
@@ -414,7 +414,7 @@ The database schema is managed through 37 incremental migrations:
 | `004_tournaments` | Tournaments | tournaments, tournament_participants, tournament_matches, tournament_match_games, tournament_activity_log |
 | `004_leaderboards` | Seasons | seasons, season_points, point_transactions, community_challenges, season_rewards, leaderboard_snapshots |
 | `004_gamification` | Progression | user_progression, level_thresholds, xp_transactions, titles, profile_frames, profile_themes, badges, quests |
-| `005_storage_buckets` | Storage | Supabase storage bucket configuration |
+| `005_storage_buckets` | Storage | Storage bucket configuration |
 | `006_friends` | Social | Friend requests, friendship tracking |
 | `007_social_suggestions` | Social | AI-powered friend/player suggestions |
 | `008_payments` | Monetization | Stripe customer records, subscriptions, payment history |
@@ -777,7 +777,7 @@ gamer-hub/
 │   │
 │   ├── lib/                           # Utilities & Business Logic
 │   │   ├── hooks/                     # 50+ Custom React hooks
-│   │   ├── supabase/                  # Client, server, admin, middleware
+│   │   ├── supabase/                  # Database client, server, admin, middleware
 │   │   ├── integrations/              # Riot, Steam, Twitch, Discord, CoC
 │   │   ├── matchmaking/               # OpenAI matchmaking logic
 │   │   ├── tournament/                # Bracket generation
@@ -797,7 +797,7 @@ gamer-hub/
 │   │   └── useAuthGate.ts             # Auth gate hook
 │   │
 │   └── types/                         # TypeScript Type Definitions
-│       ├── database.ts                # Supabase database types
+│       ├── database.ts                # PostgreSQL database types
 │       ├── blog.ts                    # Blog types
 │       ├── lfg.ts                     # LFG types
 │       ├── news.ts                    # News types
@@ -825,7 +825,7 @@ gamer-hub/
 │
 ├── e2e/                               # Playwright E2E tests
 ├── src/__tests__/                     # Jest unit tests
-├── middleware.ts                       # Supabase session middleware
+├── middleware.ts                       # Auth.js session middleware
 ├── next.config.ts                     # Next.js config
 ├── jest.config.js                     # Jest config
 ├── playwright.config.ts               # Playwright config
@@ -840,7 +840,7 @@ gamer-hub/
 ### Authentication Flow
 
 ```
-User ──── Frontend ──── Middleware ──── API Route ──── Supabase Auth
+User ──── Frontend ──── Middleware ──── API Route ──── Auth.js
  │            │              │              │               │
  │──Register─▶│              │              │               │
  │            │──────────────────────────────│──signUp()────▶│
@@ -861,11 +861,11 @@ User ──── Frontend ──── Middleware ──── API Route ──
 
 | Layer | Implementation |
 |-------|---------------|
-| **Authentication** | Supabase Auth with email/password, JWT sessions |
+| **Authentication** | Auth.js with email/password, JWT sessions |
 | **Session Management** | Middleware refreshes tokens on every request |
 | **Route Protection** | AuthGateProvider + middleware matcher |
 | **Database Security** | Row Level Security (RLS) policies on all tables |
-| **API Security** | Server-side Supabase client with session validation |
+| **API Security** | Server-side database client with session validation |
 | **Payment Security** | Stripe handles all payment data (PCI compliant) |
 | **Image Security** | Content Security Policy for remote images, SVG sandboxing |
 | **Webhook Security** | Signature verification for Stripe and Twitch webhooks |
@@ -1022,10 +1022,12 @@ npm run build
 ### Environment Variables
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
-SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+# Auth.js
+AUTH_SECRET=your_auth_secret
+NEXTAUTH_URL=http://localhost:3000
 
 # LiveKit (Voice/Video)
 LIVEKIT_API_KEY=APIxxx
@@ -1080,8 +1082,8 @@ NEXT_PUBLIC_SITE_URL=https://gamerhub.com
 | Add a new component | `src/components/[category]/[Name].tsx` |
 | Add a new hook | `src/lib/hooks/use[Name].ts` |
 | Add a database migration | `supabase/migrations/[number]_[name].sql` |
-| Get Supabase client (browser) | `import { createClient } from '@/lib/supabase/client'` |
-| Get Supabase client (server) | `import { createClient } from '@/lib/supabase/server'` |
+| Get database client (browser) | `import { createClient } from '@/lib/supabase/client'` |
+| Get database client (server) | `import { createClient } from '@/lib/supabase/server'` |
 | Get current user | `const { user, profile } = useAuth()` |
 | Get progression data | `const { progression } = useProgression()` |
 | Get quest data | `const { dailyQuests, weeklyQuests } = useQuests()` |

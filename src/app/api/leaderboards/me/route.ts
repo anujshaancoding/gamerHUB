@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get current user's ranking
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,7 +20,7 @@ export async function GET(request: NextRequest) {
     // If no season_id provided, get current active season
     let targetSeasonId = seasonId;
     if (!targetSeasonId) {
-      const { data: currentSeason } = await supabase
+      const { data: currentSeason } = await db
         .from("seasons")
         .select("id")
         .eq("status", "active")
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's season points
-    let query = supabase
+    let query = db
       .from("season_points")
       .select(
         `
@@ -85,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Get the user's rank by counting users with more points
     const rankings = await Promise.all(
       (userPoints as any[]).map(async (points: any) => {
-        let rankQuery = supabase
+        let rankQuery = db
           .from("season_points")
           .select("*", { count: "exact", head: true })
           .eq("season_id", targetSeasonId as string)

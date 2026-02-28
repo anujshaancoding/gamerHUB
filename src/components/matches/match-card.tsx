@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { Card, Avatar, Badge, Button } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { formatDateTime } from "@/lib/utils";
 import type { Match, Game, Profile } from "@/types/database";
@@ -31,7 +31,7 @@ interface MatchCardProps {
 
 export function MatchCard({ match }: MatchCardProps) {
   const { user } = useAuth();
-  const supabase = createClient();
+  const db = createClient();
   const [loading, setLoading] = useState(false);
   const [joined, setJoined] = useState(
     match.participants?.some((p) => p.user?.id === user?.id) || false
@@ -45,7 +45,7 @@ export function MatchCard({ match }: MatchCardProps) {
     if (!user) return;
     setLoading(true);
     try {
-      await supabase.from("match_participants").insert({
+      await db.from("match_participants").insert({
         match_id: match.id,
         user_id: user.id,
         status: "accepted",
@@ -62,7 +62,7 @@ export function MatchCard({ match }: MatchCardProps) {
     if (!user) return;
     setLoading(true);
     try {
-      await supabase
+      await db
         .from("match_participants")
         .delete()
         .eq("match_id", match.id)

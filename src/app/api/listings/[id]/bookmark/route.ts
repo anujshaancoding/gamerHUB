@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Toggle bookmark on a listing
 export async function POST(
@@ -8,18 +9,15 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if already bookmarked
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("community_listing_bookmarks")
       .select("id")
       .eq("listing_id", id)
@@ -30,12 +28,12 @@ export async function POST(
 
     if (existing) {
       // Remove bookmark
-      await supabase
+      await db
         .from("community_listing_bookmarks")
         .delete()
         .eq("id", existing.id);
 
-      await supabase.rpc("increment_field" as never, {
+      await db.rpc("increment_field" as never, {
         table_name: "community_listings",
         field_name: "bookmark_count",
         row_id: id,
@@ -43,13 +41,13 @@ export async function POST(
       } as never).then(() => {
         // Fallback: direct update if RPC doesn't exist
       }).catch(async () => {
-        const { data: listing } = await supabase
+        const { data: listing } = await db
           .from("community_listings")
           .select("bookmark_count")
           .eq("id", id)
           .single();
         if (listing) {
-          await supabase
+          await db
             .from("community_listings")
             .update({ bookmark_count: Math.max(0, (listing.bookmark_count || 0) - 1) } as never)
             .eq("id", id);
@@ -59,26 +57,26 @@ export async function POST(
       bookmarked = false;
     } else {
       // Add bookmark
-      await supabase
+      await db
         .from("community_listing_bookmarks")
         .insert({
           listing_id: id,
           user_id: user.id,
         } as never);
 
-      await supabase.rpc("increment_field" as never, {
+      await db.rpc("increment_field" as never, {
         table_name: "community_listings",
         field_name: "bookmark_count",
         row_id: id,
         amount: 1,
       } as never).catch(async () => {
-        const { data: listing } = await supabase
+        const { data: listing } = await db
           .from("community_listings")
           .select("bookmark_count")
           .eq("id", id)
           .single();
         if (listing) {
-          await supabase
+          await db
             .from("community_listings")
             .update({ bookmark_count: (listing.bookmark_count || 0) + 1 } as never)
             .eq("id", id);

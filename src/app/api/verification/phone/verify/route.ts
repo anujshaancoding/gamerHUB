@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST /api/verification/phone/verify - Verify the code
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -25,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the verification record
-    const { data: verification, error: fetchError } = await supabase
+    const { data: verification, error: fetchError } = await db
       .from("phone_verifications")
       .select("*")
       .eq("user_id", user.id)
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Verify the code
     if (verification.verification_code !== code) {
       // Increment attempts
-      await supabase
+      await db
         .from("phone_verifications")
         .update({ attempts: verification.attempts + 1 })
         .eq("id", verification.id);
@@ -90,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Code is correct - mark as verified
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("phone_verifications")
       .update({
         verified_at: new Date().toISOString(),
@@ -107,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update account verification status
-    await supabase
+    await db
       .from("account_verifications")
       .update({
         phone_verified: true,
@@ -117,7 +115,7 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id);
 
     // Create verified badge
-    await supabase.from("verified_badges").upsert(
+    await db.from("verified_badges").upsert(
       {
         user_id: user.id,
         badge_type: "phone_verified",
@@ -129,7 +127,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Recalculate trust score
-    await supabase.rpc("calculate_trust_score", { p_user_id: user.id });
+    await db.rpc("calculate_trust_score", { p_user_id: user.id });
 
     return NextResponse.json({
       success: true,

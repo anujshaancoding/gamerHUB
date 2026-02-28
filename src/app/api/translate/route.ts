@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { TranslateRequest, SupportedLanguage } from "@/types/localization";
 import { SUPPORTED_LANGUAGES } from "@/types/localization";
+import { getUser } from "@/lib/auth/get-user";
 
 // Simple translation cache to reduce API calls
 const translationCache = new Map<string, { translation: string; timestamp: number }>();
@@ -10,10 +11,8 @@ const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 // POST - Translate text
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if we have this translation in the database
-    const { data: existingTranslation } = await supabase
+    const { data: existingTranslation } = await db
       .from("chat_translations")
       .select("translated_text, source_language")
       .eq("original_text", body.text)
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
     const detectedSourceLanguage = body.sourceLanguage || detectLanguage(body.text);
 
     // Store translation in database for future use
-    await supabase.from("chat_translations").insert({
+    await db.from("chat_translations").insert({
       original_text: body.text,
       translated_text: translatedText,
       source_language: detectedSourceLanguage,
@@ -216,10 +215,8 @@ function mockTranslate(
 // GET - Get translation history for a message
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -237,7 +234,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: translation } = await supabase
+    const { data: translation } = await db
       .from("chat_translations")
       .select("*")
       .eq("original_text", originalText)

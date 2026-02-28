@@ -673,7 +673,7 @@ const CONTRIBUTION_ROLES = [
     role: "Developer",
     icon: Code2,
     description:
-      "Help build new features, fix bugs, and contribute to the open-source codebase. Experience with React, Next.js, or Supabase is a plus.",
+      "Help build new features, fix bugs, and contribute to the open-source codebase. Experience with React, Next.js, or PostgreSQL is a plus.",
     color: "primary" as const,
   },
   {

@@ -88,7 +88,7 @@ export function useProgression(userId?: string) {
 
   // Realtime subscription disabled — user_progression table was removed
   // in 999_cleanup_and_focus.sql.  Subscribing to a missing table causes
-  // the Supabase Realtime WebSocket to reconnect in a loop, spamming the
+  // the WebSocket to reconnect in a loop, spamming the
   // dev console.  Data is still fetched via React Query above.
 
   const equipTitleMutation = useMutation({

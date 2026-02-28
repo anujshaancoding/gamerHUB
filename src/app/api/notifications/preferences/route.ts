@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get all notification preferences
-    const { data: preferences, error } = await supabase
+    const { data: preferences, error } = await db
       .from("notification_preferences")
       .select("*")
       .eq("user_id", user.id)
@@ -30,7 +28,7 @@ export async function GET() {
     }
 
     // Get Discord connection status
-    const { data: discordConnection } = await supabase
+    const { data: discordConnection } = await db
       .from("discord_connections")
       .select("discord_username, is_active")
       .eq("user_id", user.id)
@@ -52,14 +50,11 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -111,7 +106,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if Discord is connected for discord channel
-    const { data: discordConnection } = await supabase
+    const { data: discordConnection } = await db
       .from("discord_connections")
       .select("is_active")
       .eq("user_id", user.id)
@@ -127,7 +122,7 @@ export async function PUT(request: NextRequest) {
         channels = channels.filter((c: string) => c !== "discord");
       }
 
-      const { error } = await supabase
+      const { error } = await db
         .from("notification_preferences")
         .upsert(
           {
@@ -156,7 +151,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Fetch updated preferences
-    const { data: updatedPreferences } = await supabase
+    const { data: updatedPreferences } = await db
       .from("notification_preferences")
       .select("*")
       .eq("user_id", user.id)
@@ -176,14 +171,11 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -198,7 +190,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update single preference
-    const { data: preference, error } = await supabase
+    const { data: preference, error } = await db
       .from("notification_preferences")
       .update({
         ...updates,

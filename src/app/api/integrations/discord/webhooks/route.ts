@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's Discord webhooks
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: webhooks, error } = await supabase
+    const { data: webhooks, error } = await db
       .from("discord_webhooks")
       .select("*")
       .eq("user_id", user.id)
@@ -40,10 +39,8 @@ export async function GET() {
 // POST - Add a new webhook
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -86,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing webhook for this channel
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("discord_webhooks")
       .select("id")
       .eq("user_id", user.id)
@@ -95,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // Update existing webhook
-      const { data: updated, error: updateError } = await supabase
+      const { data: updated, error: updateError } = await db
         .from("discord_webhooks")
         .update({
           webhook_url,
@@ -122,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert new webhook
-    const { data: webhook, error: insertError } = await supabase
+    const { data: webhook, error: insertError } = await db
       .from("discord_webhooks")
       .insert({
         user_id: user.id,
@@ -162,10 +159,8 @@ export async function POST(request: NextRequest) {
 // PATCH - Update webhook settings
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -191,7 +186,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const { data: webhook, error } = await supabase
+    const { data: webhook, error } = await db
       .from("discord_webhooks")
       .update({
         ...filteredUpdates,
@@ -223,10 +218,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Remove a webhook
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -242,7 +235,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("discord_webhooks")
       .delete()
       .eq("id", webhookId)

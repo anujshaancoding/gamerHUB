@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 
 // GET - List currency packs
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
-    const { data: packs, error } = await supabase
+    const { data: packs, error } = await db
       .from("currency_packs")
       .select("*")
       .eq("is_active", true)

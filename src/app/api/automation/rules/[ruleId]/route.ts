@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import type { AutomationRule, AutomationLog } from "@/types/database";
+import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
   params: Promise<{ ruleId: string }>;
@@ -15,19 +16,16 @@ interface RuleWithRelations extends AutomationRule {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { ruleId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get rule with clan info
-    const { data: ruleData, error } = await supabase
+    const { data: ruleData, error } = await db
       .from("automation_rules")
       .select(`
         *,
@@ -47,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const rule = ruleData as unknown as RuleWithRelations;
 
     // Check if user is clan member
-    const { data: membershipData } = await supabase
+    const { data: membershipData } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", rule.clan_id)
@@ -61,7 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const membership = membershipData as { role: string };
 
     // Get recent logs
-    const { data: logs } = await supabase
+    const { data: logs } = await db
       .from("automation_logs")
       .select("*")
       .eq("rule_id", ruleId)
@@ -85,19 +83,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { ruleId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get existing rule
-    const { data: existingRuleData, error: fetchError } = await supabase
+    const { data: existingRuleData, error: fetchError } = await db
       .from("automation_rules")
       .select("clan_id")
       .eq("id", ruleId)
@@ -113,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const existingRule = existingRuleData as { clan_id: string };
 
     // Check if user is clan admin
-    const { data: membershipData } = await supabase
+    const { data: membershipData } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", existingRule.clan_id)
@@ -157,7 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Update rule - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: ruleData, error } = await (supabase as any)
+    const { data: ruleData, error } = await (db as any)
       .from("automation_rules")
       .update(updates)
       .eq("id", ruleId)
@@ -188,19 +183,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { ruleId } = await params;
-    const supabase = await createClient();
+    const db = createClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get existing rule
-    const { data: existingRuleData, error: fetchError } = await supabase
+    const { data: existingRuleData, error: fetchError } = await db
       .from("automation_rules")
       .select("clan_id")
       .eq("id", ruleId)
@@ -216,7 +208,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingRule = existingRuleData as { clan_id: string };
 
     // Check if user is clan admin
-    const { data: membershipData } = await supabase
+    const { data: membershipData } = await db
       .from("clan_members")
       .select("role")
       .eq("clan_id", existingRule.clan_id)
@@ -229,7 +221,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete rule (cascade deletes logs)
-    const { error } = await supabase
+    const { error } = await db
       .from("automation_rules")
       .delete()
       .eq("id", ruleId);

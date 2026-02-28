@@ -1,30 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { REGIONS, type Region, type UpdateLocalePreferencesRequest } from "@/types/localization";
+import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get all regions or user's region preferences
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const db = createClient();
     const { searchParams } = new URL(request.url);
     const includeStats = searchParams.get("stats") === "true";
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
     // Get all regions with stats if requested
     if (includeStats) {
       const regionsWithStats = await Promise.all(
         Object.entries(REGIONS).map(async ([code, region]) => {
           // Get member count for this region
-          const { count: memberCount } = await supabase
+          const { count: memberCount } = await db
             .from("regional_communities")
             .select("regional_community_members(id)", { count: "exact", head: true })
             .eq("region_code", code);
 
           // Get active communities in this region
-          const { count: communityCount } = await supabase
+          const { count: communityCount } = await db
             .from("regional_communities")
             .select("*", { count: "exact", head: true })
             .eq("region_code", code)
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
     // If user is logged in, include their preferences
     let userPreferences = null;
     if (user) {
-      const { data: prefs } = await supabase
+      const { data: prefs } = await db
         .from("users")
         .select("language, region, timezone, time_format, date_format")
         .eq("id", user.id)
@@ -76,10 +75,8 @@ export async function GET(request: NextRequest) {
 // PATCH - Update user's locale preferences
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -122,7 +119,7 @@ export async function PATCH(request: NextRequest) {
     if (body.time_format !== undefined) updates.time_format = body.time_format;
     if (body.date_format !== undefined) updates.date_format = body.date_format;
 
-    const { data: preferences, error } = await supabase
+    const { data: preferences, error } = await db
       .from("users")
       .update(updates)
       .eq("id", user.id)

@@ -1,0 +1,46 @@
+# ============================================================
+# GamerHub Environment Variables (VPS)
+# Copy this to /var/www/gglobby/.env and fill in values
+# ============================================================
+
+# ── Database ─────────────────────────────────
+DATABASE_URL=postgresql://gamerhub_app:YOUR_PASSWORD@localhost:5432/gamerhub
+
+# ── Auth.js ──────────────────────────────────
+NEXTAUTH_URL=https://gglobby.in
+NEXTAUTH_SECRET=GENERATE_WITH_openssl_rand_base64_32
+
+# ── Google OAuth ─────────────────────────────
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# ── File Uploads ─────────────────────────────
+UPLOAD_DIR=/var/www/gglobby/uploads
+
+# ── App ──────────────────────────────────────
+NEXT_PUBLIC_APP_URL=https://gglobby.in
+NEXT_PUBLIC_SITE_URL=https://gglobby.in
+NODE_ENV=production
+PORT=3000
+
+# ── Discord Integration ─────────────────────
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_BOT_TOKEN=
+DISCORD_PUBLIC_KEY=
+
+# ── LiveKit (Voice/Video) ───────────────────
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+NEXT_PUBLIC_LIVEKIT_URL=
+
+# ── Stripe (Payments) ───────────────────────
+STRIPE_SECRET_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# ── OpenAI (AI Features) ────────────────────
+OPENAI_API_KEY=
+
+# ── Analytics ────────────────────────────────
+NEXT_PUBLIC_GA_MEASUREMENT_ID=

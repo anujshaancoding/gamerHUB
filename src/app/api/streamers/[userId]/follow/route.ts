@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 
 // POST - Toggle follow on a streamer
 export async function POST(
@@ -8,17 +9,15 @@ export async function POST(
 ) {
   try {
     const { userId } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = createClient();
+    const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get streamer profile
-    const { data: streamer, error: streamerError } = await supabase
+    const { data: streamer, error: streamerError } = await db
       .from("streamer_profiles")
       .select("id")
       .eq("user_id", userId)
@@ -40,7 +39,7 @@ export async function POST(
     }
 
     // Toggle follow
-    const { data: result, error } = await supabase.rpc(
+    const { data: result, error } = await db.rpc(
       "toggle_streamer_follow",
       {
         p_user_id: user.id,

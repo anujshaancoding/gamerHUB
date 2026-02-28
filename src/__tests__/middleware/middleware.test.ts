@@ -183,7 +183,7 @@ describe('Middleware Route Protection', () => {
 describe('Session Management', () => {
   describe('Session Refresh', () => {
     it('should call getUser() to validate session (not just getSession)', () => {
-      // The middleware uses getUser() which validates with the Supabase server
+      // The middleware uses getUser() which validates with Auth.js
       // This is more secure than getSession() which only checks local token
       const validateSession = async () => {
         // Simulating the middleware behavior

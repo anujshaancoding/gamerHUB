@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 
 // GET - Get active battle pass with rewards
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const db = createClient();
 
     // Get active battle pass - eslint-disable for untyped table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: battlePassData, error } = await (supabase as any)
+    const { data: battlePassData, error } = await (db as any)
       .from("battle_passes")
       .select(
         `

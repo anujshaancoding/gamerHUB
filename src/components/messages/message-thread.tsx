@@ -14,7 +14,7 @@ import {
   Ghost,
   UserPlus,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/db/client-browser";
 import { useRouter } from "next/navigation";
 import { Button, Avatar } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
@@ -96,9 +96,9 @@ export function MessageThread({
   // Realtime: listen for the other participant updating their last_read_at
   useEffect(() => {
     if (!conversationId || !otherParticipant?.user_id) return;
-    const supabase = createClient();
+    const db = createClient();
 
-    const channel = supabase
+    const channel = db
       .channel(`read-receipts:${conversationId}`)
       .on(
         "postgres_changes",
@@ -118,7 +118,7 @@ export function MessageThread({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [conversationId, otherParticipant?.user_id]);
 

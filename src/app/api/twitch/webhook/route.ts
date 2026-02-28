@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db/client";
 import { verifyTwitchWebhook } from "@/lib/integrations/twitch";
 
 // POST - Handle Twitch EventSub webhooks
@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
       const subscriptionType = payload.subscription.type;
       const event = payload.event;
 
-      const supabase = await createClient();
+      const db = createClient();
 
       switch (subscriptionType) {
         case "stream.online": {
           // Stream started
-          await supabase.rpc("update_stream_status", {
+          await db.rpc("update_stream_status", {
             p_twitch_id: event.broadcaster_user_id,
             p_status: "live",
             p_title: null, // Will be updated by periodic sync
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
         case "stream.offline": {
           // Stream ended
-          await supabase.rpc("update_stream_status", {
+          await db.rpc("update_stream_status", {
             p_twitch_id: event.broadcaster_user_id,
             p_status: "offline",
             p_title: null,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
         case "channel.update": {
           // Channel info updated (title, game, etc.)
-          await supabase
+          await db
             .from("streamer_profiles")
             .update({
               stream_title: event.title,
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
     if (messageType === "revocation") {
       const subscriptionId = payload.subscription.id;
 
-      const supabase = await createClient();
-      await supabase
+      const db = createClient();
+      await db
         .from("twitch_eventsub_subscriptions")
         .update({ status: "revoked" })
         .eq("twitch_subscription_id", subscriptionId);
