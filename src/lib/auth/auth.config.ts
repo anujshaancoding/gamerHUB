@@ -16,6 +16,7 @@ import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
