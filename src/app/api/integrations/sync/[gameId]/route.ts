@@ -21,8 +21,8 @@ import {
   calculateDota2Stats,
   DOTA2_RANKS,
 } from "@/lib/integrations/steam";
-import {
 import { getUser } from "@/lib/auth/get-user";
+import {
   getPlayer as getCocPlayer,
   calculateCocStats,
   getCocLeagueName,

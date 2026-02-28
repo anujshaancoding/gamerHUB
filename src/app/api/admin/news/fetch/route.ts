@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import Parser from "rss-parser";
-import {
 import { getUser } from "@/lib/auth/get-user";
+import {
   GAME_KEYWORDS_SCORED,
   OTHER_GAME_KEYWORDS,
   INDIA_ASIA_KEYWORDS,

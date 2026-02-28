@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { EndorsePlayerRequest } from "@/types/verified-queue";
-import {
 import { getUser } from "@/lib/auth/get-user";
+import {
   ENDORSEMENT_TYPES,
   getBehaviorRating,
   calculateNewScore,
