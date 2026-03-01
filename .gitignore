@@ -37,6 +37,9 @@ yarn-error.log*
 # mobile
 /mobile
 
+# uploaded files (dev)
+/public/uploads
+
 # vercel
 .vercel
 

@@ -36,11 +36,11 @@ async function fetchClanData(clanIdOrSlug: string): Promise<ClanWithDetails> {
       primary_game:games!clans_primary_game_id_fkey(*),
       clan_members(
         *,
-        profile:profiles(*)
+        profile:profiles!clan_members_user_id_fkey(*)
       ),
       clan_games(
         *,
-        game:games(*)
+        game:games!clan_games_game_id_fkey(*)
       ),
       clan_achievements(*)
     `

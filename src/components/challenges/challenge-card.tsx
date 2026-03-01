@@ -181,7 +181,7 @@ export function ChallengeCard({ challenge, currentUserId }: ChallengeCardProps) 
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
             <div className="flex items-center gap-4">
               <Link
-                href={`/profile/${challenge.creator?.username}`}
+                href={challenge.creator?.username ? `/profile/${challenge.creator.username}` : "#"}
                 className="flex items-center gap-2 hover:opacity-80"
               >
                 <Avatar

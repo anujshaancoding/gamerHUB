@@ -12,10 +12,16 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
-import { join, dirname } from "path";
+import { resolve, dirname } from "path";
 import { getUser } from "@/lib/auth/get-user";
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "/var/www/gglobby/uploads";
+// In development, write to public/uploads so Next.js serves them at /uploads/*.
+// In production, Nginx serves from UPLOAD_DIR directly.
+const UPLOAD_DIR = resolve(
+  process.env.NODE_ENV === "production"
+    ? (process.env.UPLOAD_DIR || "/var/www/gglobby/uploads")
+    : "./public/uploads"
+);
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export async function POST(request: NextRequest) {
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Security: ensure path doesn't escape the upload directory
     const normalizedPath = storagePath.replace(/\.\./g, "").replace(/^\//, "");
-    const fullPath = join(UPLOAD_DIR, normalizedPath);
+    const fullPath = resolve(UPLOAD_DIR, normalizedPath);
 
     if (!fullPath.startsWith(UPLOAD_DIR)) {
       return NextResponse.json(
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Delete old file if provided and different
     if (oldPath && oldPath !== normalizedPath) {
-      const oldFullPath = join(UPLOAD_DIR, oldPath.replace(/\.\./g, "").replace(/^\//, ""));
+      const oldFullPath = resolve(UPLOAD_DIR, oldPath.replace(/\.\./g, "").replace(/^\//, ""));
       if (oldFullPath.startsWith(UPLOAD_DIR)) {
         await unlink(oldFullPath).catch(() => {});
       }
@@ -96,7 +102,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const normalizedPath = filePath.replace(/\.\./g, "").replace(/^\//, "");
-    const fullPath = join(UPLOAD_DIR, normalizedPath);
+    const fullPath = resolve(UPLOAD_DIR, normalizedPath);
 
     if (!fullPath.startsWith(UPLOAD_DIR)) {
       return NextResponse.json({ error: "Invalid file path" }, { status: 400 });

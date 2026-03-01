@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = createClient();
     const user = await getUser();
 
     if (!user) {
@@ -14,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: profile } = await (admin as any)
+    const { data: profile } = await admin
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
@@ -29,7 +27,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = (admin as any)
+    let query = admin
       .from("profiles")
       .select(
         "id, username, display_name, avatar_url, is_admin, admin_role, gaming_style, region, created_at",
@@ -58,7 +56,7 @@ export async function GET(request: NextRequest) {
     let usersWithVerifications = data || [];
     if (usersWithVerifications.length > 0) {
       const userIds = usersWithVerifications.map((u: any) => u.id);
-      const { data: verifications } = await (admin as any)
+      const { data: verifications } = await admin
         .from("account_verifications")
         .select(
           "user_id, verification_level, trust_score, is_flagged, flag_reason, is_restricted, restriction_reason, restriction_expires_at"
@@ -92,7 +90,6 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const db = createClient();
     const user = await getUser();
 
     if (!user) {
@@ -101,7 +98,7 @@ export async function PATCH(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: profile } = await (admin as any)
+    const { data: profile } = await admin
       .from("profiles")
       .select("is_admin, admin_role")
       .eq("id", user.id)
@@ -121,10 +118,21 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Helper: ensure account_verifications row exists for the target user
+    const ensureVerificationRow = async (targetUserId: string) => {
+      await admin
+        .from("account_verifications")
+        .upsert(
+          { user_id: targetUserId },
+          { onConflict: "user_id", ignoreDuplicates: true }
+        );
+    };
+
     switch (action) {
       case "flag": {
         const { reason } = body;
-        await (admin as any)
+        await ensureVerificationRow(user_id);
+        const { error: flagError } = await admin
           .from("account_verifications")
           .update({
             is_flagged: true,
@@ -133,10 +141,17 @@ export async function PATCH(request: NextRequest) {
             flagged_by: user.id,
           })
           .eq("user_id", user_id);
+        if (flagError) {
+          console.error("Flag user error:", flagError);
+          return NextResponse.json(
+            { error: "Failed to flag user" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "unflag": {
-        await (admin as any)
+        const { error: unflagError } = await admin
           .from("account_verifications")
           .update({
             is_flagged: false,
@@ -145,11 +160,19 @@ export async function PATCH(request: NextRequest) {
             flagged_by: null,
           })
           .eq("user_id", user_id);
+        if (unflagError) {
+          console.error("Unflag user error:", unflagError);
+          return NextResponse.json(
+            { error: "Failed to unflag user" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "restrict": {
         const { reason, expires_at } = body;
-        await (admin as any)
+        await ensureVerificationRow(user_id);
+        const { error: restrictError } = await admin
           .from("account_verifications")
           .update({
             is_restricted: true,
@@ -157,10 +180,17 @@ export async function PATCH(request: NextRequest) {
             restriction_expires_at: expires_at || null,
           })
           .eq("user_id", user_id);
+        if (restrictError) {
+          console.error("Restrict user error:", restrictError);
+          return NextResponse.json(
+            { error: "Failed to restrict user" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "unrestrict": {
-        await (admin as any)
+        const { error: unrestrictError } = await admin
           .from("account_verifications")
           .update({
             is_restricted: false,
@@ -168,6 +198,13 @@ export async function PATCH(request: NextRequest) {
             restriction_expires_at: null,
           })
           .eq("user_id", user_id);
+        if (unrestrictError) {
+          console.error("Unrestrict user error:", unrestrictError);
+          return NextResponse.json(
+            { error: "Failed to unrestrict user" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "make_admin": {
@@ -178,13 +215,20 @@ export async function PATCH(request: NextRequest) {
           );
         }
         const { admin_role } = body;
-        await (admin as any)
+        const { error: makeAdminError } = await admin
           .from("profiles")
           .update({
             is_admin: true,
             admin_role: admin_role || "moderator",
           })
           .eq("id", user_id);
+        if (makeAdminError) {
+          console.error("Make admin error:", makeAdminError);
+          return NextResponse.json(
+            { error: "Failed to grant admin access" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "remove_admin": {
@@ -200,10 +244,17 @@ export async function PATCH(request: NextRequest) {
             { status: 400 }
           );
         }
-        await (admin as any)
+        const { error: removeAdminError } = await admin
           .from("profiles")
           .update({ is_admin: false, admin_role: null })
           .eq("id", user_id);
+        if (removeAdminError) {
+          console.error("Remove admin error:", removeAdminError);
+          return NextResponse.json(
+            { error: "Failed to revoke admin access" },
+            { status: 500 }
+          );
+        }
         break;
       }
       case "delete_user": {
@@ -219,8 +270,11 @@ export async function PATCH(request: NextRequest) {
             { status: 400 }
           );
         }
-        // Delete the user (cascades to profiles via FK)
-        const { error: deleteError } = await admin.auth.admin.deleteUser(user_id);
+        // Delete from users table — cascades to profiles and all related data via FK
+        const { error: deleteError } = await admin
+          .from("users")
+          .delete()
+          .eq("id", user_id);
         if (deleteError) {
           console.error("Delete user error:", deleteError);
           return NextResponse.json(

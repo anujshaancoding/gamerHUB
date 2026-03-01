@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        profile:profiles(id, username, display_name, avatar_url, is_premium)
+        profile:profiles!clan_wall_posts_user_id_fkey(id, username, display_name, avatar_url, is_premium)
       `,
         { count: "exact" }
       )
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        profile:profiles(id, username, display_name, avatar_url, is_premium)
+        profile:profiles!clan_wall_posts_user_id_fkey(id, username, display_name, avatar_url, is_premium)
       `
       )
       .single();

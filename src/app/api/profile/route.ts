@@ -41,8 +41,8 @@ export async function PATCH(request: NextRequest) {
     // Only allow updating own profile
     const allowedFields = [
       "username", "display_name", "avatar_url", "banner_url", "bio",
-      "gaming_style", "region", "status", "status_until", "social_links",
-      "favorite_games", "looking_for", "availability",
+      "gaming_style", "region", "preferred_language", "status", "status_until",
+      "social_links", "favorite_games", "looking_for", "availability",
     ];
 
     const filtered: Record<string, unknown> = {};

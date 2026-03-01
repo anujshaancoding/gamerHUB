@@ -102,16 +102,10 @@ function FriendsContent() {
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: friendPostKeys.list(false),
     queryFn: async () => {
-      const { data, error } = await db
-        .from("friend_posts")
-        .select(`
-          *,
-          user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw new Error(error.message);
-      return (data || []) as FriendPost[];
+      const res = await fetch(`/api/friend-posts?limit=50`);
+      if (!res.ok) throw new Error("Failed to load posts");
+      const { posts } = await res.json();
+      return (posts || []) as FriendPost[];
     },
     staleTime: STALE_TIMES.FRIEND_POSTS,
     enabled: activeTab === "posts" && !!user,
@@ -486,7 +480,7 @@ function FriendsContent() {
                   {receivedRequests.map((request) => (
                     <Card key={request.id} className="p-4">
                       <div className="flex items-center gap-4">
-                        <Link href={`/profile/${request.sender?.username}`}>
+                        <Link href={request.sender?.username ? `/profile/${request.sender.username}` : "#"}>
                           <Avatar
                             src={request.sender?.avatar_url}
                             alt={request.sender?.display_name || request.sender?.username || "User"}
@@ -494,7 +488,7 @@ function FriendsContent() {
                           />
                         </Link>
                         <div className="flex-1 min-w-0">
-                          <Link href={`/profile/${request.sender?.username}`}>
+                          <Link href={request.sender?.username ? `/profile/${request.sender.username}` : "#"}>
                             <p className="font-semibold text-text hover:text-primary transition-colors">
                               {request.sender?.display_name || request.sender?.username}
                             </p>
@@ -553,7 +547,7 @@ function FriendsContent() {
                   {sentRequests.map((request) => (
                     <Card key={request.id} className="p-4">
                       <div className="flex items-center gap-4">
-                        <Link href={`/profile/${request.recipient?.username}`}>
+                        <Link href={request.recipient?.username ? `/profile/${request.recipient.username}` : "#"}>
                           <Avatar
                             src={request.recipient?.avatar_url}
                             alt={request.recipient?.display_name || request.recipient?.username || "User"}
@@ -561,7 +555,7 @@ function FriendsContent() {
                           />
                         </Link>
                         <div className="flex-1 min-w-0">
-                          <Link href={`/profile/${request.recipient?.username}`}>
+                          <Link href={request.recipient?.username ? `/profile/${request.recipient.username}` : "#"}>
                             <p className="font-semibold text-text hover:text-primary transition-colors">
                               {request.recipient?.display_name || request.recipient?.username}
                             </p>

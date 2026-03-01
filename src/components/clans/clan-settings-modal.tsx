@@ -200,7 +200,7 @@ export function ClanSettingsModal({
             onClick={() => bannerInputRef.current?.click()}
           >
             {bannerUrl ? (
-              <Image src={bannerUrl} alt="Clan banner" fill className="object-cover" />
+              <Image src={bannerUrl} alt="Clan banner" fill className="object-cover" unoptimized={bannerUrl.startsWith("/uploads/")} />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-text-muted">
                 <ImageIcon className="h-6 w-6 mb-1" />
@@ -233,7 +233,7 @@ export function ClanSettingsModal({
               onClick={() => avatarInputRef.current?.click()}
             >
               {avatarUrl ? (
-                <Image src={avatarUrl} alt="Clan avatar" fill className="object-cover" />
+                <Image src={avatarUrl} alt="Clan avatar" fill className="object-cover" unoptimized={avatarUrl.startsWith("/uploads/")} />
               ) : (
                 <div className="flex items-center justify-center h-full text-text-muted">
                   <Camera className="h-5 w-5" />

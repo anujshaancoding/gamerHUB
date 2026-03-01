@@ -52,7 +52,7 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
           />
           <div>
             <Link
-              href={`/profile/${meme.creator?.username}`}
+              href={meme.creator?.username ? `/profile/${meme.creator.username}` : "#"}
               className="text-sm font-medium hover:text-primary"
             >
               {meme.creator?.username}

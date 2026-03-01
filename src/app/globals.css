@@ -518,6 +518,11 @@ body {
   mask-image: linear-gradient(to left, black, transparent);
 }
 
+/* When profile banner is active, make the right sidebar translucent so the banner shows through */
+html.has-profile-banner .right-sidebar-desktop {
+  background: color-mix(in srgb, var(--surface) 70%, transparent) !important;
+}
+
 /* Particle background effect */
 .particles-bg {
   position: absolute;

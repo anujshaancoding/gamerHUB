@@ -213,26 +213,17 @@ export function CommunityPageClient({
   } = useQuery({
     queryKey: friendPostKeys.list(isGuest),
     queryFn: async () => {
-      let query = db
-        .from("friend_posts")
-        .select(`
-          *,
-          user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url, is_verified)
-        `)
-        .order("created_at", { ascending: false });
+      const res = await fetch(`/api/friend-posts?limit=20`);
+      if (!res.ok) throw new Error("Failed to load friend posts");
+      const { posts } = await res.json();
 
       if (isGuest) {
-        query = query.eq("user.is_verified", true).limit(4);
-      } else {
-        query = query.limit(20);
+        // Client-side filter: only show posts from verified users for guests
+        return (posts || [])
+          .filter((p: FriendPost) => p.user !== null && p.user?.is_verified)
+          .slice(0, 4);
       }
-
-      const { data, error: queryError } = await query;
-      if (queryError) throw new Error(queryError.message);
-
-      return isGuest
-        ? (data || []).filter((p: FriendPost) => p.user !== null)
-        : (data || []);
+      return (posts || []) as FriendPost[];
     },
     staleTime: STALE_TIMES.FRIEND_POSTS,
     enabled: activeTab === "friends",
@@ -342,14 +333,7 @@ export function CommunityPageClient({
             </Button>
           </Link>
         )}
-        {activeTab === "tournaments" && (
-          <Button
-            leftIcon={<Trophy className="h-4 w-4" />}
-            onClick={() => setShowCreateListingModal(true)}
-          >
-            Create Listing
-          </Button>
-        )}
+        {/* Tournaments "Create Listing" button is inside TournamentsTab filter bar */}
       </div>
 
       {/* Tabs */}
@@ -570,6 +554,7 @@ export function CommunityPageClient({
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
                             priority={index < 2}
+                            unoptimized={post.cover_image.startsWith("/uploads/")}
                           />
                           {post.game && (
                             <div className="absolute top-3 left-3">
@@ -763,18 +748,6 @@ export function CommunityPageClient({
                   isGuest={!user}
                   onLike={async () => {
                     await toggleFriendPostLike(post.id);
-                  }}
-                  onShare={async () => {
-                    const url = `${window.location.origin}/community?tab=friends`;
-                    if (navigator.share) {
-                      await navigator.share({
-                        title: `Post by ${post.user?.display_name || post.user?.username}`,
-                        text: post.content.slice(0, 100),
-                        url,
-                      });
-                    } else {
-                      await navigator.clipboard.writeText(url);
-                    }
                   }}
                   onDelete={async () => {
                     const res = await fetch(`/api/friend-posts/${post.id}`, {

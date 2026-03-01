@@ -119,6 +119,16 @@ export function ProfileHeader({
   const [showViewers, setShowViewers] = useState(false);
   const viewersRef = useRef<HTMLDivElement>(null);
 
+  // Toggle class on <html> so the right sidebar becomes translucent when banner is present
+  useEffect(() => {
+    if (profile.banner_url) {
+      document.documentElement.classList.add("has-profile-banner");
+    }
+    return () => {
+      document.documentElement.classList.remove("has-profile-banner");
+    };
+  }, [profile.banner_url]);
+
   // Close viewers dropdown on outside click
   useEffect(() => {
     if (!showViewers) return;
@@ -231,12 +241,8 @@ export function ProfileHeader({
     : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative"
-    >
-      {/* Side Background Images (if user has them) */}
+    <>
+      {/* Side Background Images — rendered outside motion.div to escape its stacking context */}
       {profile.banner_url && (
         <>
           <div
@@ -258,6 +264,11 @@ export function ProfileHeader({
         </>
       )}
 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative"
+    >
       {/* Main Profile Card */}
       <div className="relative bg-surface rounded-2xl shadow-2xl gaming-card-border">
         {/* Particles Background — themed to active game */}
@@ -828,6 +839,7 @@ export function ProfileHeader({
         />
       )}
     </motion.div>
+    </>
   );
 }
 

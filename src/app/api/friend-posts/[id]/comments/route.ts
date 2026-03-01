@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
@@ -10,14 +10,12 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const db = createClient();
+    const db = createAdminClient();
 
+    // 1. Fetch comments
     const { data: comments, error } = await db
       .from("friend_post_comments")
-      .select(`
-        id, content, created_at, user_id,
-        user:profiles!friend_post_comments_user_id_fkey(username, display_name, avatar_url, is_verified)
-      `)
+      .select("id, content, created_at, user_id")
       .eq("post_id", postId)
       .order("created_at", { ascending: true })
       .limit(50);
@@ -30,7 +28,30 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ comments: comments || [] });
+    if (!comments || (comments as any[]).length === 0) {
+      return NextResponse.json({ comments: [] });
+    }
+
+    // 2. Get unique user IDs and fetch their profiles
+    const userIds = [...new Set((comments as any[]).map((c: any) => c.user_id).filter(Boolean))];
+
+    const { data: profiles } = await db
+      .from("profiles")
+      .select("id, username, display_name, avatar_url, is_verified")
+      .in("id", userIds);
+
+    const profileMap: Record<string, any> = {};
+    for (const profile of (profiles || []) as any[]) {
+      profileMap[profile.id] = profile;
+    }
+
+    // 3. Combine comments with user profiles
+    const commentsWithUsers = (comments as any[]).map((comment: any) => ({
+      ...comment,
+      user: profileMap[comment.user_id] || null,
+    }));
+
+    return NextResponse.json({ comments: commentsWithUsers });
   } catch (error) {
     console.error("Comments GET error:", error);
     return NextResponse.json(
@@ -44,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
-    const db = createClient();
+    const db = createAdminClient();
     const user = await getUser();
 
     if (!user) {
@@ -88,7 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 // DELETE - Delete a comment
 export async function DELETE(request: NextRequest) {
   try {
-    const db = createClient();
+    const db = createAdminClient();
     const user = await getUser();
 
     if (!user) {

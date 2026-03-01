@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        profile:profiles(*)
+        profile:profiles!clan_members_user_id_fkey(*)
       `,
         { count: "exact" }
       )
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        profile:profiles(*)
+        profile:profiles!clan_members_user_id_fkey(*)
       `
       )
       .single();

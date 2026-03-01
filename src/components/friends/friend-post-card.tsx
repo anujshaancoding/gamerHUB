@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Avatar, RelativeTime } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SharePopup } from "@/components/ui/share-popup";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -102,6 +103,7 @@ export function FriendPostCard({
 
   // Other state
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSharePopup, setShowSharePopup] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
 
   const canDelete = !isGuest && (
@@ -194,21 +196,12 @@ export function FriendPostCard({
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (isGuest) {
       setShowAuthGate(true);
       return;
     }
-    if (onShare) {
-      try {
-        await onShare();
-        if (!navigator.share) {
-          toast.success("Link copied to clipboard!");
-        }
-      } catch {
-        // navigator.share throws if user cancels
-      }
-    }
+    setShowSharePopup((prev) => !prev);
   };
 
   const handleBookmark = async () => {
@@ -240,7 +233,7 @@ export function FriendPostCard({
     <>
       <div
         className={cn(
-          "group relative rounded-2xl overflow-hidden transition-all duration-300",
+          "group relative rounded-2xl transition-all duration-300",
           "backdrop-blur-xl bg-white/[0.03] border border-white/[0.08]",
           "hover:border-primary/20 hover:bg-white/[0.05]",
           "hover:shadow-lg hover:shadow-primary/5",
@@ -255,7 +248,7 @@ export function FriendPostCard({
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <Link
-              href={`/profile/${post.user?.username}`}
+              href={post.user?.username ? `/profile/${post.user.username}` : "#"}
               onClick={handleProfileClick}
               className="flex items-center gap-3 hover:opacity-90 transition-opacity"
             >
@@ -310,6 +303,7 @@ export function FriendPostCard({
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, 600px"
+                unoptimized={post.image_url.startsWith("/uploads/")}
               />
               {/* Subtle bottom shadow overlay */}
               <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -356,13 +350,27 @@ export function FriendPostCard({
               </button>
 
               {/* Share */}
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200 group/share"
-              >
-                <Share2 className="h-[18px] w-[18px] transition-transform group-hover/share:scale-110" />
-                <span className="text-sm font-medium">Share</span>
-              </button>
+              <div className="relative">
+                <button
+                  onClick={handleShare}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 group/share",
+                    showSharePopup
+                      ? "text-primary bg-primary/10"
+                      : "text-text-muted hover:text-primary hover:bg-primary/10"
+                  )}
+                >
+                  <Share2 className="h-[18px] w-[18px] transition-transform group-hover/share:scale-110" />
+                  <span className="text-sm font-medium">Share</span>
+                </button>
+                <SharePopup
+                  isOpen={showSharePopup}
+                  onClose={() => setShowSharePopup(false)}
+                  url={typeof window !== "undefined" ? `${window.location.origin}/community?post=${post.id}` : ""}
+                  title={`Post by ${post.user?.display_name || post.user?.username || "a gamer"}`}
+                  text={post.content.slice(0, 120)}
+                />
+              </div>
             </div>
 
             {/* Bookmark */}
@@ -439,7 +447,7 @@ export function FriendPostCard({
                       key={comment.id}
                       className="flex items-start gap-2 group/cmt px-1"
                     >
-                      <Link href={`/profile/${comment.user?.username}`} onClick={handleProfileClick}>
+                      <Link href={comment.user?.username ? `/profile/${comment.user.username}` : "#"} onClick={handleProfileClick}>
                         <Avatar
                           src={comment.user?.avatar_url}
                           alt={comment.user?.display_name || "User"}
@@ -447,17 +455,17 @@ export function FriendPostCard({
                         />
                       </Link>
                       <div className="flex-1 min-w-0">
+                        <Link
+                          href={comment.user?.username ? `/profile/${comment.user.username}` : "#"}
+                          onClick={handleProfileClick}
+                          className="text-xs font-semibold text-text hover:text-primary transition-colors inline-flex items-center gap-1 mb-0.5 px-1"
+                        >
+                          {comment.user?.display_name || comment.user?.username}
+                          {comment.user?.is_verified && (
+                            <CheckCircle className="h-3 w-3 text-primary" />
+                          )}
+                        </Link>
                         <div className="bg-white/[0.04] rounded-xl px-3 py-2">
-                          <Link
-                            href={`/profile/${comment.user?.username}`}
-                            onClick={handleProfileClick}
-                            className="text-xs font-semibold text-text hover:text-primary transition-colors inline-flex items-center gap-1"
-                          >
-                            {comment.user?.display_name || comment.user?.username}
-                            {comment.user?.is_verified && (
-                              <CheckCircle className="h-3 w-3 text-primary" />
-                            )}
-                          </Link>
                           <p className="text-sm text-text-secondary break-words">
                             {comment.content}
                           </p>

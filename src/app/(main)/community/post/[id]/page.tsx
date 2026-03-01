@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -20,6 +20,8 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Trash2,
+  Send,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -35,7 +37,8 @@ import { ShareCardModal } from "@/components/blog/share-card-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { STALE_TIMES } from "@/lib/query/provider";
-import { useLikeBlogPost, blogKeys } from "@/lib/hooks/useBlog";
+import { useLikeBlogPost, useLikeBlogComment, blogKeys } from "@/lib/hooks/useBlog";
+import { toast } from "sonner";
 
 interface Author {
   id: string;
@@ -92,7 +95,13 @@ export default function CommunityPostPage() {
   const [bookmarked, setBookmarked] = useState(false);
   const [showShareCards, setShowShareCards] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const commentsSectionRef = useRef<HTMLDivElement>(null);
   const { toggleLike, isLiking } = useLikeBlogPost();
+  const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
 
   const postId = params.id as string;
 
@@ -114,7 +123,9 @@ export default function CommunityPostPage() {
             avatar_url,
             bio,
             gaming_style,
-            region
+            region,
+            is_verified,
+            social_links
           )
         `)
         .eq("id", postId)
@@ -184,14 +195,49 @@ export default function CommunityPostPage() {
     enabled: !!postId && !!user,
   });
 
+  const { toggleCommentLike, isLikingComment } = useLikeBlogComment(post?.slug || "");
+
+  // Fetch which comments the current user has liked
+  useQuery({
+    queryKey: ["blog-comment-likes", postId, user?.id],
+    queryFn: async () => {
+      const { data } = await db
+        .from("blog_comment_likes")
+        .select("comment_id")
+        .eq("user_id", user!.id);
+      setLikedCommentIds(new Set((data || []).map((d: { comment_id: string }) => d.comment_id)));
+      return data;
+    },
+    staleTime: STALE_TIMES.BLOG_POST_DETAIL,
+    enabled: !!postId && !!user,
+  });
+
   const handleLikePost = async () => {
     if (!post?.slug || !user) return;
     try {
       await toggleLike(post.slug);
-      // Also refresh the liked status
       queryClient.invalidateQueries({ queryKey: blogKeys.postLiked(postId) });
     } catch {
       // Like failed silently
+    }
+  };
+
+  const handleLikeComment = async (commentId: string) => {
+    if (!post?.slug || !user) {
+      toast.error("Sign in to like comments");
+      return;
+    }
+    try {
+      const liked = await toggleCommentLike(commentId);
+      setLikedCommentIds((prev) => {
+        const next = new Set(prev);
+        if (liked) next.add(commentId);
+        else next.delete(commentId);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: blogKeys.commentsById(postId) });
+    } catch {
+      toast.error("Failed to like comment");
     }
   };
 
@@ -216,6 +262,70 @@ export default function CommunityPostPage() {
       setDeletingCommentId(null);
     }
   };
+
+  const handleSubmitComment = async () => {
+    const content = commentText.trim();
+    if (!content || isSubmittingComment || !post?.slug) return;
+    setIsSubmittingComment(true);
+    try {
+      const response = await fetch(`/api/blog/${post.slug}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to post comment");
+      }
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: blogKeys.commentsById(postId) });
+      queryClient.invalidateQueries({ queryKey: blogKeys.comments(post.slug) });
+      toast.success("Comment posted!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to post comment");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleScrollToComments = () => {
+    commentsSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => commentInputRef.current?.focus(), 500);
+  };
+
+  const handleBookmark = async () => {
+    if (!user || !post) return;
+    const wasBookmarked = bookmarked;
+    setBookmarked(!wasBookmarked);
+    setIsBookmarking(true);
+    try {
+      if (wasBookmarked) {
+        await db.from("blog_bookmarks").delete().eq("post_id", post.id).eq("user_id", user.id);
+        toast.success("Removed from saved");
+      } else {
+        await db.from("blog_bookmarks").insert({ post_id: post.id, user_id: user.id });
+        toast.success("Post saved!");
+      }
+    } catch {
+      setBookmarked(wasBookmarked);
+      toast.error("Failed to save post");
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  // Check if user has bookmarked this post
+  useEffect(() => {
+    if (!user || !postId) return;
+    db.from("blog_bookmarks")
+      .select("id")
+      .eq("post_id", postId)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (data) setBookmarked(true);
+      });
+  }, [user, postId, db]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -396,6 +506,7 @@ export default function CommunityPostPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleScrollToComments}
             leftIcon={<MessageCircle className="h-4 w-4" />}
           >
             {post.comments_count}
@@ -403,7 +514,8 @@ export default function CommunityPostPage() {
           <Button
             variant={bookmarked ? "default" : "outline"}
             size="sm"
-            onClick={() => setBookmarked(!bookmarked)}
+            onClick={handleBookmark}
+            disabled={isBookmarking || !user}
             leftIcon={<Bookmark className={cn("h-4 w-4", bookmarked && "fill-current")} />}
           >
             Save
@@ -495,11 +607,52 @@ export default function CommunityPostPage() {
         </Card>
 
         {/* Comments Section */}
-        <div className="mb-8">
+        <div className="mb-8" ref={commentsSectionRef}>
           <h3 className="text-xl font-semibold text-text mb-6 flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
             Comments ({comments.length})
           </h3>
+
+          {/* Comment Input */}
+          {user ? (
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar alt="You" size="sm" />
+                  <div className="flex-1">
+                    <textarea
+                      ref={commentInputRef}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Share your thoughts..."
+                      className="w-full bg-transparent border border-border rounded-lg px-3 py-2 text-sm text-text placeholder-text-muted outline-none focus:border-primary resize-none min-h-[80px]"
+                      maxLength={2000}
+                      disabled={isSubmittingComment}
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-text-muted">
+                        {commentText.length}/2000
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={handleSubmitComment}
+                        disabled={!commentText.trim() || isSubmittingComment}
+                        leftIcon={isSubmittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      >
+                        {isSubmittingComment ? "Posting..." : "Post Comment"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-6 p-4 text-center">
+              <p className="text-text-muted text-sm">
+                <Link href="/login" className="text-primary hover:underline">Sign in</Link> to leave a comment.
+              </p>
+            </Card>
+          )}
 
           {comments.length === 0 ? (
             <Card className="p-6 text-center">
@@ -512,31 +665,37 @@ export default function CommunityPostPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <Avatar
-                        src={comment.author.avatar_url}
-                        alt={comment.author.display_name}
+                        src={comment.author?.avatar_url}
+                        alt={comment.author?.display_name || "User"}
                         size="sm"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-text text-sm">
-                            {comment.author.display_name}
-                          </span>
+                          <Link href={comment.author?.username ? `/profile/${comment.author.username}` : "#"} className="font-medium text-text text-sm hover:text-primary transition-colors">
+                            {comment.author?.display_name || comment.author?.username || "Anonymous"}
+                          </Link>
                           <span className="text-xs text-text-muted">
                             <RelativeTime date={comment.created_at} />
                           </span>
                         </div>
                         <p className="text-text-secondary text-sm">{comment.content}</p>
                         <div className="flex items-center gap-4 mt-2">
-                          <button className="flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors">
-                            <Heart className="h-3.5 w-3.5" />
+                          <button
+                            onClick={() => handleLikeComment(comment.id)}
+                            disabled={isLikingComment}
+                            className={cn(
+                              "flex items-center gap-1 text-xs transition-colors",
+                              likedCommentIds.has(comment.id)
+                                ? "text-primary"
+                                : "text-text-muted hover:text-primary"
+                            )}
+                          >
+                            <Heart className={cn("h-3.5 w-3.5", likedCommentIds.has(comment.id) && "fill-current")} />
                             {comment.likes_count}
-                          </button>
-                          <button className="text-xs text-text-muted hover:text-primary transition-colors">
-                            Reply
                           </button>
                           {/* Delete button: visible to comment author, post author, or editor+ */}
                           {user && (
-                            comment.author.id === user.id ||
+                            comment.author?.id === user.id ||
                             post?.author?.id === user.id ||
                             permissions.deleteAnyComment
                           ) && (

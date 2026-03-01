@@ -86,6 +86,8 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
     };
 
     const displayFallback = fallback || generateAvatarFallback(alt);
+    // Uploaded images are already compressed to WebP — skip Next.js optimization
+    const isLocalUpload = src?.startsWith("/uploads/");
 
     return (
       <div
@@ -124,6 +126,7 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
               sizes={imageSizes[size]}
               className="object-cover"
               onError={() => setImageError(true)}
+              unoptimized={isLocalUpload}
             />
           ) : fallback ? (
             <span>{displayFallback}</span>

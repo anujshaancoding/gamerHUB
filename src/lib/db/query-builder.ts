@@ -75,32 +75,38 @@ async function getForeignKeys(sql: postgres.Sql): Promise<FKInfo[]> {
   if (_fkCachePromise) return _fkCachePromise;
 
   _fkCachePromise = (async () => {
-    const rows = await sql.unsafe(`
-      SELECT
-        tc.constraint_name,
-        tc.table_name AS from_table,
-        kcu.column_name AS from_column,
-        ccu.table_name AS to_table,
-        ccu.column_name AS to_column
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-        AND tc.table_schema = kcu.table_schema
-      JOIN information_schema.constraint_column_usage ccu
-        ON tc.constraint_name = ccu.constraint_name
-        AND tc.table_schema = ccu.table_schema
-      WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema = 'public'
-    `);
+    try {
+      const rows = await sql.unsafe(`
+        SELECT
+          tc.constraint_name,
+          tc.table_name AS from_table,
+          kcu.column_name AS from_column,
+          ccu.table_name AS to_table,
+          ccu.column_name AS to_column
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage ccu
+          ON tc.constraint_name = ccu.constraint_name
+          AND tc.table_schema = ccu.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+      `);
 
-    _fkCache = rows.map((r) => ({
-      constraintName: r.constraint_name as string,
-      fromTable: r.from_table as string,
-      fromColumn: r.from_column as string,
-      toTable: r.to_table as string,
-      toColumn: r.to_column as string,
-    }));
-    return _fkCache;
+      _fkCache = rows.map((r) => ({
+        constraintName: r.constraint_name as string,
+        fromTable: r.from_table as string,
+        fromColumn: r.from_column as string,
+        toTable: r.to_table as string,
+        toColumn: r.to_column as string,
+      }));
+      return _fkCache;
+    } catch (err) {
+      // Reset so next call retries instead of permanently failing
+      _fkCachePromise = null;
+      throw err;
+    }
   })();
 
   return _fkCachePromise;
@@ -151,34 +157,10 @@ function parseSelectString(selectStr: string): ParsedSelect {
     const trimmed = token.trim();
     if (!trimmed) continue;
 
-    // Check for join reference pattern: alias:table!constraint(cols) or alias:table(cols)
-    const joinMatch = trimmed.match(
-      /^(\w+):(\w+)(?:!(inner|\w+))?(?:!(inner))?(?:\(([^)]*)\))?$/
-    );
-
-    if (joinMatch && joinMatch[5] !== undefined) {
-      const [, alias, table, hint1, hint2, cols] = joinMatch;
-      let constraintName: string | null = null;
-      let isInner = false;
-
-      if (hint1 === "inner") {
-        isInner = true;
-      } else if (hint1) {
-        constraintName = hint1;
-      }
-      if (hint2 === "inner") {
-        isInner = true;
-      }
-
-      joins.push({
-        alias,
-        table,
-        constraintName,
-        isInner,
-        columns: cols || "*",
-      });
+    const join = tryParseJoinRef(trimmed);
+    if (join) {
+      joins.push(join);
     } else {
-      // Regular column
       mainParts.push(trimmed);
     }
   }
@@ -187,6 +169,57 @@ function parseSelectString(selectStr: string): ParsedSelect {
     mainColumns: mainParts.length > 0 ? mainParts.join(", ") : "*",
     joins,
   };
+}
+
+/**
+ * Try to parse a token as a join reference.
+ * Supports:
+ *   alias:table!constraint(cols)    — aliased with constraint hint
+ *   alias:table(cols)               — aliased without constraint
+ *   table!constraint(cols)          — unaliased with constraint
+ *   table(cols)                     — unaliased (alias = table name)
+ * Columns may contain nested join refs with balanced parentheses.
+ */
+function tryParseJoinRef(token: string): JoinRef | null {
+  // Find the first opening parenthesis (balanced)
+  const parenStart = token.indexOf("(");
+  if (parenStart === -1 || !token.endsWith(")")) return null;
+
+  const prefix = token.substring(0, parenStart);
+  const cols = token.substring(parenStart + 1, token.length - 1);
+
+  // Validate prefix is a valid join reference (not arbitrary SQL)
+  if (!prefix || !/^[\w:!]+$/.test(prefix)) return null;
+
+  let alias: string;
+  let table: string;
+  let constraintName: string | null = null;
+  let isInner = false;
+
+  const colonIdx = prefix.indexOf(":");
+  if (colonIdx > 0) {
+    alias = prefix.substring(0, colonIdx);
+    const rest = prefix.substring(colonIdx + 1);
+    const parts = rest.split("!");
+    table = parts[0];
+    for (let i = 1; i < parts.length; i++) {
+      if (parts[i] === "inner") isInner = true;
+      else constraintName = parts[i];
+    }
+  } else {
+    // No colon — table name is also used as alias
+    const parts = prefix.split("!");
+    alias = parts[0];
+    table = parts[0];
+    for (let i = 1; i < parts.length; i++) {
+      if (parts[i] === "inner") isInner = true;
+      else constraintName = parts[i];
+    }
+  }
+
+  if (!/^\w+$/.test(alias) || !/^\w+$/.test(table)) return null;
+
+  return { alias, table, constraintName, isInner, columns: cols || "*" };
 }
 
 /** Split a string by commas at the top level only (not inside parentheses) */
@@ -624,11 +657,39 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
   private async _execSelect(): Promise<QueryResult<T>> {
     const { mainColumns, joins } = parseSelectString(this._selectColumns);
-    const cols = buildColumnList(mainColumns);
     const { sql: where, params } = this._buildWhere();
     const order = this._buildOrder();
     const limit = this._buildLimitOffset();
     const table = qi(this._table);
+
+    // When there are FK joins and specific columns are listed (not *),
+    // we need to ensure FK columns are in the SELECT so join resolution works.
+    let cols = buildColumnList(mainColumns);
+    const addedFkCols: string[] = [];
+
+    if (joins.length > 0 && mainColumns.trim() !== "*") {
+      try {
+        const fks = await getForeignKeys(this._sql);
+        const mainColList = mainColumns.split(",").map((c) => c.trim()).filter(Boolean);
+
+        for (const join of joins) {
+          const resolved = this._resolveFK(fks, join);
+          if (resolved) {
+            const neededCol = resolved.direction === "many-to-one"
+              ? resolved.localCol
+              : resolved.foreignCol;
+            if (!mainColList.includes(neededCol)) {
+              mainColList.push(neededCol);
+              addedFkCols.push(neededCol);
+            }
+          }
+        }
+
+        cols = mainColList.map(qi).join(", ");
+      } catch (err) {
+        console.warn("FK column augmentation failed, joins may not resolve:", err);
+      }
+    }
 
     // Count query (run before main query, shares the same WHERE)
     let count: number | null = null;
@@ -647,9 +708,18 @@ export class QueryBuilder<T = Record<string, unknown>> {
     const q = `SELECT ${cols} FROM ${table}${where}${order}${limit}`;
     const rows = await this._sql.unsafe(q, params) as Record<string, unknown>[];
 
-    // Resolve joins if any
+    // Resolve joins if any — failures must not prevent the main result
     if (joins.length > 0 && rows.length > 0) {
-      await this._resolveJoins(rows, joins);
+      try {
+        await this._resolveJoins(rows, joins);
+        this._stripAddedCols(rows, addedFkCols);
+      } catch (joinErr) {
+        console.warn("FK join resolution failed:", joinErr);
+        // Set all join aliases to null so callers get the main data
+        for (const join of joins) {
+          rows.forEach((r) => { r[join.alias] = null; });
+        }
+      }
     }
 
     return this._wrapRows(rows, count);
@@ -657,62 +727,92 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
   /** Resolve foreign-key join references using batched queries */
   private async _resolveJoins(rows: Record<string, unknown>[], joins: JoinRef[]): Promise<void> {
+    await this._resolveJoinsForTable(rows, joins, this._table);
+  }
+
+  /** Resolve joins relative to a given source table (supports recursive/nested joins) */
+  private async _resolveJoinsForTable(
+    rows: Record<string, unknown>[],
+    joins: JoinRef[],
+    sourceTable: string
+  ): Promise<void> {
     const fks = await getForeignKeys(this._sql);
 
     for (const join of joins) {
-      const resolved = this._resolveFK(fks, join);
+      try {
+        const resolved = resolveFKForTable(fks, join, sourceTable);
 
-      if (!resolved) {
-        // Couldn't determine FK — set alias to null/[] and continue
-        rows.forEach((r) => { r[join.alias] = null; });
-        continue;
-      }
-
-      const { direction, localCol, foreignCol, foreignTable } = resolved;
-      const selectCols = join.columns.trim() === "*" ? "*" : buildColumnList(join.columns);
-
-      if (direction === "many-to-one") {
-        // Batch: collect unique FK values from rows, query related table
-        const fkValues = [...new Set(rows.map((r) => r[localCol]).filter((v) => v != null))];
-
-        if (fkValues.length === 0) {
+        if (!resolved) {
           rows.forEach((r) => { r[join.alias] = null; });
           continue;
         }
 
-        const placeholders = fkValues.map((_, i) => `$${i + 1}`).join(", ");
-        const relQ = `SELECT ${selectCols} FROM ${qi(foreignTable)} WHERE ${qi(foreignCol)} IN (${placeholders})`;
-        const related = await this._sql.unsafe(relQ, fkValues);
+        const { direction, localCol, foreignCol, foreignTable } = resolved;
 
-        const map = new Map<unknown, Record<string, unknown>>();
-        for (const r of related) map.set((r as Record<string, unknown>)[foreignCol], r as Record<string, unknown>);
+        // Parse join columns to separate main columns from nested joins
+        const { mainColumns: nestedMainCols, joins: nestedJoins } = parseSelectString(join.columns);
+        const selectCols = nestedMainCols.trim() === "*" ? "*" : buildColumnList(nestedMainCols);
 
-        for (const row of rows) {
-          row[join.alias] = map.get(row[localCol]) ?? null;
+        if (direction === "many-to-one") {
+          const fkValues = [...new Set(rows.map((r) => r[localCol]).filter((v) => v != null))];
+
+          if (fkValues.length === 0) {
+            rows.forEach((r) => { r[join.alias] = null; });
+            continue;
+          }
+
+          const placeholders = fkValues.map((_, i) => `$${i + 1}`).join(", ");
+          const relQ = `SELECT ${selectCols} FROM ${qi(foreignTable)} WHERE ${qi(foreignCol)} IN (${placeholders})`;
+          const related = await this._sql.unsafe(relQ, fkValues);
+
+          const map = new Map<unknown, Record<string, unknown>>();
+          for (const r of related) map.set((r as Record<string, unknown>)[foreignCol], r as Record<string, unknown>);
+
+          // Recursively resolve nested joins on fetched rows
+          if (nestedJoins.length > 0) {
+            const allRelated = [...map.values()];
+            if (allRelated.length > 0) {
+              await this._resolveJoinsForTable(allRelated, nestedJoins, foreignTable);
+            }
+          }
+
+          for (const row of rows) {
+            row[join.alias] = map.get(row[localCol]) ?? null;
+          }
+        } else {
+          const mainIds = [...new Set(rows.map((r) => r[foreignCol]).filter((v) => v != null))];
+
+          if (mainIds.length === 0) {
+            rows.forEach((r) => { r[join.alias] = []; });
+            continue;
+          }
+
+          const placeholders = mainIds.map((_, i) => `$${i + 1}`).join(", ");
+          const relQ = `SELECT ${selectCols} FROM ${qi(foreignTable)} WHERE ${qi(localCol)} IN (${placeholders})`;
+          const related = await this._sql.unsafe(relQ, mainIds);
+
+          const groups = new Map<unknown, Record<string, unknown>[]>();
+          for (const r of related) {
+            const key = (r as Record<string, unknown>)[localCol];
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(r as Record<string, unknown>);
+          }
+
+          // Recursively resolve nested joins on fetched rows
+          if (nestedJoins.length > 0) {
+            const allRelated = [...groups.values()].flat();
+            if (allRelated.length > 0) {
+              await this._resolveJoinsForTable(allRelated, nestedJoins, foreignTable);
+            }
+          }
+
+          for (const row of rows) {
+            row[join.alias] = groups.get(row[foreignCol]) ?? [];
+          }
         }
-      } else {
-        // one-to-many: related table has FK pointing back to us
-        const mainIds = [...new Set(rows.map((r) => r[foreignCol]).filter((v) => v != null))];
-
-        if (mainIds.length === 0) {
-          rows.forEach((r) => { r[join.alias] = []; });
-          continue;
-        }
-
-        const placeholders = mainIds.map((_, i) => `$${i + 1}`).join(", ");
-        const relQ = `SELECT ${selectCols} FROM ${qi(foreignTable)} WHERE ${qi(localCol)} IN (${placeholders})`;
-        const related = await this._sql.unsafe(relQ, mainIds);
-
-        const groups = new Map<unknown, Record<string, unknown>[]>();
-        for (const r of related) {
-          const key = (r as Record<string, unknown>)[localCol];
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key)!.push(r as Record<string, unknown>);
-        }
-
-        for (const row of rows) {
-          row[join.alias] = groups.get(row[foreignCol]) ?? [];
-        }
+      } catch (joinErr) {
+        console.warn(`FK join "${join.alias}" failed:`, joinErr);
+        rows.forEach((r) => { r[join.alias] = null; });
       }
     }
   }
@@ -722,47 +822,60 @@ export class QueryBuilder<T = Record<string, unknown>> {
     fks: FKInfo[],
     join: JoinRef
   ): { direction: "many-to-one" | "one-to-many"; localCol: string; foreignCol: string; foreignTable: string } | null {
-    const mainTable = this._table;
+    return resolveFKForTable(fks, join, this._table);
+  }
 
-    // 1. Explicit constraint name
-    if (join.constraintName) {
-      const fk = fks.find((f) => f.constraintName === join.constraintName);
-      if (fk) {
-        if (fk.fromTable === mainTable) {
-          // FK is on main table → many-to-one
-          return { direction: "many-to-one", localCol: fk.fromColumn, foreignCol: fk.toColumn, foreignTable: join.table };
-        } else {
-          // FK is on related table → one-to-many
-          return { direction: "one-to-many", localCol: fk.fromColumn, foreignCol: fk.toColumn, foreignTable: join.table };
+  /**
+   * Parse _returnSelect, augment with FK columns needed for joins,
+   * and build the SQL RETURNING clause.
+   */
+  private async _buildReturning(): Promise<{
+    returning: string;
+    joins: JoinRef[];
+    addedFkCols: string[];
+  }> {
+    if (!this._returnSelect) {
+      return { returning: "", joins: [], addedFkCols: [] };
+    }
+
+    const { mainColumns, joins } = parseSelectString(this._returnSelect);
+    const addedFkCols: string[] = [];
+    let colsStr: string;
+
+    if (joins.length > 0 && mainColumns.trim() !== "*") {
+      const fks = await getForeignKeys(this._sql);
+      const colList = mainColumns.split(",").map((c) => c.trim()).filter(Boolean);
+
+      for (const join of joins) {
+        const resolved = this._resolveFK(fks, join);
+        if (resolved) {
+          const neededCol = resolved.direction === "many-to-one"
+            ? resolved.localCol
+            : resolved.foreignCol;
+          if (!colList.includes(neededCol)) {
+            colList.push(neededCol);
+            addedFkCols.push(neededCol);
+          }
         }
       }
 
-      // Fallback: extract column name from constraint name
-      // Format: {table}_{column}_fkey
-      const match = join.constraintName.match(/^(?:\w+?)_(.+)_fkey$/);
-      if (match) {
-        const col = match[1];
-        return { direction: "many-to-one", localCol: col, foreignCol: "id", foreignTable: join.table };
+      colsStr = colList.map(qi).join(", ");
+    } else {
+      colsStr = buildColumnList(mainColumns);
+    }
+
+    return { returning: ` RETURNING ${colsStr}`, joins, addedFkCols };
+  }
+
+  /** After resolving FK joins, strip auto-added FK columns from results */
+  private _stripAddedCols(rows: Record<string, unknown>[], addedFkCols: string[]): void {
+    if (addedFkCols.length > 0) {
+      for (const row of rows) {
+        for (const col of addedFkCols) {
+          delete row[col];
+        }
       }
     }
-
-    // 2. Look for FK between main table and join table in schema
-    // Many-to-one: main table has FK to join table
-    const m2o = fks.find((f) => f.fromTable === mainTable && f.toTable === join.table);
-    if (m2o) {
-      return { direction: "many-to-one", localCol: m2o.fromColumn, foreignCol: m2o.toColumn, foreignTable: join.table };
-    }
-
-    // One-to-many: join table has FK to main table
-    const o2m = fks.find((f) => f.fromTable === join.table && f.toTable === mainTable);
-    if (o2m) {
-      return { direction: "one-to-many", localCol: o2m.fromColumn, foreignCol: o2m.toColumn, foreignTable: join.table };
-    }
-
-    // 3. Convention-based fallback
-    // Try alias_id on main table (many-to-one)
-    const aliasCol = `${join.alias}_id`;
-    return { direction: "many-to-one", localCol: aliasCol, foreignCol: "id", foreignTable: join.table };
   }
 
   // ── INSERT execution ────────────────────────────────────────────────────
@@ -795,9 +908,23 @@ export class QueryBuilder<T = Record<string, unknown>> {
       valueSets.push(`(${phs.join(", ")})`);
     }
 
-    const returning = this._returnSelect ? ` RETURNING ${buildColumnList(this._returnSelect)}` : "";
+    const { returning, joins, addedFkCols } = await this._buildReturning();
     const q = `INSERT INTO ${table} (${colNames}) VALUES ${valueSets.join(", ")}${returning}`;
     const result = await this._sql.unsafe(q, allParams);
+
+    // Resolve FK joins on returned rows if any — failures must not prevent the mutation result
+    const resultRows = result as unknown as Record<string, unknown>[];
+    if (joins.length > 0 && resultRows.length > 0) {
+      try {
+        await this._resolveJoins(resultRows, joins);
+        this._stripAddedCols(resultRows, addedFkCols);
+      } catch (joinErr) {
+        console.warn("FK join resolution failed after insert:", joinErr);
+        for (const join of joins) {
+          resultRows.forEach((r) => { r[join.alias] = null; });
+        }
+      }
+    }
 
     return this._wrapMutationResult(result);
   }
@@ -829,9 +956,23 @@ export class QueryBuilder<T = Record<string, unknown>> {
     const { sql: where, params: wp } = this._buildWhere(idx);
     params.push(...wp);
 
-    const returning = this._returnSelect ? ` RETURNING ${buildColumnList(this._returnSelect)}` : "";
+    const { returning, joins, addedFkCols } = await this._buildReturning();
     const q = `UPDATE ${table} SET ${sets.join(", ")}${where}${returning}`;
     const result = await this._sql.unsafe(q, params);
+
+    // Resolve FK joins on returned rows if any — failures must not prevent the mutation result
+    const resultRows = result as unknown as Record<string, unknown>[];
+    if (joins.length > 0 && resultRows.length > 0) {
+      try {
+        await this._resolveJoins(resultRows, joins);
+        this._stripAddedCols(resultRows, addedFkCols);
+      } catch (joinErr) {
+        console.warn("FK join resolution failed after update:", joinErr);
+        for (const join of joins) {
+          resultRows.forEach((r) => { r[join.alias] = null; });
+        }
+      }
+    }
 
     return this._wrapMutationResult(result);
   }
@@ -841,9 +982,24 @@ export class QueryBuilder<T = Record<string, unknown>> {
   private async _execDelete(): Promise<QueryResult<T>> {
     const table = qi(this._table);
     const { sql: where, params } = this._buildWhere();
-    const returning = this._returnSelect ? ` RETURNING ${buildColumnList(this._returnSelect)}` : "";
+
+    const { returning, joins, addedFkCols } = await this._buildReturning();
     const q = `DELETE FROM ${table}${where}${returning}`;
     const result = await this._sql.unsafe(q, params);
+
+    // Resolve FK joins on returned rows if any — failures must not prevent the mutation result
+    const resultRows = result as unknown as Record<string, unknown>[];
+    if (joins.length > 0 && resultRows.length > 0) {
+      try {
+        await this._resolveJoins(resultRows, joins);
+        this._stripAddedCols(resultRows, addedFkCols);
+      } catch (joinErr) {
+        console.warn("FK join resolution failed after delete:", joinErr);
+        for (const join of joins) {
+          resultRows.forEach((r) => { r[join.alias] = null; });
+        }
+      }
+    }
 
     return this._wrapMutationResult(result);
   }
@@ -893,9 +1049,23 @@ export class QueryBuilder<T = Record<string, unknown>> {
         : ` ON CONFLICT (${conflictTarget}) DO NOTHING`;
     }
 
-    const returning = this._returnSelect ? ` RETURNING ${buildColumnList(this._returnSelect)}` : "";
+    const { returning, joins, addedFkCols } = await this._buildReturning();
     const q = `INSERT INTO ${table} (${colNames}) VALUES ${valueSets.join(", ")}${onConflict}${returning}`;
     const result = await this._sql.unsafe(q, allParams);
+
+    // Resolve FK joins on returned rows if any — failures must not prevent the mutation result
+    const resultRows = result as unknown as Record<string, unknown>[];
+    if (joins.length > 0 && resultRows.length > 0) {
+      try {
+        await this._resolveJoins(resultRows, joins);
+        this._stripAddedCols(resultRows, addedFkCols);
+      } catch (joinErr) {
+        console.warn("FK join resolution failed after delete:", joinErr);
+        for (const join of joins) {
+          resultRows.forEach((r) => { r[join.alias] = null; });
+        }
+      }
+    }
 
     return this._wrapMutationResult(result);
   }
@@ -939,6 +1109,55 @@ export class QueryBuilder<T = Record<string, unknown>> {
   private _isJsonValue(val: unknown): boolean {
     return val !== null && val !== undefined && typeof val === "object" && !(val instanceof Date) && !Array.isArray(val);
   }
+}
+
+/** Standalone FK resolution — usable for any source table (supports nested joins) */
+function resolveFKForTable(
+  fks: FKInfo[],
+  join: JoinRef,
+  mainTable: string
+): { direction: "many-to-one" | "one-to-many"; localCol: string; foreignCol: string; foreignTable: string } | null {
+  // 1. Explicit constraint name
+  if (join.constraintName) {
+    const fk = fks.find((f) => f.constraintName === join.constraintName);
+    if (fk) {
+      if (fk.fromTable === mainTable) {
+        return { direction: "many-to-one", localCol: fk.fromColumn, foreignCol: fk.toColumn, foreignTable: join.table };
+      } else {
+        return { direction: "one-to-many", localCol: fk.fromColumn, foreignCol: fk.toColumn, foreignTable: join.table };
+      }
+    }
+
+    const prefix = mainTable + "_";
+    if (join.constraintName.startsWith(prefix) && join.constraintName.endsWith("_fkey")) {
+      const col = join.constraintName.slice(prefix.length, -"_fkey".length);
+      if (col) {
+        return { direction: "many-to-one", localCol: col, foreignCol: "id", foreignTable: join.table };
+      }
+    }
+    const joinPrefix = join.table + "_";
+    if (join.constraintName.startsWith(joinPrefix) && join.constraintName.endsWith("_fkey")) {
+      const col = join.constraintName.slice(joinPrefix.length, -"_fkey".length);
+      if (col) {
+        return { direction: "one-to-many", localCol: col, foreignCol: "id", foreignTable: join.table };
+      }
+    }
+  }
+
+  // 2. Look for FK between main table and join table in schema
+  const m2o = fks.find((f) => f.fromTable === mainTable && f.toTable === join.table);
+  if (m2o) {
+    return { direction: "many-to-one", localCol: m2o.fromColumn, foreignCol: m2o.toColumn, foreignTable: join.table };
+  }
+
+  const o2m = fks.find((f) => f.fromTable === join.table && f.toTable === mainTable);
+  if (o2m) {
+    return { direction: "one-to-many", localCol: o2m.fromColumn, foreignCol: o2m.toColumn, foreignTable: join.table };
+  }
+
+  // 3. Convention-based fallback
+  const aliasCol = `${join.alias}_id`;
+  return { direction: "many-to-one", localCol: aliasCol, foreignCol: "id", foreignTable: join.table };
 }
 
 // ─── Database Client ─────────────────────────────────────────────────────────

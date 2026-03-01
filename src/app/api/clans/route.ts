@@ -18,17 +18,26 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
+    // Resolve game slug to ID (the query builder doesn't support filtering on joined columns)
+    let gameId: string | null = null;
+    if (game) {
+      const { data: gameRow } = await adminDb
+        .from("games")
+        .select("id")
+        .eq("slug", game)
+        .maybeSingle();
+      if (gameRow) {
+        gameId = (gameRow as any).id;
+      } else {
+        return NextResponse.json({ clans: [], total: 0, limit, offset });
+      }
+    }
+
+    // 1. Query clans with flat FK join for primary_game
     let query = adminDb
       .from("clans")
       .select(
-        `
-        *,
-        primary_game:games!primary_game_id(*),
-        clan_members(count),
-        clan_games(
-          game:games(*)
-        )
-      `,
+        "*, primary_game:games!clans_primary_game_id_fkey(id, slug, name, icon_url)",
         { count: "exact" }
       )
       .eq("is_public", true)
@@ -39,8 +48,8 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${search}%,tag.ilike.%${search}%`);
     }
 
-    if (game) {
-      query = query.eq("primary_game.slug", game);
+    if (gameId) {
+      query = query.eq("primary_game_id", gameId);
     }
 
     if (region) {
@@ -61,10 +70,42 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Transform data to include member count
-    const clans = (data || []).map((clan: any) => ({
+    const clanRows = (data || []) as any[];
+    if (clanRows.length === 0) {
+      return NextResponse.json({ clans: [], total: count || 0, limit, offset });
+    }
+
+    const clanIds = clanRows.map((c: any) => c.id);
+
+    // 2. Get member counts via separate query
+    const { data: memberRows } = await adminDb
+      .from("clan_members")
+      .select("clan_id")
+      .in("clan_id", clanIds);
+
+    const memberCountMap: Record<string, number> = {};
+    for (const row of (memberRows || []) as any[]) {
+      memberCountMap[row.clan_id] = (memberCountMap[row.clan_id] || 0) + 1;
+    }
+
+    // 3. Get clan_games with game info via flat FK join
+    const { data: clanGamesRows } = await adminDb
+      .from("clan_games")
+      .select("*, game:games!clan_games_game_id_fkey(id, slug, name, icon_url)")
+      .in("clan_id", clanIds);
+
+    const clanGamesMap: Record<string, any[]> = {};
+    for (const row of (clanGamesRows || []) as any[]) {
+      if (!clanGamesMap[row.clan_id]) clanGamesMap[row.clan_id] = [];
+      clanGamesMap[row.clan_id].push(row);
+    }
+
+    // 4. Combine results
+    const clans = clanRows.map((clan: any) => ({
       ...clan,
-      member_count: clan.clan_members?.[0]?.count || 0,
+      member_count: memberCountMap[clan.id] || 0,
+      clan_members: [{ count: memberCountMap[clan.id] || 0 }],
+      clan_games: clanGamesMap[clan.id] || [],
     }));
 
     return NextResponse.json({

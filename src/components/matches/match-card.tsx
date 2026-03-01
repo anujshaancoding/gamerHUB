@@ -152,7 +152,7 @@ export function MatchCard({ match }: MatchCardProps) {
             <div className="flex items-center gap-2">
               <span className="text-xs text-text-muted">Created by</span>
               <Link
-                href={`/profile/${match.creator?.username}`}
+                href={match.creator?.username ? `/profile/${match.creator.username}` : "#"}
                 className="flex items-center gap-2 hover:opacity-80"
               >
                 <Avatar

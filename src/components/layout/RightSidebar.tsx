@@ -195,7 +195,7 @@ export function RightSidebar() {
       </AnimatePresence>
 
       {/* Desktop sidebar - always visible on xl+ */}
-      <aside className="fixed right-[var(--app-inset)] top-0 bottom-0 w-72 flex-col border-l border-border bg-surface/95 backdrop-blur-sm z-40 hidden 2xl:flex">
+      <aside className="right-sidebar-desktop fixed right-[var(--app-inset)] top-0 bottom-0 w-72 flex-col border-l border-border bg-surface/95 backdrop-blur-sm z-40 hidden 2xl:flex">
         {sidebarContent}
       </aside>
     </>

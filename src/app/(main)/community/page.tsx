@@ -12,7 +12,7 @@ export default async function CommunityPage() {
   const admin = createAdminClient();
 
   // Pre-fetch all three data sources in parallel for fastest initial load
-  const [rawBlogPosts, rawFriendPosts, rawNewsArticles] = await Promise.all([
+  const [rawBlogPosts, rawFriendPostsData, rawNewsArticles] = await Promise.all([
     db
       .from("blog_posts")
       .select(`
@@ -26,12 +26,10 @@ export default async function CommunityPage() {
       .limit(20)
       .then((r) => r.data),
 
+    // Fetch friend posts WITHOUT FK join - do manual profile lookup
     db
       .from("friend_posts")
-      .select(`
-        *,
-        user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url, is_verified)
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(4)
       .then((r) => r.data),
@@ -47,6 +45,28 @@ export default async function CommunityPage() {
       .limit(20)
       .then((r) => r.data),
   ]);
+
+  // Manually join friend post authors
+  let rawFriendPosts = rawFriendPostsData || [];
+  if (rawFriendPosts.length > 0) {
+    const userIds = [...new Set((rawFriendPosts as any[]).map((p: any) => p.user_id).filter(Boolean))];
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from("profiles")
+        .select("id, username, display_name, avatar_url, is_verified")
+        .in("id", userIds);
+
+      const profileMap: Record<string, any> = {};
+      for (const profile of (profiles || []) as any[]) {
+        profileMap[profile.id] = profile;
+      }
+
+      rawFriendPosts = (rawFriendPosts as any[]).map((post: any) => ({
+        ...post,
+        user: profileMap[post.user_id] || null,
+      }));
+    }
+  }
 
   const blogPosts: BlogPost[] = (rawBlogPosts || []).map((post: Record<string, unknown>) => ({
     id: post.id as string,

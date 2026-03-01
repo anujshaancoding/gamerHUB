@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,6 @@ import {
 import { Button, Input, LegacySelect as Select, Card, Badge } from "@/components/ui";
 import { GamerCard } from "@/components/gamers/gamer-card";
 import { SuggestedFriendsSection, ProPlayersSection } from "@/components/suggestions";
-import { createClient } from "@/lib/db/client-browser";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useFriends } from "@/lib/hooks/useFriends";
@@ -34,7 +33,6 @@ const PROFILES_PER_LOAD = 3;
 function FindGamersContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -71,39 +69,19 @@ function FindGamersContent() {
   const { data: gamers = [], isLoading: loading, error: gamersError } = useQuery({
     queryKey: queryKeys.findGamers(filterParams),
     queryFn: async () => {
-      let query = db
-        .from("profiles")
-        .select(`
-          *,
-          user_games (
-            *,
-            game:games (*)
-          )
-        `)
-        .order("last_seen", { ascending: false });
+      const params = new URLSearchParams();
+      if (selectedRegion) params.set("region", selectedRegion);
+      if (selectedLanguage) params.set("language", selectedLanguage);
+      if (selectedStyle) params.set("style", selectedStyle);
+      if (onlineOnly) params.set("onlineOnly", "true");
+      params.set("limit", "50");
 
-      if (selectedRegion) {
-        query = query.eq("region", selectedRegion);
-      }
-
-      if (selectedLanguage) {
-        query = query.eq("preferred_language", selectedLanguage);
-      }
-
-      if (selectedStyle) {
-        query = query.eq("gaming_style", selectedStyle);
-      }
-
-      if (onlineOnly) {
-        query = query.eq("is_online", true);
-      }
-
-      const { data: realData, error: realError } = await query.limit(50);
-
-      if (realError) throw new Error(realError.message);
+      const res = await fetch(`/api/gamers?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to load gamers");
+      const { gamers: data } = await res.json();
 
       // Client-side filtering for game and rank
-      let filtered = (realData as GamerWithGames[]) || [];
+      let filtered = (data as GamerWithGames[]) || [];
 
       if (selectedGame) {
         filtered = filtered.filter((gamer) =>

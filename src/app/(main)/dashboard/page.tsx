@@ -274,7 +274,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>My Games</CardTitle>
-            <Link href={`/profile/${profile?.username}`}>
+            <Link href={profile?.username ? `/profile/${profile.username}` : "#"}>
               <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
                 View All
               </Button>
@@ -285,7 +285,7 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Gamepad2 className="h-12 w-12 text-text-muted mx-auto mb-3" />
                 <p className="text-text-muted">No games linked yet</p>
-                <Link href={`/profile/${profile?.username}/edit`}>
+                <Link href={profile?.username ? `/profile/${profile.username}/edit` : "#"}>
                   <Button variant="outline" size="sm" className="mt-3">
                     Add Games
                   </Button>

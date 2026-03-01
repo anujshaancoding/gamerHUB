@@ -61,17 +61,19 @@ export function ClanMemberCard({
     return false;
   });
 
+  const profile = member.profile;
+
   return (
     <Card className="p-3">
       <div className="flex items-center gap-3">
         {/* Avatar */}
-        <Link href={`/profile/${member.profile.username}`}>
+        <Link href={profile?.username ? `/profile/${profile.username}` : "#"}>
           <Avatar
-            src={member.profile.avatar_url}
-            alt={member.profile.display_name || member.profile.username}
+            src={profile?.avatar_url}
+            alt={profile?.display_name || profile?.username || "Member"}
             size="md"
-            status={getUserStatus(member.profile.id)}
-            showStatus
+            status={profile?.id ? getUserStatus(profile.id) : undefined}
+            showStatus={!!profile?.id}
           />
         </Link>
 
@@ -79,12 +81,12 @@ export function ClanMemberCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <Link
-              href={`/profile/${member.profile.username}`}
+              href={profile?.username ? `/profile/${profile.username}` : "#"}
               className="font-medium text-text hover:text-primary transition-colors truncate"
             >
-              {member.profile.display_name || member.profile.username}
+              {profile?.display_name || profile?.username || "Unknown Member"}
             </Link>
-            {member.profile.is_premium && (
+            {profile?.is_premium && (
               <PremiumBadge size="sm" showLabel={false} animate={false} />
             )}
             <ClanRoleBadge role={member.role} size="sm" />
