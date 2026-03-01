@@ -77,7 +77,13 @@ export function AdminPinGate({ onVerified }: { onVerified: () => void }) {
         onVerified();
       } else {
         const data = await res.json();
-        setError(data.error || "Invalid PIN");
+        if (res.status === 429) {
+          setError(data.error || "Too many attempts. Please wait.");
+        } else if (data.remaining !== undefined) {
+          setError(`Invalid PIN. ${data.remaining} attempt${data.remaining !== 1 ? "s" : ""} remaining.`);
+        } else {
+          setError(data.error || "Invalid PIN");
+        }
         setPin(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }

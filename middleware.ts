@@ -10,6 +10,8 @@ export async function middleware(request: NextRequest) {
   const authRoutes = ["/login", "/register"];
   const isAuthRoute = authRoutes.some((route) => path.startsWith(route));
   const isAdminRoute = path.startsWith("/admin");
+  const isAdminApi = path.startsWith("/api/admin/");
+  const isVerifyPinRoute = path === "/api/admin/verify-pin";
   const isLandingPage = path === "/";
 
   // Admin routes require authentication — redirect to login if not signed in
@@ -17,6 +19,17 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  // Admin API routes (except verify-pin) require the PIN cookie server-side
+  if (isAdminApi && !isVerifyPinRoute) {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const pinCookie = request.cookies.get("admin_pin_verified");
+    if (pinCookie?.value !== "true") {
+      return NextResponse.json({ error: "Admin PIN verification required" }, { status: 403 });
+    }
   }
 
   // Redirect authenticated users from auth routes to community
