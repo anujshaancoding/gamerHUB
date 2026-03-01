@@ -8,6 +8,9 @@
  *   pm2 start ecosystem.config.js
  */
 
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
 import { createServer } from "http";
 import next from "next";
 import { Server as SocketServer } from "socket.io";
