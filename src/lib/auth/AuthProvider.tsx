@@ -189,8 +189,9 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
 
   const signInWithOAuth = useCallback(async (provider: "google") => {
     try {
-      const result = await signIn(provider, { redirect: false });
-      return { data: result, error: null };
+      // OAuth requires browser redirect to the provider's auth page
+      await signIn(provider, { callbackUrl: "/community" });
+      return { data: null, error: null };
     } catch (err) {
       return { data: null, error: err as Error };
     }

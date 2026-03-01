@@ -529,11 +529,35 @@ export class QueryBuilder<T = Record<string, unknown>> {
           break;
         }
         case "contains":
-          conds.push(`${col} @> $${idx}::jsonb`); params.push(JSON.stringify(f.value)); idx++; break;
+          if (Array.isArray(f.value)) {
+            const arr = f.value as unknown[];
+            if (arr.length === 0) break;
+            const phs = arr.map((_, i) => `$${idx + i}`).join(", ");
+            conds.push(`${col} @> ARRAY[${phs}]::text[]`);
+            params.push(...arr); idx += arr.length;
+          } else {
+            conds.push(`${col} @> $${idx}::jsonb`); params.push(JSON.stringify(f.value)); idx++;
+          }
+          break;
         case "containedBy":
-          conds.push(`${col} <@ $${idx}::jsonb`); params.push(JSON.stringify(f.value)); idx++; break;
-        case "overlaps":
-          conds.push(`${col} && $${idx}`); params.push(f.value); idx++; break;
+          if (Array.isArray(f.value)) {
+            const arr = f.value as unknown[];
+            if (arr.length === 0) { conds.push("FALSE"); break; }
+            const phs = arr.map((_, i) => `$${idx + i}`).join(", ");
+            conds.push(`${col} <@ ARRAY[${phs}]::text[]`);
+            params.push(...arr); idx += arr.length;
+          } else {
+            conds.push(`${col} <@ $${idx}::jsonb`); params.push(JSON.stringify(f.value)); idx++;
+          }
+          break;
+        case "overlaps": {
+          const arr = f.value as unknown[];
+          if (arr.length === 0) { conds.push("FALSE"); break; }
+          const phs = arr.map((_, i) => `$${idx + i}`).join(", ");
+          conds.push(`${col} && ARRAY[${phs}]::text[]`);
+          params.push(...arr); idx += arr.length;
+          break;
+        }
         case "textSearch": {
           const ts = f.value as { query: string; type?: string; config?: string };
           const cfg = ts.config || "english";

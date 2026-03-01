@@ -103,12 +103,25 @@ export function ActivityCalendar({
     return d.toISOString().split("T")[0];
   }, [memberSince]);
 
+  // Normalize activity_date to string (postgres may return Date objects)
+  const normalizedDays = useMemo(
+    () =>
+      days.map((d) => ({
+        ...d,
+        activity_date:
+          typeof d.activity_date === "string"
+            ? d.activity_date
+            : new Date(d.activity_date).toISOString().substring(0, 10),
+      })),
+    [days],
+  );
+
   // Build lookup map: YYYY-MM-DD -> minutes
   const dayMap = useMemo(() => {
     const map = new Map<string, number>();
-    days.forEach((d) => map.set(d.activity_date, d.minutes_online));
+    normalizedDays.forEach((d) => map.set(d.activity_date, d.minutes_online));
     return map;
-  }, [days]);
+  }, [normalizedDays]);
 
   // Count active days for low-data detection
   const activeDaysCount = useMemo(
@@ -209,7 +222,7 @@ export function ActivityCalendar({
     const weekdayTotals = new Array(7).fill(0);
     const weekdayCounts = new Array(7).fill(0);
 
-    days.forEach((d) => {
+    normalizedDays.forEach((d) => {
       const dayOfWeek = new Date(d.activity_date + "T00:00:00").getDay();
       weekdayTotals[dayOfWeek] += d.minutes_online;
       weekdayCounts[dayOfWeek]++;
@@ -221,7 +234,7 @@ export function ActivityCalendar({
         ? Math.round((weekdayTotals[i] / weekdayCounts[i] / 60) * 10) / 10
         : 0,
     }));
-  }, [days]);
+  }, [normalizedDays]);
 
   // Compute monthly trend (hours per month over last 12 months)
   const monthlyData = useMemo(() => {
@@ -241,7 +254,7 @@ export function ActivityCalendar({
       monthMap.set(key, 0);
     }
 
-    days.forEach((d) => {
+    normalizedDays.forEach((d) => {
       const key = d.activity_date.substring(0, 7); // YYYY-MM
       if (monthMap.has(key)) {
         monthMap.set(key, (monthMap.get(key) || 0) + d.minutes_online);
@@ -255,7 +268,7 @@ export function ActivityCalendar({
         hours: Math.round((minutes / 60) * 10) / 10,
       };
     });
-  }, [days, memberSince]);
+  }, [normalizedDays, memberSince]);
 
   const primaryColor = theme.colors.primary;
   const accentColor = theme.colors.accent || "#00d4ff";

@@ -1,10 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAdmin } from "@/lib/hooks/useAdmin";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { ShieldX } from "lucide-react";
 import Link from "next/link";
+
+function hasPinCookie(): boolean {
+  return document.cookie.split("; ").some((c) => c.startsWith("admin_pin_verified="));
+}
 
 export default function AdminLayout({
   children,
@@ -12,8 +18,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { isAdmin, isLoading } = useAdmin();
+  const [pinVerified, setPinVerified] = useState<boolean | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    setPinVerified(hasPinCookie());
+  }, []);
+
+  if (isLoading || pinVerified === null) {
     return (
       <div className="min-h-screen bg-[#06060e] flex items-center justify-center">
         <div className="text-center">
@@ -45,6 +56,10 @@ export default function AdminLayout({
         </div>
       </div>
     );
+  }
+
+  if (!pinVerified) {
+    return <AdminPinGate onVerified={() => setPinVerified(true)} />;
   }
 
   return (

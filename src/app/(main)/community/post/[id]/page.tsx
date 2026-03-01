@@ -260,6 +260,20 @@ export default function CommunityPostPage() {
     );
   }
 
+  // Fallback if author join didn't resolve
+  if (!post.author) {
+    post.author = {
+      id: "",
+      username: "unknown",
+      display_name: "Unknown Author",
+      avatar_url: "",
+      bio: "",
+      gaming_style: "",
+      region: "",
+      is_verified: false,
+    };
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back button */}

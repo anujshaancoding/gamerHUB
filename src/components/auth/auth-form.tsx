@@ -161,9 +161,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           >
             Continue with Google
           </Button>
-          <p className="text-xs text-center text-yellow-500">
-            Google Sign-In may not work due to a temporary network issue. Please use email and password instead.
-          </p>
         </div>
 
         <div className="relative mb-6">
