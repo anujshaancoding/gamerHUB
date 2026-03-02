@@ -10,8 +10,8 @@ import { ReactionPicker } from "./emoji-picker";
 import { cn } from "@/lib/utils";
 import type { MessageWithSender, MessageReaction } from "@/lib/hooks/useMessages";
 
-// Message status: sent (server confirmed), read (other user opened chat)
-type MessageStatus = "sent" | "read";
+// Message status: sent (pending), delivered (in DB), read (other user opened chat)
+type MessageStatus = "sent" | "delivered" | "read";
 
 function getMessageStatus(
   message: MessageWithSender,
@@ -20,7 +20,7 @@ function getMessageStatus(
 ): MessageStatus | null {
   if (!isOwn) return null; // Only show status on own messages
 
-  // If the other user's last_read_at >= message created_at, it's read
+  // If the other user's last_read_at >= message created_at, it's read (seen)
   if (
     otherLastReadAt &&
     message.created_at &&
@@ -29,42 +29,58 @@ function getMessageStatus(
     return "read";
   }
 
-  // Message exists in DB = sent
-  return "sent";
+  // Message exists in DB = delivered (received)
+  return "delivered";
+}
+
+/** Double check mark SVG used for both delivered (grey) and read (blue). */
+function DoubleCheck({ className }: { className: string }) {
+  return (
+    <svg
+      width="16"
+      height="10"
+      viewBox="0 0 16 10"
+      fill="none"
+      className={className}
+    >
+      <path
+        d="M1.5 5.5L4 8L9 2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.5 5.5L8 8L13 2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 function MessageStatusIcon({ status }: { status: MessageStatus }) {
   if (status === "read") {
-    // Double check marks (blue) - like WhatsApp read
+    // Double check marks (blue) - seen by other user
     return (
-      <span className="inline-flex items-center ml-1" title="Read">
-        <svg
-          width="16"
-          height="10"
-          viewBox="0 0 16 10"
-          fill="none"
-          className="text-[#00bfff]"
-        >
-          <path
-            d="M1.5 5.5L4 8L9 2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M5.5 5.5L8 8L13 2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      <span className="inline-flex items-center ml-1" title="Seen">
+        <DoubleCheck className="text-[#00bfff]" />
       </span>
     );
   }
 
-  // Single check mark (grey) - sent
+  if (status === "delivered") {
+    // Double check marks (grey) - delivered / received
+    return (
+      <span className="inline-flex items-center ml-1" title="Delivered">
+        <DoubleCheck className="text-text-muted/60" />
+      </span>
+    );
+  }
+
+  // Single check mark (grey) - sent (pending)
   return (
     <span className="inline-flex items-center ml-1" title="Sent">
       <svg
@@ -115,7 +131,15 @@ export function MessageBubble({
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
 
-  const isImage = message.type === "image";
+  // Detect image messages: explicit type OR fallback for realtime payloads
+  // where the type field may arrive as null. Check if content is a URL
+  // pointing to Supabase storage with an image extension.
+  const isImage =
+    message.type === "image" ||
+    (message.type !== "text" &&
+      /^https?:\/\/.+\.(?:webp|png|jpe?g|gif|avif|svg)(?:\?.*)?$/i.test(
+        message.content
+      ));
 
   // Close lightbox on Escape
   useEffect(() => {
