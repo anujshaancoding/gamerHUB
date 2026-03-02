@@ -115,6 +115,15 @@ app.prepare().then(() => {
           onlineUsers.delete(userId);
         }
         broadcastPresence();
+
+        // Persist status to DB so it survives page refresh / server restart
+        const until = data.durationMinutes
+          ? new Date(Date.now() + data.durationMinutes * 60000).toISOString()
+          : null;
+        sql`
+          UPDATE profiles SET status = ${data.status}, status_until = ${until}
+          WHERE id = ${userId}
+        `.catch(() => {});
       }
     });
 

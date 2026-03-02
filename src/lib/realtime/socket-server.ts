@@ -94,16 +94,14 @@ export function setupSocketHandlers(io: Server) {
 
       broadcastPresence(io);
 
-      // Persist to DB (only when durationMinutes is provided, i.e. a fresh user action)
-      if (data.durationMinutes !== undefined) {
-        const until = data.durationMinutes
-          ? new Date(Date.now() + data.durationMinutes * 60000).toISOString()
-          : null;
-        sql`
-          UPDATE profiles SET status = ${data.status}, status_until = ${until}
-          WHERE id = ${userId}
-        `.catch(() => {});
-      }
+      // Persist status to DB so it survives page refresh / server restart
+      const until = data.durationMinutes
+        ? new Date(Date.now() + data.durationMinutes * 60000).toISOString()
+        : null;
+      sql`
+        UPDATE profiles SET status = ${data.status}, status_until = ${until}
+        WHERE id = ${userId}
+      `.catch(() => {});
     });
 
     socket.on("status:auto-away", () => {
