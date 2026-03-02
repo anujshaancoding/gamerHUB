@@ -32,6 +32,8 @@ import { useNotifications, useMarkAsRead, formatNotificationTime, type Notificat
 import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useSocialCounts } from "@/lib/hooks/useFriends";
+import { usePresence } from "@/lib/presence/PresenceProvider";
+import { StatusSelector } from "@/components/presence/StatusSelector";
 import { PremiumBadge } from "@/components/premium";
 import { Logo } from "@/components/layout/logo";
 import { SearchDropdown } from "@/components/search";
@@ -82,6 +84,7 @@ export function Navbar() {
   const { user, profile, signOut } = useAuth();
   const isAuthenticated = !!user;
   const { isPremium } = useSubscription({ enabled: isAuthenticated });
+  const { myStatus } = usePresence();
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -351,25 +354,37 @@ export function Navbar() {
 
                 {/* User Menu - hidden on mobile since My Profile is in hamburger */}
                 <div className="relative hidden sm:block" ref={userMenuRef}>
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       setShowUserMenu(!showUserMenu);
                       setShowNotifications(false);
                     }}
-                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-light transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setShowUserMenu(!showUserMenu);
+                        setShowNotifications(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-light transition-colors cursor-pointer"
                   >
-                    <Avatar
-                      src={profile?.avatar_url}
-                      alt={profile?.display_name || profile?.username || "User"}
-                      size="sm"
-                      status="online"
-                      showStatus
-                    />
+                    <div className="relative">
+                      <Avatar
+                        src={profile?.avatar_url}
+                        alt={profile?.display_name || profile?.username || "User"}
+                        size="sm"
+                        status={myStatus}
+                        showStatus={false}
+                      />
+                      <StatusSelector size="sm" />
+                    </div>
                     <span className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-text">
                       {profile?.display_name || profile?.username}
                       {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
                     </span>
-                  </button>
+                  </div>
 
                   {showUserMenu && (
                     <div

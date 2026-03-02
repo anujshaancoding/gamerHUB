@@ -128,6 +128,23 @@ body {
   outline-offset: 2px;
 }
 
+/* Status dot colors — hardcoded so themes can never override them */
+.status-dot-online {
+  background-color: #00ff88 !important;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+.status-dot-away {
+  background-color: #ffaa00 !important;
+  box-shadow: 0 0 6px rgba(255, 170, 0, 0.6);
+}
+.status-dot-dnd {
+  background-color: #ff4444 !important;
+  box-shadow: 0 0 6px rgba(255, 68, 68, 0.6);
+}
+.status-dot-offline {
+  background-color: #5a5a6a !important;
+}
+
 /* Glow effects */
 .glow-primary {
   box-shadow: 0 0 20px var(--primary-glow);

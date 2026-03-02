@@ -370,11 +370,15 @@ export function ProfileHeader({
 
               {/* Status indicator */}
               {profileStatus !== "offline" && (
-                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 backdrop-blur-sm text-xs font-bold rounded-full flex items-center gap-1.5 z-20 ${
-                  profileStatus === "online" ? "bg-success/90 text-black" :
-                  profileStatus === "away" ? "bg-yellow-500/90 text-black" :
-                  "bg-red-500/90 text-white"
-                }`}>
+                <div
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 backdrop-blur-sm text-xs font-bold rounded-full flex items-center gap-1.5 z-20"
+                  style={{
+                    backgroundColor: profileStatus === "online" ? "rgba(0,255,136,0.9)"
+                      : profileStatus === "away" ? "rgba(255,170,0,0.9)"
+                      : "rgba(255,68,68,0.9)",
+                    color: profileStatus === "dnd" ? "white" : "black",
+                  }}
+                >
                   <span className={`w-2 h-2 rounded-full ${profileStatus === "online" ? "bg-white animate-pulse" : "bg-white/80"}`} />
                   {profileStatus === "online" ? "ONLINE" : profileStatus === "away" ? "AWAY" : "DO NOT DISTURB"}
                 </div>

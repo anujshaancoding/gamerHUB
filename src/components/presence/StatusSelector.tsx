@@ -11,36 +11,45 @@ import { usePresence } from "@/lib/presence/PresenceProvider";
 import { cn } from "@/lib/utils";
 import type { UserStatusPreference } from "@/types/database";
 
+/** Hardcoded status colors — never affected by themes */
+const STATUS_COLORS: Record<string, { bg: string; glow: string }> = {
+  online: { bg: "#00ff88", glow: "0 0 6px rgba(0,255,136,0.6)" },
+  away: { bg: "#ffaa00", glow: "0 0 6px rgba(255,170,0,0.6)" },
+  dnd: { bg: "#ff4444", glow: "0 0 6px rgba(255,68,68,0.6)" },
+  offline: { bg: "#5a5a6a", glow: "none" },
+  auto: { bg: "#00ff88", glow: "0 0 6px rgba(0,255,136,0.6)" },
+};
+
 const STATUS_OPTIONS: {
   value: UserStatusPreference;
   label: string;
   description: string;
-  color: string;
+  statusKey: string;
   showDuration?: boolean;
 }[] = [
   {
     value: "online",
     label: "Online",
     description: "Show as online",
-    color: "bg-success",
+    statusKey: "online",
   },
   {
     value: "away",
     label: "Away",
     description: "Show as away",
-    color: "bg-warning",
+    statusKey: "away",
   },
   {
     value: "dnd",
     label: "Do Not Disturb",
     description: "Mute notifications",
-    color: "bg-error",
+    statusKey: "dnd",
   },
   {
     value: "offline",
     label: "Appear Offline",
     description: "Hide your online status",
-    color: "bg-text-dim",
+    statusKey: "offline",
     showDuration: true,
   },
 ];
@@ -52,15 +61,18 @@ const DURATION_OPTIONS = [
   { label: "Until I change it", minutes: undefined },
 ];
 
-const STATUS_DOT_COLORS: Record<string, string> = {
-  auto: "bg-success",
-  online: "bg-success",
-  away: "bg-warning",
-  dnd: "bg-error",
-  offline: "bg-text-dim",
+interface StatusSelectorProps {
+  /** Size variant — matches avatar sizes for proper positioning */
+  size?: "sm" | "md" | "lg";
+}
+
+const DOT_SIZES = {
+  sm: { width: 14, height: 14, border: 1.5 },
+  md: { width: 16, height: 16, border: 2 },
+  lg: { width: 18, height: 18, border: 2 },
 };
 
-export function StatusSelector() {
+export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
   const { myStatusPreference, myStatus, setMyStatus } = usePresence();
   const [open, setOpen] = useState(false);
   const [showDurations, setShowDurations] = useState(false);
@@ -74,8 +86,9 @@ export function StatusSelector() {
     setShowDurations(false);
   };
 
-  const dotColor =
-    STATUS_DOT_COLORS[myStatus] || STATUS_DOT_COLORS[myStatusPreference] || "bg-success";
+  const colorKey = myStatus || myStatusPreference || "online";
+  const colors = STATUS_COLORS[colorKey] || STATUS_COLORS.online;
+  const dims = DOT_SIZES[size];
 
   return (
     <Popover
@@ -90,16 +103,30 @@ export function StatusSelector() {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            setOpen((prev) => !prev);
           }}
-          className="absolute bottom-0 right-0 rounded-full border-2 border-background z-20 h-3.5 w-3.5 cursor-pointer hover:scale-150 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-background"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          className="absolute z-20 cursor-pointer hover:scale-125 transition-transform focus:outline-none"
+          style={{
+            bottom: -2,
+            right: -2,
+            width: dims.width,
+            height: dims.height,
+            borderRadius: "50%",
+            border: `${dims.border}px solid var(--background, #0a0a0f)`,
+            padding: 0,
+            background: "transparent",
+          }}
           aria-label="Change status"
         >
           <span
-            className={cn(
-              "block w-full h-full rounded-full",
-              dotColor,
-              myStatus === "online" && "animate-pulse"
-            )}
+            className="block w-full h-full rounded-full"
+            style={{
+              backgroundColor: colors.bg,
+              boxShadow: colors.glow,
+            }}
           />
         </button>
       </PopoverTrigger>
@@ -120,6 +147,7 @@ export function StatusSelector() {
               const isActive =
                 myStatusPreference === option.value ||
                 (myStatusPreference === "auto" && option.value === "online");
+              const optColors = STATUS_COLORS[option.statusKey];
 
               return (
                 <button
@@ -138,10 +166,8 @@ export function StatusSelector() {
                   )}
                 >
                   <span
-                    className={cn(
-                      "w-3 h-3 rounded-full shrink-0",
-                      option.color
-                    )}
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: optColors.bg }}
                   />
                   <div className="flex-1 text-left">
                     <div className="font-medium text-white">{option.label}</div>

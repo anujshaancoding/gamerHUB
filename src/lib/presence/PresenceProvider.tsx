@@ -147,8 +147,9 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
 
   const setMyStatus = useCallback(
     async (status: UserStatusPreference, durationMinutes?: number): Promise<void> => {
-      if (!user || !socket) return;
+      if (!user) return;
 
+      // Always update local state so the UI reflects the change immediately
       setStatusPreference(status);
       setIsAutoAway(false);
 
@@ -157,8 +158,10 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         : null;
       setStatusUntil(until);
 
-      // Notify Socket.io server
-      socket.emit("status:set", { status, durationMinutes });
+      // Notify Socket.io server when connected
+      if (socket) {
+        socket.emit("status:set", { status, durationMinutes });
+      }
     },
     [user, socket]
   );

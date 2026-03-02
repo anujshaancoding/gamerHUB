@@ -69,11 +69,12 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
       "5xl": "h-8 w-8",
     };
 
-    const statusColors = {
-      online: "bg-success",
-      offline: "bg-text-dim",
-      away: "bg-warning",
-      dnd: "bg-error",
+    /** Hardcoded status colors — never affected by themes */
+    const statusInlineColors: Record<string, { bg: string; glow: string }> = {
+      online: { bg: "#00ff88", glow: "0 0 6px rgba(0,255,136,0.6)" },
+      away: { bg: "#ffaa00", glow: "0 0 6px rgba(255,170,0,0.6)" },
+      dnd: { bg: "#ff4444", glow: "0 0 6px rgba(255,68,68,0.6)" },
+      offline: { bg: "#5a5a6a", glow: "none" },
     };
 
     const frameStyles = {
@@ -144,10 +145,12 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
           <span
             className={cn(
               "absolute bottom-0 right-0 rounded-full border-2 border-background z-20",
-              statusSizes[size],
-              statusColors[status],
-              status === "online" && "animate-pulse"
+              statusSizes[size]
             )}
+            style={{
+              backgroundColor: statusInlineColors[status]?.bg,
+              boxShadow: statusInlineColors[status]?.glow,
+            }}
           />
         )}
       </div>
