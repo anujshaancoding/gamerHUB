@@ -284,16 +284,28 @@ export function MessageThread({
             <ChevronLeft className="h-5 w-5" />
           </Button>
 
-          <Avatar
-            src={otherUser?.avatar_url}
-            alt={otherUser?.display_name || otherUser?.username || "User"}
-            size="md"
-            status={otherUser?.id ? getUserStatus(otherUser.id) : "offline"}
-            showStatus
-          />
+          <button
+            onClick={() => {
+              if (otherUser?.username) router.push(`/profile/${otherUser.username}`);
+            }}
+            className="cursor-pointer"
+          >
+            <Avatar
+              src={otherUser?.avatar_url}
+              alt={otherUser?.display_name || otherUser?.username || "User"}
+              size="md"
+              status={otherUser?.id ? getUserStatus(otherUser.id) : "offline"}
+              showStatus
+            />
+          </button>
 
           <div>
-            <h3 className="font-semibold text-text text-sm">
+            <h3
+              className="font-semibold text-text text-sm cursor-pointer hover:text-primary transition-colors"
+              onClick={() => {
+                if (otherUser?.username) router.push(`/profile/${otherUser.username}`);
+              }}
+            >
               {conversation?.type === "group"
                 ? conversation.name || "Group Chat"
                 : otherUser?.display_name || otherUser?.username || "User"}

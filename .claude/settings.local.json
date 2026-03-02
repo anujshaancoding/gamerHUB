@@ -18,7 +18,21 @@
       "Bash(do echo \"=== $table ===\")",
       "Bash(done)",
       "Bash(for table in behavioral_signals stripe_customers payment_transactions regional_communities sponsorship_applications player_endorsements player_reports users verified_badges memes mood_history replay_rooms)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Read",
+      "Grep", 
+      "Glob",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(grep *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
     ]
   }
 }

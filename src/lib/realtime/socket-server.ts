@@ -20,6 +20,10 @@ const onlineUsers = new Map<string, Set<string>>();
 // Track user statuses: userId → status preference
 const userStatuses = new Map<string, string>();
 
+// Grace period timers for disconnect (avoids offline flash on page refresh)
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const DISCONNECT_GRACE_MS = 5000; // 5 seconds
+
 export function setupSocketHandlers(io: Server) {
   io.on("connection", async (socket: Socket) => {
     const userId = socket.handshake.auth?.userId as string | undefined;
@@ -31,6 +35,12 @@ export function setupSocketHandlers(io: Server) {
 
     // ── Track online status ──────────────────────────────────────────
 
+    // Cancel any pending disconnect timer (page refresh case)
+    if (disconnectTimers.has(userId)) {
+      clearTimeout(disconnectTimers.get(userId)!);
+      disconnectTimers.delete(userId);
+    }
+
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());
     }
@@ -39,13 +49,29 @@ export function setupSocketHandlers(io: Server) {
     // Join user-specific room for targeted events
     socket.join(`user:${userId}`);
 
-    // Mark online in DB
+    // Mark online in DB and restore saved status
     const sql = getPool();
     try {
       await sql`
         UPDATE profiles SET is_online = true, last_seen = NOW()
         WHERE id = ${userId}
       `;
+
+      // Restore saved status from DB so it persists across page refreshes
+      const rows = await sql`
+        SELECT status, status_until FROM profiles WHERE id = ${userId}
+      `;
+      if (rows.length > 0) {
+        const saved = rows[0];
+        if (saved.status && saved.status !== "auto") {
+          // Check if timed status expired
+          if (saved.status_until && new Date(saved.status_until).getTime() <= Date.now()) {
+            userStatuses.set(userId, "auto");
+          } else {
+            userStatuses.set(userId, saved.status);
+          }
+        }
+      }
 
       // Record heartbeat activity
       await sql`SELECT record_heartbeat_activity(${userId})`.catch(() => {});
@@ -68,14 +94,16 @@ export function setupSocketHandlers(io: Server) {
 
       broadcastPresence(io);
 
-      // Persist to DB
-      const until = data.durationMinutes
-        ? new Date(Date.now() + data.durationMinutes * 60000).toISOString()
-        : null;
-      sql`
-        UPDATE profiles SET status = ${data.status}, status_until = ${until}
-        WHERE id = ${userId}
-      `.catch(() => {});
+      // Persist to DB (only when durationMinutes is provided, i.e. a fresh user action)
+      if (data.durationMinutes !== undefined) {
+        const until = data.durationMinutes
+          ? new Date(Date.now() + data.durationMinutes * 60000).toISOString()
+          : null;
+        sql`
+          UPDATE profiles SET status = ${data.status}, status_until = ${until}
+          WHERE id = ${userId}
+        `.catch(() => {});
+      }
     });
 
     socket.on("status:auto-away", () => {
@@ -147,22 +175,31 @@ export function setupSocketHandlers(io: Server) {
       if (sockets) {
         sockets.delete(socket.id);
         if (sockets.size === 0) {
-          onlineUsers.delete(userId);
-          userStatuses.delete(userId);
+          // Use grace period to avoid offline flash on page refresh
+          const timer = setTimeout(async () => {
+            disconnectTimers.delete(userId);
 
-          // Mark offline in DB
-          try {
-            await sql`
-              UPDATE profiles SET is_online = false, last_seen = NOW()
-              WHERE id = ${userId}
-            `;
-          } catch {
-            // Ignore
-          }
+            // Re-check: if user reconnected during grace period, do nothing
+            const currentSockets = onlineUsers.get(userId);
+            if (currentSockets && currentSockets.size > 0) return;
+
+            onlineUsers.delete(userId);
+            userStatuses.delete(userId);
+            broadcastPresence(io);
+
+            // Mark offline in DB
+            try {
+              await sql`
+                UPDATE profiles SET is_online = false, last_seen = NOW()
+                WHERE id = ${userId}
+              `;
+            } catch {
+              // Ignore
+            }
+          }, DISCONNECT_GRACE_MS);
+          disconnectTimers.set(userId, timer);
         }
       }
-
-      broadcastPresence(io);
     });
   });
 }

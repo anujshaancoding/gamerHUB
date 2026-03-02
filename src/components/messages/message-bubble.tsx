@@ -7,6 +7,7 @@ import { Trash2, Copy, SmilePlus, X, Download } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { MessageReactions } from "./message-reactions";
 import { ReactionPicker } from "./emoji-picker";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { MessageWithSender, MessageReaction } from "@/lib/hooks/useMessages";
 
@@ -127,6 +128,7 @@ export function MessageBubble({
   isNew = false,
   otherLastReadAt,
 }: MessageBubbleProps) {
+  const router = useRouter();
   const [showActions, setShowActions] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -205,11 +207,18 @@ export function MessageBubble({
       {/* Avatar */}
       <div className="w-8 flex-shrink-0">
         {!isOwn && showAvatar && (
-          <Avatar
-            src={message.sender?.avatar_url}
-            alt={message.sender?.username || "User"}
-            size="sm"
-          />
+          <button
+            onClick={() => {
+              if (message.sender?.username) router.push(`/profile/${message.sender.username}`);
+            }}
+            className="cursor-pointer"
+          >
+            <Avatar
+              src={message.sender?.avatar_url}
+              alt={message.sender?.username || "User"}
+              size="sm"
+            />
+          </button>
         )}
       </div>
 
@@ -220,9 +229,14 @@ export function MessageBubble({
           isOwn ? "items-end" : "items-start"
         )}
       >
-        {/* Sender name for group chats */}
+        {/* Sender name */}
         {showName && !isOwn && (
-          <p className="text-xs text-primary/70 mb-0.5 ml-1 font-medium">
+          <p
+            className="text-xs text-primary/70 mb-0.5 ml-1 font-medium cursor-pointer hover:text-primary transition-colors"
+            onClick={() => {
+              if (message.sender?.username) router.push(`/profile/${message.sender.username}`);
+            }}
+          >
             {message.sender?.display_name || message.sender?.username}
           </p>
         )}

@@ -6,6 +6,7 @@ import type {
   SocialCounts,
   RelationshipStatus,
 } from "@/types/database";
+import { useSocket } from "@/lib/realtime/SocketProvider";
 
 interface UseFriendsOptions {
   userId?: string;
@@ -112,6 +113,7 @@ export function useSocialCounts(userId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
+  const { socket } = useSocket();
 
   const fetchCounts = useCallback(async () => {
     if (!hasFetched.current) {
@@ -146,6 +148,47 @@ export function useSocialCounts(userId?: string) {
     }
     fetchCounts();
   }, [fetchCounts, userId]);
+
+  // Listen for real-time friend request events to update counts instantly
+  useEffect(() => {
+    if (!socket || !userId) return;
+
+    const handleNewRequest = () => {
+      setCounts((prev) => ({
+        ...prev,
+        pending_requests: prev.pending_requests + 1,
+      }));
+    };
+
+    const handleRequestRemoved = () => {
+      setCounts((prev) => ({
+        ...prev,
+        pending_requests: Math.max(0, prev.pending_requests - 1),
+      }));
+    };
+
+    const handleRequestAccepted = () => {
+      // Friend count goes up when someone accepts our request
+      setCounts((prev) => ({
+        ...prev,
+        friends: prev.friends + 1,
+      }));
+    };
+
+    // New incoming friend request → increment pending
+    socket.on("friend-request:new", handleNewRequest);
+    // We accepted/declined a request → decrement our pending
+    // (handled locally in useFriendRequests, but also update count)
+    socket.on("friend-request:cancelled", handleRequestRemoved);
+    // Someone accepted our sent request → increment friends
+    socket.on("friend-request:accepted", handleRequestAccepted);
+
+    return () => {
+      socket.off("friend-request:new", handleNewRequest);
+      socket.off("friend-request:cancelled", handleRequestRemoved);
+      socket.off("friend-request:accepted", handleRequestAccepted);
+    };
+  }, [socket, userId]);
 
   return {
     counts,
@@ -240,6 +283,7 @@ export function useFriendRequests(options: UseFriendRequestsOptions & { userId?:
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const hasFetched = useRef(false);
+  const { socket } = useSocket();
 
   const { type = "received", limit = 50, userId } = options;
 
@@ -278,6 +322,47 @@ export function useFriendRequests(options: UseFriendRequestsOptions & { userId?:
     }
     fetchRequests();
   }, [fetchRequests, userId]);
+
+  // Listen for real-time friend request events and refetch
+  useEffect(() => {
+    if (!socket || !userId) return;
+
+    const handleNewRequest = () => {
+      if (type === "received") {
+        fetchRequests();
+      }
+    };
+
+    const handleRequestCancelled = () => {
+      if (type === "received") {
+        fetchRequests();
+      }
+    };
+
+    const handleRequestAccepted = () => {
+      if (type === "sent") {
+        fetchRequests();
+      }
+    };
+
+    const handleRequestDeclined = () => {
+      if (type === "sent") {
+        fetchRequests();
+      }
+    };
+
+    socket.on("friend-request:new", handleNewRequest);
+    socket.on("friend-request:cancelled", handleRequestCancelled);
+    socket.on("friend-request:accepted", handleRequestAccepted);
+    socket.on("friend-request:declined", handleRequestDeclined);
+
+    return () => {
+      socket.off("friend-request:new", handleNewRequest);
+      socket.off("friend-request:cancelled", handleRequestCancelled);
+      socket.off("friend-request:accepted", handleRequestAccepted);
+      socket.off("friend-request:declined", handleRequestDeclined);
+    };
+  }, [socket, userId, type, fetchRequests]);
 
   const acceptRequest = async (requestId: string) => {
     const response = await fetch(`/api/friends/requests/${requestId}`, {

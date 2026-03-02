@@ -6,6 +6,7 @@ import {
   declineFriendRequest,
   cancelFriendRequest,
 } from "@/lib/db/rpc-types";
+import { emitToUser } from "@/lib/realtime/socket-server";
 
 interface RouteParams {
   params: Promise<{ requestId: string }>;
@@ -76,6 +77,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Look up the request to find the sender for socket notifications
+    const { data: requestData } = await db
+      .from("friend_requests")
+      .select("sender_id")
+      .eq("id", requestId)
+      .single() as { data: { sender_id: string } | null };
+
     if (action === "accept") {
       const { error } = await acceptFriendRequest(
         db,
@@ -89,6 +97,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           { error: error.message || "Failed to accept friend request" },
           { status: 400 }
         );
+      }
+
+      // Notify sender that their request was accepted
+      if (requestData?.sender_id) {
+        emitToUser(requestData.sender_id, "friend-request:accepted", {
+          requestId,
+          acceptedBy: user.id,
+        });
       }
 
       return NextResponse.json({
@@ -108,6 +124,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           { error: error.message || "Failed to decline friend request" },
           { status: 400 }
         );
+      }
+
+      // Notify sender that their request was declined
+      if (requestData?.sender_id) {
+        emitToUser(requestData.sender_id, "friend-request:declined", {
+          requestId,
+        });
       }
 
       return NextResponse.json({
@@ -136,6 +159,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Look up the request to find the recipient for socket notification
+    const { data: cancelRequestData } = await db
+      .from("friend_requests")
+      .select("recipient_id")
+      .eq("id", requestId)
+      .single() as { data: { recipient_id: string } | null };
+
     const { error } = await cancelFriendRequest(db, requestId, user.id);
 
     if (error) {
@@ -144,6 +174,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { error: error.message || "Failed to cancel friend request" },
         { status: 400 }
       );
+    }
+
+    // Notify recipient that the request was cancelled
+    if (cancelRequestData?.recipient_id) {
+      emitToUser(cancelRequestData.recipient_id, "friend-request:cancelled", {
+        requestId,
+      });
     }
 
     return NextResponse.json({

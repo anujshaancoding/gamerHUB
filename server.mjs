@@ -48,8 +48,11 @@ app.prepare().then(() => {
   // Reset all stale is_online flags on server start
   sql`UPDATE profiles SET is_online = false`.catch(() => {});
 
-  // Presence tracking: userId → { socketId, status }
+  // Presence tracking: userId → { socketIds: Set, status }
   const onlineUsers = new Map();
+  // Grace period timers for disconnect (avoids offline flash on page refresh)
+  const disconnectTimers = new Map();
+  const DISCONNECT_GRACE_MS = 5000; // 5 seconds
 
   function broadcastPresence() {
     const presenceData = {};
@@ -62,8 +65,39 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     if (userId) {
-      onlineUsers.set(userId, { socketId: socket.id, status: "auto", lastSeen: new Date() });
+      // Cancel any pending disconnect timer for this user (page refresh case)
+      if (disconnectTimers.has(userId)) {
+        clearTimeout(disconnectTimers.get(userId));
+        disconnectTimers.delete(userId);
+      }
+
+      // Track multiple socket IDs per user (multi-tab support)
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, { socketIds: new Set(), status: "auto" });
+      }
+      const userInfo = onlineUsers.get(userId);
+      userInfo.socketIds.add(socket.id);
+
       socket.join(`user:${userId}`);
+
+      // Restore saved status from DB on connection
+      sql`SELECT status, status_until FROM profiles WHERE id = ${userId}`
+        .then((rows) => {
+          if (rows.length > 0 && userInfo.socketIds.has(socket.id)) {
+            const saved = rows[0];
+            if (saved.status && saved.status !== "auto") {
+              // Check if timed status expired
+              if (saved.status_until && new Date(saved.status_until).getTime() <= Date.now()) {
+                userInfo.status = "auto";
+              } else {
+                userInfo.status = saved.status;
+              }
+              broadcastPresence();
+            }
+          }
+        })
+        .catch(() => {});
+
       broadcastPresence();
       // Mark online in DB
       sql`UPDATE profiles SET is_online = true, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
@@ -113,11 +147,25 @@ app.prepare().then(() => {
     });
 
     socket.on("disconnect", () => {
-      if (userId) {
-        onlineUsers.delete(userId);
-        broadcastPresence();
-        // Mark offline in DB
-        sql`UPDATE profiles SET is_online = false, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
+      if (userId && onlineUsers.has(userId)) {
+        const userInfo = onlineUsers.get(userId);
+        userInfo.socketIds.delete(socket.id);
+
+        // Only go offline if no sockets remain, with a grace period
+        if (userInfo.socketIds.size === 0) {
+          const timer = setTimeout(() => {
+            disconnectTimers.delete(userId);
+            // Re-check: if user reconnected during grace period, do nothing
+            if (onlineUsers.has(userId) && onlineUsers.get(userId).socketIds.size > 0) {
+              return;
+            }
+            onlineUsers.delete(userId);
+            broadcastPresence();
+            // Mark offline in DB
+            sql`UPDATE profiles SET is_online = false, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
+          }, DISCONNECT_GRACE_MS);
+          disconnectTimers.set(userId, timer);
+        }
       }
     });
   });

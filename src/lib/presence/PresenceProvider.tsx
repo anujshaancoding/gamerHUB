@@ -158,6 +158,8 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
 
   // ── Load saved status from profile (on mount) ────────────────────────
 
+  const statusSyncedRef = useRef(false);
+
   useEffect(() => {
     if (!user?.id) {
       setOnlineUserIds(new Set());
@@ -165,6 +167,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       setStatusPreference("auto");
       setStatusUntil(null);
       setIsAutoAway(false);
+      statusSyncedRef.current = false;
       return;
     }
 
@@ -184,10 +187,27 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
             setStatusPreference(savedStatus);
             setStatusUntil(savedUntil);
           }
+
+          // Sync saved status to the socket server so it doesn't default to "auto"
+          if (socket && savedStatus !== "auto") {
+            socket.emit("status:set", { status: savedStatus });
+            statusSyncedRef.current = true;
+          }
         }
       })
       .catch(() => {});
-  }, [user?.id]);
+  }, [user?.id, socket]);
+
+  // ── Re-sync status when socket (re)connects after profile already loaded ──
+
+  useEffect(() => {
+    if (!socket || !connected || !user?.id || statusSyncedRef.current) return;
+
+    if (statusPreference !== "auto") {
+      socket.emit("status:set", { status: statusPreference });
+      statusSyncedRef.current = true;
+    }
+  }, [socket, connected, user?.id, statusPreference]);
 
   // ── Resolve a user's display status ───────────────────────────────────
 

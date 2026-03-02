@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { getFriends, sendFriendRequest } from "@/lib/db/rpc-types";
 import type { FriendWithProfile, Profile } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
+import { emitToUser } from "@/lib/realtime/socket-server";
 
 // GET - List friends
 export async function GET(request: NextRequest) {
@@ -152,6 +153,22 @@ export async function POST(request: NextRequest) {
         { error: "Failed to send friend request" },
         { status: 500 }
       );
+    }
+
+    // Notify recipient in real-time via socket
+    try {
+      const { data: senderProfile } = await db
+        .from("profiles")
+        .select("id, username, display_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      emitToUser(recipientId, "friend-request:new", {
+        requestId,
+        sender: senderProfile,
+      });
+    } catch {
+      // Non-critical: notification just won't be real-time
     }
 
     return NextResponse.json(
