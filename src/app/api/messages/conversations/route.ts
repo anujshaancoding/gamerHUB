@@ -192,14 +192,46 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: conversationId, error } = await db.rpc(
-      "create_direct_conversation",
-      { other_user_id: otherUserId }
+    // Check if a direct conversation already exists between the two users
+    const existingResult = await db.sql.unsafe(
+      `SELECT c.id
+       FROM conversations c
+       WHERE c.type = 'direct'
+         AND EXISTS (
+           SELECT 1 FROM conversation_participants cp1
+           WHERE cp1.conversation_id = c.id AND cp1.user_id = $1
+         )
+         AND EXISTS (
+           SELECT 1 FROM conversation_participants cp2
+           WHERE cp2.conversation_id = c.id AND cp2.user_id = $2
+         )
+         AND (
+           SELECT COUNT(*) FROM conversation_participants cp3
+           WHERE cp3.conversation_id = c.id
+         ) = 2
+       LIMIT 1`,
+      [user.id, otherUserId]
     );
 
-    if (error) throw error;
+    if (existingResult.length > 0) {
+      return NextResponse.json({ conversationId: existingResult[0].id });
+    }
 
-    return NextResponse.json({ conversationId });
+    // Create new conversation
+    const convResult = await db.sql.unsafe(
+      `INSERT INTO conversations (type) VALUES ('direct') RETURNING id`,
+      []
+    );
+    const newConvId = convResult[0].id;
+
+    // Add both participants
+    await db.sql.unsafe(
+      `INSERT INTO conversation_participants (conversation_id, user_id)
+       VALUES ($1, $2), ($1, $3)`,
+      [newConvId, user.id, otherUserId]
+    );
+
+    return NextResponse.json({ conversationId: newConvId });
   } catch (error) {
     console.error("Create conversation error:", error);
     return NextResponse.json(

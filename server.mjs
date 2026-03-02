@@ -41,14 +41,23 @@ app.prepare().then(() => {
   // Make io accessible to API routes via global
   globalThis.__socket_io__ = io;
 
-  // Presence tracking
+  // Presence tracking: userId → { socketId, status }
   const onlineUsers = new Map();
+
+  function broadcastPresence() {
+    const presenceData = {};
+    for (const [userId, info] of onlineUsers) {
+      presenceData[userId] = { status: info.status || "auto" };
+    }
+    io.emit("presence:sync", presenceData);
+  }
 
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     if (userId) {
-      onlineUsers.set(userId, { socketId: socket.id, lastSeen: new Date() });
-      io.emit("presence:sync", Array.from(onlineUsers.keys()));
+      onlineUsers.set(userId, { socketId: socket.id, status: "auto", lastSeen: new Date() });
+      socket.join(`user:${userId}`);
+      broadcastPresence();
     }
 
     socket.on("join:conversation", (id) => socket.join(`conversation:${id}`));
@@ -56,16 +65,40 @@ app.prepare().then(() => {
     socket.on("join:tournament", (id) => socket.join(`tournament:${id}`));
     socket.on("leave:tournament", (id) => socket.leave(`tournament:${id}`));
 
+    socket.on("status:set", (data) => {
+      if (userId && onlineUsers.has(userId)) {
+        onlineUsers.get(userId).status = data.status;
+        if (data.status === "offline") {
+          onlineUsers.delete(userId);
+        }
+        broadcastPresence();
+      }
+    });
+
+    socket.on("status:auto-away", () => {
+      if (userId && onlineUsers.has(userId)) {
+        onlineUsers.get(userId).status = "auto_away";
+        broadcastPresence();
+      }
+    });
+
+    socket.on("status:back", () => {
+      if (userId && onlineUsers.has(userId)) {
+        onlineUsers.get(userId).status = "auto";
+        broadcastPresence();
+      }
+    });
+
     socket.on("typing:start", (data) => {
       socket.to(`conversation:${data.conversationId}`).emit("typing:start", {
-        userId: data.userId,
+        userId: userId || data.userId,
         conversationId: data.conversationId,
       });
     });
 
     socket.on("typing:stop", (data) => {
       socket.to(`conversation:${data.conversationId}`).emit("typing:stop", {
-        userId: data.userId,
+        userId: userId || data.userId,
         conversationId: data.conversationId,
       });
     });
@@ -73,7 +106,7 @@ app.prepare().then(() => {
     socket.on("disconnect", () => {
       if (userId) {
         onlineUsers.delete(userId);
-        io.emit("presence:sync", Array.from(onlineUsers.keys()));
+        broadcastPresence();
       }
     });
   });

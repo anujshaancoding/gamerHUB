@@ -43,6 +43,7 @@ const PresenceContext = createContext<PresenceContextType>({
 
 const IDLE_TIMEOUT = 5 * 60_000; // 5 minutes
 const HIDDEN_TAB_TIMEOUT = 60_000; // 1 minute when tab hidden
+const DB_POLL_INTERVAL = 30_000; // 30 seconds for DB fallback polling
 
 export function PresenceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthSession();
@@ -53,6 +54,8 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   const [statusPreference, setStatusPreference] = useState<UserStatusPreference>("auto");
   const [statusUntil, setStatusUntil] = useState<string | null>(null);
   const [isAutoAway, setIsAutoAway] = useState(false);
+  const [gotSocketSync, setGotSocketSync] = useState(false);
+  const friendIdsRef = useRef<string[]>([]);
 
   // ── Listen for presence sync from Socket.io server ────────────────────
 
@@ -60,6 +63,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     if (!socket) return;
 
     const handlePresenceSync = (data: Record<string, { status: string }>) => {
+      setGotSocketSync(true);
       const ids = new Set<string>(Object.keys(data));
       const statuses = new Map<string, string>();
       for (const [uid, info] of Object.entries(data)) {
@@ -75,6 +79,82 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       socket.off("presence:sync", handlePresenceSync);
     };
   }, [socket]);
+
+  // ── DB-polling fallback when Socket.io is not connected ───────────────
+  // Fetches is_online status from profiles table so the friends panel
+  // works even when running `next dev` without the custom server.
+
+  useEffect(() => {
+    if (!user?.id || gotSocketSync) return;
+
+    let cancelled = false;
+
+    const pollOnlineStatus = async () => {
+      // Send heartbeat so other users see us as online in the DB
+      fetch("/api/users/heartbeat", { method: "POST" }).catch(() => {});
+
+      // Fetch friend IDs if we don't have them yet
+      if (friendIdsRef.current.length === 0) {
+        try {
+          const res = await fetch(`/api/friends?userId=${user.id}&limit=100`);
+          if (res.ok) {
+            const data = await res.json();
+            friendIdsRef.current = (data.friends || []).map(
+              (f: { friend_id: string }) => f.friend_id
+            );
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (friendIdsRef.current.length === 0 || cancelled) return;
+
+      try {
+        const res = await fetch(
+          `/api/users/online-status?ids=${friendIdsRef.current.join(",")}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const statuses: Record<string, { is_online: boolean; status: string }> =
+          data.statuses || {};
+
+        const ids = new Set<string>();
+        const statusMap = new Map<string, string>();
+        for (const [uid, info] of Object.entries(statuses)) {
+          if ((info as { is_online: boolean }).is_online) {
+            ids.add(uid);
+            statusMap.set(uid, (info as { status: string }).status || "auto");
+          }
+        }
+
+        if (!cancelled) {
+          setOnlineUserIds(ids);
+          setUserStatuses(statusMap);
+        }
+      } catch {
+        // ignore polling errors
+      }
+    };
+
+    // Initial poll
+    pollOnlineStatus();
+
+    // Repeat on interval
+    const interval = setInterval(pollOnlineStatus, DB_POLL_INTERVAL);
+
+    // Mark offline on page unload
+    const handleUnload = () => {
+      navigator.sendBeacon("/api/profile/offline");
+    };
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [user?.id, gotSocketSync]);
 
   // ── Load saved status from profile (on mount) ────────────────────────
 

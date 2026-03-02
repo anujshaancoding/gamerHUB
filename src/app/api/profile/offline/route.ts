@@ -11,7 +11,7 @@ export async function POST() {
 
     const sql = getPool();
     await sql`
-      UPDATE profiles SET status = 'offline', last_seen = NOW() WHERE id = ${user.id}
+      UPDATE profiles SET is_online = false, last_seen = NOW() WHERE id = ${user.id}
     `;
 
     return NextResponse.json({ success: true });
