@@ -41,10 +41,27 @@ export async function GET(request: NextRequest) {
       status: string;
     }
 
+    // Consider a user stale (offline) if last_seen is older than 2 minutes
+    const STALE_THRESHOLD_MS = 2 * 60 * 1000;
+    const now = Date.now();
+
     const statuses: Record<string, { is_online: boolean; status: string; last_seen: string | null }> = {};
     for (const p of (profiles || []) as unknown as ProfileStatus[]) {
+      let isOnline = p.is_online ?? false;
+
+      // Guard against stale is_online flags: if last_seen is too old, treat as offline
+      if (isOnline && p.last_seen) {
+        const lastSeenAge = now - new Date(p.last_seen).getTime();
+        if (lastSeenAge > STALE_THRESHOLD_MS) {
+          isOnline = false;
+        }
+      } else if (isOnline && !p.last_seen) {
+        // No last_seen at all — can't trust is_online
+        isOnline = false;
+      }
+
       statuses[p.id] = {
-        is_online: p.is_online ?? false,
+        is_online: isOnline,
         status: p.status || "auto",
         last_seen: p.last_seen,
       };

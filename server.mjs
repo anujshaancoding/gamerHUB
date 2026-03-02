@@ -14,6 +14,7 @@ config({ path: ".env.local" });
 import { createServer } from "http";
 import next from "next";
 import { Server as SocketServer } from "socket.io";
+import postgres from "postgres";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "0.0.0.0";
@@ -41,6 +42,12 @@ app.prepare().then(() => {
   // Make io accessible to API routes via global
   globalThis.__socket_io__ = io;
 
+  // Database connection for presence updates
+  const sql = postgres(process.env.DATABASE_URL);
+
+  // Reset all stale is_online flags on server start
+  sql`UPDATE profiles SET is_online = false`.catch(() => {});
+
   // Presence tracking: userId → { socketId, status }
   const onlineUsers = new Map();
 
@@ -58,6 +65,8 @@ app.prepare().then(() => {
       onlineUsers.set(userId, { socketId: socket.id, status: "auto", lastSeen: new Date() });
       socket.join(`user:${userId}`);
       broadcastPresence();
+      // Mark online in DB
+      sql`UPDATE profiles SET is_online = true, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
     }
 
     socket.on("join:conversation", (id) => socket.join(`conversation:${id}`));
@@ -107,6 +116,8 @@ app.prepare().then(() => {
       if (userId) {
         onlineUsers.delete(userId);
         broadcastPresence();
+        // Mark offline in DB
+        sql`UPDATE profiles SET is_online = false, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
       }
     });
   });
