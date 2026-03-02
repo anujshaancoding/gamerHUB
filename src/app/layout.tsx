@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/lib/theme";
 import { QueryProvider } from "@/lib/query";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { SocketProvider } from "@/lib/realtime/SocketProvider";
 import { PresenceProvider } from "@/lib/presence/PresenceProvider";
 import { AuthGateProvider } from "@/components/auth/auth-gate-provider";
 import { PWAProvider } from "@/components/pwa/PWAProvider";
@@ -116,6 +117,7 @@ export default function RootLayout({
         />
         <QueryProvider>
           <AuthProvider>
+            <SocketProvider>
             <PresenceProvider>
             <ThemeProvider>
               <PWAProvider>
@@ -129,6 +131,7 @@ export default function RootLayout({
               </PWAProvider>
             </ThemeProvider>
           </PresenceProvider>
+            </SocketProvider>
           </AuthProvider>
         </QueryProvider>
       </body>
