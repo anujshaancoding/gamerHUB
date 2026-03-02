@@ -3,7 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { getFriends, sendFriendRequest } from "@/lib/db/rpc-types";
 import type { FriendWithProfile, Profile } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
-import { emitToUser } from "@/lib/realtime/socket-server";
+import { emitToUser, getIO } from "@/lib/realtime/socket-server";
 
 // GET - List friends
 export async function GET(request: NextRequest) {
@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         .eq("id", user.id)
         .single();
 
+      console.log(`[FRIEND-REQ] Emitting friend-request:new to ${recipientId.slice(0, 8)}..., IO exists: ${!!getIO()}`);
       emitToUser(recipientId, "friend-request:new", {
         requestId,
         sender: senderProfile,

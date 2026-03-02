@@ -65,10 +65,13 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     if (userId) {
+      console.log(`[SOCKET] User connected: ${userId.slice(0, 8)}... (socket: ${socket.id})`);
+
       // Cancel any pending disconnect timer for this user (page refresh case)
       if (disconnectTimers.has(userId)) {
         clearTimeout(disconnectTimers.get(userId));
         disconnectTimers.delete(userId);
+        console.log(`[SOCKET] Cancelled disconnect timer for ${userId.slice(0, 8)}... (page refresh)`);
       }
 
       // Track multiple socket IDs per user (multi-tab support)
@@ -85,8 +88,8 @@ app.prepare().then(() => {
         .then((rows) => {
           if (rows.length > 0 && userInfo.socketIds.has(socket.id)) {
             const saved = rows[0];
+            console.log(`[SOCKET] DB status for ${userId.slice(0, 8)}...: status=${saved.status}, until=${saved.status_until}`);
             if (saved.status && saved.status !== "auto") {
-              // Check if timed status expired
               if (saved.status_until && new Date(saved.status_until).getTime() <= Date.now()) {
                 userInfo.status = "auto";
               } else {
@@ -96,11 +99,13 @@ app.prepare().then(() => {
             }
           }
         })
-        .catch(() => {});
+        .catch((err) => console.error(`[SOCKET] DB status restore error:`, err.message));
 
       broadcastPresence();
-      // Mark online in DB
       sql`UPDATE profiles SET is_online = true, last_seen = NOW() WHERE id = ${userId}`.catch(() => {});
+      console.log(`[SOCKET] Online users: ${onlineUsers.size}`);
+    } else {
+      console.log(`[SOCKET] Connection without userId, ignoring`);
     }
 
     socket.on("join:conversation", (id) => socket.join(`conversation:${id}`));
@@ -109,6 +114,7 @@ app.prepare().then(() => {
     socket.on("leave:tournament", (id) => socket.leave(`tournament:${id}`));
 
     socket.on("status:set", (data) => {
+      console.log(`[SOCKET] status:set from ${userId?.slice(0, 8)}...: ${JSON.stringify(data)}`);
       if (userId && onlineUsers.has(userId)) {
         onlineUsers.get(userId).status = data.status;
         if (data.status === "offline") {
@@ -123,7 +129,8 @@ app.prepare().then(() => {
         sql`
           UPDATE profiles SET status = ${data.status}, status_until = ${until}
           WHERE id = ${userId}
-        `.catch(() => {});
+        `.then(() => console.log(`[SOCKET] DB status saved: ${data.status} for ${userId.slice(0, 8)}...`))
+         .catch((err) => console.error(`[SOCKET] DB status save FAILED:`, err.message));
       }
     });
 
@@ -156,6 +163,7 @@ app.prepare().then(() => {
     });
 
     socket.on("disconnect", () => {
+      console.log(`[SOCKET] User disconnected: ${userId?.slice(0, 8)}... (socket: ${socket.id})`);
       if (userId && onlineUsers.has(userId)) {
         const userInfo = onlineUsers.get(userId);
         userInfo.socketIds.delete(socket.id);
