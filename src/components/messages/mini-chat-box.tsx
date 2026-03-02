@@ -41,18 +41,23 @@ export function MiniChatBox({
   const [inputValue, setInputValue] = useState("");
   const [creating, setCreating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const conversationCreatedRef = useRef(false);
 
   const { messages, loading, sendMessage } =
     useConversationMessages(conversationId);
 
-  // Create or find conversation on mount
+  // Create or find conversation on mount (only once per friend)
   useEffect(() => {
-    if (!user || !friend.id) return;
+    if (!user || !friend.id || conversationCreatedRef.current) return;
 
+    conversationCreatedRef.current = true;
     setCreating(true);
     createConversation(friend.id)
       .then((id) => setConversationId(id))
-      .catch((err) => console.error("Failed to create conversation:", err))
+      .catch((err) => {
+        console.error("Failed to create conversation:", err);
+        conversationCreatedRef.current = false; // allow retry on error
+      })
       .finally(() => setCreating(false));
   }, [user, friend.id]);
 
