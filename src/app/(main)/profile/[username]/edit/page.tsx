@@ -30,6 +30,8 @@ import { optimizedUpload, createPreview } from "@/lib/upload";
 import { useMyGames, useDeleteUserGame, type UserGameWithGame } from "@/lib/hooks/useUserGames";
 import { GameProfileModal } from "@/components/profile/game-profile-modal";
 import Link from "next/link";
+import { CustomizationTab } from "@/components/profile/customization";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 interface EditProfilePageProps {
   params: Promise<{ username: string }>;
@@ -38,6 +40,7 @@ interface EditProfilePageProps {
 export default function EditProfilePage({ params }: EditProfilePageProps) {
   const router = useRouter();
   const { user, profile, updateProfile } = useAuth();
+  const { isPremium } = useSubscription();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -737,6 +740,25 @@ export default function EditProfilePage({ params }: EditProfilePageProps) {
               </p>
             </motion.div>
           </div>
+
+          {/* Profile Customization */}
+          {profile && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              className="pt-6 border-t border-border"
+            >
+              <CustomizationTab
+                profile={profile as Record<string, unknown>}
+                isPremium={isPremium}
+                onSave={async (updates) => {
+                  const { error } = await updateProfile(updates as Partial<typeof profile>);
+                  if (error) throw error;
+                }}
+              />
+            </motion.div>
+          )}
 
           {/* Actions */}
           <motion.div

@@ -17,6 +17,17 @@ import { ClanDisplay } from "@/components/profile/clan-display";
 import { RankHistoryTimeline } from "@/components/profile/rank-history-timeline";
 import { ProfileActivity } from "@/components/profile/profile-activity";
 import { GlobalRatingBreakdown, scoreToStanding } from "@/components/ratings/global-rating-breakdown";
+import {
+  FeatureFlag,
+  CustomThemeLayer,
+  ProfileEffectsLayer,
+  AnimatedBackgroundLayer,
+  MusicPlayer,
+  SkinWrapper,
+  EasterEggListener,
+  CustomCssRenderer,
+  GamerWall,
+} from "@/components/profile/customization";
 import type { Profile, TraitEndorsementStats, TrustBadges, StandingLevel } from "@/types/database";
 
 interface ProfilePageProps {
@@ -367,9 +378,30 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Sort by date descending (most recent first)
   activityItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  // Cast profile for new customization fields (not yet in auto-generated types)
+  const p = profile as unknown as Record<string, unknown>;
+
   return (
     <GameThemeProvider gameSlug={primaryGameSlug}>
-      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
+      {/* Profile Customization Display Layers */}
+      <FeatureFlag name="colorThemes">
+        <CustomThemeLayer theme={p.custom_theme} />
+      </FeatureFlag>
+      <FeatureFlag name="profileEffects">
+        <ProfileEffectsLayer effect={p.profile_effect} />
+      </FeatureFlag>
+      <FeatureFlag name="animatedBackgrounds">
+        <AnimatedBackgroundLayer background={p.profile_background} />
+      </FeatureFlag>
+      <FeatureFlag name="easterEggs">
+        <EasterEggListener config={p.easter_egg_config} />
+      </FeatureFlag>
+      <FeatureFlag name="customCSS">
+        <CustomCssRenderer css={p.custom_css} />
+      </FeatureFlag>
+
+      <SkinWrapper skin={p.profile_skin}>
+      <div className="profile-custom-css max-w-6xl mx-auto space-y-4 md:space-y-6 pb-12">
         {/* Profile Header — always visible above tabs */}
         <ProfileHeader
           profile={profile}
@@ -519,7 +551,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             ),
           }}
         </ProfileTabs>
+
+        {/* Music Player — click-to-play, never autoplay */}
+        <FeatureFlag name="musicWidget">
+          <MusicPlayer url={p.profile_music_url} />
+        </FeatureFlag>
+
+        {/* Gamer Wall / Guestbook */}
+        <FeatureFlag name="gamerWall">
+          <GamerWall
+            profileId={profile.id}
+            isOwnProfile={isOwnProfile}
+            currentUserId={user?.id}
+          />
+        </FeatureFlag>
       </div>
+      </SkinWrapper>
     </GameThemeProvider>
   );
 }
