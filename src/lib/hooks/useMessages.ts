@@ -594,8 +594,16 @@ function startUnreadCountSingleton() {
       unreadCountListeners.forEach((cb) => cb(lastUnreadCount));
     }
   };
+
+  // Listen for instant incoming message events (from Socket.io via MessageNotifier)
+  const incomingHandler = () => {
+    lastUnreadCount += 1;
+    unreadCountListeners.forEach((cb) => cb(lastUnreadCount));
+  };
+
   if (typeof window !== "undefined") {
     window.addEventListener("messages-read", handler);
+    window.addEventListener("message:new-incoming", incomingHandler);
   }
 
   // This singleton lives for the lifetime of the app — no cleanup needed
