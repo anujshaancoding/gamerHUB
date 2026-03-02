@@ -57,6 +57,8 @@ app.prepare().then(() => {
   function broadcastPresence() {
     const presenceData = {};
     for (const [userId, info] of onlineUsers) {
+      // Skip users who chose "appear offline" — they stay tracked for socket management
+      if (info.status === "offline") continue;
       presenceData[userId] = { status: info.status || "auto" };
     }
     io.emit("presence:sync", presenceData);
@@ -115,11 +117,12 @@ app.prepare().then(() => {
 
     socket.on("status:set", (data) => {
       console.log(`[SOCKET] status:set from ${userId?.slice(0, 8)}...: ${JSON.stringify(data)}`);
-      if (userId && onlineUsers.has(userId)) {
-        onlineUsers.get(userId).status = data.status;
-        if (data.status === "offline") {
-          onlineUsers.delete(userId);
+      if (userId) {
+        // Re-add to tracking if previously removed (e.g. after "offline" status in old code)
+        if (!onlineUsers.has(userId)) {
+          onlineUsers.set(userId, { socketIds: new Set([socket.id]), status: "auto" });
         }
+        onlineUsers.get(userId).status = data.status;
         broadcastPresence();
 
         // Persist status to DB so it survives page refresh / server restart

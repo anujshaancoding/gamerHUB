@@ -87,9 +87,9 @@ export function setupSocketHandlers(io: Server) {
     socket.on("status:set", (data: { status: string; durationMinutes?: number }) => {
       userStatuses.set(userId, data.status);
 
-      if (data.status === "offline") {
-        // Appear offline
-        onlineUsers.delete(userId);
+      // Re-add to tracking if previously removed
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set([socket.id]));
       }
 
       broadcastPresence(io);
@@ -207,9 +207,10 @@ function broadcastPresence(io: Server) {
   const presenceData: Record<string, { status: string }> = {};
 
   for (const [userId] of onlineUsers) {
-    presenceData[userId] = {
-      status: userStatuses.get(userId) || "auto",
-    };
+    const status = userStatuses.get(userId) || "auto";
+    // Skip users who chose "appear offline" — they stay tracked for socket management
+    if (status === "offline") continue;
+    presenceData[userId] = { status };
   }
 
   io.emit("presence:sync", presenceData);
