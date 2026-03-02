@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Music, Play, Pause, Volume2, VolumeX, SkipBack } from "lucide-react";
 
@@ -11,23 +11,23 @@ interface MusicPlayerProps {
 /**
  * Extracts a YouTube video ID from various URL formats.
  */
-function parseYouTubeId(url: string): string | null {
-  if (!url || typeof url !== "string") return null;
+function parseYouTubeId(raw: unknown): string | null {
+  if (!raw || typeof raw !== "string") return null;
 
-  const trimmed = url.trim();
-  if (!trimmed) return null;
+  const url = raw.trim();
+  if (!url) return null;
 
-  const watchMatch = trimmed.match(
+  const watchMatch = url.match(
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/
   );
   if (watchMatch) return watchMatch[1];
 
-  const shortMatch = trimmed.match(
+  const shortMatch = url.match(
     /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})/
   );
   if (shortMatch) return shortMatch[1];
 
-  const embedMatch = trimmed.match(
+  const embedMatch = url.match(
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
   );
   if (embedMatch) return embedMatch[1];
@@ -52,7 +52,6 @@ function loadYouTubeApi(): Promise<void> {
     if (ytApiLoading) return;
     ytApiLoading = true;
 
-    // Global callback invoked by the YouTube script
     (window as unknown as Record<string, unknown>).onYouTubeIframeAPIReady = () => {
       ytApiReady = true;
       ytApiCallbacks.forEach((cb) => cb());
@@ -70,6 +69,8 @@ function loadYouTubeApi(): Promise<void> {
 /* ------------------------------------------------------------------ */
 
 export function MusicPlayer({ url }: MusicPlayerProps) {
+  const videoId = useMemo(() => parseYouTubeId(url), [url]);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -80,50 +81,54 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
   const [title, setTitle] = useState("Theme Song");
 
   const playerRef = useRef<YT.Player | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (!url || typeof url !== "string") return null;
-
-  const videoId = parseYouTubeId(url);
-  if (!videoId) return null;
-
   /* ── Initialize YouTube player ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (!videoId) return;
+
     let destroyed = false;
 
     async function init() {
       await loadYouTubeApi();
       if (destroyed) return;
 
-      // Create a hidden player
-      playerRef.current = new YT.Player(`yt-player-${videoId}`, {
+      const elementId = `yt-music-${videoId}`;
+
+      playerRef.current = new YT.Player(elementId, {
         videoId,
-        height: "1",
-        width: "1",
+        height: "40",
+        width: "40",
         playerVars: {
           autoplay: 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
           loop: 1,
-          playlist: videoId, // required for loop to work
+          playlist: videoId,
           modestbranding: 1,
           rel: 0,
           playsinline: 1,
-        },
+          origin: window.location.origin,
+        } as YT.PlayerVars & { origin: string },
         events: {
           onReady: (event: YT.PlayerEvent) => {
             if (destroyed) return;
             const p = event.target;
             p.setVolume(50);
-            setDuration(p.getDuration());
             setReady(true);
 
+            // Duration may not be available immediately
+            const dur = p.getDuration();
+            if (dur > 0) setDuration(dur);
+
             // Try to get video title
-            const data = p.getVideoData?.();
-            if (data?.title) setTitle(data.title);
+            try {
+              const data = p.getVideoData?.();
+              if (data?.title) setTitle(data.title);
+            } catch {
+              // getVideoData may not be available yet
+            }
 
             // Attempt autoplay
             p.playVideo();
@@ -135,11 +140,19 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
             if (state === YT.PlayerState.PLAYING) {
               setIsPlaying(true);
               setAutoplayBlocked(false);
-              setDuration(event.target.getDuration());
+              const dur = event.target.getDuration();
+              if (dur > 0) setDuration(dur);
+
+              // Try title again once playing
+              try {
+                const data = event.target.getVideoData?.();
+                if (data?.title) setTitle(data.title);
+              } catch {
+                // ignore
+              }
             } else if (state === YT.PlayerState.PAUSED) {
               setIsPlaying(false);
             } else if (state === YT.PlayerState.ENDED) {
-              // Restart for loop
               event.target.seekTo(0, true);
               event.target.playVideo();
             } else if (state === YT.PlayerState.UNSTARTED) {
@@ -157,20 +170,27 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
     return () => {
       destroyed = true;
       if (progressInterval.current) clearInterval(progressInterval.current);
-      playerRef.current?.destroy();
+      try {
+        playerRef.current?.destroy();
+      } catch {
+        // player may already be destroyed
+      }
       playerRef.current = null;
     };
   }, [videoId]);
 
   /* ── Track progress ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (progressInterval.current) clearInterval(progressInterval.current);
 
     if (isPlaying) {
       progressInterval.current = setInterval(() => {
-        if (playerRef.current?.getCurrentTime) {
-          setCurrentTime(playerRef.current.getCurrentTime());
+        try {
+          if (playerRef.current?.getCurrentTime) {
+            setCurrentTime(playerRef.current.getCurrentTime());
+          }
+        } catch {
+          // player may be destroyed
         }
       }, 500);
     }
@@ -181,7 +201,6 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
   }, [isPlaying]);
 
   /* ── Controls ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const togglePlay = useCallback(() => {
     if (!playerRef.current) return;
     if (isPlaying) {
@@ -191,7 +210,6 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
     }
   }, [isPlaying]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const toggleMute = useCallback(() => {
     if (!playerRef.current) return;
     if (isMuted) {
@@ -204,7 +222,6 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
     }
   }, [isMuted, volume]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
     setVolume(v);
@@ -220,10 +237,10 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
     }
   }, [isMuted]);
 
-  const restart = () => {
+  const restart = useCallback(() => {
     playerRef.current?.seekTo(0, true);
     playerRef.current?.playVideo();
-  };
+  }, []);
 
   /* ── Helpers ── */
   const formatTime = (s: number) => {
@@ -234,14 +251,17 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Don't render anything if no valid YouTube URL
+  if (!videoId) return null;
+
   return (
     <div className="relative mt-3">
-      {/* Hidden YouTube player — audio only */}
+      {/* Off-screen YouTube player — audio only, needs real dimensions to load */}
       <div
-        className="absolute w-0 h-0 overflow-hidden pointer-events-none opacity-0"
+        className="absolute -left-[9999px] -top-[9999px] w-10 h-10 overflow-hidden"
         aria-hidden="true"
       >
-        <div id={`yt-player-${videoId}`} ref={containerRef} />
+        <div id={`yt-music-${videoId}`} />
       </div>
 
       {/* Audio control bar */}
