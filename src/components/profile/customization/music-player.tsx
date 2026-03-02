@@ -77,7 +77,7 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
             </motion.button>
           </motion.div>
         ) : (
-          /* ── Playing: audio-style bar with hidden video iframe ── */
+          /* ── Playing: compact YouTube player ── */
           <motion.div
             key="playing"
             initial={{ opacity: 0, y: 10 }}
@@ -85,11 +85,10 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
             exit={{ opacity: 0, y: 10 }}
             className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
           >
-            {/* Control header */}
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              <div className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-purple-500/20 border border-purple-500/30 shrink-0">
-                <Music className="h-4 w-4 text-purple-400" />
-                {/* Pulse animation */}
+            {/* Header with stop button */}
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 shrink-0">
+                <Music className="h-3.5 w-3.5 text-purple-400" />
                 <motion.div
                   initial={{ scale: 1, opacity: 0.5 }}
                   animate={{ scale: 1.8, opacity: 0 }}
@@ -98,40 +97,31 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
                 />
               </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/80 truncate">
-                  Now Playing
-                </p>
-                <p className="text-xs text-white/40">
-                  Use player controls below to adjust volume
-                </p>
-              </div>
+              <p className="flex-1 text-sm font-medium text-white/80 truncate">
+                Theme Song
+              </p>
 
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setPlaying(false)}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 border border-red-500/30 hover:bg-red-500/40 transition-colors"
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-red-500/20 border border-red-500/30 hover:bg-red-500/40 transition-colors"
                 title="Stop"
               >
-                <Square className="h-3 w-3 text-red-400" />
+                <Square className="h-2.5 w-2.5 text-red-400" />
               </motion.button>
             </div>
 
-            {/* YouTube iframe — small strip showing just the player controls */}
-            <div className="relative w-full h-[54px] overflow-hidden bg-black/50">
+            {/* YouTube embed — compact player with full controls visible */}
+            <div className="w-full aspect-video max-h-[200px]">
               <iframe
                 width="100%"
-                height="180"
+                height="100%"
                 src={embedSrc}
                 title="Profile theme song"
                 allow="autoplay; encrypted-media"
                 referrerPolicy="no-referrer-when-downgrade"
-                style={{
-                  border: "none",
-                  marginTop: "-65px",
-                  pointerEvents: "auto",
-                }}
+                style={{ border: "none" }}
               />
             </div>
           </motion.div>
