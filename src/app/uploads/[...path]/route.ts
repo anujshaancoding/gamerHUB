@@ -11,9 +11,7 @@ import { readFile } from "fs/promises";
 import { resolve } from "path";
 
 const UPLOAD_DIR = resolve(
-  process.env.NODE_ENV === "production"
-    ? (process.env.UPLOAD_DIR || "/var/www/gglobby/uploads")
-    : "./public/uploads"
+  process.env.UPLOAD_DIR || "./uploads"
 );
 
 const MIME: Record<string, string> = {

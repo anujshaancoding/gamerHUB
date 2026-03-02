@@ -15,12 +15,10 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { resolve, dirname } from "path";
 import { getUser } from "@/lib/auth/get-user";
 
-// In development, write to public/uploads so Next.js serves them at /uploads/*.
-// In production, Nginx serves from UPLOAD_DIR directly.
+// Store uploads outside public/ — served by the catch-all route at /uploads/[...path].
+// In production, Nginx also serves from UPLOAD_DIR for static performance.
 const UPLOAD_DIR = resolve(
-  process.env.NODE_ENV === "production"
-    ? (process.env.UPLOAD_DIR || "/var/www/gglobby/uploads")
-    : "./public/uploads"
+  process.env.UPLOAD_DIR || "./uploads"
 );
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 

@@ -11,6 +11,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
+        UPLOAD_DIR: "/var/www/gglobby/uploads",
       },
       error_file: "/var/www/gglobby/logs/error.log",
       out_file: "/var/www/gglobby/logs/out.log",
