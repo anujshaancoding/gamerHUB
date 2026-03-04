@@ -11,7 +11,7 @@ import {
   CheckCircle,
   Flame,
 } from "lucide-react";
-import { Card, Button, Badge, Modal, Input } from "@/components/ui";
+import { Card, Button, Badge, Modal, Input, ConfirmDeleteDialog } from "@/components/ui";
 import {
   useClanMissions,
   type ClanMission,
@@ -188,6 +188,7 @@ function MissionCard({
   onContribute,
   onDelete,
 }: MissionCardProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const progress = Math.min(
     (mission.current_progress / mission.goal_target) * 100,
     100
@@ -233,7 +234,7 @@ function MissionCard({
               </Badge>
               {canManage && !mission.is_completed && (
                 <button
-                  onClick={onDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="p-1 text-text-muted hover:text-error rounded"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -285,6 +286,17 @@ function MissionCard({
           )}
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          onDelete();
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete mission?"
+        description="This mission will be permanently removed from the clan."
+      />
     </Card>
   );
 }

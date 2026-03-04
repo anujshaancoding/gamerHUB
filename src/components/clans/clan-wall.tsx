@@ -10,7 +10,7 @@ import {
   Smile,
   MoreVertical,
 } from "lucide-react";
-import { Avatar, Badge, Button, Card } from "@/components/ui";
+import { Avatar, Badge, Button, Card, ConfirmDeleteDialog } from "@/components/ui";
 import { formatRelativeTime } from "@/lib/utils";
 import { useClanWall, type WallPost } from "@/lib/hooks/useClanWall";
 import type { ClanMemberRole } from "@/types/database";
@@ -180,6 +180,7 @@ function WallPostCard({
   isMember,
 }: WallPostCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isAuthor = post.user_id === userId;
   const canDelete = isAuthor || canManage;
 
@@ -243,7 +244,7 @@ function WallPostCard({
                     )}
                     <button
                       onClick={() => {
-                        onDelete(post.id);
+                        setShowDeleteConfirm(true);
                         setShowMenu(false);
                       }}
                       className="w-full text-left px-3 py-1.5 text-sm text-error hover:bg-surface-light flex items-center gap-2"
@@ -326,6 +327,17 @@ function WallPostCard({
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          onDelete(post.id);
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete wall post?"
+        description="This post will be permanently removed from the wall."
+      />
     </Card>
   );
 }

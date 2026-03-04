@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Pin, PinOff, Trash2, MessageSquare, Send } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { RelativeTime } from "@/components/ui";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 
 interface WallPost {
   id: string;
@@ -55,6 +56,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
   const [content, setContent] = useState("");
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -289,7 +291,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
 
                   {canDelete(post) && (
                     <button
-                      onClick={() => handleDelete(post.id)}
+                      onClick={() => setPostToDelete(post.id)}
                       className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors group"
                       title="Delete post"
                     >
@@ -302,6 +304,17 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
           ))}
         </AnimatePresence>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!postToDelete}
+        onOpenChange={(open) => !open && setPostToDelete(null)}
+        onConfirm={() => {
+          if (postToDelete) handleDelete(postToDelete);
+          setPostToDelete(null);
+        }}
+        title="Delete wall post?"
+        description="This post will be permanently removed from the wall."
+      />
     </div>
   );
 }

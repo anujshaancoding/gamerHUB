@@ -41,3 +41,5 @@ export type { HorizontalScrollProps } from "./horizontal-scroll";
 export { RelativeTime } from "./RelativeTime";
 
 export { SelectWithOther } from "./select-with-other";
+
+export { ConfirmDeleteDialog } from "./confirm-delete-dialog";

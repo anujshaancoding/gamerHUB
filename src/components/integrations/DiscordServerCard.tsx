@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { useDiscordIntegration } from "@/lib/hooks/useDiscordIntegration";
 import type { DiscordGuild, DiscordWebhook } from "@/types/discord";
 
@@ -32,6 +33,7 @@ export function DiscordServerCard({
   const { updateWebhook, deleteWebhook } = useDiscordIntegration();
   const [expanded, setExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null);
 
   const guildWebhooks = webhooks.filter((w) => w.guild_id === guild.id);
   const activeCount = guildWebhooks.filter((w) => w.is_active).length;
@@ -142,7 +144,7 @@ export function DiscordServerCard({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteWebhook(webhook.id)}
+                    onClick={() => setWebhookToDelete(webhook.id)}
                     disabled={deletingId === webhook.id}
                   >
                     {deletingId === webhook.id ? (
@@ -223,6 +225,16 @@ export function DiscordServerCard({
           </Button>
         </div>
       )}
+      <ConfirmDeleteDialog
+        open={!!webhookToDelete}
+        onOpenChange={(open) => !open && setWebhookToDelete(null)}
+        onConfirm={() => {
+          if (webhookToDelete) handleDeleteWebhook(webhookToDelete);
+          setWebhookToDelete(null);
+        }}
+        title="Delete webhook?"
+        description="This webhook will be permanently removed and notifications will stop for this channel."
+      />
     </motion.div>
   );
 }

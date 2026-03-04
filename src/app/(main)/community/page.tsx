@@ -1,12 +1,91 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
+import { BASE_URL } from "@/lib/seo/constants";
 import {
   CommunityPageClient,
   type BlogPost,
   type FriendPost,
 } from "@/components/community/community-page-client";
 import type { NewsArticle } from "@/types/news";
+
+// Dynamic OG metadata when sharing a specific friend post via ?post= param
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ post?: string }>;
+}): Promise<Metadata> {
+  const { post: postId } = await searchParams;
+
+  // Default community page metadata
+  if (!postId) {
+    return {
+      title: "Community",
+      description:
+        "Join the ggLobby gaming community. Read articles, discuss strategies, participate in tournaments, and connect with gamers across India.",
+      openGraph: {
+        title: "Community | ggLobby",
+        description:
+          "Join the ggLobby gaming community. Read articles, discuss strategies, and connect with gamers across India.",
+        type: "website",
+      },
+      alternates: { canonical: "/community" },
+    };
+  }
+
+  // Fetch the shared post for OG tags
+  try {
+    const db = createAdminClient();
+    const { data: post } = await db
+      .from("friend_posts")
+      .select("id, content, image_url, user_id")
+      .eq("id", postId)
+      .single();
+
+    if (!post) {
+      return { title: "Post not found | ggLobby" };
+    }
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", (post as any).user_id)
+      .single();
+
+    const authorName = (profile as any)?.display_name || (profile as any)?.username || "a gamer";
+    const content = (post as any).content as string;
+    const description = content.length > 160 ? content.slice(0, 157) + "..." : content;
+    const imageUrl = (post as any).image_url as string | null;
+
+    const ogImages: { url: string; width: number; height: number; alt: string }[] = [];
+    if (imageUrl) {
+      // Make URL absolute for OG tags
+      const absoluteUrl = imageUrl.startsWith("http") ? imageUrl : `${BASE_URL}${imageUrl}`;
+      ogImages.push({ url: absoluteUrl, width: 1200, height: 630, alt: `Post by ${authorName}` });
+    }
+
+    return {
+      title: `${authorName} on ggLobby`,
+      description,
+      openGraph: {
+        title: `${authorName} on ggLobby`,
+        description,
+        type: "article",
+        url: `${BASE_URL}/community?post=${postId}`,
+        ...(ogImages.length > 0 && { images: ogImages }),
+      },
+      twitter: {
+        card: ogImages.length > 0 ? "summary_large_image" : "summary",
+        title: `${authorName} on ggLobby`,
+        description,
+        ...(ogImages.length > 0 && { images: [ogImages[0].url] }),
+      },
+    };
+  } catch {
+    return { title: "Community | ggLobby" };
+  }
+}
 
 export default async function CommunityPage() {
   const db = createClient();

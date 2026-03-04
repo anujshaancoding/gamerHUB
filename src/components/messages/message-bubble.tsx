@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Copy, SmilePlus, X, Download } from "lucide-react";
 import { Avatar } from "@/components/ui";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { MessageReactions } from "./message-reactions";
 import { ReactionPicker } from "./emoji-picker";
 import { useRouter } from "next/navigation";
@@ -132,6 +133,7 @@ export function MessageBubble({
   const [showActions, setShowActions] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Detect image messages: explicit type OR fallback for realtime payloads
   // where the type field may arrive as null. Check if content is a URL
@@ -345,7 +347,7 @@ export function MessageBubble({
               </button>
               {isOwn && (
                 <button
-                  onClick={onDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="p-1.5 rounded-md hover:bg-error/10 text-text-muted hover:text-error transition-colors"
                   title="Delete"
                 >
@@ -420,6 +422,17 @@ export function MessageBubble({
           </AnimatePresence>,
           document.body
         )}
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          onDelete();
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete message?"
+        description="This message will be permanently deleted for everyone."
+      />
     </motion.div>
   );
 }

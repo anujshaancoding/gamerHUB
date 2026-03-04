@@ -34,6 +34,7 @@ import {
 import { createClient } from "@/lib/db/client-browser";
 import { cn } from "@/lib/utils";
 import { ShareCardModal } from "@/components/blog/share-card-modal";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { STALE_TIMES } from "@/lib/query/provider";
@@ -95,6 +96,7 @@ export default function CommunityPostPage() {
   const [bookmarked, setBookmarked] = useState(false);
   const [showShareCards, setShowShareCards] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
@@ -700,7 +702,7 @@ export default function CommunityPostPage() {
                             permissions.deleteAnyComment
                           ) && (
                             <button
-                              onClick={() => handleDeleteComment(comment.id)}
+                              onClick={() => setCommentToDelete(comment.id)}
                               disabled={deletingCommentId === comment.id}
                               className="flex items-center gap-1 text-xs text-text-muted hover:text-red-500 transition-colors ml-auto"
                             >
@@ -718,6 +720,17 @@ export default function CommunityPostPage() {
           )}
         </div>
       </motion.article>
+
+      <ConfirmDeleteDialog
+        open={!!commentToDelete}
+        onOpenChange={(open) => !open && setCommentToDelete(null)}
+        onConfirm={() => {
+          if (commentToDelete) handleDeleteComment(commentToDelete);
+          setCommentToDelete(null);
+        }}
+        title="Delete comment?"
+        description="This comment will be permanently removed."
+      />
     </div>
   );
 }

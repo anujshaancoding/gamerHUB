@@ -19,6 +19,7 @@ import { Avatar, RelativeTime } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SharePopup } from "@/components/ui/share-popup";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -105,6 +106,8 @@ export function FriendPostCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const canDelete = !isGuest && (
     (user && post.user_id === user.id) || permissions.deleteFreeUserPost
@@ -273,7 +276,7 @@ export function FriendPostCard({
             <div className="flex items-center gap-1 -mr-2 -mt-1">
               {canDelete && (
                 <button
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDeleting}
                   className="p-1.5 rounded-lg text-text-dim hover:text-red-400 hover:bg-red-500/10 transition-all"
                   title="Delete post"
@@ -476,7 +479,7 @@ export function FriendPostCard({
                           </span>
                           {user && comment.user_id === user.id && (
                             <button
-                              onClick={() => handleDeleteComment(comment.id)}
+                              onClick={() => setCommentToDelete(comment.id)}
                               className="text-[11px] text-text-dim hover:text-red-400 transition-colors opacity-0 group-hover/cmt:opacity-100"
                             >
                               Delete
@@ -502,6 +505,28 @@ export function FriendPostCard({
         isOpen={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         redirectTo={`/profile/${post.user?.username}`}
+      />
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          handleDelete();
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete post?"
+        description="This post will be permanently removed."
+      />
+
+      <ConfirmDeleteDialog
+        open={!!commentToDelete}
+        onOpenChange={(open) => !open && setCommentToDelete(null)}
+        onConfirm={() => {
+          if (commentToDelete) handleDeleteComment(commentToDelete);
+          setCommentToDelete(null);
+        }}
+        title="Delete comment?"
+        description="This comment will be permanently removed."
       />
     </>
   );

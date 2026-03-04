@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Avatar } from "@/components/ui/avatar";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ export function RuleCard({
   onViewLogs,
   isToggling,
 }: RuleCardProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const triggerInfo = TRIGGER_INFO[rule.trigger_type];
   const actionInfo = ACTION_INFO[rule.action_type];
 
@@ -92,7 +95,7 @@ export function RuleCard({
                   View Logs
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={onDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="text-red-400 focus:text-red-400"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -170,6 +173,16 @@ export function RuleCard({
           )}
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          onDelete();
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete automation rule?"
+        description="This rule and its execution history will be permanently removed."
+      />
     </Card>
   );
 }

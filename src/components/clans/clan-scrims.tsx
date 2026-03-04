@@ -17,7 +17,7 @@ import {
   Copy,
   Radio,
 } from "lucide-react";
-import { Card, Button, Badge, Modal, Input, Avatar } from "@/components/ui";
+import { Card, Button, Badge, Modal, Input, Avatar, ConfirmDeleteDialog } from "@/components/ui";
 import { formatRelativeTime } from "@/lib/utils";
 import { useClanScrims, type ClanScrim } from "@/lib/hooks/useClanScrims";
 import type { ClanMemberRole } from "@/types/database";
@@ -215,6 +215,7 @@ function ScrimCard({
 }: ScrimCardProps) {
   const [showRoom, setShowRoom] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const scheduledDate = new Date(scrim.scheduled_at);
   const isUpcoming = scrim.status === "upcoming";
@@ -417,7 +418,7 @@ function ScrimCard({
           )}
           {canManage && !isPast && (
             <button
-              onClick={() => onDelete(scrim.id)}
+              onClick={() => setShowDeleteConfirm(true)}
               className="p-1 text-text-muted hover:text-error rounded"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -425,6 +426,17 @@ function ScrimCard({
           )}
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          onDelete(scrim.id);
+          setShowDeleteConfirm(false);
+        }}
+        title="Delete scrim?"
+        description="This scrim and all RSVPs will be permanently removed."
+      />
     </Card>
   );
 }
