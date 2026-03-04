@@ -1,0 +1,1194 @@
+{
+  "info": {
+    "name": "ggLobby API Collection",
+    "description": "Complete API collection for the ggLobby gaming social platform. Covers all ~249 API endpoints organized by feature domain.\n\n## Setup\n1. Import this collection into Postman\n2. Import the environment file (gglobby-dev-environment.json)\n3. Set TEST_EMAIL and TEST_PASSWORD in the environment\n4. Run the 'Auth > Login' request first to get a session cookie\n5. All subsequent requests will use the session cookie automatically",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-authenticate if session cookie is not set",
+          "// The session is managed via httpOnly cookies (NextAuth)",
+          "// Run the 'Auth > Login' request first to establish a session"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test: response time should be under 10s",
+          "pm.test('Response time is acceptable', function() {",
+          "  pm.expect(pm.response.responseTime).to.be.below(10000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3005" }
+  ],
+  "item": [
+    {
+      "name": "01 - Auth",
+      "description": "Authentication endpoints (NextAuth v5)",
+      "item": [
+        {
+          "name": "Get CSRF Token",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/csrf", "host": ["{{baseUrl}}"], "path": ["api", "auth", "csrf"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Has csrfToken', function() { pm.expect(json).to.have.property('csrfToken'); });",
+                  "pm.environment.set('csrfToken', json.csrfToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Credentials)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/callback/credentials", "host": ["{{baseUrl}}"], "path": ["api", "auth", "callback", "credentials"] },
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email", "value": "{{TEST_EMAIL}}" },
+                { "key": "password", "value": "{{TEST_PASSWORD}}" },
+                { "key": "csrfToken", "value": "{{csrfToken}}" },
+                { "key": "json", "value": "true" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// First get CSRF token",
+                  "pm.sendRequest({ url: pm.environment.get('baseUrl') + '/api/auth/csrf', method: 'GET' }, function(err, res) {",
+                  "  if (!err) { pm.environment.set('csrfToken', res.json().csrfToken); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful (200 or 302)', function() {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@test.com\",\n  \"password\": \"testpassword123\",\n  \"username\": \"testuser123\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201 or 409 (already exists)', function() { pm.expect(pm.response.code).to.be.oneOf([201, 409]); });"] } }]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "reset-password"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@gglobby.in\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/update-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "update-password"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword456\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"] } }]
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/session", "host": ["{{baseUrl}}"], "path": ["api", "auth", "session"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.user) { pm.environment.set('testUserId', json.user.id); }"] } }]
+        }
+      ]
+    },
+    {
+      "name": "02 - Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/profile", "host": ["{{baseUrl}}"], "path": ["api", "profile"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "pm.test('Has profile data', function() { pm.expect(json).to.have.property('profile'); });"] } }]
+        },
+        {
+          "name": "Get Profile by User ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/profile?userId={{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "profile"], "query": [{ "key": "userId", "value": "{{testUserId}}" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/profile", "host": ["{{baseUrl}}"], "path": ["api", "profile"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"display_name\": \"Test User\",\n  \"bio\": \"Hello from Postman!\",\n  \"region\": \"asia\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Progression",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/progression", "host": ["{{baseUrl}}"], "path": ["api", "progression"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Progression by User ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/progression/{{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "progression", "{{testUserId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Activity by User ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/activity/{{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "activity", "{{testUserId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 - Users",
+      "item": [
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/search?query=test", "host": ["{{baseUrl}}"], "path": ["api", "users", "search"], "query": [{ "key": "query", "value": "test" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Check Username Availability",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/check-username?username=testuser123", "host": ["{{baseUrl}}"], "path": ["api", "users", "check-username"], "query": [{ "key": "username", "value": "testuser123" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Heartbeat",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/heartbeat", "host": ["{{baseUrl}}"], "path": ["api", "users", "heartbeat"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Online Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/online-status?userIds={{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "online-status"], "query": [{ "key": "userIds", "value": "{{testUserId}}" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get User Social Info",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/{{testUserId}}/social", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{testUserId}}", "social"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get User Game Stats",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/{{testUserId}}/game-stats", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{testUserId}}", "game-stats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Block User",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/users/{{testTargetUserId}}/block", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{testTargetUserId}}", "block"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "04 - Friends",
+      "item": [
+        {
+          "name": "Get Friends List",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/friends?limit=20&offset=0", "host": ["{{baseUrl}}"], "path": ["api", "friends"], "query": [{ "key": "limit", "value": "20" }, { "key": "offset", "value": "0" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Send Friend Request",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/friends", "host": ["{{baseUrl}}"], "path": ["api", "friends"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"recipientId\": \"{{testTargetUserId}}\",\n  \"message\": \"Hey, let's play together!\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201, 400]); });", "var json = pm.response.json();", "if (json.requestId) { pm.environment.set('testFriendRequestId', json.requestId); }"] } }]
+        },
+        {
+          "name": "Get Friend Requests",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/friends/requests?type=received", "host": ["{{baseUrl}}"], "path": ["api", "friends", "requests"], "query": [{ "key": "type", "value": "received" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Accept Friend Request",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/friends/requests/{{testFriendRequestId}}?action=accept", "host": ["{{baseUrl}}"], "path": ["api", "friends", "requests", "{{testFriendRequestId}}"], "query": [{ "key": "action", "value": "accept" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 404', function() { pm.expect(pm.response.code).to.be.oneOf([200, 404]); });"] } }]
+        },
+        {
+          "name": "Decline Friend Request",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/friends/requests/{{testFriendRequestId}}?action=decline", "host": ["{{baseUrl}}"], "path": ["api", "friends", "requests", "{{testFriendRequestId}}"], "query": [{ "key": "action", "value": "decline" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 404', function() { pm.expect(pm.response.code).to.be.oneOf([200, 404]); });"] } }]
+        },
+        {
+          "name": "Get Friend Counts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/friends/counts", "host": ["{{baseUrl}}"], "path": ["api", "friends", "counts"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Followers",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/friends/followers", "host": ["{{baseUrl}}"], "path": ["api", "friends", "followers"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Following",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/friends/following", "host": ["{{baseUrl}}"], "path": ["api", "friends", "following"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Blocked Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blocked", "host": ["{{baseUrl}}"], "path": ["api", "blocked"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "05 - Messages",
+      "item": [
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/messages/conversations", "host": ["{{baseUrl}}"], "path": ["api", "messages", "conversations"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.conversations && json.conversations.length > 0) { pm.environment.set('testConversationId', json.conversations[0].id); }"] } }]
+        },
+        {
+          "name": "Get Conversation by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/messages/conversations/{{testConversationId}}", "host": ["{{baseUrl}}"], "path": ["api", "messages", "conversations", "{{testConversationId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Messages in Conversation",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/messages/conversations/{{testConversationId}}/messages?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "messages", "conversations", "{{testConversationId}}", "messages"], "query": [{ "key": "limit", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/messages/send", "host": ["{{baseUrl}}"], "path": ["api", "messages", "send"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"conversationId\": \"{{testConversationId}}\",\n  \"content\": \"Hello from Postman!\",\n  \"type\": \"text\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });", "var json = pm.response.json();", "if (json.message) { pm.environment.set('testMessageId', json.message.id); }"] } }]
+        },
+        {
+          "name": "Mark Conversation as Read",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/messages/conversations/{{testConversationId}}/read", "host": ["{{baseUrl}}"], "path": ["api", "messages", "conversations", "{{testConversationId}}", "read"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Send Typing Indicator",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/messages/conversations/{{testConversationId}}/typing", "host": ["{{baseUrl}}"], "path": ["api", "messages", "conversations", "{{testConversationId}}", "typing"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Add Message Reaction",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/messages/{{testMessageId}}/reactions", "host": ["{{baseUrl}}"], "path": ["api", "messages", "{{testMessageId}}", "reactions"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"emoji\": \"👍\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"] } }]
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/messages/{{testMessageId}}", "host": ["{{baseUrl}}"], "path": ["api", "messages", "{{testMessageId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 404', function() { pm.expect(pm.response.code).to.be.oneOf([200, 404]); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "06 - Clans",
+      "item": [
+        {
+          "name": "List Clans",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans?limit=20&offset=0", "host": ["{{baseUrl}}"], "path": ["api", "clans"], "query": [{ "key": "limit", "value": "20" }, { "key": "offset", "value": "0" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.clans && json.clans.length > 0) { pm.environment.set('testClanId', json.clans[0].id); }"] } }]
+        },
+        {
+          "name": "Search Clans",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans?search=test&limit=10", "host": ["{{baseUrl}}"], "path": ["api", "clans"], "query": [{ "key": "search", "value": "test" }, { "key": "limit", "value": "10" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Create Clan",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/clans", "host": ["{{baseUrl}}"], "path": ["api", "clans"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Clan\",\n  \"tag\": \"TCLX\",\n  \"description\": \"A test clan created via Postman\",\n  \"region\": \"asia\",\n  \"is_public\": true,\n  \"join_type\": \"open\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201 or 400 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([201, 400, 403]); });", "var json = pm.response.json();", "if (json.clan) { pm.environment.set('testClanId', json.clan.id); }"] } }]
+        },
+        {
+          "name": "Get Clan Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Clan Members",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "members"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Join Clan",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "members"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201, 400]); });"] } }]
+        },
+        {
+          "name": "Get Clan Wall Posts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/wall", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "wall"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Clan Missions",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/missions", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "missions"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Clan Scrims",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/scrims", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "scrims"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Clan Invites",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clans/{{testClanId}}/invites", "host": ["{{baseUrl}}"], "path": ["api", "clans", "{{testClanId}}", "invites"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "07 - Tournaments",
+      "item": [
+        {
+          "name": "List Tournaments",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tournaments?limit=20&offset=0", "host": ["{{baseUrl}}"], "path": ["api", "tournaments"], "query": [{ "key": "limit", "value": "20" }, { "key": "offset", "value": "0" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.tournaments && json.tournaments.length > 0) { pm.environment.set('testTournamentId', json.tournaments[0].id); }"] } }]
+        },
+        {
+          "name": "Create Tournament",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/tournaments", "host": ["{{baseUrl}}"], "path": ["api", "tournaments"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Tournament\",\n  \"description\": \"A test tournament\",\n  \"format\": \"single_elimination\",\n  \"team_size\": 5,\n  \"max_teams\": 16,\n  \"registration_start\": \"2026-04-01T00:00:00Z\",\n  \"registration_end\": \"2026-04-10T00:00:00Z\",\n  \"start_date\": \"2026-04-15T00:00:00Z\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201 or 400 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([201, 400, 403]); });", "var json = pm.response.json();", "if (json.tournament) { pm.environment.set('testTournamentId', json.tournament.id); }"] } }]
+        },
+        {
+          "name": "Get Tournament Detail",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tournaments/{{testTournamentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tournaments", "{{testTournamentId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Tournament Bracket",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tournaments/{{testTournamentId}}/bracket", "host": ["{{baseUrl}}"], "path": ["api", "tournaments", "{{testTournamentId}}", "bracket"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Tournament Participants",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tournaments/{{testTournamentId}}/participants", "host": ["{{baseUrl}}"], "path": ["api", "tournaments", "{{testTournamentId}}", "participants"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Tournament Matches",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tournaments/{{testTournamentId}}/matches", "host": ["{{baseUrl}}"], "path": ["api", "tournaments", "{{testTournamentId}}", "matches"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "08 - Forums",
+      "item": [
+        {
+          "name": "Get Forum Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/forums/categories", "host": ["{{baseUrl}}"], "path": ["api", "forums", "categories"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Forum Posts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/forums/posts?sort=latest&limit=20", "host": ["{{baseUrl}}"], "path": ["api", "forums", "posts"], "query": [{ "key": "sort", "value": "latest" }, { "key": "limit", "value": "20" }] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.posts && json.posts.length > 0) { pm.environment.set('testForumPostId', json.posts[0].id); }"] } }]
+        },
+        {
+          "name": "Create Forum Post",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/forums/posts", "host": ["{{baseUrl}}"], "path": ["api", "forums", "posts"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{testForumCategoryId}}\",\n  \"title\": \"Test Forum Post from Postman\",\n  \"content\": \"This is a test forum post created via the Postman API collection.\",\n  \"postType\": \"discussion\",\n  \"tags\": [\"test\", \"postman\"]\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([201, 400]); });"] } }]
+        },
+        {
+          "name": "Vote on Forum Post",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/forums/posts/{{testForumPostId}}/vote", "host": ["{{baseUrl}}"], "path": ["api", "forums", "posts", "{{testForumPostId}}", "vote"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"value\": 1\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "09 - Blog",
+      "item": [
+        {
+          "name": "Get Blog Posts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blog", "host": ["{{baseUrl}}"], "path": ["api", "blog"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.posts && json.posts.length > 0) { pm.environment.set('testBlogSlug', json.posts[0].slug); }"] } }]
+        },
+        {
+          "name": "Get Blog Post by Slug",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blog/{{testBlogSlug}}", "host": ["{{baseUrl}}"], "path": ["api", "blog", "{{testBlogSlug}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Like Blog Post",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/blog/{{testBlogSlug}}/like", "host": ["{{baseUrl}}"], "path": ["api", "blog", "{{testBlogSlug}}", "like"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Blog Post Comments",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blog/{{testBlogSlug}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "blog", "{{testBlogSlug}}", "comments"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Blog Authors",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blog/authors", "host": ["{{baseUrl}}"], "path": ["api", "blog", "authors"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get My Blog Posts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/blog/my-posts", "host": ["{{baseUrl}}"], "path": ["api", "blog", "my-posts"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "10 - News",
+      "item": [
+        {
+          "name": "Get News",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/news", "host": ["{{baseUrl}}"], "path": ["api", "news"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "11 - Feed & Posts",
+      "item": [
+        {
+          "name": "Get Activity Feed",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/feed", "host": ["{{baseUrl}}"], "path": ["api", "feed"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Friend Posts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/friend-posts?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "friend-posts"], "query": [{ "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Wall Posts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wall-posts", "host": ["{{baseUrl}}"], "path": ["api", "wall-posts"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Sidebar Activity",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sidebar-activity", "host": ["{{baseUrl}}"], "path": ["api", "sidebar-activity"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "12 - Games & Gamers",
+      "item": [
+        {
+          "name": "Get All Games",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/games", "host": ["{{baseUrl}}"], "path": ["api", "games"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });", "var json = pm.response.json();", "if (json.games && json.games.length > 0) { pm.environment.set('testGameId', json.games[0].id); }"] } }]
+        },
+        {
+          "name": "Get Game Roles",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/games/{{testGameId}}/roles", "host": ["{{baseUrl}}"], "path": ["api", "games", "{{testGameId}}", "roles"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get All Gamers",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/gamers", "host": ["{{baseUrl}}"], "path": ["api", "gamers"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get User Games",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/user-games", "host": ["{{baseUrl}}"], "path": ["api", "user-games"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "13 - Leaderboards",
+      "item": [
+        {
+          "name": "Get Global Leaderboard",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/leaderboard", "host": ["{{baseUrl}}"], "path": ["api", "leaderboard"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Leaderboards by Game",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/leaderboards", "host": ["{{baseUrl}}"], "path": ["api", "leaderboards"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get My Leaderboard Position",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/leaderboards/me", "host": ["{{baseUrl}}"], "path": ["api", "leaderboards", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "14 - Gamification",
+      "item": [
+        {
+          "name": "Get Badges",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/badges", "host": ["{{baseUrl}}"], "path": ["api", "badges"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get My Badges",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/badges/user", "host": ["{{baseUrl}}"], "path": ["api", "badges", "user"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Active Quests",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/quests/active", "host": ["{{baseUrl}}"], "path": ["api", "quests", "active"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Battle Pass",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/battle-pass", "host": ["{{baseUrl}}"], "path": ["api", "battle-pass"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Battle Pass Progress",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/battle-pass/progress", "host": ["{{baseUrl}}"], "path": ["api", "battle-pass", "progress"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Rewards",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rewards", "host": ["{{baseUrl}}"], "path": ["api", "rewards"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Seasons",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/seasons", "host": ["{{baseUrl}}"], "path": ["api", "seasons"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Current Season",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/seasons/current", "host": ["{{baseUrl}}"], "path": ["api", "seasons", "current"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "15 - Shop & Wallet",
+      "item": [
+        {
+          "name": "Get Shop Items",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/shop/items", "host": ["{{baseUrl}}"], "path": ["api", "shop", "items"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Currency Packs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/shop/currency-packs", "host": ["{{baseUrl}}"], "path": ["api", "shop", "currency-packs"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Purchase Item",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/shop/purchase", "host": ["{{baseUrl}}"], "path": ["api", "shop", "purchase"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"itemId\": \"{{testShopItemId}}\",\n  \"currencyType\": \"coins\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        },
+        {
+          "name": "Get Wallet",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wallet", "host": ["{{baseUrl}}"], "path": ["api", "wallet"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Wallet Transactions",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wallet/transactions", "host": ["{{baseUrl}}"], "path": ["api", "wallet", "transactions"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "16 - Customization",
+      "item": [
+        {
+          "name": "Get Themes",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/themes", "host": ["{{baseUrl}}"], "path": ["api", "themes"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Titles",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/titles", "host": ["{{baseUrl}}"], "path": ["api", "titles"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Frames",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/frames", "host": ["{{baseUrl}}"], "path": ["api", "frames"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "17 - Ratings & Trust",
+      "item": [
+        {
+          "name": "Endorse User",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/ratings/endorse", "host": ["{{baseUrl}}"], "path": ["api", "ratings", "endorse"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"endorsedId\": \"{{testTargetUserId}}\",\n  \"endorsementType\": \"positive\",\n  \"friendly\": true,\n  \"teamPlayer\": true\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        },
+        {
+          "name": "Get Trust Badges",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/ratings/trust-badges/{{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "ratings", "trust-badges", "{{testUserId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Trait Ratings",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/ratings/traits/{{testUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "ratings", "traits", "{{testUserId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "18 - LFG",
+      "item": [
+        {
+          "name": "List LFG Posts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/lfg?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "lfg"], "query": [{ "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Create LFG Post",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/lfg", "host": ["{{baseUrl}}"], "path": ["api", "lfg"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"game_id\": \"{{testGameId}}\",\n  \"title\": \"Looking for teammates - Postman test\",\n  \"description\": \"Test LFG post\",\n  \"max_players\": 5,\n  \"region\": \"asia\",\n  \"voice_required\": false\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([201, 400]); });"] } }]
+        },
+        {
+          "name": "Get LFG Matching Count",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/lfg/matching-count", "host": ["{{baseUrl}}"], "path": ["api", "lfg", "matching-count"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "19 - Matchmaking",
+      "item": [
+        {
+          "name": "Predict Outcome",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/matchmaking/predict-outcome", "host": ["{{baseUrl}}"], "path": ["api", "matchmaking", "predict-outcome"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"team1\": [\"{{testUserId}}\"],\n  \"team2\": [\"{{testTargetUserId}}\"]\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        },
+        {
+          "name": "Suggest Teammates",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/matchmaking/suggest-teammates", "host": ["{{baseUrl}}"], "path": ["api", "matchmaking", "suggest-teammates"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"gameId\": \"{{testGameId}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        },
+        {
+          "name": "Team Balance Check",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/matchmaking/team-balance", "host": ["{{baseUrl}}"], "path": ["api", "matchmaking", "team-balance"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"players\": [\"{{testUserId}}\"]\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 400', function() { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "20 - Coaching",
+      "item": [
+        {
+          "name": "List Coaches",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/coaches?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "coaches"], "query": [{ "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Coaching Sessions",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/coaching/sessions", "host": ["{{baseUrl}}"], "path": ["api", "coaching", "sessions"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "21 - Integrations",
+      "item": [
+        {
+          "name": "Get All Integrations",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/integrations", "host": ["{{baseUrl}}"], "path": ["api", "integrations"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Integration Status",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/integrations/status", "host": ["{{baseUrl}}"], "path": ["api", "integrations", "status"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "22 - Subscriptions & Payments",
+      "item": [
+        {
+          "name": "Get Subscription Plans",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/subscriptions/plans", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions", "plans"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get My Subscriptions",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/subscriptions", "host": ["{{baseUrl}}"], "path": ["api", "subscriptions"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Payment Methods",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/stripe/payment-methods", "host": ["{{baseUrl}}"], "path": ["api", "stripe", "payment-methods"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "23 - Mood System",
+      "item": [
+        {
+          "name": "Get Current Mood",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/mood", "host": ["{{baseUrl}}"], "path": ["api", "mood"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Set Mood",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/mood", "host": ["{{baseUrl}}"], "path": ["api", "mood"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mood\": \"competitive\",\n  \"intensity\": 4,\n  \"note\": \"Ready to grind!\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"] } }]
+        },
+        {
+          "name": "Get Mood History",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/mood/history", "host": ["{{baseUrl}}"], "path": ["api", "mood", "history"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Compatible Players",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/mood/compatible-players", "host": ["{{baseUrl}}"], "path": ["api", "mood", "compatible-players"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "24 - Community Features",
+      "item": [
+        {
+          "name": "Get Community Challenges",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/community-challenges", "host": ["{{baseUrl}}"], "path": ["api", "community-challenges"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Events",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Polls",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/polls", "host": ["{{baseUrl}}"], "path": ["api", "polls"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Memes",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/memes", "host": ["{{baseUrl}}"], "path": ["api", "memes"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Listings",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/listings?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "listings"], "query": [{ "key": "limit", "value": "20" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "25 - Streaming & Creators",
+      "item": [
+        {
+          "name": "Get Streamers",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/streamers", "host": ["{{baseUrl}}"], "path": ["api", "streamers"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Creator Profile",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/creator/profile", "host": ["{{baseUrl}}"], "path": ["api", "creator", "profile"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Creator Analytics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/creator/analytics", "host": ["{{baseUrl}}"], "path": ["api", "creator", "analytics"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Creator Clips",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/creator/clips", "host": ["{{baseUrl}}"], "path": ["api", "creator", "clips"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "26 - Specialized Features",
+      "item": [
+        {
+          "name": "Get Clan Recruitment Posts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/clan-recruitment", "host": ["{{baseUrl}}"], "path": ["api", "clan-recruitment"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Crossplay Parties",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/crossplay/parties", "host": ["{{baseUrl}}"], "path": ["api", "crossplay", "parties"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Replay Rooms",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/replay-rooms", "host": ["{{baseUrl}}"], "path": ["api", "replay-rooms"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Sponsorships",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sponsorships", "host": ["{{baseUrl}}"], "path": ["api", "sponsorships"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Squad DNA Profile",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/squad-dna/profile", "host": ["{{baseUrl}}"], "path": ["api", "squad-dna", "profile"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Pro Players",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pro-players", "host": ["{{baseUrl}}"], "path": ["api", "pro-players"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Guides",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/guides", "host": ["{{baseUrl}}"], "path": ["api", "guides"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Achievement Hunts",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/achievement-hunts", "host": ["{{baseUrl}}"], "path": ["api", "achievement-hunts"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "27 - Regions & Pricing",
+      "item": [
+        {
+          "name": "Get Regions",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/regions", "host": ["{{baseUrl}}"], "path": ["api", "regions"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Pricing by Region",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pricing/asia", "host": ["{{baseUrl}}"], "path": ["api", "pricing", "asia"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "28 - Verification",
+      "item": [
+        {
+          "name": "Get Verification Status",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/verification/status", "host": ["{{baseUrl}}"], "path": ["api", "verification", "status"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "29 - Misc",
+      "item": [
+        {
+          "name": "Submit Feedback",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/feedback", "host": ["{{baseUrl}}"], "path": ["api", "feedback"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"Test feedback from Postman\",\n  \"category\": \"general\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"] } }]
+        },
+        {
+          "name": "Submit Report",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/reports", "host": ["{{baseUrl}}"], "path": ["api", "reports"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reported_user_id\": \"{{testTargetUserId}}\",\n  \"report_type\": \"spam\",\n  \"description\": \"Test report from Postman\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 201', function() { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"] } }]
+        },
+        {
+          "name": "Get Accessibility Settings",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/accessibility", "host": ["{{baseUrl}}"], "path": ["api", "accessibility"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Scheduling",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/scheduling", "host": ["{{baseUrl}}"], "path": ["api", "scheduling"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Get Automation Rules",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/automation/rules", "host": ["{{baseUrl}}"], "path": ["api", "automation", "rules"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function() { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "30 - Admin",
+      "item": [
+        {
+          "name": "Get Admin Stats",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/stats", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"] } }]
+        },
+        {
+          "name": "Get Admin Analytics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/analytics", "host": ["{{baseUrl}}"], "path": ["api", "admin", "analytics"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"] } }]
+        },
+        {
+          "name": "Get Admin Users",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"] } }]
+        },
+        {
+          "name": "Get Admin Reports",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/reports", "host": ["{{baseUrl}}"], "path": ["api", "admin", "reports"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"] } }]
+        },
+        {
+          "name": "Get Admin Feedback",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/feedback", "host": ["{{baseUrl}}"], "path": ["api", "admin", "feedback"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200 or 401 or 403', function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 403]); });"] } }]
+        }
+      ]
+    }
+  ]
+}

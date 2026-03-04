@@ -65,32 +65,6 @@ export function ChatWindow({
     otherParticipant?.last_read_at || null
   );
 
-  // Realtime: listen for read status updates
-  useEffect(() => {
-    if (!otherParticipant?.user?.id) return;
-    const channel = db
-      .channel(`read-receipts-chat:${conversation.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversation_participants",
-          filter: `conversation_id=eq.${conversation.id}`,
-        },
-        (payload) => {
-          if (payload.new.user_id === otherParticipant.user?.id) {
-            setOtherLastReadAt(payload.new.last_read_at);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [db, conversation.id, otherParticipant?.user?.id]);
-
   // Fetch messages
   const fetchMessages = useCallback(async () => {
     try {
@@ -115,42 +89,6 @@ export function ChatWindow({
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
-
-  // Realtime subscription
-  useEffect(() => {
-    const channel = db
-      .channel(`conversation:${conversation.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversation.id}`,
-        },
-        async (payload) => {
-          // Fetch sender details
-          const { data: sender } = await db
-            .from("profiles")
-            .select("*")
-            .eq("id", payload.new.sender_id)
-            .single();
-
-          setMessages((prev) => [
-            ...prev,
-            { ...payload.new, sender } as unknown as MessageWithSender,
-          ]);
-        }
-      )
-      .on("presence", { event: "sync" }, () => {
-        // Handle presence for typing indicators
-      })
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [db, conversation.id]);
 
   // Scroll to bottom on new messages (only if user hasn't manually scrolled)
   useEffect(() => {

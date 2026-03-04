@@ -9,6 +9,42 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+// GET - Fetch a single friend post by ID
+export async function GET(_request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const db = createAdminClient();
+
+    // Fetch the post
+    const { data: post, error: postError } = await db
+      .from("friend_posts")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (postError || !post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // Fetch the user profile
+    const { data: profile } = await db
+      .from("profiles")
+      .select("id, username, display_name, avatar_url, is_verified")
+      .eq("id", (post as any).user_id)
+      .single();
+
+    return NextResponse.json({
+      post: { ...(post as any), user: profile || null },
+    });
+  } catch (error) {
+    console.error("Friend post get error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE - Delete a friend post (editor+ can delete any, author can delete own)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {

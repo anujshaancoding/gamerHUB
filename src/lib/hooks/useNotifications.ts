@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/db/client-browser";
 import { queryKeys } from "@/lib/query";
 
 // Types
@@ -254,42 +252,6 @@ export function useNotifications(options?: {
     staleTime: 1000 * 60, // Consider data stale after 1 minute
     enabled: isEnabled,
   });
-
-  // Realtime: listen for notification updates (only when enabled/authenticated)
-  useEffect(() => {
-    if (!isEnabled) return;
-
-    const db = createClient();
-
-    const channel = db
-      .channel("notifications-updates")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notifications" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications() });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [queryClient, isEnabled]);
 
   return query;
 }

@@ -14,7 +14,6 @@ import {
   Ghost,
   UserPlus,
 } from "lucide-react";
-import { createClient } from "@/lib/db/client-browser";
 import { useRouter } from "next/navigation";
 import { Button, Avatar } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
@@ -92,35 +91,6 @@ export function MessageThread({
   useEffect(() => {
     setOtherLastReadAt(otherParticipant?.last_read_at || null);
   }, [otherParticipant?.last_read_at]);
-
-  // Realtime: listen for the other participant updating their last_read_at
-  useEffect(() => {
-    if (!conversationId || !otherParticipant?.user_id) return;
-    const db = createClient();
-
-    const channel = db
-      .channel(`read-receipts:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversation_participants",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          // Only track the other user's read status
-          if (payload.new.user_id === otherParticipant.user_id) {
-            setOtherLastReadAt(payload.new.last_read_at);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [conversationId, otherParticipant?.user_id]);
 
   const { gameSlugs } = useConversationGames(user?.id, otherUser?.id);
   const { sendFriendRequest } = useFriends({ userId: user?.id });

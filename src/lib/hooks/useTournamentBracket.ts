@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/db/client-browser";
 import type {
   TournamentMatchWithTeams,
   TournamentFormat,
@@ -22,8 +21,6 @@ export function useTournamentBracket(tournamentId: string | null) {
   const [settings, setSettings] = useState<TournamentSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const db = createClient();
 
   const fetchBracket = useCallback(async () => {
     if (!tournamentId) {
@@ -58,31 +55,6 @@ export function useTournamentBracket(tournamentId: string | null) {
   useEffect(() => {
     fetchBracket();
   }, [fetchBracket]);
-
-  // Subscribe to real-time match updates
-  useEffect(() => {
-    if (!tournamentId) return;
-
-    const channel = db
-      .channel(`bracket-${tournamentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `tournament_id=eq.${tournamentId}`,
-        },
-        () => {
-          fetchBracket();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [tournamentId, db, fetchBracket]);
 
   const updateMatch = async (
     matchId: string,

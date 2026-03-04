@@ -1,0 +1,34 @@
+{
+  "auth": {
+    "username": "BROWSERSTACK_USERNAME",
+    "access_key": "BROWSERSTACK_ACCESS_KEY"
+  },
+  "browsers": [
+    {
+      "browser": "chrome",
+      "os": "Windows 11",
+      "browser_version": "latest"
+    },
+    {
+      "browser": "firefox",
+      "os": "Windows 11",
+      "browser_version": "latest"
+    },
+    {
+      "browser": "edge",
+      "os": "Windows 11",
+      "browser_version": "latest"
+    },
+    {
+      "browser": "playwright-webkit",
+      "os": "OS X Ventura",
+      "browser_version": "latest"
+    }
+  ],
+  "parallelsPerPlatform": 5,
+  "browserstackLocal": true,
+  "projectName": "ggLobby",
+  "buildName": "ggLobby E2E Tests",
+  "debug": true,
+  "networkLogs": true
+}

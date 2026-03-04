@@ -4,9 +4,7 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
-  useRef,
   ReactNode,
 } from "react";
 import { createClient } from "@/lib/db/client-browser";
@@ -72,13 +70,6 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
-  // Use refs so the realtime callback always reads current state
-  // without needing to re-subscribe the channel on every state change
-  const activeCallRef = useRef(activeCall);
-  const incomingCallRef = useRef(incomingCall);
-  activeCallRef.current = activeCall;
-  incomingCallRef.current = incomingCall;
-
   // Fetch call with details
   const fetchCallDetails = useCallback(
     async (callId: string): Promise<CallWithDetails | null> => {
@@ -101,74 +92,6 @@ export function CallProvider({ children }: CallProviderProps) {
     },
     [db]
   );
-
-  // Subscribe to incoming calls — stable effect that reads state via refs
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = db
-      .channel("call_notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "call_participants",
-          filter: `user_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          // New call participant entry - might be incoming call
-          const callId = (payload.new as CallParticipant).call_id;
-          const call = await fetchCallDetails(callId);
-
-          if (
-            call &&
-            call.status === "ringing" &&
-            call.initiator_id !== user.id
-          ) {
-            setIncomingCall(call);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "calls",
-        },
-        async (payload) => {
-          const updatedCall = payload.new as Call;
-
-          // Handle call status changes
-          if (
-            updatedCall.status === "ended" ||
-            updatedCall.status === "declined" ||
-            updatedCall.status === "missed" ||
-            updatedCall.status === "failed"
-          ) {
-            if (activeCallRef.current?.id === updatedCall.id) {
-              setActiveCall(null);
-            }
-            if (incomingCallRef.current?.id === updatedCall.id) {
-              setIncomingCall(null);
-            }
-          }
-
-          // Update active call if it's the same call
-          if (activeCallRef.current?.id === updatedCall.id) {
-            setActiveCall((prev) =>
-              prev ? { ...prev, ...updatedCall } : null
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [user?.id, db, fetchCallDetails]);
 
   const initiateCall = useCallback(
     async (conversationId: string, type: "voice" | "video") => {

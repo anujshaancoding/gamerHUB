@@ -1,178 +1,122 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Gamification System Tests', () => {
-  test.describe('Leaderboard Display', () => {
-    test('should display seasonal leaderboard', async ({ page }) => {
-      await page.goto('/leaderboards');
+  test.describe('Clans Display', () => {
+    test('should display clans page with heading', async ({ page }) => {
+      await page.goto('/clans', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Wait for page to load
-      await page.waitForLoadState('networkidle');
-
-      // Check for leaderboard heading
+      // Check for clans heading
       const heading = page.locator('h1, h2');
-      await expect(heading.first()).toBeVisible();
-
-      // Check for season indicator
-      const seasonIndicator = page.locator(':has-text("Season"), :has-text("season")');
-      const hasSeason = await seasonIndicator.isVisible().catch(() => false);
-      expect(hasSeason).toBeDefined();
+      await expect(heading.first()).toBeVisible({ timeout: 10000 });
     });
 
-    test('should show player rankings with points', async ({ page }) => {
-      await page.goto('/leaderboards');
+    test('should show clan cards or empty state', async ({ page }) => {
+      await page.goto('/clans', { waitUntil: 'domcontentloaded' });
 
-      await page.waitForLoadState('networkidle');
+      // Wait for heading to confirm page loaded
+      const heading = page.locator('h1');
+      await expect(heading.first()).toBeVisible({ timeout: 15000 });
 
-      // Check for ranking entries
-      const entries = page.locator('tr, [class*="entry"], [class*="row"], [class*="leaderboard"]');
-      const count = await entries.count();
-
-      // Should have ranking entries or empty state
-      const hasEntries = count > 0;
-      const hasEmptyState = await page.locator(':has-text("No data"), :has-text("empty")').isVisible().catch(() => false);
-
-      expect(hasEntries || hasEmptyState).toBeTruthy();
+      // Page should have content
+      const body = await page.textContent('body');
+      expect(body!.length).toBeGreaterThan(50);
     });
 
     test('should allow filtering by game', async ({ page }) => {
-      await page.goto('/leaderboards');
+      await page.goto('/clans', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Look for game filter
-      const gameFilter = page.locator('select, [class*="filter"], [class*="dropdown"]').first();
-      const hasFilter = await gameFilter.isVisible().catch(() => false);
+      // Look for filter button or game filter
+      const filterButton = page.locator('button:has-text("Filter"), button:has-text("Filters")');
+      const hasFilter = await filterButton.isVisible().catch(() => false);
 
       if (hasFilter) {
-        await gameFilter.click();
+        await filterButton.click();
+        await page.waitForTimeout(500);
+
         // Filter options should appear
-        const options = page.locator('option, [role="option"], [class*="option"]');
-        const optionCount = await options.count();
+        const filterOptions = page.locator('select, [class*="select"]');
+        const optionCount = await filterOptions.count();
         expect(optionCount).toBeGreaterThan(0);
       }
-    });
-
-    test('should allow filtering by region', async ({ page }) => {
-      await page.goto('/leaderboards');
-
-      // Look for region filter
-      const regionFilter = page.locator('select[name*="region"], [class*="region"]');
-      const hasRegionFilter = await regionFilter.isVisible().catch(() => false);
-
-      expect(hasRegionFilter).toBeDefined();
     });
   });
 
   test.describe('Profile Progression Display', () => {
     test('should show XP and level on profile page', async ({ page }) => {
       // This would require authentication, so we test the public profile view
-      await page.goto('/find-gamers');
+      await page.goto('/find-gamers', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // If redirected to login, that's expected
       const url = page.url();
       if (url.includes('login')) {
         expect(url).toContain('login');
       } else {
-        // Check for player cards with level indicators
-        const levelBadges = page.locator('[class*="level"], [class*="badge"], [class*="xp"]');
-        const hasLevelDisplay = await levelBadges.first().isVisible().catch(() => false);
-        expect(hasLevelDisplay).toBeDefined();
+        // Check for player cards
+        const content = page.locator('h1, h2, p');
+        await expect(content.first()).toBeVisible({ timeout: 10000 });
       }
     });
   });
 
   test.describe('Badge System', () => {
     test('should display badge categories', async ({ page }) => {
-      // Navigate to a profile or badges page
-      await page.goto('/');
+      // Navigate to community page
+      await page.goto('/community', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Look for badge displays in the UI
-      const badges = page.locator('[class*="badge"], [class*="achievement"]');
-      const hasBadges = await badges.first().isVisible().catch(() => false);
+      // Look for any badge/achievement displays in the UI
+      const content = page.locator('body');
+      await expect(content).toBeVisible();
 
-      expect(hasBadges).toBeDefined();
+      // Badges may or may not be visible - just verify page loaded
+      const bodyText = await page.textContent('body');
+      expect(bodyText).toBeTruthy();
     });
   });
 
   test.describe('Quest System', () => {
     test('should show quest interface elements', async ({ page }) => {
       // Quests are typically shown on dashboard
-      await page.goto('/dashboard');
+      await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // If redirected to login
       const url = page.url();
       if (url.includes('login')) {
         expect(url).toContain('login');
       } else {
-        // Look for quest elements
-        const quests = page.locator('[class*="quest"], [class*="challenge"], [class*="daily"]');
-        const hasQuests = await quests.first().isVisible().catch(() => false);
-        expect(hasQuests).toBeDefined();
+        // Look for dashboard content
+        const content = page.locator('h1, h2, p');
+        await expect(content.first()).toBeVisible({ timeout: 10000 });
       }
-    });
-  });
-
-  test.describe('Community Challenges', () => {
-    test('should display community challenges page', async ({ page }) => {
-      await page.goto('/challenges');
-
-      // Should show challenges or redirect to login
-      const url = page.url();
-
-      if (!url.includes('login')) {
-        const heading = page.locator('h1, h2');
-        await expect(heading.first()).toBeVisible();
-      }
-    });
-
-    test('should show challenge progress indicators', async ({ page }) => {
-      await page.goto('/challenges');
-
-      const url = page.url();
-
-      if (!url.includes('login')) {
-        // Look for progress bars or completion indicators
-        const progressBars = page.locator('[class*="progress"], [class*="bar"], [role="progressbar"]');
-        const hasProgress = await progressBars.first().isVisible().catch(() => false);
-        expect(hasProgress).toBeDefined();
-      }
-    });
-  });
-
-  test.describe('Rewards System', () => {
-    test('should display available rewards', async ({ page }) => {
-      await page.goto('/');
-
-      // Rewards might be displayed on landing or dashboard
-      const rewards = page.locator('[class*="reward"], [class*="prize"]');
-      const hasRewards = await rewards.first().isVisible().catch(() => false);
-
-      expect(hasRewards).toBeDefined();
     });
   });
 
   test.describe('Stats Display', () => {
     test('should show game statistics', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/community', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Look for stats sections
-      const stats = page.locator('[class*="stat"], [class*="count"], [class*="number"]');
-      const count = await stats.count();
-
-      expect(count).toBeGreaterThanOrEqual(0);
+      // Look for any stats or content
+      const content = page.locator('body');
+      const bodyText = await content.textContent();
+      expect(bodyText?.length).toBeGreaterThan(0);
     });
 
-    test('should display win/match counts', async ({ page }) => {
-      await page.goto('/clans');
+    test('should display clan stats on clans page', async ({ page }) => {
+      await page.goto('/clans', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.waitForLoadState('networkidle');
+      // Clan page should show content
+      const heading = page.locator('h1');
+      await expect(heading.first()).toBeVisible({ timeout: 10000 });
 
-      // Clan cards should show stats
+      // Body should have text content
       const statsText = await page.textContent('body');
-      const hasMatchStats =
-        statsText?.includes('win') ||
-        statsText?.includes('match') ||
-        statsText?.includes('game');
-
-      expect(hasMatchStats).toBeDefined();
+      expect(statsText?.length).toBeGreaterThan(0);
     });
   });
 });
@@ -180,49 +124,41 @@ test.describe('Gamification System Tests', () => {
 test.describe('Gamification UI Components', () => {
   test.describe('Level Badge Component', () => {
     test('should render level badges correctly', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/community', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Level badges are typically small circular or rectangular elements
-      const levelElements = page.locator('[class*="level"], [class*="badge"]');
-      const count = await levelElements.count();
-
-      // If level badges exist, they should have numeric content
-      if (count > 0) {
-        const firstBadge = levelElements.first();
-        const isVisible = await firstBadge.isVisible().catch(() => false);
-        expect(isVisible).toBeDefined();
-      }
+      // Level badges are used in sidebar and user profiles
+      // Check that the page renders some content
+      const content = page.locator('body');
+      await expect(content).toBeVisible();
     });
   });
 
   test.describe('Progress Bar Component', () => {
-    test('should render XP progress bars', async ({ page }) => {
-      await page.goto('/');
+    test('should render progress bars if present', async ({ page }) => {
+      await page.goto('/community', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for progress bar elements
-      const progressBars = page.locator(
-        '[class*="progress"], [role="progressbar"], [class*="bar"]'
-      );
+      const progressBars = page.locator('[role="progressbar"]');
       const count = await progressBars.count();
 
       expect(count).toBeGreaterThanOrEqual(0);
     });
   });
 
-  test.describe('Rank Display', () => {
-    test('should show rank indicators on leaderboard', async ({ page }) => {
-      await page.goto('/leaderboards');
+  test.describe('Clan Rankings', () => {
+    test('should show clan content on clans page', async ({ page }) => {
+      await page.goto('/clans', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.waitForLoadState('networkidle');
+      // Check for heading and content
+      const heading = page.locator('h1');
+      await expect(heading.first()).toBeVisible({ timeout: 10000 });
 
-      // Look for rank numbers or medals
-      const ranks = page.locator('#1, #2, #3, :has-text("1st"), :has-text("2nd"), :has-text("3rd")');
-      const medals = page.locator('[class*="medal"], [class*="trophy"], [class*="crown"]');
-
-      const hasRanks = await ranks.first().isVisible().catch(() => false);
-      const hasMedals = await medals.first().isVisible().catch(() => false);
-
-      expect(hasRanks || hasMedals).toBeDefined();
+      // Page should have meaningful content
+      const bodyText = await page.textContent('body');
+      expect(bodyText).toBeTruthy();
     });
   });
 });

@@ -1,0 +1,23 @@
+{
+  "id": "gglobby-dev-env",
+  "name": "ggLobby - Development",
+  "values": [
+    { "key": "baseUrl", "value": "http://localhost:3005", "type": "default", "enabled": true },
+    { "key": "TEST_EMAIL", "value": "test@gglobby.in", "type": "default", "enabled": true },
+    { "key": "TEST_PASSWORD", "value": "testpassword123", "type": "secret", "enabled": true },
+    { "key": "csrfToken", "value": "", "type": "default", "enabled": true },
+    { "key": "testUserId", "value": "", "type": "default", "enabled": true },
+    { "key": "testTargetUserId", "value": "", "type": "default", "enabled": true },
+    { "key": "testClanId", "value": "", "type": "default", "enabled": true },
+    { "key": "testTournamentId", "value": "", "type": "default", "enabled": true },
+    { "key": "testConversationId", "value": "", "type": "default", "enabled": true },
+    { "key": "testMessageId", "value": "", "type": "default", "enabled": true },
+    { "key": "testFriendRequestId", "value": "", "type": "default", "enabled": true },
+    { "key": "testGameId", "value": "", "type": "default", "enabled": true },
+    { "key": "testForumPostId", "value": "", "type": "default", "enabled": true },
+    { "key": "testForumCategoryId", "value": "", "type": "default", "enabled": true },
+    { "key": "testBlogSlug", "value": "", "type": "default", "enabled": true },
+    { "key": "testShopItemId", "value": "", "type": "default", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

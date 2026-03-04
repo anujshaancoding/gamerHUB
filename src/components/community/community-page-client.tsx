@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   PenSquare,
   Users,
@@ -129,8 +131,13 @@ export function CommunityPageClient({
   const { user, profile } = useAuth();
   const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
-  const [activeTab, setActiveTab] = useState<TabId>("news");
+
+  // If URL has ?post= param, auto-switch to friends tab
+  const sharedPostId = searchParams.get("post");
+  const [activeTab, setActiveTab] = useState<TabId>(sharedPostId ? "friends" : "news");
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(sharedPostId);
 
   // Tournament/Giveaway listing state
   const [showCreateListingModal, setShowCreateListingModal] = useState(false);
@@ -230,6 +237,45 @@ export function CommunityPageClient({
     initialData: initialFriendPosts.length > 0 ? initialFriendPosts : undefined,
   });
 
+  // Fetch the specific shared post if not already in the feed
+  const { data: sharedPost } = useQuery({
+    queryKey: friendPostKeys.detail(sharedPostId!),
+    queryFn: async () => {
+      const res = await fetch(`/api/friend-posts/${sharedPostId}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return (data.post || null) as FriendPost | null;
+    },
+    enabled: !!sharedPostId && !friendLoading && !friendPosts.some((p) => p.id === sharedPostId),
+    staleTime: STALE_TIMES.FRIEND_POSTS,
+  });
+
+  // Merge shared post into feed if it wasn't there
+  const displayFriendPosts = useMemo(() => {
+    if (!sharedPostId) return friendPosts;
+    if (friendPosts.some((p) => p.id === sharedPostId)) return friendPosts;
+    if (sharedPost) return [sharedPost, ...friendPosts];
+    return friendPosts;
+  }, [friendPosts, sharedPost, sharedPostId]);
+
+  // Scroll to and highlight the shared post once loaded
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (!sharedPostId || scrolledRef.current) return;
+    if (friendLoading) return;
+
+    const el = document.getElementById(`post-${sharedPostId}`);
+    if (el) {
+      scrolledRef.current = true;
+      // Small delay to allow render to complete
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Clear highlight after animation
+        setTimeout(() => setHighlightedPostId(null), 2500);
+      }, 300);
+    }
+  }, [sharedPostId, friendLoading, displayFriendPosts]);
+
   const loading =
     activeTab === "news" ? newsLoading :
     activeTab === "blog" ? blogLoading :
@@ -276,7 +322,12 @@ export function CommunityPageClient({
         const uploadData = await uploadRes.json();
 
         if (uploadRes.ok && uploadData.publicUrl) {
-          imageUrl = uploadData.publicUrl;
+          // Store the URL without cache-buster query param (filename is already unique)
+          imageUrl = uploadData.publicUrl.split("?")[0];
+        } else {
+          toast.error(uploadData.error || "Failed to upload image");
+          setIsPosting(false);
+          return;
         }
       }
 
@@ -288,13 +339,16 @@ export function CommunityPageClient({
         comments_count: 0,
       });
 
-      if (!error) {
+      if (error) {
+        toast.error("Failed to create post");
+      } else {
         setNewPostContent("");
         removeImage();
         queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
       }
     } catch (error) {
       console.error("Error creating post:", error);
+      toast.error("Something went wrong while creating the post");
     } finally {
       setIsPosting(false);
     }
@@ -714,7 +768,7 @@ export function CommunityPageClient({
           )}
 
           {/* Posts Feed */}
-          {friendPosts.length === 0 ? (
+          {displayFriendPosts.length === 0 ? (
             <div className="rounded-2xl backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] p-8 text-center">
               <Users className="h-12 w-12 text-text-muted mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-text mb-2">
@@ -740,30 +794,38 @@ export function CommunityPageClient({
             </div>
           ) : (
             <div className="space-y-4">
-              {friendPosts.map((post, index) => (
-                <FriendPostCard
+              {displayFriendPosts.map((post, index) => (
+                <div
                   key={post.id}
-                  post={post}
-                  index={index}
-                  isGuest={!user}
-                  onLike={async () => {
-                    await toggleFriendPostLike(post.id);
-                  }}
-                  onDelete={async () => {
-                    const res = await fetch(`/api/friend-posts/${post.id}`, {
-                      method: "DELETE",
-                    });
-                    if (!res.ok) throw new Error("Failed to delete post");
-                    queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
-                  }}
-                />
+                  id={`post-${post.id}`}
+                  className={cn(
+                    "transition-all duration-700",
+                    highlightedPostId === post.id && "ring-2 ring-primary/60 rounded-2xl shadow-lg shadow-primary/10"
+                  )}
+                >
+                  <FriendPostCard
+                    post={post}
+                    index={index}
+                    isGuest={!user}
+                    onLike={async () => {
+                      await toggleFriendPostLike(post.id);
+                    }}
+                    onDelete={async () => {
+                      const res = await fetch(`/api/friend-posts/${post.id}`, {
+                        method: "DELETE",
+                      });
+                      if (!res.ok) throw new Error("Failed to delete post");
+                      queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
+                    }}
+                  />
+                </div>
               ))}
 
               {/* Guest sign-up CTA after posts */}
-              {!user && friendPosts.length > 0 && (
+              {!user && displayFriendPosts.length > 0 && (
                 <div
                   className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/[0.08] to-accent/[0.08] border border-primary/20 p-6 text-center animate-fadeInUp"
-                  style={{ animationDelay: `${friendPosts.length * 50 + 100}ms`, animationFillMode: "both" }}
+                  style={{ animationDelay: `${displayFriendPosts.length * 50 + 100}ms`, animationFillMode: "both" }}
                 >
                   <Lock className="h-8 w-8 text-primary mx-auto mb-3" />
                   <h3 className="text-lg font-semibold text-text mb-1">

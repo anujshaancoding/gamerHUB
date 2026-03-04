@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useSocket } from "@/lib/realtime/SocketProvider";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui";
-import type { Profile } from "@/types/database";
 
 // ── Notification sound using Web Audio API ─────────────────────────
 
@@ -80,7 +78,7 @@ export function MessageNotifier() {
   const { socket } = useSocket();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
-  // Track recently shown notifications to avoid duplicates between socket + supabase
+  // Track recently shown notifications to avoid duplicates
   const shownMessageIds = useRef(new Set<string>());
 
   // Keep ref in sync so the realtime callback always reads the latest pathname
@@ -192,53 +190,6 @@ export function MessageNotifier() {
       socket.off("message:new", handleSocketMessage);
     };
   }, [socket, user, showNotification]);
-
-  // ── Supabase Realtime fallback (for when Socket.io is unavailable) ──
-  useEffect(() => {
-    if (!user) return;
-
-    const db = createClient();
-
-    const channel = db
-      .channel("global-message-notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        async (payload) => {
-          const msg = payload.new;
-          const senderId = msg.sender_id as string;
-          const conversationId = msg.conversation_id as string;
-          const content = msg.content as string;
-          const messageId = msg.id as string;
-
-          // Skip own messages
-          if (senderId === user.id) return;
-
-          // Skip if already shown via Socket.io
-          if (shownMessageIds.current.has(messageId)) return;
-
-          // Fetch sender profile (only needed for Supabase path)
-          const { data: sender } = await db
-            .from("profiles")
-            .select("*")
-            .eq("id", senderId)
-            .single();
-
-          if (!sender) return;
-
-          showNotification(senderId, conversationId, content, sender as Profile, messageId);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [user, showNotification]);
 
   // This component renders nothing — it's purely a side-effect listener
   return null;

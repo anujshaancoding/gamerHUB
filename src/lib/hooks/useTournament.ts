@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/db/client-browser";
 import type {
   TournamentWithDetails,
   TournamentParticipantWithClan,
@@ -14,8 +13,6 @@ export function useTournament(tournamentIdOrSlug: string | null) {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const db = createClient();
 
   const fetchTournament = useCallback(async () => {
     if (!tournamentIdOrSlug) {
@@ -47,43 +44,6 @@ export function useTournament(tournamentIdOrSlug: string | null) {
   useEffect(() => {
     fetchTournament();
   }, [fetchTournament]);
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!tournament?.id) return;
-
-    const channel = db
-      .channel(`tournament-${tournament.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournaments",
-          filter: `id=eq.${tournament.id}`,
-        },
-        () => {
-          fetchTournament();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_participants",
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          fetchTournament();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [tournament?.id, db, fetchTournament]);
 
   const updateTournament = async (
     updates: Partial<TournamentWithDetails>

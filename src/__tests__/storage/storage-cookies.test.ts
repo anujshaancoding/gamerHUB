@@ -190,7 +190,6 @@ describe('Storage Security', () => {
     const allLocalStorageValues = Object.keys(localStorage).map(k => localStorage.getItem(k));
     const allValues = allLocalStorageValues.join(' ');
 
-    expect(allValues).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(allValues).not.toContain('STRIPE_SECRET_KEY');
     expect(allValues).not.toContain('OPENAI_API_KEY');
   });

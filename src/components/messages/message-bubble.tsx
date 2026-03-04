@@ -135,7 +135,7 @@ export function MessageBubble({
 
   // Detect image messages: explicit type OR fallback for realtime payloads
   // where the type field may arrive as null. Check if content is a URL
-  // pointing to Supabase storage with an image extension.
+  // with an image extension.
   const isImage =
     message.type === "image" ||
     (message.type !== "text" &&

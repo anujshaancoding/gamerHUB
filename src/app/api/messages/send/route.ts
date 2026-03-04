@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         }
       }
     } catch {
-      // Non-critical — Supabase Realtime is the fallback
+      // Non-critical — Socket.io notification is best-effort
     }
 
     return NextResponse.json({ message });

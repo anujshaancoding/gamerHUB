@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export const friendPostKeys = {
   all: ["friend-posts"] as const,
   list: (isGuest: boolean) => ["friend-posts", "list", { isGuest }] as const,
+  detail: (postId: string) => ["friend-posts", "detail", postId] as const,
   liked: (postId: string) => ["friend-posts", "liked", postId] as const,
   bookmarked: (postId: string) => ["friend-posts", "bookmarked", postId] as const,
   comments: (postId: string) => ["friend-posts", "comments", postId] as const,

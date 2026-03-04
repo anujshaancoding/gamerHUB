@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import {
@@ -91,10 +92,12 @@ export default async function CommunityPage() {
   const newsArticles: NewsArticle[] = (rawNewsArticles || []) as NewsArticle[];
 
   return (
-    <CommunityPageClient
-      initialBlogPosts={blogPosts}
-      initialFriendPosts={friendPosts}
-      initialNewsArticles={newsArticles}
-    />
+    <Suspense>
+      <CommunityPageClient
+        initialBlogPosts={blogPosts}
+        initialFriendPosts={friendPosts}
+        initialNewsArticles={newsArticles}
+      />
+    </Suspense>
   );
 }

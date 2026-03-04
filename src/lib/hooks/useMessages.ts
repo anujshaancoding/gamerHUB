@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClient } from "@/lib/db/client-browser";
 import type { Profile } from "@/types/database";
-
-// Debounce helper to coalesce rapid-fire realtime events into a single call
-function createDebouncedFn(fn: () => void, delay: number): () => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  return () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(fn, delay);
-  };
-}
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -81,52 +71,6 @@ export function useConversations() {
     fetchConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // fetchConversations is stable with empty deps
-
-  // Realtime: listen for conversation updates + follows changes (friend status)
-  // All events are debounced so rapid-fire changes coalesce into a single refetch.
-  useEffect(() => {
-    const db = createClient();
-    const debouncedFetch = createDebouncedFn(fetchConversations, 300);
-
-    const channel = db
-      .channel("conversations-updates")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "conversations" },
-        () => { debouncedFetch(); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "conversations" },
-        () => { debouncedFetch(); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "conversation_participants" },
-        () => { debouncedFetch(); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => { debouncedFetch(); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "follows" },
-        () => { debouncedFetch(); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "follows" },
-        () => { debouncedFetch(); }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // fetchConversations is stable, setup once on mount
 
   // Listen for mark-as-read events and optimistically clear unread badges
   useEffect(() => {
@@ -225,94 +169,6 @@ export function useConversationMessages(conversationId: string | null) {
 
     window.addEventListener("message-deleted", handler);
     return () => window.removeEventListener("message-deleted", handler);
-  }, [conversationId]);
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const db = createClient();
-
-    const channel = db
-      .channel(`conversation:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        async (payload) => {
-          const { data: sender } = await db
-            .from("profiles")
-            .select("*")
-            .eq("id", payload.new.sender_id)
-            .single();
-
-          const newMsg: MessageWithSender = {
-            ...payload.new as MessageWithSender,
-            sender: sender || undefined,
-            reactions: [],
-          };
-
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            const updated = [...prev, newMsg];
-            messagesRef.current = updated;
-            return updated;
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          setMessages((prev) => {
-            const updated = prev.filter((m) => m.id !== payload.old.id);
-            messagesRef.current = updated;
-            return updated;
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
-  }, [conversationId]);
-
-  // Typing presence channel
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const db = createClient();
-
-    const channel = db.channel(`typing:${conversationId}`, {
-      config: { presence: { key: "typing" } },
-    });
-
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        const users: Profile[] = [];
-        Object.values(state).forEach((presences) => {
-          (presences as { user: Profile }[]).forEach((p) => {
-            if (p.user) users.push(p.user);
-          });
-        });
-        setTypingUsers(users);
-      })
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
-    };
   }, [conversationId]);
 
   // Catch-up on tab focus (like Discord) — fetch missed messages when user returns
@@ -569,23 +425,6 @@ function startUnreadCountSingleton() {
   // Initial fetch
   fetchCount();
 
-  // Listen for realtime message inserts to update the count (debounced)
-  const db = createClient();
-  const debouncedFetchCount = createDebouncedFn(fetchCount, 500);
-  const channel = db
-    .channel("unread-count-singleton")
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "messages" },
-      () => { debouncedFetchCount(); }
-    )
-    .on(
-      "postgres_changes",
-      { event: "UPDATE", schema: "public", table: "conversation_participants" },
-      () => { debouncedFetchCount(); }
-    )
-    .subscribe();
-
   // Listen for optimistic mark-as-read events
   const handler = (e: Event) => {
     const { conversationId } = (e as CustomEvent).detail;
@@ -606,8 +445,6 @@ function startUnreadCountSingleton() {
     window.addEventListener("message:new-incoming", incomingHandler);
   }
 
-  // This singleton lives for the lifetime of the app — no cleanup needed
-  void channel;
 }
 
 export function useUnreadMessageCount(enabled: boolean = true) {

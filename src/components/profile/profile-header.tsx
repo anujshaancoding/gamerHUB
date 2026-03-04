@@ -102,17 +102,16 @@ export function ProfileHeader({
   const { user } = useAuth();
   const db = createClient();
   const { isPremium: isCurrentUserPremium } = useSubscription();
-  const { getUserStatus } = usePresence();
+  const { getUserStatus, myStatus } = usePresence();
   const { theme: gameTheme } = useGameTheme();
 
   // Use subscription hook for own profile (checks auth metadata), fall back to prop for other users
   const showPremiumBadge = isOwnProfile ? isCurrentUserPremium : isPremium;
 
   // Use realtime presence for online status instead of stale DB value
-  const profileStatus = getUserStatus(profile.id);
+  // For own profile, use myStatus since the current user isn't in the onlineUserIds set
+  const profileStatus = isOwnProfile ? myStatus : getUserStatus(profile.id);
 
-  const [followers, setFollowers] = useState(followersCount);
-  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<"follow" | "friend" | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [socialListType, setSocialListType] = useState<"friends" | "followers" | "following" | null>(null);
@@ -145,9 +144,11 @@ export function ProfileHeader({
     !isOwnProfile && user ? profile.id : null
   );
 
-  const { counts } = useSocialCounts(profile.id);
+  const { counts, refetch: refetchCounts } = useSocialCounts(profile.id);
 
   const friendsCount = counts?.friends ?? initialFriendsCount ?? 0;
+  const realFollowers = counts?.followers ?? followersCount;
+  const realFollowing = counts?.following ?? followingCount;
 
   // Profile customization — now driven by game theme
   const profileTheme = {
@@ -166,15 +167,14 @@ export function ProfileHeader({
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", profile.id);
-        setFollowers((prev) => prev - 1);
       } else {
         await db.from("follows").insert({
           follower_id: user.id,
           following_id: profile.id,
         } as never);
-        setFollowers((prev) => prev + 1);
       }
       refetchRelationship();
+      refetchCounts();
     } catch (error) {
       console.error("Follow error:", error);
     } finally {
@@ -478,8 +478,8 @@ export function ProfileHeader({
             >
               {[
                 { label: "FRIENDS", value: friendsCount, color: "primary", listType: "friends" as const },
-                { label: "FOLLOWERS", value: followers, color: "accent", listType: "followers" as const },
-                { label: "FOLLOWING", value: followingCount, color: "secondary", listType: "following" as const },
+                { label: "FOLLOWERS", value: realFollowers, color: "accent", listType: "followers" as const },
+                { label: "FOLLOWING", value: realFollowing, color: "secondary", listType: "following" as const },
               ].map((stat) => (
                 <motion.div
                   key={stat.label}
