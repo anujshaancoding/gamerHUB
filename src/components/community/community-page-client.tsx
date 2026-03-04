@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -132,11 +132,37 @@ export function CommunityPageClient({
   const db = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
-  // If URL has ?post= param, auto-switch to friends tab
+  // Read initial tab from URL: ?tab=blog, ?tab=tournaments, ?tab=friends, or default to news
   const sharedPostId = searchParams.get("post");
-  const [activeTab, setActiveTab] = useState<TabId>(sharedPostId ? "friends" : "news");
+  const tabParam = searchParams.get("tab");
+  const validTabs: TabId[] = ["news", "blog", "tournaments", "friends"];
+  const initialTab: TabId = sharedPostId
+    ? "friends"
+    : validTabs.includes(tabParam as TabId)
+      ? (tabParam as TabId)
+      : "news";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+
+  // Update URL when tab changes
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "news") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    // Keep ?post= if switching to friends tab, otherwise remove
+    if (tab !== "friends") {
+      params.delete("post");
+    }
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [searchParams, router, pathname]);
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(sharedPostId);
 
   // Tournament/Giveaway listing state
@@ -395,7 +421,7 @@ export function CommunityPageClient({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0",
               activeTab === tab.id

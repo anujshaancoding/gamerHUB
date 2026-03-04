@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
           type: "blog",
           title: b.title,
           thumbnailUrl: b.featured_image_url || null,
-          linkHref: `/community?tab=blogs`,
+          linkHref: `/community/post/${b.id}`,
           timestamp: b.published_at,
           meta: {
             authorName: b.author?.display_name || b.author?.username || undefined,
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
           type: "friend_post",
           title: (fp.content || "").slice(0, 100),
           thumbnailUrl: fp.image_url || null,
-          linkHref: `/community?tab=friends`,
+          linkHref: `/community?tab=friends&post=${fp.id}`,
           timestamp: fp.created_at,
           meta: {
             authorName: fp.user?.display_name || fp.user?.username || undefined,

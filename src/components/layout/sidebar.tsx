@@ -242,6 +242,7 @@ export function Sidebar() {
           <Link href="/privacy" className="hover:text-text-muted transition-colors">Privacy</Link>
           <Link href="/terms" className="hover:text-text-muted transition-colors">Terms</Link>
           <Link href="/guidelines" className="hover:text-text-muted transition-colors">Guidelines</Link>
+          <Link href="/updates" className="hover:text-text-muted transition-colors">Updates</Link>
         </div>
         <p className="text-xs text-text-dim/60 mt-1.5">&copy; {new Date().getFullYear()} ggLobby</p>
       </div>

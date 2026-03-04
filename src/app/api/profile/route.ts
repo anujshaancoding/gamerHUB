@@ -43,6 +43,7 @@ export async function PATCH(request: NextRequest) {
       "username", "display_name", "avatar_url", "banner_url", "bio",
       "gaming_style", "region", "preferred_language", "status", "status_until",
       "social_links", "favorite_games", "looking_for", "availability",
+      "username_changed_at", "privacy_settings",
       // Profile customization features
       "custom_theme", "profile_effect", "profile_background", "profile_music_url",
       "widget_layout", "profile_skin", "easter_egg_config", "hover_card_config", "custom_css",
