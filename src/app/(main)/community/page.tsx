@@ -54,32 +54,33 @@ export async function generateMetadata({
       .single();
 
     const authorName = (profile as any)?.display_name || (profile as any)?.username || "a gamer";
+    const username = (profile as any)?.username || "";
     const content = (post as any).content as string;
     const description = content.length > 160 ? content.slice(0, 157) + "..." : content;
-    const imageUrl = (post as any).image_url as string | null;
 
-    const ogImages: { url: string; width: number; height: number; alt: string }[] = [];
-    if (imageUrl) {
-      // Make URL absolute for OG tags
-      const absoluteUrl = imageUrl.startsWith("http") ? imageUrl : `${BASE_URL}${imageUrl}`;
-      ogImages.push({ url: absoluteUrl, width: 1200, height: 630, alt: `Post by ${authorName}` });
-    }
+    // Dynamic OG card image generated at /api/og/post?id=...
+    const ogImageUrl = `${BASE_URL}/api/og/post?id=${postId}`;
+    // Title format like Twitter: "Display Name (@username) on ggLobby"
+    const title = username
+      ? `${authorName} (@${username}) on ggLobby`
+      : `${authorName} on ggLobby`;
 
     return {
-      title: `${authorName} on ggLobby`,
+      title,
       description,
       openGraph: {
-        title: `${authorName} on ggLobby`,
+        title,
         description,
         type: "article",
+        siteName: "ggLobby",
         url: `${BASE_URL}/community?post=${postId}`,
-        ...(ogImages.length > 0 && { images: ogImages }),
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `Post by ${authorName}` }],
       },
       twitter: {
-        card: ogImages.length > 0 ? "summary_large_image" : "summary",
-        title: `${authorName} on ggLobby`,
+        card: "summary_large_image",
+        title,
         description,
-        ...(ogImages.length > 0 && { images: [ogImages[0].url] }),
+        images: [ogImageUrl],
       },
     };
   } catch {
