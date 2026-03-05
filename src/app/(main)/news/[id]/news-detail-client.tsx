@@ -102,37 +102,20 @@ function TwitterEmbed({ url }: { url: string }) {
 }
 
 function InstagramEmbed({ url }: { url: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const existingScript = document.querySelector('script[src="https://www.instagram.com/embed.js"]');
-    if (existingScript) {
-      (window as Record<string, unknown>).instgrm &&
-        ((window as Record<string, unknown>).instgrm as { Embeds: { process: () => void } }).Embeds.process();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://www.instagram.com/embed.js";
-    script.async = true;
-    document.body.appendChild(script);
-  }, [url]);
-
-  // Ensure URL ends with /embed for proper embedding
-  const embedUrl = url.endsWith("/") ? url : `${url}/`;
+  // Build the embed URL: strip trailing slash, append /embed/
+  const cleanUrl = url.replace(/\/+$/, "");
+  const embedSrc = `${cleanUrl}/embed/`;
 
   return (
-    <div ref={containerRef} className="max-w-lg mx-auto">
-      <blockquote
-        className="instagram-media"
-        data-instgrm-permalink={embedUrl}
-        data-instgrm-version="14"
-        style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", margin: "0 auto", maxWidth: "540px", padding: "16px", width: "100%" }}
-      >
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-          View on Instagram
-        </a>
-      </blockquote>
+    <div className="max-w-lg mx-auto">
+      <iframe
+        src={embedSrc}
+        title="Instagram post"
+        allowTransparency
+        allow="encrypted-media"
+        className="w-full rounded-xl border border-border"
+        style={{ border: "none", minHeight: "500px", maxWidth: "540px", margin: "0 auto", display: "block" }}
+      />
     </div>
   );
 }
@@ -251,7 +234,7 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
             src={thumbnailUrl}
             alt={article.title}
             fill
-            className={`${isDefaultThumbnail ? "object-contain p-12 opacity-30" : "object-cover"}`}
+            className={`object-contain ${isDefaultThumbnail ? "p-12 opacity-30" : ""}`}
             sizes="(max-width: 768px) 100vw, 896px"
             priority
             unoptimized
