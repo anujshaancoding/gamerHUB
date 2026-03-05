@@ -199,16 +199,16 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Admin news create error:", error);
       return NextResponse.json(
-        { error: "Failed to create news article" },
+        { error: "Failed to create news article", details: error.message, code: error.code, hint: error.hint },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ article: data }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Admin news create error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error?.message },
       { status: 500 }
     );
   }
