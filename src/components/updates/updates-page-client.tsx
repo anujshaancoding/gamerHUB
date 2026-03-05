@@ -1,0 +1,261 @@
+"use client";
+
+import {
+  Sparkles,
+  Bug,
+  Wrench,
+  Rocket,
+  Zap,
+  Shield,
+  type LucideIcon,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui";
+import { cn } from "@/lib/utils";
+
+type UpdateType = "feature" | "improvement" | "fix" | "security" | "launch" | "performance";
+
+interface UpdateEntry {
+  date: string;
+  version?: string;
+  type: UpdateType;
+  title: string;
+  description: string;
+  highlights?: string[];
+}
+
+const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: string; bg: string }> = {
+  feature: { icon: Sparkles, color: "text-purple-400", label: "New Feature", bg: "bg-purple-500/10 border-purple-500/20" },
+  improvement: { icon: Wrench, color: "text-blue-400", label: "Improvement", bg: "bg-blue-500/10 border-blue-500/20" },
+  fix: { icon: Bug, color: "text-orange-400", label: "Bug Fix", bg: "bg-orange-500/10 border-orange-500/20" },
+  security: { icon: Shield, color: "text-green-400", label: "Security", bg: "bg-green-500/10 border-green-500/20" },
+  launch: { icon: Rocket, color: "text-primary", label: "Launch", bg: "bg-primary/10 border-primary/20" },
+  performance: { icon: Zap, color: "text-yellow-400", label: "Performance", bg: "bg-yellow-500/10 border-yellow-500/20" },
+};
+
+// All website updates in reverse chronological order
+const updates: UpdateEntry[] = [
+  {
+    date: "2026-03-05T12:00:00",
+    version: "1.9.0",
+    type: "feature",
+    title: "Admin News Sources Management & Documentation",
+    description: "Added full CRUD API and UI for managing news sources in the admin panel. Comprehensive developer documentation added for onboarding.",
+    highlights: [
+      "Admin news sources API — add, edit, toggle, and delete news sources",
+      "Revamped admin news page with source management UI",
+      "DEVELOPER.md knowledge-transfer document for new contributors",
+      "CLAUDE.md project instructions for AI-assisted development",
+    ],
+  },
+  {
+    date: "2026-03-04T18:00:00",
+    version: "1.8.0",
+    type: "feature",
+    title: "Website Updates Page & URL-Synced Community Tabs",
+    description: "Added a dedicated updates page to track all platform changes. Community tabs now update the URL so you can share and bookmark specific tabs. Activity feed items now link directly to the relevant content.",
+    highlights: [
+      "New Updates page to track platform changelog",
+      "Community tab selection syncs with URL (?tab=blog, ?tab=tournaments, etc.)",
+      "Activity feed items link directly to blog posts, news articles, and friend posts",
+    ],
+  },
+  {
+    date: "2026-03-01T14:00:00",
+    version: "1.7.0",
+    type: "feature",
+    title: "Dynamic OG Card Images for Shared Posts",
+    description: "When sharing community posts on social media, a beautiful preview card with the post content and author info is now auto-generated.",
+    highlights: [
+      "Auto-generated OG images for shared friend posts",
+      "Author info and post content displayed on social media previews",
+    ],
+  },
+  {
+    date: "2026-02-28T12:00:00",
+    version: "1.6.0",
+    type: "improvement",
+    title: "Confirm Delete Dialogs & Community Enhancements",
+    description: "Added confirmation dialogs before deleting posts and various improvements across the community section.",
+    highlights: [
+      "Confirm dialog before deleting friend posts and blog posts",
+      "Shared post OG metadata improvements",
+      "Community UI polish and fixes",
+    ],
+  },
+  {
+    date: "2026-02-25T10:00:00",
+    version: "1.5.0",
+    type: "feature",
+    title: "E2E Test Suite & API Documentation",
+    description: "Added comprehensive end-to-end testing and Postman API collection for developers.",
+    highlights: [
+      "Full E2E test suite for critical user flows",
+      "Postman collection with all API endpoints documented",
+      "Codebase cleanup and optimization",
+    ],
+  },
+  {
+    date: "2026-02-22T09:00:00",
+    version: "1.4.1",
+    type: "fix",
+    title: "Mini-Chat Popup Reload Fix",
+    description: "Fixed an issue where the mini-chat popup would unnecessarily reload when switching browser tabs or windows.",
+  },
+  {
+    date: "2026-02-20T16:00:00",
+    version: "1.4.0",
+    type: "feature",
+    title: "Instant Message Notifications via Socket.io",
+    description: "Real-time message notifications are now delivered instantly using Socket.io, so you never miss a message from friends.",
+    highlights: [
+      "Instant push notifications for new messages",
+      "Real-time delivery via WebSocket connection",
+      "Notification badge updates in real-time",
+    ],
+  },
+  {
+    date: "2026-02-15T11:00:00",
+    version: "1.3.0",
+    type: "feature",
+    title: "Tournaments & Giveaways System",
+    description: "Create and participate in gaming tournaments and giveaways directly on the platform.",
+    highlights: [
+      "Create tournaments with entry fees and prize pools",
+      "Host giveaways for the community",
+      "Game-specific filtering for tournaments",
+    ],
+  },
+  {
+    date: "2026-02-10T14:00:00",
+    version: "1.2.0",
+    type: "feature",
+    title: "Blog & News Section",
+    description: "Share gaming guides, tips, and stories with the community through the new blog system. Stay updated with curated gaming news.",
+    highlights: [
+      "Rich text blog editor with image uploads",
+      "Game-specific blog categories",
+      "Curated gaming news from trusted sources",
+    ],
+  },
+  {
+    date: "2026-02-05T10:00:00",
+    version: "1.1.0",
+    type: "feature",
+    title: "Friends & Social Features",
+    description: "Follow gamers, send friend requests, and interact with community posts.",
+    highlights: [
+      "Friend requests and follow system",
+      "Community friend posts with likes and comments",
+      "Online presence indicators",
+    ],
+  },
+  {
+    date: "2026-02-01T09:00:00",
+    version: "1.0.0",
+    type: "launch",
+    title: "ggLobby Beta Launch",
+    description: "The initial beta release of ggLobby - India's gaming social platform. Create your profile, discover gamers, and join the community.",
+    highlights: [
+      "User profiles with gaming stats",
+      "Discover gamers by game preferences",
+      "Real-time messaging system",
+      "Clan creation and management",
+      "Premium subscription with exclusive features",
+    ],
+  },
+];
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatTime(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+export function UpdatesPageClient() {
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-text">What&apos;s New</h1>
+        <p className="text-text-muted mt-1">
+          All the latest updates, features, and improvements to ggLobby
+        </p>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative">
+        {/* Vertical line */}
+        <div className="absolute left-[19px] top-4 bottom-4 w-px bg-border" />
+
+        <div className="space-y-6">
+          {updates.map((update, index) => {
+            const config = typeConfig[update.type];
+            const Icon = config.icon;
+
+            return (
+              <div key={index} className="relative flex gap-4">
+                {/* Timeline dot */}
+                <div className={cn(
+                  "relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0",
+                  config.bg
+                )}>
+                  <Icon className={cn("h-4 w-4", config.color)} />
+                </div>
+
+                {/* Content */}
+                <Card className="flex-1">
+                  <CardContent className="p-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-xs font-medium border",
+                        config.bg, config.color
+                      )}>
+                        {config.label}
+                      </span>
+                      {update.version && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-mono bg-surface-light text-text-muted border border-border">
+                          v{update.version}
+                        </span>
+                      )}
+                      <span className="text-xs text-text-dim ml-auto">
+                        {formatDate(update.date)} at {formatTime(update.date)}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-semibold text-text mb-1">
+                      {update.title}
+                    </h3>
+                    <p className="text-sm text-text-muted mb-2">
+                      {update.description}
+                    </p>
+                    {update.highlights && update.highlights.length > 0 && (
+                      <ul className="space-y-1 mt-2">
+                        {update.highlights.map((h, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                            <span className={cn("mt-1.5 h-1.5 w-1.5 rounded-full shrink-0", config.color.replace("text-", "bg-"))} />
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
