@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +56,8 @@ export async function GET(request: NextRequest) {
       query = query.eq("category", category);
     }
     if (search) {
-      query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
+      const s = sanitizeSearchQuery(search);
+      query = query.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
     }
 
     const { data, error, count } = await query;

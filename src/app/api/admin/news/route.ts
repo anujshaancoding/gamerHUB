@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 export async function GET(request: NextRequest) {
   try {
@@ -95,8 +96,9 @@ export async function GET(request: NextRequest) {
       query = query.not("source_id", "is", null).in("status", ["pending", "rejected"]);
     }
     if (search) {
+      const s = sanitizeSearchQuery(search);
       query = query.or(
-        `title.ilike.%${search}%,original_title.ilike.%${search}%`
+        `title.ilike.%${s}%,original_title.ilike.%${s}%`
       );
     }
 

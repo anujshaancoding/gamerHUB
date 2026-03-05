@@ -4,6 +4,16 @@
 
 **IMPORTANT:** The project has migrated from Supabase to a self-hosted VPS. Do NOT reference or suggest Supabase-specific features (Supabase Dashboard, Supabase Edge Functions, Supabase Auth UI, etc.). All backend and database changes should target the VPS deployment. The codebase still uses the Supabase JS client library to connect to a self-hosted PostgreSQL/PostgREST instance on the VPS — this is expected.
 
+## Future Enhancements (Pre-Team Expansion Checklist)
+
+Things to address before bringing on a backend team:
+
+- [ ] **Tighten RLS policies** — Currently using a broad `allow_all` policy on `news_articles`. Replace with role-based policies (e.g., admins can INSERT/UPDATE/DELETE, public can only SELECT published). Audit all tables for proper RLS.
+- [ ] **Database role separation** — Create distinct PostgreSQL roles (e.g., `app_readonly`, `app_writer`, `app_admin`) instead of one shared connection role. Assign appropriate privileges to each.
+- [ ] **Environment-based access controls** — Ensure dev/staging/production environments have separate credentials and appropriate access levels.
+- [ ] **API rate limiting** — Add rate limiting to public and admin API routes to prevent abuse.
+- [ ] **Audit logging** — Add a database audit trail for admin actions (who published/deleted/edited what and when).
+
 ## Updates Page Maintenance
 
 **IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/updates/updates-page-client.tsx` with the changes made.

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 // GET - Get forum posts
 export async function GET(request: NextRequest) {
@@ -79,7 +80,8 @@ export async function GET(request: NextRequest) {
 
     // Search
     if (search) {
-      query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+      const s = sanitizeSearchQuery(search);
+      query = query.or(`title.ilike.%${s}%,content.ilike.%${s}%`);
     }
 
     // Sort

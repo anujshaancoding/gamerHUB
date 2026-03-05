@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { isPromoPeriodActive } from "@/lib/promo";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 import type { Clan } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 
@@ -45,7 +46,8 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,tag.ilike.%${search}%`);
+      const s = sanitizeSearchQuery(search);
+      query = query.or(`name.ilike.%${s}%,tag.ilike.%${s}%`);
     }
 
     if (gameId) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { cachedResponse } from "@/lib/api/cache-headers";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 // GET - Search user profiles by username or display name
 export async function GET(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
         "id, username, display_name, avatar_url, level, is_online, is_premium, region",
         { count: "exact" }
       )
-      .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .or(`username.ilike.%${sanitizeSearchQuery(q)}%,display_name.ilike.%${sanitizeSearchQuery(q)}%`)
       .order("last_seen", { ascending: false })
       .range(offset, offset + limit - 1);
 

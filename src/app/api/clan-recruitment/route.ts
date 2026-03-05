@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 // GET - List recruitment posts
 export async function GET(request: NextRequest) {
@@ -43,7 +44,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      const s = sanitizeSearchQuery(search);
+      query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
     }
 
     const { data, error, count } = await query;

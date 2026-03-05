@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,8 +38,9 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (search) {
+      const s = sanitizeSearchQuery(search);
       query = query.or(
-        `username.ilike.%${search}%,display_name.ilike.%${search}%`
+        `username.ilike.%${s}%,display_name.ilike.%${s}%`
       );
     }
 

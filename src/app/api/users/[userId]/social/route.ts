@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import {
   getUserFriendsList,
 } from "@/lib/db/rpc-types";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 import type { Profile } from "@/types/database";
 
 export interface ProfileWithRelationship extends Profile {
@@ -109,7 +110,7 @@ export async function GET(
           .from("profiles")
           .select("id")
           .in("id", filteredIds)
-          .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+          .or(`username.ilike.%${sanitizeSearchQuery(search)}%,display_name.ilike.%${sanitizeSearchQuery(search)}%`);
 
         const matchedIds = new Set((matchedProfiles || []).map((p: { id: string }) => p.id));
         filteredIds = filteredIds.filter((id: string) => matchedIds.has(id));
@@ -180,7 +181,7 @@ export async function GET(
           .from("profiles")
           .select("id")
           .in("id", filteredIds)
-          .or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+          .or(`username.ilike.%${sanitizeSearchQuery(search)}%,display_name.ilike.%${sanitizeSearchQuery(search)}%`);
 
         const matchedIds = new Set((matchedProfiles || []).map((p: { id: string }) => p.id));
         filteredIds = filteredIds.filter((id: string) => matchedIds.has(id));

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { sanitizeHtml } from "@/lib/utils/sanitize";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -560,7 +561,7 @@ export default function CommunityPostPage() {
               prose-headings:font-bold prose-a:text-primary prose-a:underline
               prose-img:rounded-lg prose-img:max-w-full
               prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
           />
         ) : (
           <div className="prose prose-invert max-w-none mb-12 text-text-secondary leading-relaxed whitespace-pre-line">

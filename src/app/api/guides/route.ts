@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { CreateGuideRequest } from "@/types/community";
 import { getUser } from "@/lib/auth/get-user";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 
 function generateSlug(title: string): string {
   return title
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
+      const s = sanitizeSearchQuery(search);
+      query = query.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
     }
 
     query = query
