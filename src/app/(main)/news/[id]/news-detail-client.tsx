@@ -102,20 +102,59 @@ function TwitterEmbed({ url }: { url: string }) {
 }
 
 function InstagramEmbed({ url }: { url: string }) {
-  // Build the embed URL: strip trailing slash, append /embed/
-  const cleanUrl = url.replace(/\/+$/, "");
-  const embedSrc = `${cleanUrl}/embed/`;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const win = window as Record<string, unknown>;
+
+    const processEmbeds = () => {
+      if (win.instgrm && (win.instgrm as { Embeds: { process: () => void } }).Embeds) {
+        (win.instgrm as { Embeds: { process: () => void } }).Embeds.process();
+      }
+    };
+
+    // Check if script already loaded
+    const existingScript = document.querySelector('script[src="https://www.instagram.com/embed.js"]');
+    if (existingScript) {
+      // Script exists — give DOM a tick to render the blockquote, then process
+      setTimeout(processEmbeds, 100);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+      setTimeout(processEmbeds, 100);
+    };
+    document.body.appendChild(script);
+  }, [url]);
+
+  // Extract the post path for the permalink
+  const permalink = url.replace(/\/+$/, "") + "/";
 
   return (
-    <div className="max-w-lg mx-auto">
-      <iframe
-        src={embedSrc}
-        title="Instagram post"
-        allowTransparency
-        allow="encrypted-media"
-        className="w-full rounded-xl border border-border"
-        style={{ border: "none", minHeight: "500px", maxWidth: "540px", margin: "0 auto", display: "block" }}
-      />
+    <div ref={containerRef} className="max-w-lg mx-auto">
+      <blockquote
+        className="instagram-media"
+        data-instgrm-captioned
+        data-instgrm-permalink={permalink}
+        data-instgrm-version="14"
+        style={{
+          background: "#000",
+          border: "0",
+          borderRadius: "12px",
+          margin: "0 auto",
+          maxWidth: "540px",
+          minWidth: "326px",
+          padding: "0",
+          width: "100%",
+        }}
+      >
+        <a href={permalink} target="_blank" rel="noopener noreferrer">
+          View this post on Instagram
+        </a>
+      </blockquote>
     </div>
   );
 }
