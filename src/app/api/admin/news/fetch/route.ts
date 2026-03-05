@@ -105,7 +105,6 @@ function detectCategory(text: string): string {
 
 export async function POST() {
   try {
-    const db = createClient();
     const user = await getUser();
 
     if (!user) {
@@ -311,8 +310,9 @@ export async function POST() {
     });
   } catch (error) {
     console.error("News fetch error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `News fetch failed: ${message}` },
       { status: 500 }
     );
   }
