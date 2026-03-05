@@ -193,7 +193,7 @@ export default function AdminEditBlogPost() {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as BlogStatus)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               <option value="draft">Draft</option>
               <option value="pending_review">Pending Review</option>
@@ -230,7 +230,7 @@ export default function AdminEditBlogPost() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as BlogCategory)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               {Object.entries(BLOG_CATEGORIES).map(([key, val]) => (
                 <option key={key} value={key}>
@@ -246,7 +246,7 @@ export default function AdminEditBlogPost() {
             <select
               value={template}
               onChange={(e) => setTemplate(e.target.value as BlogTemplate)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               {Object.entries(BLOG_TEMPLATES).map(([key, val]) => (
                 <option key={key} value={key}>
@@ -262,7 +262,7 @@ export default function AdminEditBlogPost() {
             <select
               value={colorPalette}
               onChange={(e) => setColorPalette(e.target.value as BlogColorPalette)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               {Object.entries(BLOG_COLOR_PALETTES).map(([key, val]) => (
                 <option key={key} value={key}>

@@ -212,7 +212,7 @@ export default function AdminEditNewsPage() {
             <select
               value={gameSlug}
               onChange={(e) => setGameSlug(e.target.value as GameSlug)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               <option value="valorant">Valorant</option>
               <option value="bgmi">BGMI</option>
@@ -227,7 +227,7 @@ export default function AdminEditNewsPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as NewsCategory)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               {Object.entries(NEWS_CATEGORIES).map(([key, val]) => (
                 <option key={key} value={key}>
@@ -244,7 +244,7 @@ export default function AdminEditNewsPage() {
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value as NewsRegion)}
-              className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               {Object.entries(NEWS_REGIONS).map(([key, val]) => (
                 <option key={key} value={key}>
