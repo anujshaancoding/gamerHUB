@@ -367,13 +367,37 @@ export default function AdminNewsPage() {
             </Link>
           )}
           {activeTab === "sources" && (
-            <button
-              onClick={() => setShowAddSource(!showAddSource)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-sm font-medium rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Add Source
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  setSourcesLoading(true);
+                  try {
+                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    const parts = [];
+                    if (data.added) parts.push(`${data.added} added`);
+                    if (data.fixed) parts.push(`${data.fixed} fixed`);
+                    toast.success(parts.length ? parts.join(", ") : "All sources up to date!");
+                    loadSources();
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Failed");
+                    setSourcesLoading(false);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-lg transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Fix / Add Defaults
+              </button>
+              <button
+                onClick={() => setShowAddSource(!showAddSource)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-sm font-medium rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Add Source
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -478,7 +502,10 @@ export default function AdminNewsPage() {
                     const res = await fetch("/api/admin/news/sources/seed", { method: "POST" });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error);
-                    toast.success(`Added ${data.added} default RSS sources!`);
+                    const parts = [];
+                    if (data.added) parts.push(`${data.added} sources added`);
+                    if (data.fixed) parts.push(`${data.fixed} broken URLs fixed`);
+                    toast.success(parts.length ? parts.join(", ") : "All sources up to date!");
                     loadSources();
                   } catch (err) {
                     toast.error(err instanceof Error ? err.message : "Failed to seed sources");

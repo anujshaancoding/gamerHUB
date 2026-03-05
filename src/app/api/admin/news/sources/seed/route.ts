@@ -133,52 +133,88 @@ export async function POST() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get existing source slugs to avoid duplicates
-    const { data: existing } = await admin
+    // Fix any existing broken Sportskeeda sources (wrong URLs like /bgmi instead of /feed/bgmi)
+    const { data: allExisting } = await admin
       .from("news_sources")
-      .select("slug");
+      .select("id, name, url, slug");
 
-    const existingSlugs = new Set((existing || []).map((s) => s.slug));
+    let fixed = 0;
+    for (const source of allExisting || []) {
+      // Find sources with broken Sportskeeda URLs (page URLs instead of RSS feed URLs)
+      if (
+        source.url.includes("sportskeeda.com") &&
+        !source.url.includes("/feed/")
+      ) {
+        // Try to match to a default source by name similarity
+        const match = DEFAULT_SOURCES.find(
+          (d) =>
+            d.url.includes("sportskeeda.com") &&
+            (source.name.toLowerCase().includes(d.slug.split("-").pop() || "") ||
+              d.name.toLowerCase().includes(source.name.toLowerCase().split(" ").pop() || ""))
+        );
+        if (match) {
+          await admin
+            .from("news_sources")
+            .update({ url: match.url })
+            .eq("id", source.id);
+          fixed++;
+        }
+      }
+    }
 
-    // Filter out sources that already exist
-    const newSources = DEFAULT_SOURCES.filter(
-      (s) => !existingSlugs.has(s.slug)
+    // Get existing source slugs to avoid duplicates
+    const existingSlugs = new Set(
+      (allExisting || []).map((s) => s.slug)
+    );
+    // Also check by URL to avoid duplicate feeds
+    const existingUrls = new Set(
+      (allExisting || []).map((s) => s.url)
     );
 
-    if (newSources.length === 0) {
+    // Filter out sources that already exist (by slug or URL)
+    const newSources = DEFAULT_SOURCES.filter(
+      (s) => !existingSlugs.has(s.slug) && !existingUrls.has(s.url)
+    );
+
+    if (newSources.length === 0 && fixed === 0) {
       return NextResponse.json({
         success: true,
         message: "All default sources already exist",
         added: 0,
+        fixed: 0,
         skipped: DEFAULT_SOURCES.length,
       });
     }
 
-    // Insert new sources
-    const { data: inserted, error } = await admin
-      .from("news_sources")
-      .insert(
-        newSources.map((s) => ({
-          ...s,
-          is_active: true,
-          source_type: "rss",
-        }))
-      )
-      .select();
+    let added = 0;
+    if (newSources.length > 0) {
+      // Insert new sources
+      const { data: inserted, error } = await admin
+        .from("news_sources")
+        .insert(
+          newSources.map((s) => ({
+            ...s,
+            is_active: true,
+            source_type: "rss",
+          }))
+        )
+        .select();
 
-    if (error) {
-      console.error("Seed error:", error);
-      return NextResponse.json(
-        { error: "Failed to seed sources: " + error.message },
-        { status: 500 }
-      );
+      if (error) {
+        console.error("Seed error:", error);
+        return NextResponse.json(
+          { error: "Failed to seed sources: " + error.message },
+          { status: 500 }
+        );
+      }
+      added = inserted?.length || 0;
     }
 
     return NextResponse.json({
       success: true,
-      added: inserted?.length || 0,
+      added,
+      fixed,
       skipped: DEFAULT_SOURCES.length - newSources.length,
-      sources: inserted,
     });
   } catch (error) {
     console.error("Seed error:", error);
