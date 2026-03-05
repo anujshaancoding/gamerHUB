@@ -831,14 +831,12 @@ export default function AdminNewsPage() {
                               View Source
                             </DropdownMenuItem>
                           )}
-                          {activeTab === "fetched" && (
-                            <DropdownMenuItem
-                              onClick={() => router.push(`/admin/news/edit/${article.id}`)}
-                            >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit Article
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/admin/news/edit/${article.id}`)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Article
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {article.status === "pending" && (
                             <>
