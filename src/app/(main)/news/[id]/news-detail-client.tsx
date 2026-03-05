@@ -17,12 +17,15 @@ import {
   MessageCircle,
   Copy,
   Check,
+  Image as ImageIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
 import { DEFAULT_GAME_THUMBNAILS } from "@/lib/news/constants";
 import type { NewsArticle, NewsCategory } from "@/types/news";
 import { NewsComments } from "@/components/news/news-comments";
+import { NewsShareCardModal } from "@/components/news/news-share-card-modal";
+import { InstagramEmbed as ReactInstagramEmbed } from "react-social-media-embed";
 
 const GAME_COLORS: Record<string, string> = {
   valorant: "bg-red-500/90 text-white",
@@ -102,59 +105,14 @@ function TwitterEmbed({ url }: { url: string }) {
 }
 
 function InstagramEmbed({ url }: { url: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const win = window as Record<string, unknown>;
-
-    const processEmbeds = () => {
-      if (win.instgrm && (win.instgrm as { Embeds: { process: () => void } }).Embeds) {
-        (win.instgrm as { Embeds: { process: () => void } }).Embeds.process();
-      }
-    };
-
-    // Check if script already loaded
-    const existingScript = document.querySelector('script[src="https://www.instagram.com/embed.js"]');
-    if (existingScript) {
-      // Script exists — give DOM a tick to render the blockquote, then process
-      setTimeout(processEmbeds, 100);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://www.instagram.com/embed.js";
-    script.async = true;
-    script.onload = () => {
-      setTimeout(processEmbeds, 100);
-    };
-    document.body.appendChild(script);
-  }, [url]);
-
-  // Extract the post path for the permalink
   const permalink = url.replace(/\/+$/, "") + "/";
 
   return (
-    <div ref={containerRef} className="max-w-lg mx-auto">
-      <blockquote
-        className="instagram-media"
-        data-instgrm-captioned
-        data-instgrm-permalink={permalink}
-        data-instgrm-version="14"
-        style={{
-          background: "#000",
-          border: "0",
-          borderRadius: "12px",
-          margin: "0 auto",
-          maxWidth: "540px",
-          minWidth: "326px",
-          padding: "0",
-          width: "100%",
-        }}
-      >
-        <a href={permalink} target="_blank" rel="noopener noreferrer">
-          View this post on Instagram
-        </a>
-      </blockquote>
+    <div className="max-w-lg mx-auto">
+      <ReactInstagramEmbed
+        url={permalink}
+        width="100%"
+      />
     </div>
   );
 }
@@ -214,6 +172,7 @@ interface NewsDetailClientProps {
 
 export function NewsDetailClient({ article }: NewsDetailClientProps) {
   const [copied, setCopied] = useState(false);
+  const [showShareCards, setShowShareCards] = useState(false);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -383,6 +342,13 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
               </>
             )}
           </button>
+          <button
+            onClick={() => setShowShareCards(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border"
+          >
+            <ImageIcon className="h-4 w-4" />
+            Share as Cards
+          </button>
           {article.original_url && (
             <a
               href={article.original_url}
@@ -469,6 +435,14 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
         </h2>
         <NewsComments articleId={article.id} />
       </div>
+
+      {/* Share Card Modal */}
+      <NewsShareCardModal
+        isOpen={showShareCards}
+        onClose={() => setShowShareCards(false)}
+        article={article}
+        articleUrl={typeof window !== "undefined" ? window.location.href : `/news/${article.id}`}
+      />
     </div>
   );
 }

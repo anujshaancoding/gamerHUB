@@ -467,8 +467,29 @@ export default function AdminNewsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-amber-400" />
             </div>
           ) : rssSources.length === 0 ? (
-            <div className="text-center py-12 text-white/30 text-sm">
-              No RSS sources configured. Add one to start auto-fetching news.
+            <div className="text-center py-12 space-y-4">
+              <p className="text-white/30 text-sm">
+                No RSS sources configured. Add one to start auto-fetching news.
+              </p>
+              <button
+                onClick={async () => {
+                  setSourcesLoading(true);
+                  try {
+                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    toast.success(`Added ${data.added} default RSS sources!`);
+                    loadSources();
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Failed to seed sources");
+                    setSourcesLoading(false);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-lg transition-colors"
+              >
+                <Rss className="h-4 w-4" />
+                Load Default Sources (Sportskeeda, Reddit, Google News, etc.)
+              </button>
             </div>
           ) : (
             <div className="space-y-2">

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import Parser from "rss-parser";
 import { getUser } from "@/lib/auth/get-user";
@@ -9,10 +8,18 @@ import {
   INDIA_ASIA_KEYWORDS,
 } from "@/lib/news/constants";
 
+// Custom RSS fields for Reddit and other non-standard feeds
 const parser = new Parser({
   timeout: 15000,
   headers: {
-    "User-Agent": "ggLobby-NewsBot/1.0",
+    "User-Agent": "ggLobby-NewsBot/1.0 (+https://gglobby.in)",
+    Accept: "application/rss+xml, application/xml, text/xml, */*",
+  },
+  customFields: {
+    item: [
+      ["media:thumbnail", "mediaThumbnail", { keepArray: false }],
+      ["media:content", "mediaContent", { keepArray: false }],
+    ],
   },
 });
 
@@ -27,7 +34,7 @@ const parser = new Parser({
  * 3. The game with the highest score wins, but only if score >= 3
  *    (at least one definitive keyword or multiple weak signals).
  */
-function detectGameSlug(text: string): { slug: string; score: number } | null {
+function detectGameSlug(text: string, sourceSlug?: string): { slug: string; score: number } | null {
   const lower = text.toLowerCase();
 
   // Score each supported game
@@ -38,6 +45,11 @@ function detectGameSlug(text: string): { slug: string; score: number } | null {
       if (lower.includes(kw.term.trim().toLowerCase())) {
         score += kw.weight;
       }
+    }
+    // If the RSS source itself is game-specific (e.g., "sportskeeda-valorant"),
+    // give a +1 boost to help borderline articles from dedicated feeds match
+    if (sourceSlug && sourceSlug.includes(slug)) {
+      score += 1;
     }
     scores[slug] = score;
   }
@@ -165,8 +177,8 @@ export async function POST() {
           const content = item.contentSnippet || item.content || "";
           const fullText = `${title} ${content}`;
 
-          // Score-based game detection — no fallback to source default
-          const gameMatch = detectGameSlug(fullText);
+          // Score-based game detection with source hint boost
+          const gameMatch = detectGameSlug(fullText, source.slug);
           if (!gameMatch) {
             // Article doesn't match any of our 3 games, skip it
             continue;
@@ -201,6 +213,7 @@ export async function POST() {
             excerpt,
             thumbnail_url:
               item.enclosure?.url ||
+              extractMediaUrl(item) ||
               extractImageFromContent(item.content || "") ||
               null,
             game_slug: gameSlug,
@@ -303,6 +316,20 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// Extract thumbnail from media:thumbnail or media:content RSS extensions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractMediaUrl(item: any): string | null {
+  try {
+    const thumbnail = item.mediaThumbnail?.["$"]?.url || item.mediaThumbnail?.url;
+    if (thumbnail) return thumbnail;
+    const media = item.mediaContent?.["$"]?.url || item.mediaContent?.url;
+    if (media) return media;
+  } catch {
+    // Ignore malformed media fields
+  }
+  return null;
 }
 
 function extractImageFromContent(html: string): string | null {
