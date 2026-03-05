@@ -177,7 +177,8 @@ export async function POST(request: NextRequest) {
       .insert({
         title: title.trim(),
         original_title: title.trim(),
-        original_url: original_url?.trim() || "",
+        original_url: original_url?.trim() || null,
+        original_content: summary?.trim() || title.trim(),
         summary: summary?.trim() || null,
         excerpt: excerpt?.trim() || null,
         thumbnail_url: thumbnail_url?.trim() || null,

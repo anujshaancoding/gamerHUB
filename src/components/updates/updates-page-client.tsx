@@ -35,12 +35,13 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
-    date: "2026-03-05T12:00:00",
-    version: "1.9.0",
-    type: "feature",
-    title: "Admin News Sources Management & Documentation",
-    description: "Added full CRUD API and UI for managing news sources in the admin panel. Comprehensive developer documentation added for onboarding.",
+    date: "2026-03-05T18:00:00",
+    version: "1.9.1",
+    type: "fix",
+    title: "Admin News Publishing Fix & Infrastructure Update",
+    description: "Fixed 500 error when publishing news from admin panel. Updated project infrastructure documentation for VPS migration.",
     highlights: [
+      "Fixed admin news POST failing due to missing original_content field and empty-string original_url",
       "Admin news sources API — add, edit, toggle, and delete news sources",
       "Revamped admin news page with source management UI",
       "DEVELOPER.md knowledge-transfer document for new contributors",

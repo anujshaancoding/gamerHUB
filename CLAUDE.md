@@ -1,5 +1,9 @@
 # ggLobby - Project Instructions
 
+## Infrastructure
+
+**IMPORTANT:** The project has migrated from Supabase to a self-hosted VPS. Do NOT reference or suggest Supabase-specific features (Supabase Dashboard, Supabase Edge Functions, Supabase Auth UI, etc.). All backend and database changes should target the VPS deployment. The codebase still uses the Supabase JS client library to connect to a self-hosted PostgreSQL/PostgREST instance on the VPS — this is expected.
+
 ## Updates Page Maintenance
 
 **IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/updates/updates-page-client.tsx` with the changes made.
