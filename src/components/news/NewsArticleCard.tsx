@@ -15,6 +15,7 @@ import {
   GAME_BORDER_COLORS,
   GAME_DISPLAY_NAMES,
   CATEGORY_COLORS,
+  DEFAULT_GAME_THUMBNAILS,
 } from "@/lib/news/constants";
 import { NEWS_CATEGORIES } from "@/types/news";
 import type { NewsArticle } from "@/types/news";
@@ -84,13 +85,13 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
           <CardContent className="p-0">
             <div className="flex gap-0">
               {/* Thumbnail */}
-              {article.thumbnail_url && (
+              {(article.thumbnail_url || DEFAULT_GAME_THUMBNAILS[article.game_slug]) && (
                 <div className="relative w-[120px] sm:w-[160px] flex-shrink-0 bg-surface-light min-h-[100px]">
                   <Image
-                    src={article.thumbnail_url}
+                    src={article.thumbnail_url || DEFAULT_GAME_THUMBNAILS[article.game_slug]}
                     alt={article.title}
                     fill
-                    className="object-cover"
+                    className={article.thumbnail_url ? "object-cover" : "object-contain p-4 opacity-30"}
                     sizes="160px"
                     unoptimized
                   />

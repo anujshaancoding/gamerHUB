@@ -216,6 +216,12 @@ export const GAME_GLOW_COLORS: Record<string, string> = {
   'other': 'hover:shadow-gray-500/20',
 };
 
+export const DEFAULT_GAME_THUMBNAILS: Record<string, string> = {
+  'valorant': '/images/games/valorant.svg',
+  'bgmi': '/images/games/bgmi.svg',
+  'freefire': '/images/games/freefire.svg',
+};
+
 export const CATEGORY_COLORS: Record<string, string> = {
   'patch': 'bg-green-500/20 text-green-400',
   'tournament': 'bg-purple-500/20 text-purple-400',

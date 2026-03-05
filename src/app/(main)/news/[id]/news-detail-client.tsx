@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
+import { DEFAULT_GAME_THUMBNAILS } from "@/lib/news/constants";
 import type { NewsArticle, NewsCategory } from "@/types/news";
 import { NewsComments } from "@/components/news/news-comments";
 
@@ -44,6 +45,146 @@ const CATEGORY_COLORS: Record<string, string> = {
   meta: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   general: "bg-gray-500/10 text-gray-400 border-gray-500/20",
 };
+
+// ── Embed helpers ──────────────────────────────────────────────────────
+
+const EMBED_REGEX = /\[embed:(https?:\/\/[^\]]+)\]/g;
+
+function parseEmbeds(text: string): { cleanText: string; embedUrls: string[] } {
+  const embedUrls: string[] = [];
+  const cleanText = text.replace(EMBED_REGEX, (_, url) => {
+    embedUrls.push(url);
+    return "";
+  }).trim();
+  return { cleanText, embedUrls };
+}
+
+function getYouTubeVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be") return parsed.pathname.slice(1);
+    if (parsed.hostname.includes("youtube.com")) return parsed.searchParams.get("v");
+  } catch { /* ignore */ }
+  return null;
+}
+
+function TwitterEmbed({ url }: { url: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load Twitter widgets script
+    const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
+    if (existingScript) {
+      // Script already loaded, just render
+      (window as Record<string, unknown>).twttr &&
+        ((window as Record<string, unknown>).twttr as { widgets: { load: (el?: Element) => void } }).widgets.load(containerRef.current || undefined);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://platform.twitter.com/widgets.js";
+    script.async = true;
+    script.charset = "utf-8";
+    document.body.appendChild(script);
+
+    return () => {
+      // Don't remove the script, other embeds may need it
+    };
+  }, [url]);
+
+  return (
+    <div ref={containerRef} className="max-w-lg mx-auto">
+      <blockquote className="twitter-tweet" data-theme="dark">
+        <a href={url}>{url}</a>
+      </blockquote>
+    </div>
+  );
+}
+
+function InstagramEmbed({ url }: { url: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const existingScript = document.querySelector('script[src="https://www.instagram.com/embed.js"]');
+    if (existingScript) {
+      (window as Record<string, unknown>).instgrm &&
+        ((window as Record<string, unknown>).instgrm as { Embeds: { process: () => void } }).Embeds.process();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, [url]);
+
+  // Ensure URL ends with /embed for proper embedding
+  const embedUrl = url.endsWith("/") ? url : `${url}/`;
+
+  return (
+    <div ref={containerRef} className="max-w-lg mx-auto">
+      <blockquote
+        className="instagram-media"
+        data-instgrm-permalink={embedUrl}
+        data-instgrm-version="14"
+        style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", margin: "0 auto", maxWidth: "540px", padding: "16px", width: "100%" }}
+      >
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+          View on Instagram
+        </a>
+      </blockquote>
+    </div>
+  );
+}
+
+function YouTubeEmbed({ url }: { url: string }) {
+  const videoId = getYouTubeVideoId(url);
+  if (!videoId) return null;
+
+  return (
+    <div className="max-w-2xl mx-auto aspect-video rounded-xl overflow-hidden">
+      <iframe
+        src={`https://www.youtube.com/embed/${encodeURIComponent(videoId)}`}
+        title="YouTube video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+        style={{ border: "none" }}
+      />
+    </div>
+  );
+}
+
+function SocialEmbed({ url }: { url: string }) {
+  const hostname = (() => {
+    try { return new URL(url).hostname; } catch { return ""; }
+  })();
+
+  if (hostname.includes("twitter.com") || hostname.includes("x.com")) {
+    return <TwitterEmbed url={url} />;
+  }
+  if (hostname.includes("instagram.com")) {
+    return <InstagramEmbed url={url} />;
+  }
+  if (hostname.includes("youtube.com") || hostname === "youtu.be") {
+    return <YouTubeEmbed url={url} />;
+  }
+
+  // Fallback: just show a link
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+    >
+      <ExternalLink className="h-4 w-4" />
+      {url}
+    </a>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────
 
 interface NewsDetailClientProps {
   article: NewsArticle;
@@ -83,6 +224,15 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
   const categoryInfo = NEWS_CATEGORIES[article.category as NewsCategory];
   const sourceName = (article.source as { name?: string } | undefined)?.name;
 
+  // Parse embeds from summary
+  const { cleanText: articleContent, embedUrls } = article.summary
+    ? parseEmbeds(article.summary)
+    : { cleanText: "", embedUrls: [] };
+
+  // Resolve thumbnail: use article's thumbnail, or fall back to game default
+  const thumbnailUrl = article.thumbnail_url || DEFAULT_GAME_THUMBNAILS[article.game_slug] || null;
+  const isDefaultThumbnail = !article.thumbnail_url && !!thumbnailUrl;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       {/* Back link */}
@@ -95,13 +245,13 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
       </Link>
 
       {/* Hero image */}
-      {article.thumbnail_url ? (
-        <div className="relative aspect-video rounded-xl overflow-hidden bg-surface-light">
+      {thumbnailUrl ? (
+        <div className={`relative aspect-video rounded-xl overflow-hidden bg-surface-light ${isDefaultThumbnail ? "flex items-center justify-center" : ""}`}>
           <Image
-            src={article.thumbnail_url}
+            src={thumbnailUrl}
             alt={article.title}
             fill
-            className="object-cover"
+            className={`${isDefaultThumbnail ? "object-contain p-12 opacity-30" : "object-cover"}`}
             sizes="(max-width: 768px) 100vw, 896px"
             priority
             unoptimized
@@ -230,9 +380,9 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
 
       {/* Article content */}
       <div className="prose prose-invert max-w-none">
-        {article.summary ? (
+        {articleContent ? (
           <div className="text-text-secondary leading-relaxed whitespace-pre-wrap text-base">
-            {article.summary}
+            {articleContent}
           </div>
         ) : article.excerpt ? (
           <div className="text-text-secondary leading-relaxed text-base">
@@ -242,6 +392,19 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
           <p className="text-text-muted italic">No content available for this article.</p>
         )}
       </div>
+
+      {/* Embedded posts */}
+      {embedUrls.length > 0 && (
+        <div className="space-y-6">
+          <hr className="border-border" />
+          <h3 className="text-sm font-medium text-text-muted uppercase tracking-wider">
+            Referenced Posts
+          </h3>
+          {embedUrls.map((url, i) => (
+            <SocialEmbed key={i} url={url} />
+          ))}
+        </div>
+      )}
 
       {/* Tags */}
       {article.tags.length > 0 && (
