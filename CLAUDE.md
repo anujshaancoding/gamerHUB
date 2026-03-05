@@ -9,7 +9,7 @@
 **IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/updates/updates-page-client.tsx` with the changes made.
 
 ### Rules:
-1. **Only log significant changes** — major feature additions, notable UI overhauls, new pages/sections, API changes, important bug fixes, security patches, and performance improvements. Skip trivial changes like minor CSS tweaks, typo fixes, or small UI adjustments.
+1. **Only log significant user-facing changes** — major feature additions, notable UI overhauls, new pages/sections, API changes, important bug fixes, security patches, and performance improvements. Skip trivial changes like minor CSS tweaks, typo fixes, or small UI adjustments. **Never log admin panel changes** — these are internal and should not be shown to users.
 2. **Group updates by day** — all changes pushed on the same day should be combined into a single entry for that date. If an entry already exists for today, add new highlights to it rather than creating a duplicate entry.
 3. **Maintain reverse chronological order** — newest entries go at the top of the `updates` array.
 4. **Use the correct `type`** — `"feature"` for new functionality, `"improvement"` for enhancements to existing features, `"fix"` for bug fixes, `"security"` for security patches, `"performance"` for perf improvements, `"launch"` for major releases.
