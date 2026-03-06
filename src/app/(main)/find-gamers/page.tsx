@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Card, Badge } from "@/components/ui";
 import { GamerCard } from "@/components/gamers/gamer-card";
+import { OnlineGamersSection } from "@/components/gamers/online-gamers-section";
 import { SuggestedFriendsSection, ProPlayersSection } from "@/components/suggestions";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -327,6 +328,9 @@ function FindGamersContent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Online Gamers Section */}
+      <OnlineGamersSection />
 
       {/* Suggested Friends Section */}
       {(!expandedSection || expandedSection === "friends") && (

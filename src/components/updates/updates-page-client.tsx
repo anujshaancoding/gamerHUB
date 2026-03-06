@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-06T18:00:00",
+    version: "1.10.0",
+    type: "feature",
+    title: "Online Gamers Discovery",
+    description: "Find Gamers page now shows online gamers who are not your friends and have public profiles, making it easier to discover active players.",
+    highlights: [
+      "New 'Online Gamers' section at the top of Find Gamers page",
+      "Shows 3 online gamers initially with a 'Load More' option",
+      "Excludes friends and private profiles, refreshes every 30 seconds",
+    ],
+  },
+  {
     date: "2026-03-05T12:00:00",
     version: "1.9.0",
     type: "feature",
