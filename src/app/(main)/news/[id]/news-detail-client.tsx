@@ -325,39 +325,39 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className="grid grid-cols-3 sm:flex sm:flex-row sm:items-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-xs sm:text-sm font-medium transition-colors border border-border"
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 text-green-400" />
-                Copied!
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-400" />
+                <span>Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="h-4 w-4" />
-                Share
+                <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Share</span>
               </>
             )}
           </button>
           <button
             onClick={() => setShowShareCards(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-xs sm:text-sm font-medium transition-colors border border-border"
           >
-            <ImageIcon className="h-4 w-4" />
-            Share as Cards
+            <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span>Share as Cards</span>
           </button>
           {article.original_url && (
             <a
               href={article.original_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-xs sm:text-sm font-medium transition-colors border border-border"
             >
-              <ExternalLink className="h-4 w-4" />
-              View Original
+              <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>View Original</span>
             </a>
           )}
         </div>

@@ -62,24 +62,29 @@ export default function AdminFeedbackPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: String(page) });
       if (categoryFilter) params.set("category", categoryFilter);
 
       const res = await fetch(`/api/admin/feedback?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setFeedback(data.feedback);
-        setTotal(data.total);
-        setTotalPages(data.totalPages);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || `Failed to fetch feedback (${res.status})`);
+        return;
       }
+      const data = await res.json();
+      setFeedback(data.feedback);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch {
-      // silently fail
+      setError("Network error — could not reach the server");
     } finally {
       setLoading(false);
     }
@@ -131,6 +136,13 @@ export default function AdminFeedbackPage() {
           ? "Loading..."
           : `${total} feedback item${total !== 1 ? "s" : ""} found`}
       </p>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
       {/* Feedback list */}
       <div className="space-y-3">

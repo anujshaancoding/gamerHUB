@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = createClient();
     const user = await getUser();
 
     if (!user) {
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
     let query = admin
       .from("beta_feedback")
       .select(
-        "id, user_id, message, category, image_url, page_url, user_agent, created_at, profiles:user_id(username, display_name, avatar_url)",
+        "id, user_id, message, category, image_url, page_url, user_agent, created_at, profiles(username, display_name, avatar_url)",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })

@@ -35,6 +35,13 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-06T20:00:00",
+    version: "1.11.1",
+    type: "fix",
+    title: "Feedback Widget Fix",
+    description: "Fixed an issue where feedback submitted via the widget was not appearing in the system. Feedback now saves and displays correctly.",
+  },
+  {
     date: "2026-03-06T18:00:00",
     version: "1.11.0",
     type: "feature",
