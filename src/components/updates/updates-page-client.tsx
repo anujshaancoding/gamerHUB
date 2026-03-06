@@ -36,14 +36,16 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 const updates: UpdateEntry[] = [
   {
     date: "2026-03-06T18:00:00",
-    version: "1.10.0",
+    version: "1.11.0",
     type: "feature",
-    title: "Online Gamers Discovery",
-    description: "Find Gamers page now shows online gamers who are not your friends and have public profiles, making it easier to discover active players.",
+    title: "Online Gamers Discovery, Username Changes & Responsive Improvements",
+    description: "New online gamers discovery, username change support on profile edit, and responsive layout improvements across multiple pages.",
     highlights: [
       "New 'Online Gamers' section at the top of Find Gamers page",
       "Shows 3 online gamers initially with a 'Load More' option",
       "Excludes friends and private profiles, refreshes every 30 seconds",
+      "Username can now be changed on profile edit page with availability check and 14-day cooldown",
+      "Improved responsive layouts on dashboard, blog, friends, news, premium, and write pages",
     ],
   },
   {
