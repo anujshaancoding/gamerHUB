@@ -325,10 +325,10 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
           >
             {copied ? (
               <>
@@ -344,7 +344,7 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
           </button>
           <button
             onClick={() => setShowShareCards(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
           >
             <ImageIcon className="h-4 w-4" />
             Share as Cards
@@ -354,7 +354,7 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
               href={article.original_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-light hover:bg-surface-lighter text-text-secondary hover:text-text text-sm font-medium transition-colors border border-border w-full sm:w-auto"
             >
               <ExternalLink className="h-4 w-4" />
               View Original

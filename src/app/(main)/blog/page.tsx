@@ -105,7 +105,7 @@ export default async function BlogPage({ searchParams }: Props) {
       />
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text mb-2">Blog</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">Blog</h1>
         <p className="text-text-muted">
           Gaming news, guides, and analysis from the community
         </p>

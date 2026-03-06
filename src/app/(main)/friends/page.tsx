@@ -222,7 +222,7 @@ function FriendsContent() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-primary">{counts.friends}</p>
           <p className="text-sm text-text-muted">Friends</p>

@@ -14,6 +14,10 @@ Things to address before bringing on a backend team:
 - [ ] **API rate limiting** — Add rate limiting to public and admin API routes to prevent abuse.
 - [ ] **Audit logging** — Add a database audit trail for admin actions (who published/deleted/edited what and when).
 
+## Styling & Responsiveness
+
+**IMPORTANT:** Whenever changing or adding any styling, ensure it is fully responsive across all screen sizes — mobile, tablet, and desktop. Use Tailwind's responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`) as needed. Never add styles that only work on one screen size without considering how they render on others.
+
 ## Updates Page Maintenance
 
 **IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/updates/updates-page-client.tsx` with the changes made.

@@ -132,7 +132,7 @@ export default function DashboardPage() {
           <div className="h-10 w-36 bg-surface-light rounded-lg animate-pulse" />
         </div>
         {/* Stats grid skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="rounded-xl border border-border p-4 animate-pulse">
               <div className="flex items-center justify-between">
@@ -146,7 +146,7 @@ export default function DashboardPage() {
           ))}
         </div>
         {/* Progression + Quests skeleton */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="rounded-xl border border-border p-6 animate-pulse">
               <div className="h-5 w-32 bg-surface-light rounded mb-4" />
@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -213,7 +213,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Progression & Quests */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Progression Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -269,7 +269,7 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* My Games */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -292,7 +292,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {userGames.slice(0, 6).map((ug) => (
                   <div
                     key={ug.id}
