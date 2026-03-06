@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     let query = admin
       .from("beta_feedback")
       .select(
-        "id, user_id, message, category, image_url, page_url, user_agent, created_at, profiles(username, display_name, avatar_url)",
+        "id, user_id, message, category, image_url, page_url, user_agent, created_at",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })
@@ -52,8 +52,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const rows = (data || []) as Record<string, unknown>[];
+
+    // Fetch profiles for feedback items that have a user_id
+    const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+    let profileMap = new Map<string, Record<string, unknown>>();
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await admin
+        .from("profiles")
+        .select("id, username, display_name, avatar_url")
+        .in("id", userIds);
+
+      if (profiles) {
+        for (const p of profiles as Record<string, unknown>[]) {
+          profileMap.set(p.id as string, p);
+        }
+      }
+    }
+
+    const feedback = rows.map((row) => ({
+      ...row,
+      profiles: row.user_id ? profileMap.get(row.user_id as string) ?? null : null,
+    }));
+
     return NextResponse.json({
-      feedback: data || [],
+      feedback,
       total: count || 0,
       totalPages: Math.ceil((count || 0) / limit),
       page,
