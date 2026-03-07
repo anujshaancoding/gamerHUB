@@ -125,14 +125,14 @@ export function ThemeSwitcher() {
               <button
                 onClick={() => setPreferGameTheme(!preferGameTheme)}
                 className={cn(
-                  "relative w-12 h-7 rounded-full transition-colors",
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors",
                   preferGameTheme ? "bg-primary" : "bg-surface-lighter"
                 )}
               >
                 <span
                   className={cn(
-                    "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm",
-                    preferGameTheme ? "translate-x-6" : "translate-x-1"
+                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                    preferGameTheme ? "translate-x-5" : "translate-x-0.5"
                   )}
                 />
               </button>

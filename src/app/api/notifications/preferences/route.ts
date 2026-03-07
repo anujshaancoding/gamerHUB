@@ -189,15 +189,31 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update single preference
-    const { data: preference, error } = await db
+    // Fetch existing preference to merge with updates
+    const { data: existing } = await db
       .from("notification_preferences")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .select("*")
       .eq("user_id", user.id)
       .eq("notification_type", notificationType)
+      .single();
+
+    // Upsert single preference (creates row if it doesn't exist yet)
+    const { data: preference, error } = await db
+      .from("notification_preferences")
+      .upsert(
+        {
+          user_id: user.id,
+          notification_type: notificationType,
+          channels: updates.channels || existing?.channels || ["in_app"],
+          is_enabled: updates.is_enabled ?? existing?.is_enabled ?? true,
+          frequency: updates.frequency || existing?.frequency || "instant",
+          settings: updates.settings || existing?.settings || {},
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id,notification_type",
+        }
+      )
       .select()
       .single();
 

@@ -84,14 +84,14 @@ function ToggleSwitch({ checked, onChange, disabled }: { checked: boolean; onCha
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         checked ? "bg-primary" : "bg-surface-lighter"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
           checked ? "translate-x-5" : "translate-x-0.5"
-        } mt-0.5`}
+        }`}
       />
     </button>
   );
