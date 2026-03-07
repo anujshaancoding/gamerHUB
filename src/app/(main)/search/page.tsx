@@ -188,7 +188,7 @@ function SearchPageContent() {
             >
               <div className="grid gap-3">
                 {blogs.data.map((post) => (
-                  <Link key={post.id} href={`/blog/${post.slug}`}>
+                  <Link key={post.id} href={`/community/post/${post.id}`}>
                     <Card
                       variant="interactive"
                       className="p-4 flex items-center gap-4"

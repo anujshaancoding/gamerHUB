@@ -46,7 +46,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
   };
 
   return (
-    <Link href={`/blog/${post.slug}`} className="block h-full">
+    <Link href={`/community/post/${post.id}`} className="block h-full">
       <motion.article
         whileHover={{ y: -6 }}
         transition={{ duration: 0.2, ease: "easeOut" }}

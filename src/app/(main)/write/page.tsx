@@ -24,6 +24,7 @@ const RichTextEditor = dynamic(
   { ssr: false, loading: () => <div className="h-[400px] bg-surface border border-border rounded-xl animate-pulse" /> }
 );
 import { BlogCreationWizard } from "@/components/blog/blog-creation-wizard";
+import { FeaturedImageUpload } from "@/components/blog/featured-image-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -315,24 +316,10 @@ function WritePage() {
 
       {/* Featured image */}
       <div className="mb-4">
-        <Input
-          label="Featured Image URL"
-          placeholder="https://example.com/image.jpg"
+        <FeaturedImageUpload
           value={featuredImageUrl}
-          onChange={(e) => setFeaturedImageUrl(e.target.value)}
+          onChange={setFeaturedImageUrl}
         />
-        {featuredImageUrl && (
-          <div className="mt-2 relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border border-border">
-            <img
-              src={featuredImageUrl}
-              alt="Preview"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          </div>
-        )}
       </div>
 
       {/* Allow comments toggle */}
@@ -416,7 +403,7 @@ function WritePage() {
         {editSlug && (
           <Button
             variant="ghost"
-            onClick={() => router.push(`/blog/${editSlug}`)}
+            onClick={() => router.push(existingPost?.id ? `/community/post/${existingPost.id}` : `/community`)}
           >
             <Eye className="w-4 h-4 mr-2" />
             View Post

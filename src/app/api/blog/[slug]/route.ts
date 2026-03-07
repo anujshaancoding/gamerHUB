@@ -265,11 +265,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Only allow deletion of drafts by author, or by editors/admins
+    // Allow author to delete their own posts (any status), or editors/admins
     const isAuthor = existingPost.author_id === user.id;
-    const isDraft = existingPost.status === "draft";
 
-    if (!isAuthor || !isDraft) {
+    if (!isAuthor) {
       // Check if user is a blog editor/admin or a site admin
       const [{ data: author }, { data: profile }] = await Promise.all([
         db
@@ -289,7 +288,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
       if (!isBlogAdmin && !isSiteAdmin) {
         return NextResponse.json(
-          { error: "Cannot delete published posts" },
+          { error: "You don't have permission to delete this post" },
           { status: 403 }
         );
       }

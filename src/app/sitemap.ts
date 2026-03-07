@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { getAllPublishedSlugs } from "@/lib/data/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
 import { BASE_URL } from "@/lib/seo";
+import { createClient } from "@/lib/db/client";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
@@ -13,16 +13,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      url: `${BASE_URL}/blog`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
       url: `${BASE_URL}/community`,
       lastModified: new Date(),
       changeFrequency: "daily",
-      priority: 0.8,
+      priority: 0.9,
     },
     {
       url: `${BASE_URL}/clans`,
@@ -63,23 +57,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Category filter pages
+  // Category filter pages under community
   const categoryPages: MetadataRoute.Sitemap = Object.keys(BLOG_CATEGORIES).map(
     (cat) => ({
-      url: `${BASE_URL}/blog?category=${cat}`,
+      url: `${BASE_URL}/community?tab=blog&category=${cat}`,
       changeFrequency: "daily" as const,
       priority: 0.7,
     })
   );
 
-  // All published blog posts
-  const slugs = await getAllPublishedSlugs();
-  const postPages: MetadataRoute.Sitemap = slugs.map(({ slug, updated_at }) => ({
-    url: `${BASE_URL}/blog/${slug}`,
-    lastModified: new Date(updated_at),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  // All published blog posts — use /community/post/{id} URLs
+  const db = createClient();
+  const { data: posts } = await db
+    .from("blog_posts")
+    .select("id, updated_at")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+
+  const postPages: MetadataRoute.Sitemap = (posts || []).map(
+    (post: { id: string; updated_at: string }) => ({
+      url: `${BASE_URL}/community/post/${post.id}`,
+      lastModified: new Date(post.updated_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })
+  );
 
   return [...staticPages, ...categoryPages, ...postPages];
 }

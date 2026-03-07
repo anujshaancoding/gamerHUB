@@ -8,12 +8,11 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
-          "/blog",
-          "/blog/*",
           "/clans",
           "/clans/*",
           "/find-gamers",
           "/community",
+          "/community/post/*",
           "/profile/*",
           "/privacy",
           "/terms",
