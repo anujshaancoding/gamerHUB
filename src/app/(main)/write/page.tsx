@@ -211,12 +211,20 @@ function WritePage() {
         </Button>
       </div>
 
-      {/* Selected template & palette indicator */}
+      {/* Template & palette selectors */}
       <div className="flex flex-wrap items-center gap-3 mb-6 p-3 bg-surface-light rounded-lg border border-border">
         <div className="flex items-center gap-2 text-sm">
           <LayoutTemplate className="w-4 h-4 text-primary" />
           <span className="text-text-muted">Template:</span>
-          <span className="font-medium text-text">{selectedTemplateInfo.label}</span>
+          <select
+            value={template}
+            onChange={(e) => setTemplate(e.target.value as BlogTemplate)}
+            className="bg-transparent font-medium text-text text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5 hover:bg-surface-lighter transition-colors [&>option]:bg-surface [&>option]:text-text"
+          >
+            {Object.entries(BLOG_TEMPLATES).map(([key, val]) => (
+              <option key={key} value={key}>{val.label}</option>
+            ))}
+          </select>
         </div>
         <div className="w-px h-4 bg-border" />
         <div className="flex items-center gap-2 text-sm">
@@ -227,7 +235,15 @@ function WritePage() {
               className="w-3 h-3 rounded-full border border-white/20"
               style={{ backgroundColor: selectedPaletteInfo.primaryHex }}
             />
-            <span className="font-medium text-text">{selectedPaletteInfo.label}</span>
+            <select
+              value={colorPalette}
+              onChange={(e) => setColorPalette(e.target.value as BlogColorPalette)}
+              className="bg-transparent font-medium text-text text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary rounded px-1 py-0.5 hover:bg-surface-lighter transition-colors [&>option]:bg-surface [&>option]:text-text"
+            >
+              {Object.entries(BLOG_COLOR_PALETTES).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
