@@ -35,6 +35,21 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-07T22:00:00",
+    version: "1.14.0",
+    type: "feature",
+    title: "Advanced Search & Filters for Community",
+    description: "All community sections now have powerful search and filter capabilities to help you find exactly what you're looking for.",
+    highlights: [
+      "News tab: Search by title, filter by game, category, region, and featured status, plus sort by newest or most viewed",
+      "Blog tab: Search posts, filter by game, category, and featured status",
+      "Tournaments & Giveaways tab: Search listings, filter by game and status (active/completed/cancelled)",
+      "Friends tab: Search posts by content or username with real-time filtering",
+      "Reusable filter bar with expandable panel, active filter chips, and clear-all functionality",
+      "Fully responsive design — filters work beautifully on mobile, tablet, and desktop",
+    ],
+  },
+  {
     date: "2026-03-07T20:00:00",
     version: "1.13.0",
     type: "improvement",

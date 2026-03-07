@@ -6,6 +6,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const game = searchParams.get("game") || "";
     const category = searchParams.get("category") || "";
+    const region = searchParams.get("region") || "";
+    const search = searchParams.get("search") || "";
+    const featured = searchParams.get("featured");
+    const sort = searchParams.get("sort") || "newest";
     const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
@@ -19,11 +23,17 @@ export async function GET(request: NextRequest) {
       )
       .eq("status", "published")
       .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false })
+      .order(
+        sort === "most_viewed" ? "views_count" : "published_at",
+        { ascending: false }
+      )
       .range(offset, offset + limit - 1);
 
     if (game) query = query.eq("game_slug", game);
     if (category) query = query.eq("category", category);
+    if (region) query = query.eq("region", region);
+    if (search) query = query.ilike("title", `%${search}%`);
+    if (featured === "true") query = query.eq("is_featured", true);
 
     const { data: articles, count, error } = await query;
 
