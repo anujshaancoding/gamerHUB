@@ -14,6 +14,7 @@ import {
   Shield,
   UserCheck,
   MessageCircle,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -36,7 +37,10 @@ const navItems = [
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
 ];
 
-const bottomItems = [{ href: "/settings", label: "Settings", icon: Settings }];
+const bottomItems = [
+  { href: "/help", label: "Help Center", icon: HelpCircle },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
 
 export function Sidebar() {
   const pathname = usePathname();

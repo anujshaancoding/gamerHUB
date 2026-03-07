@@ -289,7 +289,8 @@ export function RichTextEditor({
         <ToolbarDivider />
 
         {/* HTML source toggle */}
-        <ToolbarButton
+        <button
+          type="button"
           onClick={() => {
             if (!showHtmlSource) {
               setHtmlSource(editor.getHTML());
@@ -300,11 +301,17 @@ export function RichTextEditor({
             }
             setShowHtmlSource(!showHtmlSource);
           }}
-          active={showHtmlSource}
-          title={showHtmlSource ? "Switch to Visual Editor" : "Edit HTML Source"}
+          title={showHtmlSource ? "Switch to Visual Editor" : "Paste or edit raw HTML"}
+          className={cn(
+            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
+            showHtmlSource
+              ? "bg-primary/20 text-primary"
+              : "text-text-muted hover:text-text hover:bg-surface-lighter"
+          )}
         >
           <CodeXml className="w-4 h-4" />
-        </ToolbarButton>
+          {showHtmlSource ? "Visual" : "HTML"}
+        </button>
 
         <ToolbarDivider />
 

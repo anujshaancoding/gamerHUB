@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           "/community",
           "/community/post/*",
           "/profile/*",
+          "/help",
           "/privacy",
           "/terms",
           "/guidelines",
