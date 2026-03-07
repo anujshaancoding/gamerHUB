@@ -35,16 +35,17 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
-    date: "2026-03-07T18:00:00",
-    version: "1.12.0",
-    type: "feature",
-    title: "Blog Editor Improvements",
-    description: "Major improvements to the blog creation and editing experience with new tools for content creators.",
+    date: "2026-03-07T20:00:00",
+    version: "1.13.0",
+    type: "improvement",
+    title: "Blog & Community Consolidation",
+    description: "Blog posts now live entirely within the Community section with full SEO support, improved editing flow, and better author controls.",
     highlights: [
-      "HTML source editor toggle — paste raw HTML directly into the rich text editor",
-      "Featured image upload — upload images directly instead of only pasting URLs",
-      "Inline preview — see exactly how your blog will look before publishing, with live template and color palette switching",
-      "Author actions — post authors can now edit or delete their own blogs directly from the published page",
+      "Blog posts are now fully integrated into the Community section — no more separate /blog page",
+      "Full SEO metadata and JSON-LD structured data on every community blog post for better Google indexing",
+      "Edit and delete your own posts directly from the community post page via the action bar",
+      "Featured image upload added to the blog editor — upload images directly instead of only pasting URLs",
+      "Old /blog links automatically redirect to the correct community post page",
     ],
   },
   {
