@@ -25,7 +25,7 @@ import {
   Minus,
   CodeXml,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
@@ -117,6 +117,27 @@ export function RichTextEditor({
     },
     immediatelyRender: false,
   });
+
+  // Track whether we've done the initial load so we only sync once
+  // when external content changes (e.g., loading an existing post for editing)
+  const hasInitialized = useRef(false);
+  useEffect(() => {
+    if (!editor) return;
+    // Skip the very first render (editor already has content from init)
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      // If content was empty on init but now has a value, set it
+      if (!editor.getHTML().replace(/<[^>]*>/g, "").trim() && content) {
+        editor.commands.setContent(content);
+      }
+      return;
+    }
+    // Sync when content changes externally (e.g., loading existing post)
+    const currentHtml = editor.getHTML();
+    if (content && content !== currentHtml && content !== "<p></p>") {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
 
   const addLink = useCallback(() => {
     if (!editor || !linkUrl) return;
