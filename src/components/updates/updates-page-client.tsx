@@ -35,6 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-07T18:00:00",
+    version: "1.12.0",
+    type: "feature",
+    title: "Blog Editor Improvements",
+    description: "Major improvements to the blog creation and editing experience with new tools for content creators.",
+    highlights: [
+      "HTML source editor toggle — paste raw HTML directly into the rich text editor",
+      "Featured image upload — upload images directly instead of only pasting URLs",
+      "Inline preview — see exactly how your blog will look before publishing, with live template and color palette switching",
+      "Author actions — post authors can now edit or delete their own blogs directly from the published page",
+    ],
+  },
+  {
     date: "2026-03-06T20:00:00",
     version: "1.11.1",
     type: "fix",
