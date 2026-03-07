@@ -39,8 +39,11 @@ export function TournamentsTab({
 
   const { games } = useGames();
 
+  const SUPPORTED_SLUGS = ["valorant", "bgmi", "freefire"];
   const gameOptions = useMemo(
-    () => games.map((g) => ({ value: g.id, label: g.name })),
+    () => games
+      .filter((g) => SUPPORTED_SLUGS.includes(g.slug))
+      .map((g) => ({ value: g.id, label: g.name })),
     [games]
   );
 

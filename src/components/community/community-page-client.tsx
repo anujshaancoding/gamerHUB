@@ -46,7 +46,6 @@ import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
 import { BLOG_CATEGORIES } from "@/types/blog";
 import { SearchFilterBar } from "@/components/community/SearchFilterBar";
-import { useGames } from "@/lib/hooks/useGames";
 import type { NewsArticle, NewsFilters } from "@/types/news";
 import type { BlogCategory } from "@/types/blog";
 import type { CommunityListing } from "@/types/listings";
@@ -146,6 +145,13 @@ const blogCategoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, val]) => 
   label: val.label,
 }));
 
+// ── Supported games (hardcoded — only 3 supported) ─────────────────────
+const SUPPORTED_GAME_OPTIONS: { value: string; label: string }[] = [
+  { value: "valorant", label: "Valorant" },
+  { value: "bgmi", label: "BGMI" },
+  { value: "freefire", label: "Free Fire" },
+];
+
 export function CommunityPageClient({
   initialBlogPosts,
   initialFriendPosts,
@@ -158,7 +164,6 @@ export function CommunityPageClient({
   const router = useRouter();
   const pathname = usePathname();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
-  const { games } = useGames();
 
   // Read initial tab from URL: ?tab=blog, ?tab=tournaments, ?tab=friends, or default to news
   const sharedPostId = searchParams.get("post");
@@ -176,12 +181,6 @@ export function CommunityPageClient({
   const [newsSort, setNewsSort] = useState("newest");
   const [blogFilters, setBlogFilters] = useState<{ search?: string; game?: string; category?: string; featured?: boolean }>({});
   const [friendSearch, setFriendSearch] = useState("");
-
-  // Game options for filter dropdowns
-  const gameOptions = useMemo(
-    () => games.map((g) => ({ value: g.slug, label: g.name })),
-    [games]
-  );
 
   // Update URL when tab changes
   const handleTabChange = useCallback((tab: TabId) => {
@@ -265,9 +264,13 @@ export function CommunityPageClient({
       if (blogFilters.featured) query = query.eq("is_featured", true);
       if (blogFilters.search) query = query.ilike("title", `%${blogFilters.search}%`);
       if (blogFilters.game) {
-        // Find game ID from slug
-        const game = games.find((g) => g.slug === blogFilters.game);
-        if (game) query = query.eq("game_id", game.id);
+        // Look up game ID from slug via a quick query
+        const { data: gameRow } = await db
+          .from("games")
+          .select("id")
+          .eq("slug", blogFilters.game)
+          .single();
+        if (gameRow) query = query.eq("game_id", gameRow.id);
       }
 
       const { data: posts, error: queryError } = await query;
@@ -473,7 +476,7 @@ export function CommunityPageClient({
       label: "Game",
       icon: <Gamepad2 className="w-3.5 h-3.5" />,
       type: "select" as const,
-      options: gameOptions,
+      options: SUPPORTED_GAME_OPTIONS,
       placeholder: "All Games",
     },
     {
@@ -497,7 +500,7 @@ export function CommunityPageClient({
       icon: <Sparkles className="w-3.5 h-3.5" />,
       type: "toggle" as const,
     },
-  ], [gameOptions]);
+  ], []);
 
   // ── Blog filter config ────────────────────────────────────────────────
   const blogFilterFields = useMemo(() => [
@@ -506,7 +509,7 @@ export function CommunityPageClient({
       label: "Game",
       icon: <Gamepad2 className="w-3.5 h-3.5" />,
       type: "select" as const,
-      options: gameOptions,
+      options: SUPPORTED_GAME_OPTIONS,
       placeholder: "All Games",
     },
     {
@@ -522,7 +525,7 @@ export function CommunityPageClient({
       icon: <Sparkles className="w-3.5 h-3.5" />,
       type: "toggle" as const,
     },
-  ], [gameOptions]);
+  ], []);
 
   return (
     <div className="space-y-6">
