@@ -44,6 +44,9 @@ yarn-error.log*
 /public/uploads
 /uploads
 
+# blog content
+/Blog Content
+
 # vercel
 .vercel
 

@@ -23,6 +23,7 @@ import {
   Undo,
   Redo,
   Minus,
+  CodeXml,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ export function RichTextEditor({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
+  const [showHtmlSource, setShowHtmlSource] = useState(false);
+  const [htmlSource, setHtmlSource] = useState("");
 
   const editor = useEditor({
     extensions: [
@@ -264,6 +267,26 @@ export function RichTextEditor({
 
         <ToolbarDivider />
 
+        {/* HTML source toggle */}
+        <ToolbarButton
+          onClick={() => {
+            if (!showHtmlSource) {
+              setHtmlSource(editor.getHTML());
+            } else {
+              editor.commands.setContent(htmlSource, { emitUpdate: true });
+              onChange(editor.getHTML());
+              onJsonChange?.(editor.getJSON() as Record<string, unknown>);
+            }
+            setShowHtmlSource(!showHtmlSource);
+          }}
+          active={showHtmlSource}
+          title={showHtmlSource ? "Switch to Visual Editor" : "Edit HTML Source"}
+        >
+          <CodeXml className="w-4 h-4" />
+        </ToolbarButton>
+
+        <ToolbarDivider />
+
         {/* Undo / Redo */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -346,8 +369,18 @@ export function RichTextEditor({
         </div>
       )}
 
-      {/* Editor content area */}
-      <EditorContent editor={editor} />
+      {/* HTML Source editor */}
+      {showHtmlSource ? (
+        <textarea
+          value={htmlSource}
+          onChange={(e) => setHtmlSource(e.target.value)}
+          className="w-full min-h-[400px] px-6 py-4 bg-surface text-text font-mono text-sm focus:outline-none resize-y"
+          placeholder="Paste or edit HTML here..."
+          spellCheck={false}
+        />
+      ) : (
+        <EditorContent editor={editor} />
+      )}
     </div>
   );
 }

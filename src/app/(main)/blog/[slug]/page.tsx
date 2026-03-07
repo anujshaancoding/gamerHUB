@@ -330,6 +330,7 @@ export default async function BlogPostPage({ params }: Props) {
           title={post.title}
           likesCount={post.likes_count}
           commentsCount={post.comments_count}
+          authorId={post.author_id}
         />
 
         {/* Comments section */}

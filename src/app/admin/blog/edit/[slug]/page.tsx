@@ -13,6 +13,7 @@ import {
   Eye,
   Heart,
   MessageCircle,
+  X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useBlogPost, useUpdateBlogPost } from "@/lib/hooks/useBlog";
@@ -21,6 +22,13 @@ const RichTextEditor = dynamic(
   () => import("@/components/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
   { ssr: false, loading: () => <div className="h-[400px] bg-white/[0.03] border border-white/10 rounded-xl animate-pulse" /> }
 );
+
+const BlogTemplateRenderer = dynamic(
+  () => import("@/components/blog/blog-template-renderer").then((mod) => mod.BlogTemplateRenderer),
+  { ssr: false }
+);
+
+import { FeaturedImageUpload } from "@/components/blog/featured-image-upload";
 import {
   BLOG_CATEGORIES,
   BLOG_TEMPLATES,
@@ -29,6 +37,7 @@ import {
   type BlogTemplate,
   type BlogColorPalette,
   type BlogStatus,
+  type BlogPost,
 } from "@/types/blog";
 
 export default function AdminEditBlogPost() {
@@ -38,6 +47,7 @@ export default function AdminEditBlogPost() {
   const { updatePost, isUpdating } = useUpdateBlogPost();
 
   const [showSeo, setShowSeo] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
@@ -129,6 +139,64 @@ export default function AdminEditBlogPost() {
   }
 
   const author = post.author as { username?: string; display_name?: string } | undefined;
+
+  // Build mock post for preview
+  const previewPost: BlogPost = {
+    ...post,
+    title: title || "Untitled Post",
+    content: content || "<p>Start writing to see the preview...</p>",
+    excerpt: excerpt || null,
+    featured_image_url: featuredImageUrl || null,
+    category,
+    tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+    template,
+    color_palette: colorPalette,
+  };
+
+  // Preview modal
+  if (showPreview) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-surface border-b border-border">
+          <h2 className="text-sm font-medium text-white/60">Preview — {BLOG_TEMPLATES[template]?.label} / {BLOG_COLOR_PALETTES[colorPalette]?.label}</h2>
+          <div className="flex items-center gap-3">
+            <select
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as BlogTemplate)}
+              className="px-2 py-1.5 bg-zinc-900 border border-white/10 rounded text-xs text-white [&>option]:bg-zinc-900"
+            >
+              {Object.entries(BLOG_TEMPLATES).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+            <select
+              value={colorPalette}
+              onChange={(e) => setColorPalette(e.target.value as BlogColorPalette)}
+              className="px-2 py-1.5 bg-zinc-900 border border-white/10 rounded text-xs text-white [&>option]:bg-zinc-900"
+            >
+              {Object.entries(BLOG_COLOR_PALETTES).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Close Preview
+            </button>
+          </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <BlogTemplateRenderer
+            post={previewPost}
+            template={template}
+            colorPalette={colorPalette}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -301,27 +369,12 @@ export default function AdminEditBlogPost() {
           />
         </div>
 
-        {/* Featured Image */}
-        <div>
-          <label className="block text-xs font-medium text-white/40 mb-1.5 uppercase tracking-wider">
-            Featured Image URL
-          </label>
-          <input
-            type="url"
-            value={featuredImageUrl}
-            onChange={(e) => setFeaturedImageUrl(e.target.value)}
-            placeholder="https://..."
-            className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-violet-500/50"
-          />
-          {featuredImageUrl && (
-            <img
-              src={featuredImageUrl}
-              alt="Preview"
-              className="mt-2 h-32 w-auto rounded-lg object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
-          )}
-        </div>
+        {/* Featured Image with Upload */}
+        <FeaturedImageUpload
+          value={featuredImageUrl}
+          onChange={setFeaturedImageUrl}
+          authorId={post.author_id}
+        />
 
         {/* Allow Comments */}
         <label className="flex items-center gap-3 cursor-pointer">
@@ -389,7 +442,7 @@ export default function AdminEditBlogPost() {
           Save Changes
         </button>
         <button
-          onClick={() => window.open(`/blog/${slug}`, "_blank")}
+          onClick={() => setShowPreview(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/[0.05] border border-white/10 text-white/70 text-sm font-medium rounded-lg hover:bg-white/[0.08] transition-colors"
         >
           <Eye className="h-4 w-4" />

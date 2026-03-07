@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Image as ImageIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, MessageCircle, Image as ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { SocialShareButtons } from "@/components/blog/social-share-buttons";
 import { ShareCardModal } from "@/components/blog/share-card-modal";
-import { useLikeBlogPost, useBlogPost } from "@/lib/hooks/useBlog";
+import { useLikeBlogPost, useBlogPost, useDeleteBlogPost } from "@/lib/hooks/useBlog";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/db/client-browser";
 
 interface BlogPostActionsProps {
@@ -12,6 +15,7 @@ interface BlogPostActionsProps {
   title: string;
   likesCount: number;
   commentsCount: number;
+  authorId?: string;
 }
 
 export function BlogPostActions({
@@ -19,10 +23,17 @@ export function BlogPostActions({
   title,
   likesCount: serverLikesCount,
   commentsCount: serverCommentsCount,
+  authorId,
 }: BlogPostActionsProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const { toggleLike, isLiking } = useLikeBlogPost();
+  const { deletePost, isDeleting } = useDeleteBlogPost();
   const { post } = useBlogPost(slug);
   const [showShareCards, setShowShareCards] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const isAuthor = !!(user?.id && authorId && user.id === authorId);
 
   // Use client-fetched data when available, fall back to server props
   const likesCount = post?.likes_count ?? serverLikesCount;
@@ -38,6 +49,17 @@ export function BlogPostActions({
       db.rpc("increment_blog_view", { post_slug: slug }).then();
     }
   }, [slug]);
+
+  const handleDelete = async () => {
+    try {
+      await deletePost(slug);
+      toast.success("Post deleted");
+      router.push("/blog");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    }
+    setShowDeleteConfirm(false);
+  };
 
   const url =
     typeof window !== "undefined"
@@ -69,6 +91,45 @@ export function BlogPostActions({
             {commentsCount} comments
           </span>
         </div>
+
+        {/* Author actions */}
+        {isAuthor && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/admin/blog/edit/${slug}`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 rounded-lg transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </button>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-400">Are you sure?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? "Deleting..." : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-3 py-1.5 text-sm text-white/50 hover:text-white/70 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Social share buttons */}
