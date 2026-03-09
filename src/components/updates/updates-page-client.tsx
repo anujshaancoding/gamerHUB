@@ -35,6 +35,13 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-09T18:00:00",
+    version: "1.14.1",
+    type: "improvement",
+    title: "Blog Game Filter Updated",
+    description: "The game filter in the blog section now only shows the three supported games: Valorant, BGMI, and Free Fire Max.",
+  },
+  {
     date: "2026-03-07T22:00:00",
     version: "1.14.0",
     type: "feature",
