@@ -6,7 +6,6 @@ import { Search, X, SlidersHorizontal, Gamepad2, Sparkles, ChevronDown } from "l
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { useGames } from "@/lib/hooks/useGames";
 import type { BlogFilters, BlogCategory } from "@/types/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
 
@@ -14,6 +13,12 @@ interface BlogFiltersProps {
   filters: BlogFilters;
   onFiltersChange: (filters: BlogFilters) => void;
 }
+
+const SUPPORTED_GAMES = [
+  { slug: "valorant", name: "Valorant" },
+  { slug: "bgmi", name: "BGMI" },
+  { slug: "freefire", name: "Free Fire Max" },
+];
 
 const categoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, value]) => ({
   value: key,
@@ -24,7 +29,6 @@ export function BlogFiltersComponent({
   filters,
   onFiltersChange,
 }: BlogFiltersProps) {
-  const { games } = useGames();
   const [searchInput, setSearchInput] = useState(filters.search || "");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -137,8 +141,8 @@ export function BlogFiltersComponent({
                     placeholder="All Games"
                   >
                     <option value="">All Games</option>
-                    {games.map((game) => (
-                      <option key={game.id} value={game.slug}>
+                    {SUPPORTED_GAMES.map((game) => (
+                      <option key={game.slug} value={game.slug}>
                         {game.name}
                       </option>
                     ))}
@@ -245,7 +249,7 @@ export function BlogFiltersComponent({
             {filters.game && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-full text-sm text-text-secondary border border-border">
                 <Gamepad2 className="w-3.5 h-3.5" />
-                {games.find((g) => g.slug === filters.game)?.name ||
+                {SUPPORTED_GAMES.find((g) => g.slug === filters.game)?.name ||
                   filters.game}
                 <button
                   onClick={() => handleChange("game", "")}

@@ -149,7 +149,7 @@ const blogCategoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, val]) => 
 const SUPPORTED_GAME_OPTIONS: { value: string; label: string }[] = [
   { value: "valorant", label: "Valorant" },
   { value: "bgmi", label: "BGMI" },
-  { value: "freefire", label: "Free Fire" },
+  { value: "freefire", label: "Free Fire Max" },
 ];
 
 export function CommunityPageClient({
