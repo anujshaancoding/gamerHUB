@@ -2,6 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth.config";
 
 export async function middleware(request: NextRequest) {
+  // Redirect www → non-www (canonical domain is gglobby.in)
+  const host = request.headers.get("host") || "";
+  if (host.startsWith("www.")) {
+    const newUrl = new URL(request.url);
+    newUrl.host = host.replace("www.", "");
+    return NextResponse.redirect(newUrl, 301);
+  }
+
   const session = await auth();
   const user = session?.user;
 

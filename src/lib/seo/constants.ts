@@ -4,7 +4,7 @@ export const SITE_DESCRIPTION =
   "The ultimate gaming social platform. Connect with gamers, find teammates, and compete worldwide. GG starts here.";
 
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.gglobby.in";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://gglobby.in";
 
 export const ORGANIZATION_JSONLD = {
   "@type": "Organization" as const,
