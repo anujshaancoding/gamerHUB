@@ -25,6 +25,8 @@ interface PostMeta {
   author: { display_name: string; username: string } | null;
 }
 
+export const revalidate = 3600;
+
 async function getPost(id: string) {
   const db = createClient();
   const { data } = await db
@@ -36,6 +38,7 @@ async function getPost(id: string) {
       author:profiles!blog_posts_author_id_fkey(display_name, username)
     `)
     .eq("id", id)
+    .eq("status", "published")
     .single();
   return data ? (data as unknown as PostMeta) : null;
 }
@@ -45,7 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPost(id);
 
   if (!post) {
-    return { title: "Post not found | ggLobby" };
+    return {
+      title: "Post not found | ggLobby",
+      robots: { index: false, follow: false },
+    };
   }
 
   const title = post.meta_title || post.title;
@@ -78,9 +84,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...(imageUrl ? { images: [imageUrl] } : {}),
     },
     alternates: {
-      canonical: `/community/post/${id}`,
+      canonical: `${BASE_URL}/community/post/${id}`,
     },
     keywords: post.tags || undefined,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+        "max-video-preview": -1,
+      },
+    },
   };
 }
 

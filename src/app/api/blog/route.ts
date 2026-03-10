@@ -48,19 +48,6 @@ export async function GET(request: NextRequest) {
       .order("published_at", { ascending: false })
       .limit(limit);
 
-    // Filter by game
-    if (game) {
-      const { data: gameData } = await db
-        .from("games")
-        .select("id")
-        .eq("slug", game)
-        .single();
-
-      if (gameData) {
-        query = query.eq("game_id", gameData.id);
-      }
-    }
-
     // Filter by category
     if (category) {
       query = query.eq("category", category);
@@ -106,7 +93,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const posts = data || [];
+    let posts = data || [];
+
+    // Filter by game using tags (blog posts don't always have game_id set)
+    if (game) {
+      const slugToTag: Record<string, string> = {
+        valorant: "valorant",
+        bgmi: "bgmi",
+        freefire: "free fire",
+      };
+      const tagPrefix = slugToTag[game];
+      if (tagPrefix) {
+        posts = posts.filter((p: { tags?: string[] | null }) =>
+          p.tags?.some((t: string) => t.toLowerCase().startsWith(tagPrefix))
+        );
+      }
+    }
+
     // Next cursor is the published_at of the last item (for next page)
     const nextCursor =
       posts.length === limit
@@ -116,7 +119,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         posts,
-        total: count || 0,
+        total: posts.length,
         limit,
         nextCursor,
       },

@@ -263,20 +263,18 @@ export function CommunityPageClient({
       if (blogFilters.category) query = query.eq("category", blogFilters.category);
       if (blogFilters.featured) query = query.eq("is_featured", true);
       if (blogFilters.search) query = query.ilike("title", `%${blogFilters.search}%`);
-      if (blogFilters.game) {
-        // Look up game ID from slug via a quick query
-        const { data: gameRow } = await db
-          .from("games")
-          .select("id")
-          .eq("slug", blogFilters.game)
-          .single();
-        if (gameRow) query = query.eq("game_id", gameRow.id);
-      }
-
       const { data: posts, error: queryError } = await query;
       if (queryError) throw new Error(queryError.message);
 
-      return (posts || []).map((post: Record<string, unknown>): BlogPost => ({
+      // Map slug to tag prefix for client-side game filtering
+      // (blog posts don't always have game_id set — game is inferred from tags)
+      const SLUG_TO_TAG: Record<string, string> = {
+        valorant: "valorant",
+        bgmi: "bgmi",
+        freefire: "free fire",
+      };
+
+      const mapped = (posts || []).map((post: Record<string, unknown>): BlogPost => ({
         id: post.id as string,
         title: post.title as string,
         excerpt: post.excerpt as string,
@@ -292,6 +290,17 @@ export function CommunityPageClient({
         tags: post.tags as string[],
         author: post.author as BlogPost["author"],
       }));
+
+      if (blogFilters.game) {
+        const tagPrefix = SLUG_TO_TAG[blogFilters.game];
+        if (tagPrefix) {
+          return mapped.filter((post) =>
+            post.tags?.some((tag) => tag.toLowerCase().startsWith(tagPrefix))
+          );
+        }
+      }
+
+      return mapped;
     },
     staleTime: STALE_TIMES.BLOG_POSTS,
     enabled: activeTab === "blog",

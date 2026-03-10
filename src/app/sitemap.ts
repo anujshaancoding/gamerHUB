@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { BLOG_CATEGORIES } from "@/types/blog";
 import { BASE_URL } from "@/lib/seo";
 import { createClient } from "@/lib/db/client";
 
@@ -57,15 +56,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Category filter pages under community
-  const categoryPages: MetadataRoute.Sitemap = Object.keys(BLOG_CATEGORIES).map(
-    (cat) => ({
-      url: `${BASE_URL}/community?tab=blog&category=${cat}`,
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    })
-  );
-
   // All published blog posts — use /community/post/{id} URLs
   const db = createClient();
   const { data: posts } = await db
@@ -83,5 +73,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
-  return [...staticPages, ...categoryPages, ...postPages];
+  return [...staticPages, ...postPages];
 }
