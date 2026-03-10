@@ -6,9 +6,8 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   if (host.startsWith("www.")) {
     const nonWwwHost = host.replace("www.", "");
-    const url = new URL(request.url);
-    url.host = nonWwwHost;
-    return NextResponse.redirect(url.toString(), 301);
+    const { pathname, search } = request.nextUrl;
+    return NextResponse.redirect(`https://${nonWwwHost}${pathname}${search}`, 301);
   }
 
   const session = await auth();
