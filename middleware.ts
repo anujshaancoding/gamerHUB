@@ -5,9 +5,10 @@ export async function middleware(request: NextRequest) {
   // Redirect www → non-www (canonical domain is gglobby.in)
   const host = request.headers.get("host") || "";
   if (host.startsWith("www.")) {
-    const newUrl = request.nextUrl.clone();
-    newUrl.host = newUrl.host.replace("www.", "");
-    return NextResponse.redirect(newUrl, 301);
+    const nonWwwHost = host.replace("www.", "");
+    const url = new URL(request.url);
+    url.host = nonWwwHost;
+    return NextResponse.redirect(url.toString(), 301);
   }
 
   const session = await auth();
