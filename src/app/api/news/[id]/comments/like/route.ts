@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { isNewsHidden } from "@/lib/news/visibility";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,6 +10,10 @@ interface RouteParams {
 // POST - Toggle like on a news comment
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    if (await isNewsHidden()) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const { id: articleId } = await params;
     const db = createClient();
     const user = await getUser();

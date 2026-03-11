@@ -37,6 +37,7 @@ import { StatusSelector } from "@/components/presence/StatusSelector";
 import { PremiumBadge } from "@/components/premium";
 import { Logo } from "@/components/layout/logo";
 import { SearchDropdown } from "@/components/search";
+import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
 import { cn } from "@/lib/utils";
 
 const getNotificationIcon = (type: NotificationType) => {
@@ -85,6 +86,8 @@ export function Navbar() {
   const isAuthenticated = !!user;
   const { isPremium } = useSubscription({ enabled: isAuthenticated });
   const { myStatus } = usePresence();
+
+  const { hideNews } = useSiteSettings();
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -168,7 +171,7 @@ export function Navbar() {
             <div className="hidden lg:block relative" ref={searchRef}>
               <form onSubmit={handleSearch}>
                 <Input
-                  placeholder="Search news and blogs"
+                  placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -448,7 +451,7 @@ export function Navbar() {
             <div className="relative mb-3">
               <form onSubmit={handleSearch}>
                 <Input
-                  placeholder="Search news and blogs"
+                  placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);

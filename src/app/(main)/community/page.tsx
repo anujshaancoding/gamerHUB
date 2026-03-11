@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { BASE_URL } from "@/lib/seo/constants";
+import { isNewsHidden } from "@/lib/news/visibility";
 import {
   CommunityPageClient,
   type BlogPost,
@@ -99,8 +100,9 @@ export async function generateMetadata({
 export default async function CommunityPage() {
   const db = createClient();
   const admin = createAdminClient();
+  const hideNews = await isNewsHidden();
 
-  // Pre-fetch all three data sources in parallel for fastest initial load
+  // Pre-fetch data sources in parallel for fastest initial load
   const [rawBlogPosts, rawFriendPostsData, rawNewsArticles] = await Promise.all([
     db
       .from("blog_posts")
@@ -123,16 +125,19 @@ export default async function CommunityPage() {
       .limit(4)
       .then((r) => r.data),
 
-    admin
-      .from("news_articles")
-      .select(
-        "id, title, excerpt, thumbnail_url, game_slug, category, region, tags, views_count, published_at, is_featured, is_pinned, created_at, original_url, source:news_sources(name, slug)"
-      )
-      .eq("status", "published")
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false })
-      .limit(20)
-      .then((r) => r.data),
+    // Skip news fetch entirely when hidden
+    hideNews
+      ? Promise.resolve(null)
+      : admin
+          .from("news_articles")
+          .select(
+            "id, title, excerpt, thumbnail_url, game_slug, category, region, tags, views_count, published_at, is_featured, is_pinned, created_at, original_url, source:news_sources(name, slug)"
+          )
+          .eq("status", "published")
+          .order("is_pinned", { ascending: false })
+          .order("published_at", { ascending: false })
+          .limit(20)
+          .then((r) => r.data),
   ]);
 
   // Manually join friend post authors
@@ -185,6 +190,7 @@ export default async function CommunityPage() {
         initialBlogPosts={blogPosts}
         initialFriendPosts={friendPosts}
         initialNewsArticles={newsArticles}
+        hideNews={hideNews}
       />
     </Suspense>
   );

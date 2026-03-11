@@ -21,7 +21,6 @@ import { cn } from "@/lib/utils";
 import { SharePopup } from "@/components/ui/share-popup";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
-import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";
 import {
   useFriendPostComments,
@@ -81,8 +80,6 @@ export function FriendPostCard({
   onDelete,
 }: FriendPostCardProps) {
   const { user } = useAuth();
-  const { can: permissions } = usePermissions();
-
   // Server-backed like state
   const { data: serverLiked } = useFriendPostLiked(post.id, user?.id);
   const [liked, setLiked] = useState(false);
@@ -97,6 +94,7 @@ export function FriendPostCard({
   // Comments state
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const { data: comments = [], isLoading: commentsLoading } = useFriendPostComments(post.id, showComments);
   const { addComment, isAdding: isAddingComment } = useAddFriendPostComment();
@@ -109,9 +107,9 @@ export function FriendPostCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
-  const canDelete = !isGuest && (
-    (user && post.user_id === user.id) || permissions.deleteFreeUserPost
-  );
+  // Only allow deleting your own posts from the frontend UI
+  // Admin/editor deletion of other users' posts should be done via the admin panel
+  const canDelete = !isGuest && user && post.user_id === user.id;
 
   // Sync liked state from server
   useEffect(() => {
@@ -133,6 +131,20 @@ export function FriendPostCard({
       setLikesCount(post.likes_count || 0);
     }
   }, [post.likes_count, isLiking]);
+
+  // Sync comments count from fetched comments list (real-time update)
+  useEffect(() => {
+    if (showComments && !commentsLoading) {
+      setCommentsCount(comments.length);
+    }
+  }, [comments.length, showComments, commentsLoading]);
+
+  // Sync comments count from server prop when not viewing comments
+  useEffect(() => {
+    if (!showComments) {
+      setCommentsCount(post.comments_count || 0);
+    }
+  }, [post.comments_count, showComments]);
 
   const handleDelete = async () => {
     if (isDeleting || !onDelete) return;
@@ -183,18 +195,22 @@ export function FriendPostCard({
     const content = commentText.trim();
     if (!content || isAddingComment) return;
 
+    setCommentsCount((prev) => prev + 1);
     try {
       await addComment({ postId: post.id, content });
       setCommentText("");
     } catch {
+      setCommentsCount((prev) => Math.max(0, prev - 1));
       toast.error("Failed to post comment");
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    setCommentsCount((prev) => Math.max(0, prev - 1));
     try {
       await deleteComment({ postId: post.id, commentId });
     } catch {
+      setCommentsCount((prev) => prev + 1);
       toast.error("Failed to delete comment");
     }
   };
@@ -349,7 +365,7 @@ export function FriendPostCard({
                 )}
               >
                 <MessageCircle className="h-[18px] w-[18px] transition-transform group-hover/comment:scale-110" />
-                <span className="text-sm font-medium">{post.comments_count || 0}</span>
+                <span className="text-sm font-medium">{commentsCount}</span>
               </button>
 
               {/* Share */}

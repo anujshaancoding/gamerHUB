@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/db/admin";
+import { isNewsHidden } from "@/lib/news/visibility";
 import { NewsDetailClient } from "./news-detail-client";
 import type { NewsArticle } from "@/types/news";
 
@@ -30,6 +31,10 @@ async function getNewsArticle(id: string): Promise<NewsArticle | null> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (await isNewsHidden()) {
+    return { title: "Not Found" };
+  }
+
   const { id } = await params;
   const article = await getNewsArticle(id);
 
@@ -63,6 +68,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function NewsArticlePage({ params }: Props) {
+  if (await isNewsHidden()) {
+    notFound();
+  }
+
   const { id } = await params;
   const article = await getNewsArticle(id);
 

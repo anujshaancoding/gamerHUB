@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 
 interface RouteParams {
@@ -29,6 +30,44 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { error: "Failed to toggle like" },
         { status: 500 }
       );
+    }
+
+    // Send notification to post owner when liked (not when unliked, not to self)
+    if ((data as any)?.liked) {
+      try {
+        const admin = createAdminClient();
+        const { data: post } = await admin
+          .from("friend_posts")
+          .select("user_id")
+          .eq("id", postId)
+          .single();
+
+        if (post && post.user_id !== user.id) {
+          // Get liker's display name
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("display_name, username")
+            .eq("id", user.id)
+            .single();
+
+          const likerName = profile?.display_name || profile?.username || "Someone";
+
+          await admin.from("notifications").insert({
+            user_id: post.user_id,
+            type: "post_like",
+            title: `${likerName} liked your post`,
+            icon: "❤️",
+            action_url: `/community?post=${postId}`,
+            action_label: "View post",
+            metadata: { post_id: postId, liker_id: user.id },
+            is_read: false,
+            is_archived: false,
+          });
+        }
+      } catch (notifError) {
+        // Don't fail the like if notification fails
+        console.error("Failed to create like notification:", notifError);
+      }
     }
 
     return NextResponse.json(data);

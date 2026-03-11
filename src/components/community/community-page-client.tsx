@@ -126,6 +126,7 @@ interface CommunityPageClientProps {
   initialBlogPosts: BlogPost[];
   initialFriendPosts: FriendPost[];
   initialNewsArticles: NewsArticle[];
+  hideNews?: boolean;
 }
 
 // ── News category filter options ────────────────────────────────────────
@@ -156,6 +157,7 @@ export function CommunityPageClient({
   initialBlogPosts,
   initialFriendPosts,
   initialNewsArticles,
+  hideNews = false,
 }: CommunityPageClientProps) {
   const { user, profile } = useAuth();
   const db = useMemo(() => createClient(), []);
@@ -165,15 +167,18 @@ export function CommunityPageClient({
   const pathname = usePathname();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
-  // Read initial tab from URL: ?tab=blog, ?tab=tournaments, ?tab=friends, or default to news
+  // Read initial tab from URL: ?tab=blog, ?tab=tournaments, ?tab=friends, or default
   const sharedPostId = searchParams.get("post");
   const tabParam = searchParams.get("tab");
-  const validTabs: TabId[] = ["news", "blog", "tournaments", "friends"];
+  const validTabs: TabId[] = hideNews
+    ? ["blog", "tournaments", "friends"]
+    : ["news", "blog", "tournaments", "friends"];
+  const defaultTab: TabId = hideNews ? "blog" : "news";
   const initialTab: TabId = sharedPostId
     ? "friends"
     : validTabs.includes(tabParam as TabId)
       ? (tabParam as TabId)
-      : "news";
+      : defaultTab;
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   // ── Filter states per tab ─────────────────────────────────────────────
@@ -186,7 +191,7 @@ export function CommunityPageClient({
   const handleTabChange = useCallback((tab: TabId) => {
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
-    if (tab === "news") {
+    if (tab === defaultTab) {
       params.delete("tab");
     } else {
       params.set("tab", tab);
@@ -232,7 +237,7 @@ export function CommunityPageClient({
       return json.articles as NewsArticle[];
     },
     staleTime: STALE_TIMES.NEWS_ARTICLES,
-    enabled: activeTab === "news",
+    enabled: !hideNews && activeTab === "news",
     initialData:
       initialNewsArticles.length > 0 && Object.keys(newsFilters).length === 0
         ? initialNewsArticles
@@ -463,7 +468,7 @@ export function CommunityPageClient({
   };
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
-    { id: "news", label: "News", icon: Newspaper },
+    ...(!hideNews ? [{ id: "news" as TabId, label: "News", icon: Newspaper }] : []),
     { id: "blog", label: "Blog", icon: BookOpen },
     { id: "tournaments", label: "Tournaments/Giveaways", icon: Trophy },
     { id: "friends", label: "Friends", icon: Users },

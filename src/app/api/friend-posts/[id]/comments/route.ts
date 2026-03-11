@@ -96,6 +96,41 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Send notification to post owner (not to self)
+    try {
+      const { data: post } = await db
+        .from("friend_posts")
+        .select("user_id")
+        .eq("id", postId)
+        .single();
+
+      if (post && post.user_id !== user.id) {
+        const { data: profile } = await db
+          .from("profiles")
+          .select("display_name, username")
+          .eq("id", user.id)
+          .single();
+
+        const commenterName = profile?.display_name || profile?.username || "Someone";
+
+        await db.from("notifications").insert({
+          user_id: post.user_id,
+          type: "post_comment",
+          title: `${commenterName} commented on your post`,
+          body: content.length > 100 ? content.slice(0, 100) + "…" : content,
+          icon: "💬",
+          action_url: `/community?post=${postId}`,
+          action_label: "View post",
+          metadata: { post_id: postId, commenter_id: user.id },
+          is_read: false,
+          is_archived: false,
+        });
+      }
+    } catch (notifError) {
+      // Don't fail the comment if notification fails
+      console.error("Failed to create comment notification:", notifError);
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error("Comment POST error:", error);

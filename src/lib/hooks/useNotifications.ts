@@ -15,7 +15,9 @@ export type NotificationType =
   | "stream_live"
   | "forum_reply"
   | "direct_message"
-  | "system_announcement";
+  | "system_announcement"
+  | "post_like"
+  | "post_comment";
 
 export type NotificationChannel = "in_app" | "email" | "discord" | "push";
 
@@ -115,6 +117,16 @@ export const NOTIFICATION_TYPE_INFO: Record<NotificationType, { label: string; d
     label: "System Announcements",
     description: "Important platform announcements",
     icon: "📢",
+  },
+  post_like: {
+    label: "Post Likes",
+    description: "When someone likes your post",
+    icon: "❤️",
+  },
+  post_comment: {
+    label: "Post Comments",
+    description: "When someone comments on your post",
+    icon: "💬",
   },
 };
 

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
+import { isNewsHidden } from "@/lib/news/visibility";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (await isNewsHidden()) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const { id } = await params;
     const admin = createAdminClient();
 

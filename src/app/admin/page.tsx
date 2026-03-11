@@ -12,6 +12,9 @@ import {
   Newspaper,
   RefreshCw,
   MessageSquarePlus,
+  EyeOff,
+  Eye,
+  Loader2,
 } from "lucide-react";
 
 interface AdminStats {
@@ -62,14 +65,23 @@ function StatCard({
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hideNews, setHideNews] = useState(true);
+  const [togglingNews, setTogglingNews] = useState(false);
 
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/admin/stats");
-        if (res.ok) {
-          const data = await res.json();
+        const [statsRes, settingsRes] = await Promise.all([
+          fetch("/api/admin/stats"),
+          fetch("/api/admin/settings"),
+        ]);
+        if (statsRes.ok) {
+          const data = await statsRes.json();
           setStats(data);
+        }
+        if (settingsRes.ok) {
+          const data = await settingsRes.json();
+          setHideNews(data.settings?.hide_news ?? true);
         }
       } catch {
         // silently fail
@@ -77,8 +89,27 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     }
-    fetchStats();
+    fetchData();
   }, []);
+
+  const toggleNewsVisibility = async () => {
+    setTogglingNews(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "hide_news", value: !hideNews }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHideNews(data.settings.hide_news);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setTogglingNews(false);
+    }
+  };
 
   const formatCount = (n: number | undefined) => {
     if (n === undefined) return "—";
@@ -88,6 +119,56 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      {/* Feature Toggles */}
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5">
+        <h2 className="text-sm font-semibold text-white/60 mb-4 uppercase tracking-wider">Feature Toggles</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {hideNews ? (
+              <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-red-500/10">
+                <EyeOff className="h-4 w-4 text-red-400" />
+              </div>
+            ) : (
+              <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-emerald-500/10">
+                <Eye className="h-4 w-4 text-emerald-400" />
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-white">
+                {hideNews ? "News Section Hidden" : "News Section Visible"}
+              </p>
+              <p className="text-xs text-white/40">
+                {hideNews
+                  ? "News tab, routes, and API are completely hidden from frontend"
+                  : "News is live — tab, pages, and API are accessible to users"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleNewsVisibility}
+            disabled={togglingNews || loading}
+            className={`
+              relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer rounded-full border-2 border-transparent
+              transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2
+              focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50
+              ${hideNews ? "bg-red-500/30" : "bg-emerald-500/30"}
+            `}
+          >
+            <span
+              className={`
+                pointer-events-none inline-block h-6 w-6 transform rounded-full shadow-lg ring-0
+                transition duration-200 ease-in-out flex items-center justify-center
+                ${hideNews ? "translate-x-0 bg-red-400" : "translate-x-[22px] bg-emerald-400"}
+              `}
+            >
+              {togglingNews && (
+                <Loader2 className="h-3 w-3 animate-spin text-white" />
+              )}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Total Users"
@@ -103,13 +184,15 @@ export default function AdminDashboard() {
           color="bg-green-500/10 text-green-400"
           href="/admin/blog"
         />
-        <StatCard
-          label="Published News"
-          value={loading ? "..." : formatCount(stats?.publishedNews)}
-          icon={Newspaper}
-          color="bg-emerald-500/10 text-emerald-400"
-          href="/admin/news"
-        />
+        {!hideNews && (
+          <StatCard
+            label="Published News"
+            value={loading ? "..." : formatCount(stats?.publishedNews)}
+            icon={Newspaper}
+            color="bg-emerald-500/10 text-emerald-400"
+            href="/admin/news"
+          />
+        )}
         <StatCard
           label="Messages"
           value={loading ? "..." : formatCount(stats?.totalMessages)}
@@ -126,7 +209,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Attention-needed cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${hideNews ? "sm:grid-cols-2" : "sm:grid-cols-3"} gap-4`}>
         <Link href="/admin/blog?status=pending_review">
           <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/[0.03] p-5 hover:bg-yellow-500/[0.06] transition-colors">
             <div className="flex items-center justify-between mb-3">
@@ -143,22 +226,24 @@ export default function AdminDashboard() {
             <p className="text-xs text-white/30 mt-1">Blog posts awaiting approval</p>
           </div>
         </Link>
-        <Link href="/admin/news?status=pending">
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-5 hover:bg-emerald-500/[0.06] transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-emerald-400/60 uppercase tracking-wider">
-                Pending News
-              </span>
-              <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-emerald-500/10">
-                <Newspaper className="h-4 w-4 text-emerald-400" />
+        {!hideNews && (
+          <Link href="/admin/news?status=pending">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-5 hover:bg-emerald-500/[0.06] transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-emerald-400/60 uppercase tracking-wider">
+                  Pending News
+                </span>
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-emerald-500/10">
+                  <Newspaper className="h-4 w-4 text-emerald-400" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-emerald-400">
+                {loading ? "..." : formatCount(stats?.pendingNews)}
+              </p>
+              <p className="text-xs text-white/30 mt-1">News articles needing review</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-400">
-              {loading ? "..." : formatCount(stats?.pendingNews)}
-            </p>
-            <p className="text-xs text-white/30 mt-1">News articles needing review</p>
-          </div>
-        </Link>
+          </Link>
+        )}
         <Link href="/admin/reports?status=pending">
           <div className="rounded-xl border border-red-500/20 bg-red-500/[0.03] p-5 hover:bg-red-500/[0.06] transition-colors">
             <div className="flex items-center justify-between mb-3">
@@ -209,20 +294,24 @@ export default function AdminDashboard() {
             <Users className="h-5 w-5 text-blue-400" />
             <span className="text-xs font-medium text-white/50">Manage Users</span>
           </Link>
-          <Link
-            href="/admin/news"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition-colors"
-          >
-            <RefreshCw className="h-5 w-5 text-emerald-400" />
-            <span className="text-xs font-medium text-white/50">Fetch News</span>
-          </Link>
-          <Link
-            href="/admin/news/post"
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition-colors"
-          >
-            <Newspaper className="h-5 w-5 text-emerald-400" />
-            <span className="text-xs font-medium text-white/50">Post News</span>
-          </Link>
+          {!hideNews && (
+            <>
+              <Link
+                href="/admin/news"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition-colors"
+              >
+                <RefreshCw className="h-5 w-5 text-emerald-400" />
+                <span className="text-xs font-medium text-white/50">Fetch News</span>
+              </Link>
+              <Link
+                href="/admin/news/post"
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition-colors"
+              >
+                <Newspaper className="h-5 w-5 text-emerald-400" />
+                <span className="text-xs font-medium text-white/50">Post News</span>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

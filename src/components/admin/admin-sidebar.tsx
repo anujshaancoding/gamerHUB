@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,11 +17,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 
-const navItems = [
+const allNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
-  { href: "/admin/news", label: "News", icon: Newspaper },
+  { href: "/admin/news", label: "News", icon: Newspaper, newsOnly: true },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
@@ -29,6 +30,20 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [hideNews, setHideNews] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.settings) setHideNews(data.settings.hide_news);
+      })
+      .catch(() => {});
+  }, []);
+
+  const navItems = hideNews
+    ? allNavItems.filter((item) => !item.newsOnly)
+    : allNavItems;
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;

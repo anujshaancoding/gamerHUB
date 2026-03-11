@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
+import { isNewsHidden } from "@/lib/news/visibility";
 
 export async function GET(request: NextRequest) {
   try {
+    if (await isNewsHidden()) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const { searchParams } = request.nextUrl;
     const game = searchParams.get("game") || "";
     const category = searchParams.get("category") || "";
