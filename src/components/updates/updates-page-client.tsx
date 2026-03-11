@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-11T18:00:00",
+    version: "1.15.0",
+    type: "feature",
+    title: "Real-Time Post Interactions & Notifications",
+    description: "Like and comment counts on friend posts now update instantly without needing to refresh the page. You'll also receive in-app notifications when someone likes or comments on your posts.",
+    highlights: [
+      "Instant like and comment count updates with optimistic UI",
+      "New in-app notifications for post likes and comments",
+      "Delete button on posts now correctly shows only for your own posts",
+    ],
+  },
+  {
     date: "2026-03-09T18:00:00",
     version: "1.14.1",
     type: "improvement",
