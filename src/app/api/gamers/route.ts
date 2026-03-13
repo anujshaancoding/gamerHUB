@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ gamers: [] });
     }
 
-    const profileIds = (profiles as any[]).map((p: any) => p.id);
+    const profileRows = profiles as Array<Record<string, unknown>>;
+    const profileIds = profileRows.map((p) => p.id as string);
 
     // 2. Get user_games with flat FK join to games table
     const { data: userGamesRows } = await db
@@ -56,16 +57,17 @@ export async function GET(request: NextRequest) {
       .in("user_id", profileIds);
 
     // Group user_games by user_id
-    const userGamesMap: Record<string, any[]> = {};
-    for (const row of (userGamesRows || []) as any[]) {
-      if (!userGamesMap[row.user_id]) userGamesMap[row.user_id] = [];
-      userGamesMap[row.user_id].push(row);
+    const userGamesMap: Record<string, Array<Record<string, unknown>>> = {};
+    for (const row of (userGamesRows || []) as Array<Record<string, unknown>>) {
+      const userId = row.user_id as string;
+      if (!userGamesMap[userId]) userGamesMap[userId] = [];
+      userGamesMap[userId].push(row);
     }
 
     // 3. Combine profiles with their games
-    const gamers = (profiles as any[]).map((profile: any) => ({
+    const gamers = profileRows.map((profile) => ({
       ...profile,
-      user_games: userGamesMap[profile.id] || [],
+      user_games: userGamesMap[profile.id as string] || [],
     }));
 
     return NextResponse.json({ gamers });

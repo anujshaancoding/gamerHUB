@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     const { data, count, error } = await query;
 
     if (error) {
-      console.error("Admin feedback fetch error:", error);
+      logger.error("Admin feedback fetch error", error);
       return NextResponse.json(
         { error: "Failed to fetch feedback" },
         { status: 500 }
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
       page,
     });
   } catch (error) {
-    console.error("Admin feedback API error:", error);
+    logger.error("Admin feedback API error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

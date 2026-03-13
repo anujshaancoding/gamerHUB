@@ -70,6 +70,22 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), payment=()" },
+      {
+        key: "Content-Security-Policy",
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          "img-src 'self' data: blob: https: http:",
+          "font-src 'self' https://fonts.gstatic.com",
+          "connect-src 'self' https: wss:",
+          "media-src 'self' https:",
+          "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.twitch.tv https://js.stripe.com",
+          "frame-ancestors 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join("; "),
+      },
     ];
 
     return [

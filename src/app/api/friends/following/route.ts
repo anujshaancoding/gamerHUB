@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { Profile } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 interface FollowData {
   follower_id: string;
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     const followingData = followingDataRaw as Pick<FollowData, "following_id" | "created_at">[] | null;
 
     if (followingError) {
-      console.error("Error fetching following:", followingError);
+      logger.error("Error fetching following", followingError);
       return NextResponse.json(
         { error: "Failed to fetch following" },
         { status: 500 }
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     const { data: profilesRaw, error: profilesError, count } = await query;
 
     if (profilesError) {
-      console.error("Error fetching profiles:", profilesError);
+      logger.error("Error fetching following profiles", profilesError);
       return NextResponse.json(
         { error: "Failed to fetch profiles" },
         { status: 500 }
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Following list error:", error);
+    logger.error("Following list error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

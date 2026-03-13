@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { sendWebhookMessage, buildEmbed, EMBED_COLORS } from "@/lib/integrations/discord";
 import type { CrosspostRequest } from "@/types/discord";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // POST - Crosspost content to Discord
 export async function POST(request: NextRequest) {
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (crosspostError) {
-        console.error("Failed to record crosspost:", crosspostError);
+        logger.error("Failed to record crosspost", crosspostError);
       }
 
       return NextResponse.json({
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
         crosspost_id: crosspost?.id,
       });
     } catch (webhookError) {
-      console.error("Webhook send error:", webhookError);
+      logger.error("Webhook send error", webhookError);
 
       // Record failed crosspost
       await db.from("discord_crossposts").insert({
@@ -220,7 +221,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("Crosspost error:", error);
+    logger.error("Crosspost error", error);
     return NextResponse.json(
       { error: "Failed to crosspost content" },
       { status: 500 }
@@ -250,7 +251,7 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error("Get crossposts error:", error);
+      logger.error("Get crossposts error", error);
       return NextResponse.json(
         { error: "Failed to get crossposts" },
         { status: 500 }
@@ -263,7 +264,7 @@ export async function GET(request: NextRequest) {
       hasMore: (count || 0) > offset + limit,
     });
   } catch (error) {
-    console.error("Get crossposts error:", error);
+    logger.error("Get crossposts error", error);
     return NextResponse.json(
       { error: "Failed to get crossposts" },
       { status: 500 }

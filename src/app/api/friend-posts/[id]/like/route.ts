@@ -33,7 +33,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Send notification to post owner when liked (not when unliked, not to self)
-    if ((data as any)?.liked) {
+    const rpcResult = data as Record<string, unknown> | null;
+    if (rpcResult?.liked) {
       try {
         const admin = createAdminClient();
         const { data: post } = await admin

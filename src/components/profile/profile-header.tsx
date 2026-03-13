@@ -301,6 +301,7 @@ export function ProfileHeader({
             <Link
               href={`/profile/${profile.username}/edit`}
               className="absolute top-4 right-4 p-2 rounded-full bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-black/70"
+              aria-label="Edit banner image"
             >
               <Camera className="h-5 w-5 text-white" />
             </Link>
@@ -798,7 +799,7 @@ export function ProfileHeader({
                       </Button>
                     )}
                     <Link href={`/messages?user=${profile.id}`}>
-                      <Button variant="outline" size="icon" title="Send Message" className="hover:border-accent hover:text-accent transition-colors">
+                      <Button variant="outline" size="icon" title="Send Message" aria-label="Send message" className="hover:border-accent hover:text-accent transition-colors">
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </Link>
@@ -809,6 +810,7 @@ export function ProfileHeader({
                   size="icon"
                   onClick={handleShare}
                   title="Share Profile"
+                  aria-label="Share profile"
                   className="hover:text-primary transition-colors"
                 >
                   <Share2 className="h-4 w-4" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 import { toast } from "sonner";
 import {
   ChevronLeft,
@@ -65,7 +66,7 @@ export default function AdminAuthorsPage() {
     try {
       const res = await fetch("/api/admin/blog-authors", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ author_id: authorId, updates }),
       });
       if (!res.ok) {

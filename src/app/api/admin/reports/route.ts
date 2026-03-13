@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Admin reports list error:", error);
+      logger.error("Admin reports list error", error);
       return NextResponse.json(
         { error: "Failed to fetch reports" },
         { status: 500 }
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Admin reports error:", error);
+    logger.error("Admin reports error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -163,7 +164,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Admin report update error:", error);
+      logger.error("Admin report update error", error);
       return NextResponse.json(
         { error: "Failed to update report" },
         { status: 500 }
@@ -172,7 +173,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ report: data });
   } catch (error) {
-    console.error("Admin report patch error:", error);
+    logger.error("Admin report patch error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

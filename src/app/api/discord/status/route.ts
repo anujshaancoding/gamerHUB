@@ -12,9 +12,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get Discord connection - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: connection, error } = await (db as any)
+    // Get Discord connection — untyped table
+    const { data: connection, error } = await db
       .from("discord_connections")
       .select("*")
       .eq("user_id", user.id)
@@ -25,8 +24,7 @@ export async function GET() {
     }
 
     // Don't expose sensitive tokens
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const conn = connection as any;
+    const conn = connection as Record<string, unknown>;
     const safeConnection = {
       id: conn.id,
       discord_user_id: conn.discord_user_id,

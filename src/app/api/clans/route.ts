@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         .eq("slug", game)
         .maybeSingle();
       if (gameRow) {
-        gameId = (gameRow as any).id;
+        gameId = (gameRow as Record<string, unknown>).id as string;
       } else {
         return NextResponse.json({ clans: [], total: 0, limit, offset });
       }
@@ -67,17 +67,17 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Error fetching clans:", error);
       return NextResponse.json(
-        { error: "Failed to fetch clans", details: error.message, code: error.code },
+        { error: "Internal server error" },
         { status: 500 }
       );
     }
 
-    const clanRows = (data || []) as any[];
+    const clanRows = (data || []) as Array<Record<string, unknown>>;
     if (clanRows.length === 0) {
       return NextResponse.json({ clans: [], total: count || 0, limit, offset });
     }
 
-    const clanIds = clanRows.map((c: any) => c.id);
+    const clanIds = clanRows.map((c) => c.id as string);
 
     // 2. Get member counts via separate query
     const { data: memberRows } = await adminDb
@@ -86,8 +86,9 @@ export async function GET(request: NextRequest) {
       .in("clan_id", clanIds);
 
     const memberCountMap: Record<string, number> = {};
-    for (const row of (memberRows || []) as any[]) {
-      memberCountMap[row.clan_id] = (memberCountMap[row.clan_id] || 0) + 1;
+    for (const row of (memberRows || []) as Array<Record<string, unknown>>) {
+      const clanId = row.clan_id as string;
+      memberCountMap[clanId] = (memberCountMap[clanId] || 0) + 1;
     }
 
     // 3. Get clan_games with game info via flat FK join
@@ -96,18 +97,19 @@ export async function GET(request: NextRequest) {
       .select("*, game:games!clan_games_game_id_fkey(id, slug, name, icon_url)")
       .in("clan_id", clanIds);
 
-    const clanGamesMap: Record<string, any[]> = {};
-    for (const row of (clanGamesRows || []) as any[]) {
-      if (!clanGamesMap[row.clan_id]) clanGamesMap[row.clan_id] = [];
-      clanGamesMap[row.clan_id].push(row);
+    const clanGamesMap: Record<string, Array<Record<string, unknown>>> = {};
+    for (const row of (clanGamesRows || []) as Array<Record<string, unknown>>) {
+      const clanId = row.clan_id as string;
+      if (!clanGamesMap[clanId]) clanGamesMap[clanId] = [];
+      clanGamesMap[clanId].push(row);
     }
 
     // 4. Combine results
-    const clans = clanRows.map((clan: any) => ({
+    const clans = clanRows.map((clan) => ({
       ...clan,
-      member_count: memberCountMap[clan.id] || 0,
-      clan_members: [{ count: memberCountMap[clan.id] || 0 }],
-      clan_games: clanGamesMap[clan.id] || [],
+      member_count: memberCountMap[clan.id as string] || 0,
+      clan_members: [{ count: memberCountMap[clan.id as string] || 0 }],
+      clan_games: clanGamesMap[clan.id as string] || [],
     }));
 
     return NextResponse.json({
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
           .from("profiles")
           .select("is_premium, premium_until")
           .eq("id", user.id)
-          .single() as any;
+          .single() as { data: { is_premium?: boolean; premium_until?: string } | null };
 
         if (profile?.is_premium) {
           isPremium = true;
@@ -297,9 +299,9 @@ export async function POST(request: NextRequest) {
         .insert({
           type: "group",
           name: `${name} Chat`,
-        } as any)
+        } as never)
         .select()
-        .single()) as { data: { id: string } | null; error: any };
+        .single()) as { data: { id: string } | null; error: { message: string } | null };
 
       if (!convError && conversationData) {
         conversationId = conversationData.id;

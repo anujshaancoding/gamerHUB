@@ -250,6 +250,7 @@ export function MessageThread({
             size="icon"
             onClick={() => router.push("/messages")}
             className="lg:hidden text-text-muted"
+            aria-label="Back to messages"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -323,6 +324,7 @@ export function MessageThread({
               size="icon"
               onClick={() => setShowMenu(!showMenu)}
               className="text-text-muted"
+              aria-label="Conversation options"
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
@@ -401,6 +403,7 @@ export function MessageThread({
                 onClick={scrollToBottom}
                 className="rounded-full shadow-lg bg-primary/90 hover:bg-primary backdrop-blur-sm"
                 title="Scroll to bottom"
+                aria-label="Scroll to bottom"
               >
                 <ChevronDown className="h-5 w-5" />
               </Button>
@@ -412,6 +415,7 @@ export function MessageThread({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
+          aria-live="polite"
           className="absolute inset-0 z-20 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent"
         >
           {/* Load more indicator */}

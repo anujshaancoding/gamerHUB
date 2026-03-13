@@ -47,11 +47,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Sort by role hierarchy
-    const roleOrder = { leader: 0, co_leader: 1, officer: 2, member: 3 };
-    const members = (data || []).sort((a: any, b: any) => {
-      const aRole = a.role as keyof typeof roleOrder;
-      const bRole = b.role as keyof typeof roleOrder;
-      return (roleOrder[aRole] || 4) - (roleOrder[bRole] || 4);
+    const roleOrder: Record<string, number> = { leader: 0, co_leader: 1, officer: 2, member: 3 };
+    const members = ((data || []) as Array<Record<string, unknown>>).sort((a, b) => {
+      return (roleOrder[a.role as string] ?? 4) - (roleOrder[b.role as string] ?? 4);
     });
 
     return NextResponse.json({

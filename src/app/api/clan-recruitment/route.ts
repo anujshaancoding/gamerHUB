@@ -59,15 +59,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to include member count
-    const posts = (data || []).map((post: any) => ({
-      ...post,
-      clan: post.clan
-        ? {
-            ...post.clan,
-            member_count: post.clan.clan_members?.[0]?.count || 0,
-          }
-        : null,
-    }));
+    const posts = ((data || []) as Array<Record<string, unknown>>).map((post) => {
+      const clan = post.clan as Record<string, unknown> & { clan_members?: Array<{ count: number }> } | null;
+      return {
+        ...post,
+        clan: clan
+          ? {
+              ...clan,
+              member_count: clan.clan_members?.[0]?.count || 0,
+            }
+          : null,
+      };
+    });
 
     return NextResponse.json({
       posts,

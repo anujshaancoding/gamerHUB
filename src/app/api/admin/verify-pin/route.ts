@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { getUser } from "@/lib/auth/get-user";
 import { getPool } from "@/lib/db/index";
+import { setCsrfCookie } from "@/lib/security/csrf";
 
 const PIN_COOKIE_MAX_AGE = 4 * 60 * 60; // 4 hours
 
@@ -108,15 +109,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set cookie (NOT httpOnly — client-side layout needs to read it for persistence across refreshes)
+    // Set cookie as httpOnly for security — client checks via /api/admin/check-pin
     const response = NextResponse.json({ success: true });
     response.cookies.set("admin_pin_verified", "true", {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       maxAge: PIN_COOKIE_MAX_AGE,
       path: "/",
     });
+
+    // Set CSRF cookie so admin can make state-changing API requests
+    setCsrfCookie(response);
 
     return response;
   } catch (error) {

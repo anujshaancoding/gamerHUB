@@ -14,9 +14,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if already connected - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (db as any)
+    // Check if already connected — untyped table
+    const { data: existing } = await db
       .from("discord_connections")
       .select("id")
       .eq("user_id", user.id)
@@ -33,8 +32,7 @@ export async function GET() {
     const state = `${user.id}:${nanoid(16)}`;
 
     // Store state temporarily (could use Redis in production)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: stateError } = await (db as any).from("oauth_states").insert({
+    const { error: stateError } = await db.from("oauth_states").insert({
       state,
       user_id: user.id,
       provider: "discord",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
+import { logger } from "@/lib/logger";
 
 const XBOX_CONFIG = {
   clientId: process.env.XBOX_CLIENT_ID!,
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get("error");
 
     if (error) {
-      console.error("Xbox OAuth error:", error);
+      logger.error("Xbox OAuth error", undefined, { detail: error });
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=xbox_denied`
       );
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (upsertError) {
-      console.error("Xbox save error:", upsertError);
+      logger.error("Xbox save error", upsertError);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=save_failed`
       );
@@ -199,7 +200,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Xbox callback error:", error);
+    logger.error("Xbox callback error", error);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=callback_failed`
     );

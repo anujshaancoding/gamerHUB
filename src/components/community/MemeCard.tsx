@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Heart, MessageSquare, Share2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,11 +69,13 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
 
       {/* Image */}
       <div className="relative">
-        <img
+        <Image
           src={meme.image_url}
           alt={meme.title}
-          className="w-full"
-          loading="lazy"
+          width={800}
+          height={600}
+          className="w-full h-auto"
+          unoptimized
         />
         {meme.caption && (
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
@@ -118,7 +121,7 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
             </Link>
           </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleShare}>
+        <Button variant="ghost" size="sm" onClick={handleShare} aria-label="Share meme">
           <Share2 className="h-4 w-4" />
         </Button>
       </div>

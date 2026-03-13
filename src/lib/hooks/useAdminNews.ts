@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 import type { NewsArticle, GameSlug, NewsCategory, NewsRegion, NewsStatus } from "@/types/news";
 
 export interface AdminNewsFilters {
@@ -72,7 +73,7 @@ export function useAdminNewsAction() {
     }) => {
       const response = await fetch("/api/admin/news", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ id, ...updates }),
       });
       const data = await response.json();
@@ -98,6 +99,7 @@ export function useAdminNewsDelete() {
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/admin/news?id=${id}`, {
         method: "DELETE",
+        headers: csrfHeaders(),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -123,6 +125,7 @@ export function useAdminNewsFetch() {
     mutationFn: async () => {
       const response = await fetch("/api/admin/news/fetch", {
         method: "POST",
+        headers: csrfHeaders(),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to fetch news");
@@ -153,7 +156,7 @@ export function useAdminNewsCreate() {
     mutationFn: async (article: Record<string, unknown>) => {
       const response = await fetch("/api/admin/news", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(article),
       });
       const data = await response.json();

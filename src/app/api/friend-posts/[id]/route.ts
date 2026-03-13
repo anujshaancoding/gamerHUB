@@ -27,14 +27,15 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     // Fetch the user profile
+    const postRecord = post as Record<string, unknown>;
     const { data: profile } = await db
       .from("profiles")
       .select("id, username, display_name, avatar_url, is_verified")
-      .eq("id", (post as any).user_id)
+      .eq("id", postRecord.user_id as string)
       .single();
 
     return NextResponse.json({
-      post: { ...(post as any), user: profile || null },
+      post: { ...postRecord, user: profile || null },
     });
   } catch (error) {
     console.error("Friend post get error:", error);

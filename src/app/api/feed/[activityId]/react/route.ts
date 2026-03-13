@@ -19,9 +19,8 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     const reactionType = body.reactionType || "like";
 
-    // Toggle reaction using RPC - eslint-disable for untyped RPC
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (db as any).rpc("toggle_activity_reaction", {
+    // Toggle reaction using RPC — untyped RPC function
+    const { data, error } = await db.rpc("toggle_activity_reaction", {
       p_user_id: user.id,
       p_activity_id: activityId,
       p_reaction_type: reactionType,
@@ -35,10 +34,11 @@ export async function POST(
       );
     }
 
+    const result = data as Record<string, unknown>;
     return NextResponse.json({
       success: true,
-      action: data.action,
-      reactionType: data.reaction_type,
+      action: result.action,
+      reactionType: result.reaction_type,
     });
   } catch (error) {
     console.error("React error:", error);

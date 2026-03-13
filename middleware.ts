@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth.config";
+import { validateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 
 export async function middleware(request: NextRequest) {
   // Redirect www → non-www (canonical domain is gglobby.in)
@@ -20,6 +21,7 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = path.startsWith("/admin");
   const isAdminApi = path.startsWith("/api/admin/");
   const isVerifyPinRoute = path === "/api/admin/verify-pin";
+  const isCheckPinRoute = path === "/api/admin/check-pin";
   const isLandingPage = path === "/";
 
   // Admin routes require authentication — redirect to login if not signed in
@@ -30,13 +32,31 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin API routes (except verify-pin) require the PIN cookie server-side
-  if (isAdminApi && !isVerifyPinRoute) {
+  if (isAdminApi && !isVerifyPinRoute && !isCheckPinRoute) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const pinCookie = request.cookies.get("admin_pin_verified");
     if (pinCookie?.value !== "true") {
       return NextResponse.json({ error: "Admin PIN verification required" }, { status: 403 });
+    }
+
+    // CSRF protection for state-changing requests
+    const method = request.method;
+    if (["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
+      if (!validateCsrfToken(request)) {
+        return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+      }
+    }
+  }
+
+  // Set CSRF cookie for admin page visits (not API routes)
+  if (isAdminRoute && !isAdminApi && user && request.method === "GET") {
+    const existingCsrf = request.cookies.get("csrf_token");
+    if (!existingCsrf) {
+      const response = NextResponse.next();
+      setCsrfCookie(response);
+      return response;
     }
   }
 

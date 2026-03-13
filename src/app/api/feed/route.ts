@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const type = searchParams.get("type"); // Filter by activity type
 
-    // Build query - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Build query — activity_feed table is not in the typed schema
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped table
     let query = (db as any)
       .from("activity_feed")
       .select(
@@ -36,8 +36,7 @@ export async function GET(request: NextRequest) {
         .select("following_id")
         .eq("follower_id", user.id);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const followingIds = (following as any[])?.map((f) => f.following_id) || [];
+      const followingIds = ((following || []) as Array<Record<string, unknown>>).map((f) => f.following_id as string);
       followingIds.push(user.id); // Include own activities
 
       query = query.or(
@@ -63,20 +62,19 @@ export async function GET(request: NextRequest) {
 
     // Get user's reactions if logged in
     let userReactions: Record<string, string> = {};
-    if (user && activities && activities.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const activityIds = (activities as any[]).map((a) => a.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const activityRows = (activities || []) as Array<Record<string, unknown>>;
+    if (user && activityRows.length > 0) {
+      const activityIds = activityRows.map((a) => a.id as string);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped table
       const { data: reactions } = await (db as any)
         .from("activity_reactions")
         .select("activity_id, reaction_type")
         .eq("user_id", user.id)
         .in("activity_id", activityIds);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      userReactions = (reactions || []).reduce(
-        (acc: Record<string, string>, r: any) => {
-          acc[r.activity_id] = r.reaction_type;
+      userReactions = ((reactions || []) as Array<Record<string, unknown>>).reduce(
+        (acc: Record<string, string>, r) => {
+          acc[r.activity_id as string] = r.reaction_type as string;
           return acc;
         },
         {}
@@ -84,10 +82,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Add user reaction info to activities
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const activitiesWithReactions = ((activities || []) as any[]).map((activity: any) => ({
+    const activitiesWithReactions = activityRows.map((activity) => ({
       ...activity,
-      user_reaction: userReactions[activity.id] || null,
+      user_reaction: userReactions[activity.id as string] || null,
     }));
 
     return cachedResponse(

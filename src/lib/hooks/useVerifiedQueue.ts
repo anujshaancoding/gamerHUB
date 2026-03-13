@@ -181,8 +181,8 @@ export function useQueueStatus() {
       if (!response.ok) throw new Error("Failed to fetch queue status");
       return response.json() as Promise<{
         inQueue: boolean;
-        currentEntry: any;
-        recentMatches: any[];
+        currentEntry: Record<string, unknown> | null;
+        recentMatches: Record<string, unknown>[];
       }>;
     },
     refetchInterval: 5000, // Poll every 5 seconds while in queue

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // POST - Broadcast typing indicator via Socket.io
 export async function POST(
@@ -27,7 +28,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Typing indicator error:", error);
+    logger.error("Typing indicator error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -950,10 +950,13 @@ export function CommunityPageClient({
                         {/* Image Preview */}
                         {imagePreview && (
                           <div className="relative inline-block">
-                            <img
+                            <Image
                               src={imagePreview}
                               alt="Preview"
-                              className="max-h-48 rounded-xl border border-white/[0.08]"
+                              width={400}
+                              height={192}
+                              className="max-h-48 w-auto rounded-xl border border-white/[0.08]"
+                              unoptimized
                             />
                             <button
                               onClick={removeImage}

@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import crypto from "crypto";
+import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
+import { logger } from "@/lib/logger";
+
+// 5 requests per 15 minutes
+const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
 
 // POST - Send password reset email
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit check
+    const ip = getClientIdentifier(request);
+    const { allowed, retryAfterSeconds } = rateLimiter(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${Math.ceil(retryAfterSeconds / 60)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     const { email } = await request.json();
 
     if (!email) {
@@ -45,11 +60,11 @@ export async function POST(request: NextRequest) {
     // TODO: Send email with reset link
     // For now, log the link (in production, use an email service like Resend/SendGrid)
     const resetUrl = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL}/update-password?token=${token}`;
-    console.log(`Password reset link for ${email}: ${resetUrl}`);
+    logger.info("Password reset link generated", { email, resetUrl });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error("Reset password error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

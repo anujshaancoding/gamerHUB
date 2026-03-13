@@ -28,27 +28,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (!comments || (comments as any[]).length === 0) {
+    const commentRows = (comments || []) as Array<Record<string, unknown>>;
+    if (commentRows.length === 0) {
       return NextResponse.json({ comments: [] });
     }
 
     // 2. Get unique user IDs and fetch their profiles
-    const userIds = [...new Set((comments as any[]).map((c: any) => c.user_id).filter(Boolean))];
+    const userIds = [...new Set(commentRows.map((c) => c.user_id as string).filter(Boolean))];
 
     const { data: profiles } = await db
       .from("profiles")
       .select("id, username, display_name, avatar_url, is_verified")
       .in("id", userIds);
 
-    const profileMap: Record<string, any> = {};
-    for (const profile of (profiles || []) as any[]) {
-      profileMap[profile.id] = profile;
+    const profileMap: Record<string, Record<string, unknown>> = {};
+    for (const profile of (profiles || []) as Array<Record<string, unknown>>) {
+      profileMap[profile.id as string] = profile;
     }
 
     // 3. Combine comments with user profiles
-    const commentsWithUsers = (comments as any[]).map((comment: any) => ({
+    const commentsWithUsers = commentRows.map((comment) => ({
       ...comment,
-      user: profileMap[comment.user_id] || null,
+      user: profileMap[comment.user_id as string] || null,
     }));
 
     return NextResponse.json({ comments: commentsWithUsers });

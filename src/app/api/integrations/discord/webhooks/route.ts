@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get user's Discord webhooks
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Get webhooks error:", error);
+      logger.error("Get webhooks error", error);
       return NextResponse.json(
         { error: "Failed to get webhooks" },
         { status: 500 }
@@ -28,7 +29,7 @@ export async function GET() {
 
     return NextResponse.json({ webhooks });
   } catch (error) {
-    console.error("Get webhooks error:", error);
+    logger.error("Get webhooks error", error);
     return NextResponse.json(
       { error: "Failed to get webhooks" },
       { status: 500 }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError) {
-        console.error("Update webhook error:", updateError);
+        logger.error("Update webhook error", updateError);
         return NextResponse.json(
           { error: "Failed to update webhook" },
           { status: 500 }
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error("Insert webhook error:", insertError);
+      logger.error("Insert webhook error", insertError);
       return NextResponse.json(
         { error: "Failed to add webhook" },
         { status: 500 }
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ webhook, created: true });
   } catch (error) {
-    console.error("Add webhook error:", error);
+    logger.error("Add webhook error", error);
     return NextResponse.json(
       { error: "Failed to add webhook" },
       { status: 500 }
@@ -198,7 +199,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Update webhook error:", error);
+      logger.error("Update webhook error", error);
       return NextResponse.json(
         { error: "Failed to update webhook" },
         { status: 500 }
@@ -207,7 +208,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ webhook });
   } catch (error) {
-    console.error("Update webhook error:", error);
+    logger.error("Update webhook error", error);
     return NextResponse.json(
       { error: "Failed to update webhook" },
       { status: 500 }
@@ -242,7 +243,7 @@ export async function DELETE(request: NextRequest) {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("Delete webhook error:", error);
+      logger.error("Delete webhook error", error);
       return NextResponse.json(
         { error: "Failed to delete webhook" },
         { status: 500 }
@@ -251,7 +252,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete webhook error:", error);
+    logger.error("Delete webhook error", error);
     return NextResponse.json(
       { error: "Failed to delete webhook" },
       { status: 500 }

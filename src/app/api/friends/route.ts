@@ -4,6 +4,11 @@ import { getFriends, sendFriendRequest } from "@/lib/db/rpc-types";
 import type { FriendWithProfile, Profile } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 import { emitToUser, getIO } from "@/lib/realtime/socket-server";
+import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
+import { logger } from "@/lib/logger";
+
+// 30 requests per minute for friend request submissions
+const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 30 });
 
 // GET - List friends
 export async function GET(request: NextRequest) {
@@ -29,7 +34,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (friendsError) {
-      console.error("Error fetching friends:", friendsError);
+      logger.error("Error fetching friends", friendsError);
       return NextResponse.json(
         { error: "Failed to fetch friends" },
         { status: 500 }
@@ -65,7 +70,7 @@ export async function GET(request: NextRequest) {
     const { data: profilesRaw, error: profilesError, count } = await query;
 
     if (profilesError) {
-      console.error("Error fetching friend profiles:", profilesError);
+      logger.error("Error fetching friend profiles", profilesError);
       return NextResponse.json(
         { error: "Failed to fetch friend profiles" },
         { status: 500 }
@@ -91,7 +96,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Friends list error:", error);
+    logger.error("Friends list error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -102,6 +107,16 @@ export async function GET(request: NextRequest) {
 // POST - Send friend request
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit check
+    const ip = getClientIdentifier(request);
+    const { allowed, retryAfterSeconds } = rateLimiter(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${Math.ceil(retryAfterSeconds / 60)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     const db = createClient();
     const user = await getUser();
 
@@ -135,7 +150,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (error) {
-      console.error("Error sending friend request:", error);
+      logger.error("Error sending friend request", error);
       // Handle specific errors
       if (error.message.includes("blocked")) {
         return NextResponse.json(
@@ -163,7 +178,7 @@ export async function POST(request: NextRequest) {
         .eq("id", user.id)
         .single();
 
-      console.log(`[FRIEND-REQ] Emitting friend-request:new to ${recipientId.slice(0, 8)}..., IO exists: ${!!getIO()}`);
+      logger.debug("Emitting friend-request:new", { recipientId: recipientId.slice(0, 8), ioExists: !!getIO() });
       emitToUser(recipientId, "friend-request:new", {
         requestId,
         sender: senderProfile,
@@ -180,7 +195,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Send friend request error:", error);
+    logger.error("Send friend request error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

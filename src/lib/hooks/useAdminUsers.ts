@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 
 export interface AdminUser {
   id: string;
@@ -82,7 +83,7 @@ export function useAdminUserAction() {
     }) => {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       });
       const data = await response.json();

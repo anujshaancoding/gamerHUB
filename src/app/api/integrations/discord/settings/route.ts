@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { UpdateDiscordSettingsRequest, DiscordConnectionStatus } from "@/types/discord";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get Discord connection status and settings
 export async function GET() {
@@ -59,7 +60,7 @@ export async function GET() {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Get Discord settings error:", error);
+    logger.error("Get Discord settings error", error);
     return NextResponse.json(
       { error: "Failed to get Discord settings" },
       { status: 500 }
@@ -113,7 +114,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Update Discord settings error:", error);
+      logger.error("Update Discord settings error", error);
       return NextResponse.json(
         { error: "Failed to update settings" },
         { status: 500 }
@@ -122,7 +123,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Update Discord settings error:", error);
+    logger.error("Update Discord settings error", error);
     return NextResponse.json(
       { error: "Failed to update Discord settings" },
       { status: 500 }
@@ -147,7 +148,7 @@ export async function DELETE() {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("Disconnect Discord error:", error);
+      logger.error("Disconnect Discord error", error);
       return NextResponse.json(
         { error: "Failed to disconnect Discord" },
         { status: 500 }
@@ -156,7 +157,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Disconnect Discord error:", error);
+    logger.error("Disconnect Discord error", error);
     return NextResponse.json(
       { error: "Failed to disconnect Discord" },
       { status: 500 }

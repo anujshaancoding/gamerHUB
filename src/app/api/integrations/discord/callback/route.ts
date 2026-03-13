@@ -6,6 +6,8 @@ import {
   getDiscordGuilds,
   getDiscordAvatarUrl,
 } from "@/lib/integrations/discord";
+import { encryptToken } from "@/lib/security/encryption";
+import { logger } from "@/lib/logger";
 
 // GET - Handle Discord OAuth callback
 export async function GET(request: NextRequest) {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Check for OAuth errors
     if (error) {
-      console.error("Discord OAuth error:", error);
+      logger.error("Discord OAuth error", undefined, { detail: error });
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=discord_denied`
       );
@@ -84,8 +86,8 @@ export async function GET(request: NextRequest) {
         discord_avatar_hash: discordUser.avatar || null,
         discord_email: discordUser.email || null,
         guilds: guildsData,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        access_token: encryptToken(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
         token_expires_at: new Date(
           Date.now() + tokens.expires_in * 1000
         ).toISOString(),
@@ -96,7 +98,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (upsertError) {
-      console.error("Failed to save Discord connection:", upsertError);
+      logger.error("Failed to save Discord connection", upsertError);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=save_failed`
       );
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Discord callback error:", error);
+    logger.error("Discord callback error", error);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=callback_failed`
     );

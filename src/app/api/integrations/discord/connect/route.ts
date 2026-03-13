@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getDiscordOAuthUrl } from "@/lib/integrations/discord";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Initiate Discord OAuth flow
 export async function GET() {
@@ -38,7 +39,7 @@ export async function GET() {
 
     return response;
   } catch (error) {
-    console.error("Discord connect error:", error);
+    logger.error("Discord connect error", error);
     return NextResponse.json(
       { error: "Failed to initiate Discord connection" },
       { status: 500 }

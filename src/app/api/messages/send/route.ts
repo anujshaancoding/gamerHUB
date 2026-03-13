@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 import { emitToUser } from "@/lib/realtime/socket-server";
+import { logger } from "@/lib/logger";
 
 // POST - Send a message
 export async function POST(request: Request) {
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message });
   } catch (error) {
-    console.error("Send message error:", error);
+    logger.error("Send message error", error);
     return NextResponse.json(
       { error: "Failed to send message" },
       { status: 500 }

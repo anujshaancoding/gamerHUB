@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // Default RSS sources for Indian esports gaming news
 // These are reliable, free RSS feeds that cover Valorant, BGMI, and Free Fire
@@ -201,9 +202,9 @@ export async function POST() {
         .select();
 
       if (error) {
-        console.error("Seed error:", error);
+        logger.error("Seed error", error);
         return NextResponse.json(
-          { error: "Failed to seed sources: " + error.message },
+          { error: "Internal server error" },
           { status: 500 }
         );
       }
@@ -217,7 +218,7 @@ export async function POST() {
       skipped: DEFAULT_SOURCES.length - newSources.length,
     });
   } catch (error) {
-    console.error("Seed error:", error);
+    logger.error("Seed error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

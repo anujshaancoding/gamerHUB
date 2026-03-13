@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let query: any;
+    let query: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- dynamic query builder dispatches arbitrary methods at runtime
 
     switch (operation) {
       case "select": {
@@ -110,10 +110,25 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Apply filters
+    // Apply filters — only allow safe query-builder methods
+    const ALLOWED_FILTER_METHODS = new Set([
+      "eq", "neq", "gt", "gte", "lt", "lte",
+      "like", "ilike", "is", "in",
+      "contains", "containedBy", "overlaps",
+      "not", "or", "filter", "match",
+      "textSearch",
+      "single", "maybeSingle",
+    ]);
+
     if (filters && Array.isArray(filters)) {
       for (const filter of filters) {
         const { method, args } = filter;
+        if (!ALLOWED_FILTER_METHODS.has(method)) {
+          return NextResponse.json(
+            { error: `Filter method '${method}' is not allowed` },
+            { status: 400 }
+          );
+        }
         if (typeof query[method] === "function") {
           query = query[method](...args);
         }

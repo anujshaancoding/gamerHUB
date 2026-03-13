@@ -57,6 +57,7 @@ export function ClipCard({ clip, onReact, isReacting }: ClipCardProps) {
             <button
               onClick={() => setShowVideo(true)}
               className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
+              aria-label="Play video"
             >
               <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
                 <Play className="h-8 w-8 text-black ml-1" />

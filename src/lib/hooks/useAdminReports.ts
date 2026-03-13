@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 import type {
   UserReport,
   ReportStatus,
@@ -75,7 +76,7 @@ export function useResolveReport() {
     }) => {
       const response = await fetch("/api/admin/reports", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           report_id,
           status,

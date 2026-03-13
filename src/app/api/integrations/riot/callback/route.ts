@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { exchangeRiotCode, getRiotAccount } from "@/lib/integrations/riot";
 import { cookies } from "next/headers";
+import { encryptToken } from "@/lib/security/encryption";
+import { logger } from "@/lib/logger";
 
 // GET - Handle Riot OAuth callback
 export async function GET(request: NextRequest) {
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     // Handle OAuth errors
     if (error) {
-      console.error("Riot OAuth error:", error);
+      logger.error("Riot OAuth error", undefined, { detail: error });
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=riot_auth_failed`
       );
@@ -59,8 +61,8 @@ export async function GET(request: NextRequest) {
           provider: "riot",
           provider_user_id: account.puuid,
           provider_username: `${account.gameName}#${account.tagLine}`,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
+          access_token: encryptToken(tokens.access_token),
+          refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
           token_expires_at: new Date(
             Date.now() + tokens.expires_in * 1000
           ).toISOString(),
@@ -78,7 +80,7 @@ export async function GET(request: NextRequest) {
       );
 
     if (upsertError) {
-      console.error("Error storing Riot connection:", upsertError);
+      logger.error("Error storing Riot connection", upsertError);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=storage_failed`
       );
@@ -93,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Riot callback error:", error);
+    logger.error("Riot callback error", error);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?error=callback_failed`
     );

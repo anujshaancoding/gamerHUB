@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Admin news list error:", error);
+      logger.error("Admin news list error", error);
       return NextResponse.json(
         { error: "Failed to fetch news articles" },
         { status: 500 }
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Admin news error:", error);
+    logger.error("Admin news error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -199,18 +200,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Admin news create error:", error);
+      logger.error("Admin news create error", error);
       return NextResponse.json(
-        { error: "Failed to create news article", details: error.message, code: error.code, hint: error.hint },
+        { error: "Internal server error" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ article: data }, { status: 201 });
-  } catch (error: any) {
-    console.error("Admin news create error:", error);
+  } catch (error) {
+    logger.error("Admin news create error", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error?.message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -266,7 +267,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Admin news update error:", error);
+      logger.error("Admin news update error", error);
       return NextResponse.json(
         { error: "Failed to update news article" },
         { status: 500 }
@@ -275,7 +276,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ article: data });
   } catch (error) {
-    console.error("Admin news update error:", error);
+    logger.error("Admin news update error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -320,7 +321,7 @@ export async function DELETE(request: NextRequest) {
       .eq("id", id);
 
     if (error) {
-      console.error("Admin news delete error:", error);
+      logger.error("Admin news delete error", error);
       return NextResponse.json(
         { error: "Failed to delete news article" },
         { status: 500 }
@@ -329,7 +330,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Admin news delete error:", error);
+    logger.error("Admin news delete error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

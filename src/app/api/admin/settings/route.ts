@@ -6,6 +6,7 @@ import {
   setSiteSetting,
   type SiteSettings,
 } from "@/lib/db/site-settings";
+import { logger } from "@/lib/logger";
 
 async function requireAdmin() {
   const user = await getUser();
@@ -29,7 +30,7 @@ export async function GET() {
     const settings = await getSiteSettings();
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Admin settings GET error:", error);
+    logger.error("Admin settings GET error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -60,7 +61,7 @@ export async function PATCH(request: NextRequest) {
     const settings = await getSiteSettings();
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Admin settings PATCH error:", error);
+    logger.error("Admin settings PATCH error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

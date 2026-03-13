@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get single conversation details with participants
 export async function GET(
@@ -80,7 +81,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get conversation error:", error);
+    logger.error("Get conversation error", error);
     return NextResponse.json(
       { error: "Failed to fetch conversation" },
       { status: 500 }

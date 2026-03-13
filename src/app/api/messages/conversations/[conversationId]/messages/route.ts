@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Paginated messages for a conversation
 export async function GET(
@@ -75,7 +76,7 @@ export async function GET(
 
     return NextResponse.json({ messages: result });
   } catch (error) {
-    console.error("Messages fetch error:", error);
+    logger.error("Messages fetch error", error);
     return NextResponse.json(
       { error: "Failed to fetch messages" },
       { status: 500 }

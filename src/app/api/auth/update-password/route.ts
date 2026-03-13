@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 import bcrypt from "bcryptjs";
+import { logger } from "@/lib/logger";
 
 // POST - Update password (authenticated user or via reset token)
 export async function POST(request: NextRequest) {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Update password error:", error);
+    logger.error("Update password error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

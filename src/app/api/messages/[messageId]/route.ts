@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // DELETE - Delete own message
 export async function DELETE(
@@ -39,7 +40,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete message error:", error);
+    logger.error("Delete message error", error);
     return NextResponse.json(
       { error: "Failed to delete message" },
       { status: 500 }

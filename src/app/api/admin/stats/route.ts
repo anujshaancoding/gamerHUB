@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -69,7 +70,7 @@ export async function GET() {
       totalFeedback: feedbackResult.count || 0,
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
+    logger.error("Admin stats error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

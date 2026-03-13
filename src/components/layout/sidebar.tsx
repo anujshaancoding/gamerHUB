@@ -155,19 +155,21 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
+        {navItems.map((item) => {
+          const isActive = item.href === "/profile"
+            ? pathname.startsWith("/profile")
+            : pathname === item.href || pathname.startsWith(item.href + "/");
+
+          return (
           <Link
             key={item.href}
             href={item.href}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-              item.href === "/profile"
-                ? pathname.startsWith("/profile")
-                  ? "bg-primary/10 text-primary border-l-2 border-primary"
-                  : "text-text-secondary hover:text-text hover:bg-surface-light"
-                : pathname === item.href || pathname.startsWith(item.href + "/")
-                  ? "bg-primary/10 text-primary border-l-2 border-primary"
-                  : "text-text-secondary hover:text-text hover:bg-surface-light",
+              isActive
+                ? "bg-primary/10 text-primary border-l-2 border-primary"
+                : "text-text-secondary hover:text-text hover:bg-surface-light",
               item.isPremium && "text-warning hover:text-warning"
             )}
           >
@@ -184,7 +186,8 @@ export function Sidebar() {
               </Badge>
             )}
           </Link>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Profile Views - Only show for logged in users */}
@@ -226,6 +229,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname === item.href ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                 pathname === item.href

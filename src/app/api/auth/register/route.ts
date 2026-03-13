@@ -6,9 +6,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
+import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
+import { logger } from "@/lib/logger";
+
+// 10 requests per 15 minutes
+const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit check
+    const ip = getClientIdentifier(request);
+    const { allowed, retryAfterSeconds } = rateLimiter(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${Math.ceil(retryAfterSeconds / 60)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     const { email, password, username } = await request.json();
 
     if (!email || !password || !username) {
@@ -72,7 +87,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
+    logger.error("Registration error", error);
     return NextResponse.json(
       { error: "Failed to create account" },
       { status: 500 }

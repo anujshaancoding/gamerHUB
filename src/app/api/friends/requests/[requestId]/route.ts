@@ -7,6 +7,7 @@ import {
   cancelFriendRequest,
 } from "@/lib/db/rpc-types";
 import { emitToUser } from "@/lib/realtime/socket-server";
+import { logger } from "@/lib/logger";
 
 interface RouteParams {
   params: Promise<{ requestId: string }>;
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (error) {
-      console.error("Error fetching friend request:", error);
+      logger.error("Error fetching friend request", error);
       return NextResponse.json(
         { error: "Friend request not found" },
         { status: 404 }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ request: data });
   } catch (error) {
-    console.error("Get friend request error:", error);
+    logger.error("Get friend request error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -92,9 +93,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
 
       if (error) {
-        console.error("Error accepting friend request:", error);
+        logger.error("Error accepting friend request", error);
         return NextResponse.json(
-          { error: error.message || "Failed to accept friend request" },
+          { error: "Failed to accept friend request" },
           { status: 400 }
         );
       }
@@ -119,9 +120,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
 
       if (error) {
-        console.error("Error declining friend request:", error);
+        logger.error("Error declining friend request", error);
         return NextResponse.json(
-          { error: error.message || "Failed to decline friend request" },
+          { error: "Failed to decline friend request" },
           { status: 400 }
         );
       }
@@ -139,7 +140,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       });
     }
   } catch (error) {
-    console.error("Update friend request error:", error);
+    logger.error("Update friend request error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -169,9 +170,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { error } = await cancelFriendRequest(db, requestId, user.id);
 
     if (error) {
-      console.error("Error canceling friend request:", error);
+      logger.error("Error canceling friend request", error);
       return NextResponse.json(
-        { error: error.message || "Failed to cancel friend request" },
+        { error: "Failed to cancel friend request" },
         { status: 400 }
       );
     }
@@ -188,7 +189,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Friend request cancelled",
     });
   } catch (error) {
-    console.error("Cancel friend request error:", error);
+    logger.error("Cancel friend request error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

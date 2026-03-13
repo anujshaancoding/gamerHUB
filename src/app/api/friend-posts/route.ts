@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Get unique user IDs and fetch their profiles
-    const userIds = [...new Set((posts as any[]).map((p: any) => p.user_id).filter(Boolean))];
+    const postRows = posts as Array<Record<string, unknown>>;
+    const userIds = [...new Set(postRows.map((p) => p.user_id as string).filter(Boolean))];
 
     const { data: profiles } = await db
       .from("profiles")
@@ -38,15 +39,15 @@ export async function GET(request: NextRequest) {
       .in("id", userIds);
 
     // Build a map of user_id -> profile
-    const profileMap: Record<string, any> = {};
-    for (const profile of (profiles || []) as any[]) {
-      profileMap[profile.id] = profile;
+    const profileMap: Record<string, Record<string, unknown>> = {};
+    for (const profile of (profiles || []) as Array<Record<string, unknown>>) {
+      profileMap[profile.id as string] = profile;
     }
 
     // 3. Combine posts with user profiles
-    const postsWithUsers = (posts as any[]).map((post: any) => ({
+    const postsWithUsers = postRows.map((post) => ({
       ...post,
-      user: profileMap[post.user_id] || null,
+      user: profileMap[post.user_id as string] || null,
     }));
 
     return NextResponse.json({ posts: postsWithUsers });

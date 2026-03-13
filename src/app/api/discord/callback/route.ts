@@ -8,6 +8,7 @@ import {
   getDiscordAvatarUrl,
   DISCORD_SCOPES,
 } from "@/lib/integrations/discord";
+import { encryptToken } from "@/lib/security/encryption";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -62,8 +63,7 @@ export async function GET(request: NextRequest) {
     const guilds = await getDiscordGuilds(tokens.access_token);
 
     // Check if this Discord account is already linked to another user
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingConnectionData } = await (db as any)
+    const { data: existingConnectionData } = await db
       .from("discord_connections")
       .select("user_id")
       .eq("discord_user_id", discordUser.id)
@@ -78,8 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert Discord connection
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: upsertError } = await (db as any)
+    const { error: upsertError } = await db
       .from("discord_connections")
       .upsert({
         user_id: user.id,
@@ -88,8 +87,8 @@ export async function GET(request: NextRequest) {
         discord_discriminator: discordUser.discriminator,
         discord_avatar: discordUser.avatar,
         discord_email: discordUser.email,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        access_token: encryptToken(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
         token_expires_at: new Date(
           Date.now() + tokens.expires_in * 1000
         ).toISOString(),
@@ -115,8 +114,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Clean up OAuth state if stored
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any)
+    await db
       .from("oauth_states")
       .delete()
       .eq("state", state)

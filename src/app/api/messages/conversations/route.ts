@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - List all conversations for the current user
 export async function GET() {
@@ -158,7 +159,7 @@ export async function GET() {
       voidConversations,
     });
   } catch (error) {
-    console.error("Conversations fetch error:", error);
+    logger.error("Conversations fetch error", error);
     return NextResponse.json(
       { error: "Failed to fetch conversations" },
       { status: 500 }
@@ -233,7 +234,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ conversationId: newConvId });
   } catch (error) {
-    console.error("Create conversation error:", error);
+    logger.error("Create conversation error", error);
     return NextResponse.json(
       { error: "Failed to create conversation" },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get sync status for a connection
 export async function GET(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { data: jobs, error } = await query;
 
     if (error) {
-      console.error("Error fetching sync jobs:", error);
+      logger.error("Error fetching sync jobs", error);
       return NextResponse.json(
         { error: "Failed to fetch sync status" },
         { status: 500 }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       activeSyncJob,
     });
   } catch (error) {
-    console.error("Status fetch error:", error);
+    logger.error("Status fetch error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

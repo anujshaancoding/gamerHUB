@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // PlayStation OAuth configuration
 const PSN_CONFIG = {
@@ -28,7 +29,7 @@ export async function GET() {
       connect_url: null,
     });
   } catch (error) {
-    console.error("PlayStation connect error:", error);
+    logger.error("PlayStation connect error", error);
     return NextResponse.json(
       { error: "Failed to initiate PlayStation connection" },
       { status: 500 }
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("PlayStation connection error:", error);
+      logger.error("PlayStation connection error", error);
       return NextResponse.json(
         { error: "Failed to connect PlayStation account" },
         { status: 500 }
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       connection: data,
     });
   } catch (error) {
-    console.error("PlayStation connect error:", error);
+    logger.error("PlayStation connect error", error);
     return NextResponse.json(
       { error: "Failed to connect PlayStation account" },
       { status: 500 }
@@ -128,7 +129,7 @@ export async function DELETE() {
       .eq("platform", "playstation");
 
     if (error) {
-      console.error("PlayStation disconnect error:", error);
+      logger.error("PlayStation disconnect error", error);
       return NextResponse.json(
         { error: "Failed to disconnect PlayStation" },
         { status: 500 }
@@ -137,7 +138,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("PlayStation disconnect error:", error);
+    logger.error("PlayStation disconnect error", error);
     return NextResponse.json(
       { error: "Failed to disconnect PlayStation" },
       { status: 500 }

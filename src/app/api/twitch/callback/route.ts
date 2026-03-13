@@ -7,6 +7,7 @@ import {
   getAppAccessToken,
 } from "@/lib/integrations/twitch";
 import { cookies } from "next/headers";
+import { encryptToken } from "@/lib/security/encryption";
 
 // GET - Handle Twitch OAuth callback
 export async function GET(request: NextRequest) {
@@ -70,8 +71,8 @@ export async function GET(request: NextRequest) {
           twitch_display_name: twitchUser.display_name,
           twitch_profile_image_url: twitchUser.profile_image_url,
           twitch_broadcaster_type: twitchUser.broadcaster_type,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
+          access_token: encryptToken(tokens.access_token),
+          refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
           token_expires_at: new Date(
             Date.now() + tokens.expires_in * 1000
           ).toISOString(),

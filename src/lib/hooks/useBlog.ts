@@ -270,12 +270,13 @@ export function useLikeBlogPost() {
 
       // Optimistically toggle the like
       if (previousPost) {
+        const postWithLike = previousPost as BlogPost & { user_has_liked?: boolean };
         queryClient.setQueryData(blogKeys.post(slug), {
           ...previousPost,
-          likes_count: (previousPost as any).user_has_liked
+          likes_count: postWithLike.user_has_liked
             ? Math.max(0, previousPost.likes_count - 1)
             : previousPost.likes_count + 1,
-          user_has_liked: !(previousPost as any).user_has_liked,
+          user_has_liked: !postWithLike.user_has_liked,
         });
       }
 

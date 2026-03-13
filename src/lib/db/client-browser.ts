@@ -23,7 +23,7 @@ type FilterMethod =
   | "textSearch"
   | "overlaps";
 
-interface QueryResult<T = any> {
+interface QueryResult<T = unknown> {
   data: T | null;
   error: { message: string; code?: string } | null;
   count?: number | null;
@@ -33,13 +33,13 @@ class BrowserQueryBuilder {
   private table: string;
   private operation: string = "select";
   private columns: string = "*";
-  private selectOptions: Record<string, any> = {};
-  private filters: { method: string; args: any[] }[] = [];
+  private selectOptions: Record<string, unknown> = {};
+  private filters: { method: string; args: unknown[] }[] = [];
   private orderByList: { column: string; ascending: boolean }[] = [];
   private rangeFrom?: number;
   private rangeTo?: number;
   private limitCount?: number;
-  private insertData?: any;
+  private insertData?: unknown;
   private isSingle: boolean = false;
   private isMaybeSingle: boolean = false;
   private selectAfterMutation?: string;
@@ -48,20 +48,20 @@ class BrowserQueryBuilder {
     this.table = table;
   }
 
-  select(columns?: string, options?: Record<string, any>): this {
+  select(columns?: string, options?: Record<string, unknown>): this {
     this.operation = "select";
     if (columns) this.columns = columns;
     if (options) this.selectOptions = options;
     return this;
   }
 
-  insert(data: any): this {
+  insert(data: Record<string, unknown> | Record<string, unknown>[]): this {
     this.operation = "insert";
     this.insertData = data;
     return this;
   }
 
-  update(data: any): this {
+  update(data: Record<string, unknown>): this {
     this.operation = "update";
     this.insertData = data;
     return this;
@@ -72,7 +72,7 @@ class BrowserQueryBuilder {
     return this;
   }
 
-  upsert(data: any, options?: Record<string, any>): this {
+  upsert(data: Record<string, unknown> | Record<string, unknown>[], options?: Record<string, unknown>): this {
     this.operation = "upsert";
     this.insertData = data;
     if (options) this.selectOptions = options;
@@ -90,32 +90,32 @@ class BrowserQueryBuilder {
   }
 
   // Filter methods
-  eq(column: string, value: any): this {
+  eq(column: string, value: unknown): this {
     this.filters.push({ method: "eq", args: [column, value] });
     return this;
   }
 
-  neq(column: string, value: any): this {
+  neq(column: string, value: unknown): this {
     this.filters.push({ method: "neq", args: [column, value] });
     return this;
   }
 
-  gt(column: string, value: any): this {
+  gt(column: string, value: unknown): this {
     this.filters.push({ method: "gt", args: [column, value] });
     return this;
   }
 
-  gte(column: string, value: any): this {
+  gte(column: string, value: unknown): this {
     this.filters.push({ method: "gte", args: [column, value] });
     return this;
   }
 
-  lt(column: string, value: any): this {
+  lt(column: string, value: unknown): this {
     this.filters.push({ method: "lt", args: [column, value] });
     return this;
   }
 
-  lte(column: string, value: any): this {
+  lte(column: string, value: unknown): this {
     this.filters.push({ method: "lte", args: [column, value] });
     return this;
   }
@@ -130,27 +130,27 @@ class BrowserQueryBuilder {
     return this;
   }
 
-  is(column: string, value: any): this {
+  is(column: string, value: unknown): this {
     this.filters.push({ method: "is", args: [column, value] });
     return this;
   }
 
-  in(column: string, values: any[]): this {
+  in(column: string, values: unknown[]): this {
     this.filters.push({ method: "in", args: [column, values] });
     return this;
   }
 
-  contains(column: string, value: any): this {
+  contains(column: string, value: unknown): this {
     this.filters.push({ method: "contains", args: [column, value] });
     return this;
   }
 
-  containedBy(column: string, value: any): this {
+  containedBy(column: string, value: unknown): this {
     this.filters.push({ method: "containedBy", args: [column, value] });
     return this;
   }
 
-  not(column: string, operator: string, value: any): this {
+  not(column: string, operator: string, value: unknown): this {
     this.filters.push({ method: "not", args: [column, operator, value] });
     return this;
   }
@@ -160,22 +160,22 @@ class BrowserQueryBuilder {
     return this;
   }
 
-  filter(column: string, operator: string, value: any): this {
+  filter(column: string, operator: string, value: unknown): this {
     this.filters.push({ method: "filter", args: [column, operator, value] });
     return this;
   }
 
-  match(query: Record<string, any>): this {
+  match(query: Record<string, unknown>): this {
     this.filters.push({ method: "match", args: [query] });
     return this;
   }
 
-  textSearch(column: string, query: string, options?: Record<string, any>): this {
+  textSearch(column: string, query: string, options?: Record<string, unknown>): this {
     this.filters.push({ method: "textSearch", args: [column, query, options] });
     return this;
   }
 
-  overlaps(column: string, value: any): this {
+  overlaps(column: string, value: unknown): this {
     this.filters.push({ method: "overlaps", args: [column, value] });
     return this;
   }
@@ -210,7 +210,7 @@ class BrowserQueryBuilder {
   // Execute the query
   private async execute(): Promise<QueryResult> {
     try {
-      const body: Record<string, any> = {
+      const body: Record<string, unknown> = {
         table: this.table,
         operation: this.operation,
         filters: this.filters,
@@ -266,7 +266,7 @@ class BrowserQueryBuilder {
   // Thenable - allows awaiting the builder directly
   then<TResult1 = QueryResult, TResult2 = never>(
     onfulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ): Promise<TResult1 | TResult2> {
     return this.execute().then(onfulfilled, onrejected);
   }
@@ -277,11 +277,11 @@ const originalSelect = BrowserQueryBuilder.prototype.select;
 BrowserQueryBuilder.prototype.select = function (
   this: BrowserQueryBuilder & { operation: string; selectAfterMutation?: string; columns: string },
   columns?: string,
-  options?: Record<string, any>
+  options?: Record<string, unknown>
 ) {
   if (this.operation !== "select" && this.operation !== undefined) {
     // This is a .select() after .insert()/.update()/.upsert()
-    (this as any).selectAfterMutation = columns || "*";
+    this.selectAfterMutation = columns || "*";
     return this;
   }
   return originalSelect.call(this, columns, options);
@@ -292,7 +292,7 @@ class BrowserDatabaseClient {
     return new BrowserQueryBuilder(table);
   }
 
-  async rpc(fn: string, params?: Record<string, any>): Promise<QueryResult> {
+  async rpc(fn: string, params?: Record<string, unknown>): Promise<QueryResult> {
     try {
       const response = await fetch("/api/db-proxy", {
         method: "POST",

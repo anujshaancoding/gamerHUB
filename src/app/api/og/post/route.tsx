@@ -21,20 +21,22 @@ export async function GET(request: NextRequest) {
       return new Response("Post not found", { status: 404 });
     }
 
+    const postRecord = post as Record<string, unknown>;
     const { data: profile } = await db
       .from("profiles")
       .select("display_name, username")
-      .eq("id", (post as any).user_id)
+      .eq("id", postRecord.user_id as string)
       .single();
 
+    const profileRecord = profile as Record<string, unknown> | null;
     const authorName =
-      (profile as any)?.display_name ||
-      (profile as any)?.username ||
+      (profileRecord?.display_name as string) ||
+      (profileRecord?.username as string) ||
       "a gamer";
-    const username = (profile as any)?.username || "";
-    const content = (post as any).content as string;
-    const likes = (post as any).likes_count || 0;
-    const comments = (post as any).comments_count || 0;
+    const username = (profileRecord?.username as string) || "";
+    const content = postRecord.content as string;
+    const likes = (postRecord.likes_count as number) || 0;
+    const comments = (postRecord.comments_count as number) || 0;
 
     const displayContent =
       content.length > 240 ? content.slice(0, 237) + "..." : content;

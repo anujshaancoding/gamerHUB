@@ -8,10 +8,6 @@ import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { ShieldX } from "lucide-react";
 import Link from "next/link";
 
-function hasPinCookie(): boolean {
-  return document.cookie.split("; ").some((c) => c.startsWith("admin_pin_verified="));
-}
-
 export default function AdminLayout({
   children,
 }: {
@@ -21,7 +17,11 @@ export default function AdminLayout({
   const [pinVerified, setPinVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setPinVerified(hasPinCookie());
+    // Check PIN status via server-side API (cookie is httpOnly)
+    fetch("/api/admin/check-pin")
+      .then((r) => r.json())
+      .then((d) => setPinVerified(d.verified))
+      .catch(() => setPinVerified(false));
   }, []);
 
   if (isLoading || pinVerified === null) {

@@ -22,6 +22,7 @@ import {
   DOTA2_RANKS,
 } from "@/lib/integrations/steam";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 import {
   getPlayer as getCocPlayer,
   calculateCocStats,
@@ -80,7 +81,7 @@ export async function POST(
     );
 
     if (jobError) {
-      console.error("Error creating sync job:", jobError);
+      logger.error("Error creating sync job", jobError);
     }
 
     let stats: Record<string, unknown> = {};
@@ -144,7 +145,7 @@ export async function POST(
       throw syncError;
     }
   } catch (error) {
-    console.error("Sync error:", error);
+    logger.error("Sync error", error);
     return NextResponse.json(
       { error: "Failed to sync stats" },
       { status: 500 }
@@ -216,7 +217,7 @@ async function syncValorantStats(
         );
       }
     } catch (e) {
-      console.error("Error fetching match:", e);
+      logger.error("Error fetching match", e);
     }
   }
 
@@ -308,7 +309,7 @@ async function syncLoLStats(
         );
       }
     } catch (e) {
-      console.error("Error fetching LoL match:", e);
+      logger.error("Error fetching LoL match", e);
     }
   }
 
@@ -498,7 +499,7 @@ async function syncCocStats(
       matchesSynced = Math.min(warMatches.length, 10);
     } catch (e) {
       // War log may be private -- not fatal, we still have player stats
-      console.warn("Could not fetch clan war log:", e);
+      logger.warn("Could not fetch clan war log");
     }
   }
 

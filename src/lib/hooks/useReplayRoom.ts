@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   ReplayRoom,
@@ -234,7 +234,8 @@ export function usePlaybackSync(
     }
   }, [data?.room, isHost, localTime, videoRef]);
 
-  // Update server time (for host)
+  // Update server time (for host) - use ref for throttle tracking
+  const lastUpdateRef = useRef(0);
   const updateServerTime = useCallback(
     (time: number) => {
       if (!isHost) return;
@@ -242,8 +243,8 @@ export function usePlaybackSync(
 
       // Throttle updates to every 5 seconds
       const now = Date.now();
-      if (now - (updateServerTime as any).lastUpdate < 5000) return;
-      (updateServerTime as any).lastUpdate = now;
+      if (now - lastUpdateRef.current < 5000) return;
+      lastUpdateRef.current = now;
 
       updateRoom.mutate({
         roomId,
@@ -252,7 +253,6 @@ export function usePlaybackSync(
     },
     [isHost, roomId, updateRoom]
   );
-  (updateServerTime as any).lastUpdate = 0;
 
   // Control functions for host
   const play = useCallback(() => {

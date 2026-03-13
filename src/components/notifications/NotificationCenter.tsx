@@ -64,6 +64,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
           variant="ghost"
           size="icon"
           className={cn("relative", className)}
+          aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -98,6 +99,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Notification settings"
               asChild
             >
               <Link href="/settings/notifications">
@@ -108,7 +110,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         </div>
 
         {/* Notification list */}
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-[400px] overflow-y-auto" aria-live="polite">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-purple-400" />

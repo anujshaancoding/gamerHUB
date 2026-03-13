@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // POST - Add a reaction
 export async function POST(
@@ -42,7 +43,7 @@ export async function POST(
 
     return NextResponse.json({ reaction });
   } catch (error) {
-    console.error("Add reaction error:", error);
+    logger.error("Add reaction error", error);
     return NextResponse.json(
       { error: "Failed to add reaction" },
       { status: 500 }
@@ -77,7 +78,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Remove reaction error:", error);
+    logger.error("Remove reaction error", error);
     return NextResponse.json(
       { error: "Failed to remove reaction" },
       { status: 500 }

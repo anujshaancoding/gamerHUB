@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "15"), 30);
 
     // Build parallel queries
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase client lacks typed schema for all tables
     const sb = db as any;
 
     const queries: Promise<unknown>[] = [
@@ -58,8 +58,7 @@ export async function GET(request: NextRequest) {
         .select("following_id")
         .eq("follower_id", user.id);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const followingIds = (following as any[])?.map((f) => f.following_id) || [];
+      const followingIds = ((following || []) as Array<Record<string, unknown>>).map((f) => f.following_id as string);
 
       if (followingIds.length > 0) {
         friendPostPromise = sb
@@ -79,25 +78,26 @@ export async function GET(request: NextRequest) {
 
     const results = await Promise.all(queries);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [newsResult, blogResult, listingsResult, friendPostResult] = results as any[];
+    const [newsResult, blogResult, listingsResult, friendPostResult] = results as Array<{
+      data?: Array<Record<string, unknown>> | null;
+      error?: { message: string } | null;
+    }>;
 
     const items: SidebarActivityItem[] = [];
 
     // Normalize news articles
     if (newsResult?.data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const n of newsResult.data as any[]) {
+      for (const n of newsResult.data) {
         items.push({
-          id: n.id,
+          id: n.id as string,
           type: "news",
-          title: n.title,
-          thumbnailUrl: n.thumbnail_url || null,
+          title: n.title as string,
+          thumbnailUrl: (n.thumbnail_url as string) || null,
           linkHref: `/news/${n.id}`,
-          timestamp: n.published_at,
+          timestamp: n.published_at as string,
           meta: {
-            category: n.category,
-            gameSlug: n.game_slug,
+            category: n.category as string,
+            gameSlug: n.game_slug as string,
           },
         });
       }
@@ -105,19 +105,19 @@ export async function GET(request: NextRequest) {
 
     // Normalize blog posts
     if (blogResult?.data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const b of blogResult.data as any[]) {
+      for (const b of blogResult.data) {
+        const author = b.author as Record<string, unknown> | null;
         items.push({
-          id: b.id,
+          id: b.id as string,
           type: "blog",
-          title: b.title,
-          thumbnailUrl: b.featured_image_url || null,
+          title: b.title as string,
+          thumbnailUrl: (b.featured_image_url as string) || null,
           linkHref: `/community/post/${b.id}`,
-          timestamp: b.published_at,
+          timestamp: b.published_at as string,
           meta: {
-            authorName: b.author?.display_name || b.author?.username || undefined,
-            authorAvatar: b.author?.avatar_url || undefined,
-            category: b.category,
+            authorName: (author?.display_name || author?.username || undefined) as string | undefined,
+            authorAvatar: (author?.avatar_url || undefined) as string | undefined,
+            category: b.category as string,
           },
         });
       }
@@ -125,17 +125,17 @@ export async function GET(request: NextRequest) {
 
     // Normalize community listings
     if (listingsResult?.data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const l of listingsResult.data as any[]) {
+      for (const l of listingsResult.data) {
+        const game = l.game as Record<string, unknown> | null;
         items.push({
-          id: l.id,
-          type: l.listing_type === "giveaway" ? "giveaway" : "tournament",
-          title: l.title,
-          thumbnailUrl: l.cover_image_url || null,
+          id: l.id as string,
+          type: (l.listing_type as string) === "giveaway" ? "giveaway" : "tournament",
+          title: l.title as string,
+          thumbnailUrl: (l.cover_image_url as string) || null,
           linkHref: `/community?tab=tournaments`,
-          timestamp: l.created_at,
+          timestamp: l.created_at as string,
           meta: {
-            gameName: l.game?.name || undefined,
+            gameName: (game?.name || undefined) as string | undefined,
           },
         });
       }
@@ -143,19 +143,19 @@ export async function GET(request: NextRequest) {
 
     // Normalize friend posts
     if (friendPostResult?.data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const fp of friendPostResult.data as any[]) {
+      for (const fp of friendPostResult.data) {
+        const fpUser = fp.user as Record<string, unknown> | null;
         items.push({
-          id: fp.id,
+          id: fp.id as string,
           type: "friend_post",
-          title: (fp.content || "").slice(0, 100),
-          thumbnailUrl: fp.image_url || null,
+          title: ((fp.content as string) || "").slice(0, 100),
+          thumbnailUrl: (fp.image_url as string) || null,
           linkHref: `/community?tab=friends&post=${fp.id}`,
-          timestamp: fp.created_at,
+          timestamp: fp.created_at as string,
           meta: {
-            authorName: fp.user?.display_name || fp.user?.username || undefined,
-            authorAvatar: fp.user?.avatar_url || undefined,
-            likesCount: fp.likes_count || 0,
+            authorName: (fpUser?.display_name || fpUser?.username || undefined) as string | undefined,
+            authorAvatar: (fpUser?.avatar_url || undefined) as string | undefined,
+            likesCount: (fp.likes_count as number) || 0,
           },
         });
       }

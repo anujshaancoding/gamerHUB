@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { ImportFriendsResponse } from "@/types/discord";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get imported Discord friends
 export async function GET(request: NextRequest) {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     const { data: friends, error } = await query;
 
     if (error) {
-      console.error("Get Discord friends error:", error);
+      logger.error("Get Discord friends error", error);
       return NextResponse.json(
         { error: "Failed to get Discord friends" },
         { status: 500 }
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       matched_count: friends?.filter((f) => f.is_matched).length || 0,
     });
   } catch (error) {
-    console.error("Get Discord friends error:", error);
+    logger.error("Get Discord friends error", error);
     return NextResponse.json(
       { error: "Failed to get Discord friends" },
       { status: 500 }
@@ -203,7 +204,7 @@ export async function POST() {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Import Discord friends error:", error);
+    logger.error("Import Discord friends error", error);
     return NextResponse.json(
       { error: "Failed to import Discord friends" },
       { status: 500 }
@@ -262,7 +263,7 @@ export async function PUT(request: NextRequest) {
       .eq("id", friend_id);
 
     if (updateError) {
-      console.error("Update invite error:", updateError);
+      logger.error("Update invite error", updateError);
       return NextResponse.json(
         { error: "Failed to send invite" },
         { status: 500 }
@@ -274,7 +275,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Send invite error:", error);
+    logger.error("Send invite error", error);
     return NextResponse.json(
       { error: "Failed to send invite" },
       { status: 500 }

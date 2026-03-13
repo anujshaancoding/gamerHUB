@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // Xbox Live OAuth configuration
 const XBOX_CONFIG = {
@@ -65,7 +66,7 @@ export async function GET() {
       connect_url: null,
     });
   } catch (error) {
-    console.error("Xbox connect error:", error);
+    logger.error("Xbox connect error", error);
     return NextResponse.json(
       { error: "Failed to initiate Xbox connection" },
       { status: 500 }
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Xbox connection error:", error);
+      logger.error("Xbox connection error", error);
       return NextResponse.json(
         { error: "Failed to connect Xbox account" },
         { status: 500 }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
       connection: data,
     });
   } catch (error) {
-    console.error("Xbox connect error:", error);
+    logger.error("Xbox connect error", error);
     return NextResponse.json(
       { error: "Failed to connect Xbox account" },
       { status: 500 }
@@ -165,7 +166,7 @@ export async function DELETE() {
       .eq("platform", "xbox");
 
     if (error) {
-      console.error("Xbox disconnect error:", error);
+      logger.error("Xbox disconnect error", error);
       return NextResponse.json(
         { error: "Failed to disconnect Xbox" },
         { status: 500 }
@@ -174,7 +175,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Xbox disconnect error:", error);
+    logger.error("Xbox disconnect error", error);
     return NextResponse.json(
       { error: "Failed to disconnect Xbox" },
       { status: 500 }

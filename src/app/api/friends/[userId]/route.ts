@@ -6,6 +6,7 @@ import {
   areFriends as checkAreFriends,
   removeFriend,
 } from "@/lib/db/rpc-types";
+import { logger } from "@/lib/logger";
 
 interface RouteParams {
   params: Promise<{ userId: string }>;
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
 
     if (error) {
-      console.error("Error getting relationship status:", error);
+      logger.error("Error getting relationship status", error);
       return NextResponse.json(
         { error: "Failed to get relationship status" },
         { status: 500 }
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ relationship: status });
   } catch (error) {
-    console.error("Get relationship error:", error);
+    logger.error("Get relationship error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -96,7 +97,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { error } = await removeFriend(db, user.id, friendId);
 
     if (error) {
-      console.error("Error removing friend:", error);
+      logger.error("Error removing friend", error);
       return NextResponse.json(
         { error: "Failed to remove friend" },
         { status: 500 }
@@ -108,7 +109,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Friend removed successfully",
     });
   } catch (error) {
-    console.error("Remove friend error:", error);
+    logger.error("Remove friend error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

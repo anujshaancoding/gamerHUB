@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
           .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`);
 
         if (friendRequests) {
-          friendIds = friendRequests.map((fr: any) =>
-            fr.sender_id === currentUserId ? fr.recipient_id : fr.sender_id
+          friendIds = (friendRequests as Array<Record<string, unknown>>).map((fr) =>
+            (fr.sender_id as string) === currentUserId ? (fr.recipient_id as string) : (fr.sender_id as string)
           );
         }
       }
@@ -68,14 +68,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out profiles that have profile_visible set to false
-    const visibleProfiles = (profiles as any[]).filter((p: any) => {
-      const privacy = p.privacy_settings;
+    const profileRows = (profiles || []) as Array<Record<string, unknown>>;
+    const visibleProfiles = profileRows.filter((p) => {
+      const privacy = p.privacy_settings as Record<string, unknown> | null;
       if (!privacy) return true; // Default: visible
       if (typeof privacy === "object" && privacy.profile_visible === false) return false;
       return true;
     });
 
-    const profileIds = visibleProfiles.map((p: any) => p.id);
+    const profileIds = visibleProfiles.map((p) => p.id as string);
 
     // Get user_games for these profiles
     const { data: userGamesRows } = await db
@@ -83,15 +84,16 @@ export async function GET(request: NextRequest) {
       .select("*, game:games!user_games_game_id_fkey(id, slug, name, icon_url)")
       .in("user_id", profileIds);
 
-    const userGamesMap: Record<string, any[]> = {};
-    for (const row of (userGamesRows || []) as any[]) {
-      if (!userGamesMap[row.user_id]) userGamesMap[row.user_id] = [];
-      userGamesMap[row.user_id].push(row);
+    const userGamesMap: Record<string, Array<Record<string, unknown>>> = {};
+    for (const row of (userGamesRows || []) as Array<Record<string, unknown>>) {
+      const userId = row.user_id as string;
+      if (!userGamesMap[userId]) userGamesMap[userId] = [];
+      userGamesMap[userId].push(row);
     }
 
-    const gamers = visibleProfiles.map((profile: any) => ({
+    const gamers = visibleProfiles.map((profile) => ({
       ...profile,
-      user_games: userGamesMap[profile.id] || [],
+      user_games: userGamesMap[profile.id as string] || [],
     }));
 
     // Check if there are more results

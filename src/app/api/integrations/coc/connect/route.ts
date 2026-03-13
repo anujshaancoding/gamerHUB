@@ -8,6 +8,7 @@ import {
   verifyPlayerToken,
   CocApiError,
 } from "@/lib/integrations/coc";
+import { logger } from "@/lib/logger";
 
 // POST - Connect a Clash of Clans account via player tag
 export async function POST(request: NextRequest) {
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
       );
 
     if (upsertError) {
-      console.error("Error storing CoC connection:", upsertError);
+      logger.error("Error storing CoC connection", upsertError);
       return NextResponse.json(
         { error: "Failed to save connection" },
         { status: 500 }
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("CoC connect error:", error);
+    logger.error("CoC connect error", error);
     return NextResponse.json(
       { error: "Failed to connect Clash of Clans account" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { validateNintendoFriendCode, formatNintendoFriendCode } from "@/types/console";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get Nintendo connection status
 export async function GET() {
@@ -27,7 +28,7 @@ export async function GET() {
       connection,
     });
   } catch (error) {
-    console.error("Nintendo status error:", error);
+    logger.error("Nintendo status error", error);
     return NextResponse.json(
       { error: "Failed to get Nintendo status" },
       { status: 500 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Nintendo connection error:", error);
+      logger.error("Nintendo connection error", error);
       return NextResponse.json(
         { error: "Failed to connect Nintendo account" },
         { status: 500 }
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
       connection: data,
     });
   } catch (error) {
-    console.error("Nintendo connect error:", error);
+    logger.error("Nintendo connect error", error);
     return NextResponse.json(
       { error: "Failed to connect Nintendo account" },
       { status: 500 }
@@ -144,7 +145,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Nintendo update error:", error);
+      logger.error("Nintendo update error", error);
       return NextResponse.json(
         { error: "Failed to update Nintendo nickname" },
         { status: 500 }
@@ -156,7 +157,7 @@ export async function PATCH(request: NextRequest) {
       connection: data,
     });
   } catch (error) {
-    console.error("Nintendo update error:", error);
+    logger.error("Nintendo update error", error);
     return NextResponse.json(
       { error: "Failed to update Nintendo nickname" },
       { status: 500 }
@@ -181,7 +182,7 @@ export async function DELETE() {
       .eq("platform", "nintendo");
 
     if (error) {
-      console.error("Nintendo disconnect error:", error);
+      logger.error("Nintendo disconnect error", error);
       return NextResponse.json(
         { error: "Failed to disconnect Nintendo" },
         { status: 500 }
@@ -190,7 +191,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Nintendo disconnect error:", error);
+    logger.error("Nintendo disconnect error", error);
     return NextResponse.json(
       { error: "Failed to disconnect Nintendo" },
       { status: 500 }

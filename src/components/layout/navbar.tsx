@@ -195,6 +195,7 @@ export function Navbar() {
                           setShowSearch(false);
                         }}
                         className="hover:text-text transition-colors"
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -233,7 +234,7 @@ export function Navbar() {
               <>
                 {/* Messages */}
                 <Link href="/messages" className="relative">
-                  <Button variant="ghost" size="icon" className="relative">
+                  <Button variant="ghost" size="icon" className="relative" aria-label="Messages">
                     <MessageCircle className="h-5 w-5" />
                     {unreadMessages > 0 && (
                       <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 bg-error text-white text-xs rounded-full flex items-center justify-center">
@@ -249,6 +250,7 @@ export function Navbar() {
                     variant="ghost"
                     size="icon"
                     className="relative"
+                    aria-label="Notifications"
                     onClick={() => {
                       const isOpening = !showNotifications;
                       setShowNotifications(isOpening);
@@ -283,7 +285,7 @@ export function Navbar() {
                           <span className="text-xs text-text-muted">{unreadCount} unread</span>
                         )}
                       </div>
-                      <div className="max-h-80 overflow-y-auto">
+                      <div className="max-h-80 overflow-y-auto" aria-live="polite">
                         {notificationsLoading ? (
                           <div className="p-4 space-y-3">
                             {[...Array(3)].map((_, i) => (
@@ -360,6 +362,7 @@ export function Navbar() {
                   <div
                     role="button"
                     tabIndex={0}
+                    aria-label="User menu"
                     onClick={() => {
                       setShowUserMenu(!showUserMenu);
                       setShowNotifications(false);
@@ -430,6 +433,7 @@ export function Navbar() {
               variant="ghost"
               size="icon"
               className="lg:hidden"
+              aria-label={showMobileMenu ? "Close menu" : "Open menu"}
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
               {showMobileMenu ? (
@@ -473,6 +477,7 @@ export function Navbar() {
                           setShowSearch(false);
                         }}
                         className="hover:text-text transition-colors"
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -493,20 +498,21 @@ export function Navbar() {
               // Skip auth-required items for guests
               if (item.requiresAuth && !user) return null;
 
+              const isActive = item.href === "/profile"
+                ? pathname.startsWith("/profile")
+                : pathname === item.href || pathname.startsWith(item.href + "/");
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setShowMobileMenu(false)}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    item.href === "/profile"
-                      ? pathname.startsWith("/profile")
-                        ? "bg-primary/10 text-primary"
-                        : "text-text-secondary hover:text-text hover:bg-surface-light"
-                      : pathname === item.href || pathname.startsWith(item.href + "/")
-                        ? "bg-primary/10 text-primary"
-                        : "text-text-secondary hover:text-text hover:bg-surface-light",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-text-secondary hover:text-text hover:bg-surface-light",
                     item.isPremium && "text-warning hover:text-warning"
                   )}
                 >

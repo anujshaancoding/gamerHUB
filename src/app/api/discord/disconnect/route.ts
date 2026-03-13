@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { decryptToken } from "@/lib/security/encryption";
 
 export async function POST() {
   try {
@@ -12,9 +13,8 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get existing connection - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: connectionData } = await (db as any)
+    // Get existing connection
+    const { data: connectionData } = await db
       .from("discord_connections")
       .select("id, access_token")
       .eq("user_id", user.id)
@@ -40,7 +40,7 @@ export async function POST() {
           body: new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID!,
             client_secret: process.env.DISCORD_CLIENT_SECRET!,
-            token: connection.access_token,
+            token: decryptToken(connection.access_token),
           }),
         });
       } catch (revokeError) {
@@ -49,9 +49,8 @@ export async function POST() {
       }
     }
 
-    // Delete the connection - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: deleteError } = await (db as any)
+    // Delete the connection
+    const { error: deleteError } = await db
       .from("discord_connections")
       .delete()
       .eq("id", connection.id);
@@ -64,9 +63,8 @@ export async function POST() {
       );
     }
 
-    // Also update notification preferences to remove discord channel - eslint-disable for untyped table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any)
+    // Also update notification preferences to remove discord channel
+    await db
       .from("notification_preferences")
       .delete()
       .eq("user_id", user.id)

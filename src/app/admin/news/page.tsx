@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -254,7 +255,7 @@ export default function AdminNewsPage() {
     try {
       const res = await fetch("/api/admin/news/sources", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ id, name: editName, url: editUrl }),
       });
       const data = await res.json();
@@ -273,7 +274,7 @@ export default function AdminNewsPage() {
     try {
       const res = await fetch("/api/admin/news/sources", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ id, is_active: !isActive }),
       });
       const data = await res.json();
@@ -287,7 +288,7 @@ export default function AdminNewsPage() {
 
   const handleDeleteSource = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/news/sources?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/news/sources?id=${id}`, { method: "DELETE", headers: csrfHeaders() });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
@@ -308,7 +309,7 @@ export default function AdminNewsPage() {
     try {
       const res = await fetch("/api/admin/news/sources", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ name: newSourceName, url: newSourceUrl, region: newSourceRegion }),
       });
       const data = await res.json();
@@ -372,7 +373,7 @@ export default function AdminNewsPage() {
                 onClick={async () => {
                   setSourcesLoading(true);
                   try {
-                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST" });
+                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST", headers: csrfHeaders() });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error);
                     const parts = [];
@@ -499,7 +500,7 @@ export default function AdminNewsPage() {
                 onClick={async () => {
                   setSourcesLoading(true);
                   try {
-                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST" });
+                    const res = await fetch("/api/admin/news/sources/seed", { method: "POST", headers: csrfHeaders() });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error);
                     const parts = [];

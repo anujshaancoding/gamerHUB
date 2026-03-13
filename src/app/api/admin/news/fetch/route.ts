@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import Parser from "rss-parser";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 import {
   GAME_KEYWORDS_SCORED,
   OTHER_GAME_KEYWORDS,
@@ -212,7 +213,7 @@ export async function POST() {
             excerpt,
             thumbnail_url:
               item.enclosure?.url ||
-              extractMediaUrl(item) ||
+              extractMediaUrl(item as unknown as Record<string, unknown>) ||
               extractImageFromContent(item.content || "") ||
               null,
             game_slug: gameSlug,
@@ -251,7 +252,7 @@ export async function POST() {
       } catch (fetchError) {
         const errMsg = `Failed to fetch ${source.name}: ${fetchError instanceof Error ? fetchError.message : "Unknown error"}`;
         errors.push(errMsg);
-        console.error(errMsg);
+        logger.error(errMsg, fetchError);
 
         if (logEntry) {
           await admin
@@ -309,23 +310,23 @@ export async function POST() {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    console.error("News fetch error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    logger.error("News fetch error", error);
     return NextResponse.json(
-      { error: `News fetch failed: ${message}` },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
 // Extract thumbnail from media:thumbnail or media:content RSS extensions
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractMediaUrl(item: any): string | null {
+function extractMediaUrl(item: Record<string, unknown>): string | null {
   try {
-    const thumbnail = item.mediaThumbnail?.["$"]?.url || item.mediaThumbnail?.url;
-    if (thumbnail) return thumbnail;
-    const media = item.mediaContent?.["$"]?.url || item.mediaContent?.url;
-    if (media) return media;
+    const mediaThumbnail = item.mediaThumbnail as Record<string, unknown> | undefined;
+    const thumbnail = (mediaThumbnail?.["$"] as Record<string, unknown>)?.url || mediaThumbnail?.url;
+    if (thumbnail) return thumbnail as string;
+    const mediaContent = item.mediaContent as Record<string, unknown> | undefined;
+    const media = (mediaContent?.["$"] as Record<string, unknown>)?.url || mediaContent?.url;
+    if (media) return media as string;
   } catch {
     // Ignore malformed media fields
   }

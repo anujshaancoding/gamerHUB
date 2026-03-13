@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 import Link from "next/link";
 import {
   Users,
@@ -97,7 +98,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ key: "hide_news", value: !hideNews }),
       });
       if (res.ok) {

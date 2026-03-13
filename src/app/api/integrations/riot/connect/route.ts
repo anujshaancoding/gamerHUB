@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { getRiotAuthUrl } from "@/lib/integrations/riot";
 import { nanoid } from "nanoid";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Initiate Riot OAuth flow
 export async function GET() {
@@ -38,7 +39,7 @@ export async function GET() {
 
     return response;
   } catch (error) {
-    console.error("Riot connect error:", error);
+    logger.error("Riot connect error", error);
     return NextResponse.json(
       { error: "Failed to initiate Riot connection" },
       { status: 500 }

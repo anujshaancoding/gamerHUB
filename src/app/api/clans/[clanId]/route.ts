@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Clan not found" }, { status: 404 });
     }
 
-    const clanData = data as any;
+    const clanData = data as Record<string, unknown> & { clan_members?: unknown[] };
     const clan = {
       ...clanData,
       member_count: clanData.clan_members?.length || 0,

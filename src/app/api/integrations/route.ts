@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get all user's game connections
 export async function GET() {
@@ -40,7 +41,7 @@ export async function GET() {
       .order("connected_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching connections:", error);
+      logger.error("Error fetching connections", error);
       return NextResponse.json(
         { error: "Failed to fetch connections" },
         { status: 500 }
@@ -59,7 +60,7 @@ export async function GET() {
       supportedGames: supportedGames || [],
     });
   } catch (error) {
-    console.error("Integrations fetch error:", error);
+    logger.error("Integrations fetch error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

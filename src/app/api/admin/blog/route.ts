@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Admin blog list error:", error);
+      logger.error("Admin blog list error", error);
       return NextResponse.json(
         { error: "Failed to fetch posts" },
         { status: 500 }
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Admin blog error:", error);
+    logger.error("Admin blog error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

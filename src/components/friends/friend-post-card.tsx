@@ -296,11 +296,12 @@ export function FriendPostCard({
                   disabled={isDeleting}
                   className="p-1.5 rounded-lg text-text-dim hover:text-red-400 hover:bg-red-500/10 transition-all"
                   title="Delete post"
+                  aria-label="Delete post"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               )}
-              <Button variant="ghost" size="icon" className="text-text-dim hover:text-text">
+              <Button variant="ghost" size="icon" className="text-text-dim hover:text-text" aria-label="More options">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </div>
@@ -395,6 +396,7 @@ export function FriendPostCard({
             {/* Bookmark */}
             <button
               onClick={handleBookmark}
+              aria-label={bookmarked ? "Remove bookmark" : "Bookmark post"}
               className={cn(
                 "p-1.5 rounded-lg transition-all duration-200",
                 bookmarked
@@ -438,6 +440,7 @@ export function FriendPostCard({
                   <button
                     onClick={handleSubmitComment}
                     disabled={!commentText.trim() || isAddingComment}
+                    aria-label="Submit comment"
                     className={cn(
                       "p-1 rounded-lg transition-all",
                       commentText.trim()

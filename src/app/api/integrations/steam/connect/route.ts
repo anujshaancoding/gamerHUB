@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getSteamAuthUrl } from "@/lib/integrations/steam";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Initiate Steam OpenID flow
 export async function GET() {
@@ -28,7 +29,7 @@ export async function GET() {
 
     return response;
   } catch (error) {
-    console.error("Steam connect error:", error);
+    logger.error("Steam connect error", error);
     return NextResponse.json(
       { error: "Failed to initiate Steam connection" },
       { status: 500 }

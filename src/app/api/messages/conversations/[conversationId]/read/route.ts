@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // POST - Mark conversation as read
 export async function POST(
@@ -25,7 +26,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, readAt: now });
   } catch (error) {
-    console.error("Mark as read error:", error);
+    logger.error("Mark as read error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

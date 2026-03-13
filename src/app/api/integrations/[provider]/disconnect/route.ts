@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // POST - Disconnect a game integration
 export async function POST(
@@ -37,7 +38,7 @@ export async function POST(
       .eq("provider", provider);
 
     if (error) {
-      console.error("Error disconnecting:", error);
+      logger.error("Error disconnecting", error);
       return NextResponse.json(
         { error: "Failed to disconnect" },
         { status: 500 }
@@ -46,7 +47,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Disconnect error:", error);
+    logger.error("Disconnect error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

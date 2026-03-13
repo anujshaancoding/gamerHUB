@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - List pending friend requests
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Error fetching friend requests:", error);
+      logger.error("Error fetching friend requests", error);
       return NextResponse.json(
         { error: "Failed to fetch friend requests" },
         { status: 500 }
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Friend requests list error:", error);
+    logger.error("Friend requests list error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

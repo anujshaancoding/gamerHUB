@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/rpc-types";
 import type { SocialCounts } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
+import { logger } from "@/lib/logger";
 
 // GET - Get all social counts for a user
 export async function GET(request: NextRequest) {
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ counts });
   } catch (error) {
-    console.error("Social counts error:", error);
+    logger.error("Social counts error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
