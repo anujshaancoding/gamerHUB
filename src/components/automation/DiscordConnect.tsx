@@ -71,7 +71,7 @@ export function DiscordConnect({
     return (
       <Card
         className={cn(
-          "p-6 bg-zinc-900/50 border-zinc-800",
+          "p-6 bg-surface/50 border-border",
           className
         )}
       >
@@ -80,8 +80,8 @@ export function DiscordConnect({
             <MessageSquare className="h-6 w-6 text-indigo-400" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-white">Discord</h3>
-            <p className="text-sm text-zinc-400">
+            <h3 className="font-semibold text-text">Discord</h3>
+            <p className="text-sm text-text-muted">
               Connect your Discord account to receive notifications and use bot
               commands
             </p>
@@ -106,7 +106,7 @@ export function DiscordConnect({
   return (
     <Card
       className={cn(
-        "p-6 bg-zinc-900/50 border-zinc-800",
+        "p-6 bg-surface/50 border-border",
         className
       )}
     >
@@ -117,28 +117,28 @@ export function DiscordConnect({
             {avatarUrl ? (
               <Image src={avatarUrl} alt="" width={48} height={48} className="object-cover" unoptimized />
             ) : (
-              <div className="h-full w-full bg-indigo-600 flex items-center justify-center text-white">
+              <div className="h-full w-full bg-indigo-600 flex items-center justify-center text-text">
                 {connection.discord_username[0].toUpperCase()}
               </div>
             )}
           </Avatar>
           {connection.is_active && (
-            <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-zinc-900" />
+            <span className="absolute bottom-0 right-0 w-4 h-4 bg-success rounded-full border-2 border-surface" />
           )}
         </div>
 
         {/* Info */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-white">
+            <h3 className="font-semibold text-text">
               {connection.discord_username}
             </h3>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+            <Badge className="bg-success/20 text-success border-success/30">
               <Check className="h-3 w-3 mr-1" />
               Connected
             </Badge>
           </div>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <p className="text-sm text-text-muted mt-0.5">
             Connected{" "}
             {formatDistanceToNow(new Date(connection.connected_at), {
               addSuffix: true,
@@ -151,7 +151,7 @@ export function DiscordConnect({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 text-xs text-zinc-400 hover:text-white"
+                className="h-auto p-0 text-xs text-text-muted hover:text-text"
                 onClick={() => setShowGuilds(!showGuilds)}
               >
                 {connection.guilds.length} mutual servers
@@ -186,7 +186,7 @@ export function DiscordConnect({
             <Button
               variant="outline"
               size="sm"
-              className="text-red-400 hover:text-red-300 border-red-500/30"
+              className="text-error hover:text-error/80 border-error/30"
               disabled={isDisconnecting}
             >
               {isDisconnecting ? (
@@ -197,7 +197,7 @@ export function DiscordConnect({
               Disconnect
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+          <AlertDialogContent className="bg-surface border-border">
             <AlertDialogHeader>
               <AlertDialogTitle>Disconnect Discord?</AlertDialogTitle>
               <AlertDialogDescription>
@@ -209,7 +209,7 @@ export function DiscordConnect({
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={onDisconnect}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-error hover:bg-error/90"
               >
                 Disconnect
               </AlertDialogAction>

@@ -354,7 +354,7 @@ export function RichTextEditor({
             <button
               type="button"
               onClick={removeLink}
-              className="px-3 py-1.5 text-sm text-red-400 hover:text-red-300"
+              className="px-3 py-1.5 text-sm text-error hover:text-error/80"
             >
               Remove
             </button>

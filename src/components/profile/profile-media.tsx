@@ -62,7 +62,7 @@ export function ProfileMedia({ media, username }: ProfileMediaProps) {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="h-10 w-10 text-white" />
+                    <Play className="h-10 w-10 text-text" />
                   </div>
                 </>
               ) : (
@@ -76,7 +76,7 @@ export function ProfileMedia({ media, username }: ProfileMediaProps) {
               {/* Overlay with title */}
               <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
                 {item.title && (
-                  <p className="text-white text-sm truncate">{item.title}</p>
+                  <p className="text-text text-sm truncate">{item.title}</p>
                 )}
               </div>
             </motion.div>

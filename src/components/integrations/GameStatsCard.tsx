@@ -45,7 +45,7 @@ export function GameStatsCard({
   onSync,
   isSyncing,
 }: GameStatsCardProps) {
-  const colorClass = gameColors[gameId] || "from-zinc-500/20 to-zinc-900/20 border-zinc-500/30";
+  const colorClass = gameColors[gameId] || "from-surface-light/20 to-surface/20 border-border/30";
   const hasStats = Object.keys(stats).length > 0;
   const hasRank = rankInfo && Object.keys(rankInfo).length > 0 && rankInfo.tier_name;
 
@@ -57,18 +57,18 @@ export function GameStatsCard({
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-zinc-800">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
-              <span className="text-sm font-bold text-white">
+            <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center">
+              <span className="text-sm font-bold text-text">
                 {gameLogos[gameId] || gameId.toUpperCase().slice(0, 3)}
               </span>
             </div>
             <div>
-              <h3 className="font-semibold text-white">{gameName}</h3>
+              <h3 className="font-semibold text-text">{gameName}</h3>
               {syncedAt && (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-text-muted">
                   Updated{" "}
                   {formatDistanceToNow(new Date(syncedAt), { addSuffix: true })}
                 </p>
@@ -81,7 +81,7 @@ export function GameStatsCard({
             size="sm"
             onClick={onSync}
             disabled={isSyncing}
-            className="text-zinc-400 hover:text-white"
+            className="text-text-muted hover:text-text"
           >
             {isSyncing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -102,10 +102,10 @@ export function GameStatsCard({
               {String(rankInfo.tier_name)}
             </Badge>
             {rankInfo.lp !== undefined && (
-              <span className="text-sm text-zinc-400">{String(rankInfo.lp)} LP</span>
+              <span className="text-sm text-text-muted">{String(rankInfo.lp)} LP</span>
             )}
             {rankInfo.ranking_in_tier !== undefined && (
-              <span className="text-sm text-zinc-400">
+              <span className="text-sm text-text-muted">
                 {String(rankInfo.ranking_in_tier)} RR
               </span>
             )}
@@ -123,18 +123,18 @@ export function GameStatsCard({
 
               return (
                 <div key={field.key} className="text-center">
-                  <p className="text-lg font-bold text-white">
+                  <p className="text-lg font-bold text-text">
                     {String(value)}
                   </p>
-                  <p className="text-xs text-zinc-500">{field.label}</p>
+                  <p className="text-xs text-text-muted">{field.label}</p>
                 </div>
               );
             })}
           </div>
         ) : (
           <div className="text-center py-4">
-            <TrendingUp className="h-8 w-8 text-zinc-600 mx-auto mb-2" />
-            <p className="text-sm text-zinc-500">
+            <TrendingUp className="h-8 w-8 text-text-muted mx-auto mb-2" />
+            <p className="text-sm text-text-muted">
               No stats yet. Click sync to fetch your data.
             </p>
           </div>
@@ -144,11 +144,11 @@ export function GameStatsCard({
       {/* Win Rate Bar (if available) */}
       {stats.win_rate && typeof stats.games_played === "number" && stats.games_played > 0 && (
         <div className="px-4 pb-4">
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-text-muted mb-1">
             <span>Win Rate</span>
             <span>{String(stats.win_rate)}</span>
           </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-light rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
               style={{

@@ -27,18 +27,18 @@ interface GamerWallProps {
 }
 
 const REACTIONS = [
-  { key: "gg", label: "GG", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+  { key: "gg", label: "GG", color: "bg-success/20 text-success border-success/30" },
   { key: "respect", label: "Respect", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   { key: "carry", label: "Carry", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  { key: "legend", label: "Legend", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  { key: "legend", label: "Legend", color: "bg-primary/20 text-primary border-primary/30" },
   { key: "wholesome", label: "Wholesome", color: "bg-pink-500/20 text-pink-400 border-pink-500/30" },
 ] as const;
 
 const REACTION_BADGE_COLORS: Record<string, string> = {
-  gg: "bg-green-500/20 text-green-400 border border-green-500/30",
+  gg: "bg-success/20 text-success border border-success/30",
   respect: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
   carry: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
-  legend: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+  legend: "bg-primary/20 text-primary border border-primary/30",
   wholesome: "bg-pink-500/20 text-pink-400 border border-pink-500/30",
 };
 
@@ -153,8 +153,8 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquare className="h-5 w-5 text-purple-400" />
-        <h3 className="text-lg font-semibold text-white">Gamer Wall</h3>
+        <MessageSquare className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-semibold text-text">Gamer Wall</h3>
       </div>
 
       {/* Post Form */}
@@ -167,16 +167,16 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
               placeholder="Leave a message on the wall..."
               maxLength={500}
               rows={3}
-              className="w-full resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+              className="w-full resize-none rounded-xl bg-surface-light border border-border px-4 py-3 text-sm text-text placeholder-text-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-colors"
             />
-            <span className="absolute bottom-2 right-3 text-xs text-white/30">
+            <span className="absolute bottom-2 right-3 text-xs text-text/30">
               {content.length}/500
             </span>
           </div>
 
           {/* Reaction Selector */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-white/50 mr-1">Reaction:</span>
+            <span className="text-xs text-text/50 mr-1">Reaction:</span>
             {REACTIONS.map((r) => (
               <button
                 key={r.key}
@@ -187,7 +187,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                   selectedReaction === r.key
                     ? r.color + " ring-1 ring-white/20"
-                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
+                    : "bg-surface-light text-text-muted border-border hover:bg-surface-lighter"
                 }`}
               >
                 {r.label}
@@ -198,7 +198,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
           <button
             type="submit"
             disabled={!content.trim() || submitting}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium text-text transition-colors"
           >
             <Send className="h-4 w-4" />
             {submitting ? "Posting..." : "Post to Wall"}
@@ -209,12 +209,12 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
       {/* Posts List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <MessageSquare className="h-10 w-10 text-white/20 mb-3" />
-          <p className="text-sm text-white/40">
+          <MessageSquare className="h-10 w-10 text-text-muted/30 mb-3" />
+          <p className="text-sm text-text-muted">
             No wall posts yet. Be the first to leave a message!
           </p>
         </div>
@@ -227,7 +227,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="relative rounded-xl bg-white/5 border border-white/10 p-4"
+              className="relative rounded-xl bg-surface-light border border-border p-4"
             >
               {/* Pinned indicator */}
               {post.is_pinned && (
@@ -249,17 +249,17 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
                 <div className="flex-1 min-w-0">
                   {/* Author Name & Timestamp */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-text">
                       {post.author_display_name || post.author_username || "Unknown"}
                     </span>
                     <RelativeTime
                       date={post.created_at}
-                      className="text-xs text-white/30"
+                      className="text-xs text-text/30"
                     />
                   </div>
 
                   {/* Content */}
-                  <p className="mt-1 text-sm text-white/70 whitespace-pre-wrap break-words">
+                  <p className="mt-1 text-sm text-text/70 whitespace-pre-wrap break-words">
                     {post.content}
                   </p>
 
@@ -278,13 +278,13 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
                   {isOwnProfile && (
                     <button
                       onClick={() => handleTogglePin(post.id, post.is_pinned)}
-                      className="p-1.5 rounded-lg hover:bg-white/10 transition-colors group"
+                      className="p-1.5 rounded-lg hover:bg-surface-lighter transition-colors group"
                       title={post.is_pinned ? "Unpin post" : "Pin post"}
                     >
                       {post.is_pinned ? (
                         <PinOff className="h-3.5 w-3.5 text-yellow-400 group-hover:text-yellow-300" />
                       ) : (
-                        <Pin className="h-3.5 w-3.5 text-white/30 group-hover:text-white/60" />
+                        <Pin className="h-3.5 w-3.5 text-text/30 group-hover:text-text/60" />
                       )}
                     </button>
                   )}
@@ -292,10 +292,10 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
                   {canDelete(post) && (
                     <button
                       onClick={() => setPostToDelete(post.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors group"
+                      className="p-1.5 rounded-lg hover:bg-error/10 transition-colors group"
                       title="Delete post"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-white/30 group-hover:text-red-400" />
+                      <Trash2 className="h-3.5 w-3.5 text-text/30 group-hover:text-error" />
                     </button>
                   )}
                 </div>

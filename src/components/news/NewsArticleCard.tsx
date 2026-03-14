@@ -31,7 +31,7 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
   const gameColor = GAME_COLORS[article.game_slug] || "bg-primary/20 text-primary border-primary/30";
   const borderColor = GAME_BORDER_COLORS[article.game_slug] || "border-l-primary";
   const categoryInfo = NEWS_CATEGORIES[article.category];
-  const categoryColor = CATEGORY_COLORS[article.category] || "bg-gray-500/20 text-gray-400";
+  const categoryColor = CATEGORY_COLORS[article.category] || "bg-surface-lighter/50 text-text-muted";
 
   if (variant === "compact") {
     return (

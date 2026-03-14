@@ -68,7 +68,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center font-medium">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-background text-xs flex items-center justify-center font-medium">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -77,17 +77,17 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
 
       <PopoverContent
         align="end"
-        className="w-[380px] p-0 bg-zinc-900 border-zinc-800"
+        className="w-[380px] p-0 bg-surface border-border"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-          <h3 className="font-semibold text-white">Notifications</h3>
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h3 className="font-semibold text-text">Notifications</h3>
           <div className="flex items-center gap-1">
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 text-xs text-zinc-400"
+                className="h-8 text-xs text-text-muted"
                 onClick={handleMarkAllRead}
                 disabled={markAsReadMutation.isPending}
               >
@@ -113,15 +113,15 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         <div className="max-h-[400px] overflow-y-auto" aria-live="polite">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : notifications.length === 0 ? (
             <div className="py-8 text-center">
-              <Bell className="h-10 w-10 text-zinc-600 mx-auto mb-2" />
-              <p className="text-zinc-500 text-sm">No notifications yet</p>
+              <Bell className="h-10 w-10 text-text-dim mx-auto mb-2" />
+              <p className="text-text-muted text-sm">No notifications yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800">
+            <div className="divide-y divide-border">
               {notifications.map((notification) => (
                 <div key={notification.id} className="p-2">
                   <NotificationItem
@@ -138,10 +138,10 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
 
         {/* Footer */}
         {notifications.length > 0 && (
-          <div className="p-3 border-t border-zinc-800">
+          <div className="p-3 border-t border-border">
             <Button
               variant="ghost"
-              className="w-full text-purple-400 hover:text-purple-300"
+              className="w-full text-primary hover:text-primary-dark"
               onClick={() => setIsOpen(false)}
               asChild
             >

@@ -32,13 +32,13 @@ const features: Feature[] = [
 
 function FeatureValue({ value }: { value: boolean | string }) {
   if (typeof value === "string") {
-    return <span className="text-sm text-zinc-300">{value}</span>;
+    return <span className="text-sm text-text-secondary">{value}</span>;
   }
 
   return value ? (
-    <Check className="h-5 w-5 text-green-400" />
+    <Check className="h-5 w-5 text-success" />
   ) : (
-    <X className="h-5 w-5 text-zinc-600" />
+    <X className="h-5 w-5 text-text-muted" />
   );
 }
 
@@ -48,19 +48,19 @@ interface PlanComparisonProps {
 
 export function PlanComparison({ isPremium = false }: PlanComparisonProps) {
   return (
-    <Card className="overflow-hidden bg-zinc-900/50 border-zinc-800">
+    <Card className="overflow-hidden bg-surface/50 border-border">
       {/* Header */}
-      <div className="grid grid-cols-3 border-b border-zinc-800">
-        <div className="p-4 border-r border-zinc-800">
-          <h3 className="font-semibold text-white">Features</h3>
+      <div className="grid grid-cols-3 border-b border-border">
+        <div className="p-4 border-r border-border">
+          <h3 className="font-semibold text-text">Features</h3>
         </div>
-        <div className="p-4 text-center border-r border-zinc-800">
-          <h3 className="font-semibold text-white">Free</h3>
-          <p className="text-sm text-zinc-400 mt-1">Free</p>
+        <div className="p-4 text-center border-r border-border">
+          <h3 className="font-semibold text-text">Free</h3>
+          <p className="text-sm text-text-muted mt-1">Free</p>
         </div>
-        <div className="p-4 text-center bg-purple-500/10">
-          <h3 className="font-semibold text-purple-300">Premium</h3>
-          <p className="text-sm text-zinc-400 mt-1">
+        <div className="p-4 text-center bg-primary/10">
+          <h3 className="font-semibold text-primary/80">Premium</h3>
+          <p className="text-sm text-text-muted mt-1">
             {isPromoPeriodActive()
               ? `FREE until ${PROMO_END_LABEL}`
               : "Starting at ₹99/month"}
@@ -69,22 +69,22 @@ export function PlanComparison({ isPremium = false }: PlanComparisonProps) {
       </div>
 
       {/* Features */}
-      <div className="divide-y divide-zinc-800">
+      <div className="divide-y divide-border">
         {features.map((feature, index) => (
           <div
             key={feature.name}
             className={cn(
               "grid grid-cols-3",
-              index % 2 === 0 && "bg-zinc-900/30"
+              index % 2 === 0 && "bg-surface/30"
             )}
           >
-            <div className="p-4 border-r border-zinc-800">
-              <span className="text-sm text-zinc-300">{feature.name}</span>
+            <div className="p-4 border-r border-border">
+              <span className="text-sm text-text-secondary">{feature.name}</span>
             </div>
-            <div className="p-4 flex items-center justify-center border-r border-zinc-800">
+            <div className="p-4 flex items-center justify-center border-r border-border">
               <FeatureValue value={feature.free} />
             </div>
-            <div className="p-4 flex items-center justify-center bg-purple-500/5">
+            <div className="p-4 flex items-center justify-center bg-primary/5">
               <FeatureValue value={feature.premium} />
             </div>
           </div>
@@ -92,23 +92,23 @@ export function PlanComparison({ isPremium = false }: PlanComparisonProps) {
       </div>
 
       {/* CTA */}
-      <div className="grid grid-cols-3 border-t border-zinc-800">
-        <div className="p-4 border-r border-zinc-800" />
-        <div className="p-4 flex items-center justify-center border-r border-zinc-800">
+      <div className="grid grid-cols-3 border-t border-border">
+        <div className="p-4 border-r border-border" />
+        <div className="p-4 flex items-center justify-center border-r border-border">
           {isPremium ? (
-            <span className="text-sm text-zinc-500">Your old plan</span>
+            <span className="text-sm text-text-muted">Your old plan</span>
           ) : (
-            <span className="text-sm text-zinc-400">Current plan</span>
+            <span className="text-sm text-text-muted">Current plan</span>
           )}
         </div>
-        <div className="p-4 flex items-center justify-center bg-purple-500/10">
+        <div className="p-4 flex items-center justify-center bg-primary/10">
           {isPremium || isPromoPeriodActive() ? (
-            <span className="text-sm text-green-400">
+            <span className="text-sm text-success">
               {isPromoPeriodActive() ? `Free until ${PROMO_END_LABEL}` : "Your current plan"}
             </span>
           ) : (
             <Link href="/premium">
-              <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <Button size="sm" className="bg-primary hover:bg-primary-dark">
                 Upgrade Now
               </Button>
             </Link>

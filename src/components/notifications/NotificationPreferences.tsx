@@ -43,7 +43,7 @@ export function NotificationPreferences({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -135,7 +135,7 @@ export function NotificationPreferences({
         size="sm"
         className={cn(
           "h-8 px-3",
-          active && "bg-purple-600 hover:bg-purple-700",
+          active && "bg-primary hover:bg-primary-dark text-background",
           disabled && "opacity-50 cursor-not-allowed"
         )}
         onClick={onClick}
@@ -186,21 +186,21 @@ export function NotificationPreferences({
           return (
             <Card
               key={type}
-              className="p-4 bg-zinc-900/50 border-zinc-800"
+              className="p-4 bg-surface/50 border-border"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <span className="text-xl">{info.icon}</span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-white">{info.label}</h3>
+                      <h3 className="font-medium text-text">{info.label}</h3>
                       {!pref.is_enabled && (
-                        <Badge variant="outline" className="text-zinc-500">
+                        <Badge variant="outline" className="text-text-muted">
                           Disabled
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-zinc-400 mt-0.5">
+                    <p className="text-sm text-text-muted mt-0.5">
                       {info.description}
                     </p>
                   </div>
@@ -220,7 +220,7 @@ export function NotificationPreferences({
                 <div className="mt-4 pl-9 space-y-3">
                   {/* Channels */}
                   <div>
-                    <p className="text-xs text-zinc-500 mb-2">
+                    <p className="text-xs text-text-muted mb-2">
                       Notification channels
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -252,7 +252,7 @@ export function NotificationPreferences({
                   {/* Frequency (for certain types) */}
                   {["forum_reply", "direct_message"].includes(type) && (
                     <div className="flex items-center gap-3">
-                      <p className="text-xs text-zinc-500">Frequency</p>
+                      <p className="text-xs text-text-muted">Frequency</p>
                       <Select
                         value={pref.frequency || "instant"}
                         onValueChange={(value) =>
@@ -261,7 +261,7 @@ export function NotificationPreferences({
                           })
                         }
                       >
-                        <SelectTrigger className="w-[150px] h-8 bg-zinc-800 border-zinc-700">
+                        <SelectTrigger className="w-[150px] h-8 bg-surface-light border-border">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -285,7 +285,7 @@ export function NotificationPreferences({
           <Button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-primary hover:bg-primary-dark text-background"
           >
             {updateMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

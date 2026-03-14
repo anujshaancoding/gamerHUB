@@ -300,7 +300,7 @@ export function RatingModal({
               onClick={() => { setTab("positive"); setError(null); }}
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 tab === "positive"
-                  ? "bg-green-500/15 text-green-400 border-b-2 border-green-500"
+                  ? "bg-success/15 text-success border-b-2 border-success"
                   : "bg-surface text-text-muted hover:bg-surface-light"
               }`}
             >

@@ -131,7 +131,7 @@ export function ShareCardModal({
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="text-error mb-4">{error}</p>
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

@@ -138,7 +138,7 @@ export function ProfileHoverCard({ profile, children }: ProfileHoverCardProps) {
   const styleClasses: Record<string, string> = {
     default: "border-border bg-surface",
     holographic:
-      "border-transparent bg-surface ring-1 ring-purple-500/30",
+      "border-transparent bg-surface ring-1 ring-primary/30",
     pixel: "border-dashed border-2 border-text-muted bg-surface",
     gold: "border-yellow-500/50 bg-surface",
   };

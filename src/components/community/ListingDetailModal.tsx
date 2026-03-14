@@ -32,15 +32,15 @@ interface ListingDetailModalProps {
 }
 
 const LISTING_TYPE_COLORS: Record<ListingType, string> = {
-  tournament: "bg-purple-500/10 text-purple-500",
-  giveaway: "bg-green-500/10 text-green-500",
+  tournament: "bg-primary/10 text-primary",
+  giveaway: "bg-success/10 text-success",
 };
 
 const STATUS_COLORS: Record<ListingStatus, string> = {
-  active: "bg-green-500/10 text-green-500",
+  active: "bg-success/10 text-success",
   completed: "bg-primary/10 text-primary",
-  cancelled: "bg-red-500/10 text-red-500",
-  draft: "bg-gray-500/10 text-gray-500",
+  cancelled: "bg-error/10 text-error",
+  draft: "bg-surface-light/50 text-text-muted",
 };
 
 export function ListingDetailModal({
@@ -307,7 +307,7 @@ export function ListingDetailModal({
                 disabled={isLiking}
                 leftIcon={
                   <Heart
-                    className={`h-4 w-4 ${listing.user_liked ? "fill-red-500 text-red-500" : ""}`}
+                    className={`h-4 w-4 ${listing.user_liked ? "fill-error text-error" : ""}`}
                   />
                 }
               >

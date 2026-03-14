@@ -66,7 +66,7 @@ export function ClipCard({ clip, onReact, isReacting }: ClipCardProps) {
 
             {/* Duration */}
             {clip.duration_seconds && (
-              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-white text-xs">
+              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-text text-xs">
                 {formatDuration(clip.duration_seconds)}
               </div>
             )}

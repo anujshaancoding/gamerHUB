@@ -17,9 +17,9 @@ const typeConfig: Record<
   { icon: React.ComponentType<{ className?: string }>; color: string; label: string }
 > = {
   news: { icon: Newspaper, color: "text-blue-400", label: "News" },
-  blog: { icon: BookOpen, color: "text-purple-400", label: "Blog" },
+  blog: { icon: BookOpen, color: "text-primary", label: "Blog" },
   tournament: { icon: Trophy, color: "text-yellow-400", label: "Tournament" },
-  giveaway: { icon: Gift, color: "text-green-400", label: "Giveaway" },
+  giveaway: { icon: Gift, color: "text-success", label: "Giveaway" },
   friend_post: { icon: Users, color: "text-orange-400", label: "Post" },
 };
 

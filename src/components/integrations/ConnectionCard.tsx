@@ -33,9 +33,9 @@ const providerInfo = {
   riot: {
     name: "Riot Games",
     description: "Connect to sync your Valorant and League of Legends stats",
-    color: "text-red-400",
-    bgColor: "bg-red-500/20",
-    borderColor: "border-red-500/50",
+    color: "text-error",
+    bgColor: "bg-error/20",
+    borderColor: "border-error/50",
     // logo: "/images/riot-logo.svg",
   },
   steam: {
@@ -65,7 +65,7 @@ export function ConnectionCard({
   return (
     <Card
       className={cn(
-        "p-4 bg-zinc-900/50 border-zinc-800 transition-colors",
+        "p-4 bg-surface/50 border-border transition-colors",
         isConnected && info.borderColor
       )}
     >
@@ -91,11 +91,11 @@ export function ConnectionCard({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-white">{info.name}</h3>
+            <h3 className="font-semibold text-text">{info.name}</h3>
             {isConnected && (
               <Badge
                 variant="outline"
-                className="text-xs bg-green-500/20 text-green-300 border-green-500/50"
+                className="text-xs bg-success/20 text-success border-success/50"
               >
                 <Check className="h-3 w-3 mr-1" />
                 Connected
@@ -105,8 +105,8 @@ export function ConnectionCard({
 
           {isConnected ? (
             <>
-              <p className="text-sm text-white font-medium">{username}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500">
+              <p className="text-sm text-text font-medium">{username}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
                 {connectedAt && (
                   <span>
                     Connected{" "}
@@ -126,7 +126,7 @@ export function ConnectionCard({
               </div>
             </>
           ) : (
-            <p className="text-sm text-zinc-400">{info.description}</p>
+            <p className="text-sm text-text-muted">{info.description}</p>
           )}
         </div>
 
@@ -138,7 +138,7 @@ export function ConnectionCard({
               size="sm"
               onClick={onDisconnect}
               disabled={isDisconnecting}
-              className="text-red-400 hover:text-red-300 border-red-500/50 hover:border-red-500"
+              className="text-error hover:text-error border-error/50 hover:border-error"
             >
               {isDisconnecting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -154,11 +154,11 @@ export function ConnectionCard({
               onClick={onConnect}
               disabled={isConnecting}
               className={cn(
-                "text-white",
+                "text-text",
                 provider === "riot"
-                  ? "bg-red-600 hover:bg-red-700"
+                  ? "bg-error hover:bg-error/90"
                   : provider === "supercell"
-                    ? "bg-green-600 hover:bg-green-700"
+                    ? "bg-success hover:bg-success/90"
                     : "bg-blue-600 hover:bg-blue-700"
               )}
             >

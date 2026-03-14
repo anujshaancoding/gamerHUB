@@ -103,15 +103,15 @@ export function ColorThemeEditor({ value, onChange }: ColorThemeEditorProps) {
                 {/* Palette preview dots */}
                 <div className="flex items-center justify-center gap-1">
                   <div
-                    className="w-4 h-4 rounded-full border border-white/10"
+                    className="w-4 h-4 rounded-full border border-border"
                     style={{ backgroundColor: palette.primary }}
                   />
                   <div
-                    className="w-4 h-4 rounded-full border border-white/10"
+                    className="w-4 h-4 rounded-full border border-border"
                     style={{ backgroundColor: palette.secondary }}
                   />
                   <div
-                    className="w-4 h-4 rounded-full border border-white/10"
+                    className="w-4 h-4 rounded-full border border-border"
                     style={{ backgroundColor: palette.accent }}
                   />
                 </div>

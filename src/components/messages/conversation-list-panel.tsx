@@ -107,19 +107,19 @@ export function ConversationListPanel({
           className={cn(
             "flex-1 py-2.5 text-sm font-medium transition-colors relative flex items-center justify-center gap-1.5",
             activeTab === "void"
-              ? "text-purple-400"
+              ? "text-primary"
               : "text-text-muted hover:text-text-secondary"
           )}
         >
           <Ghost className="h-3.5 w-3.5" />
           The Void
           {voidUnreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-purple-500/20 text-purple-400 rounded-full font-semibold">
+            <span className="px-1.5 py-0.5 text-[10px] bg-primary/20 text-primary rounded-full font-semibold">
               {voidUnreadCount}
             </span>
           )}
           {activeTab === "void" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
       </div>
@@ -142,8 +142,8 @@ export function ConversationListPanel({
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             {activeTab === "void" ? (
               <>
-                <div className="p-4 rounded-full bg-purple-500/5 mb-4">
-                  <Ghost className="h-10 w-10 text-purple-400/40" />
+                <div className="p-4 rounded-full bg-primary/5 mb-4">
+                  <Ghost className="h-10 w-10 text-primary/40" />
                 </div>
                 <p className="text-text-muted text-sm">
                   {search ? "No conversations found" : "The Void is empty"}
@@ -191,10 +191,10 @@ export function ConversationListPanel({
                         "flex items-center gap-3 px-4 py-3 cursor-pointer transition-all border-l-2",
                         isSelected
                           ? activeTab === "void"
-                            ? "bg-purple-500/10 border-purple-500 shadow-[inset_0_0_20px_rgba(168,85,247,0.05)]"
+                            ? "bg-primary/10 border-primary shadow-[inset_0_0_20px_rgba(168,85,247,0.05)]"
                             : "bg-primary/10 border-primary shadow-[inset_0_0_20px_rgba(0,255,136,0.05)]"
                           : "border-transparent hover:bg-surface-light/40 hover:border-border/30",
-                        hasUnread && !isSelected && (activeTab === "void" ? "bg-purple-500/5" : "bg-primary/5")
+                        hasUnread && !isSelected && (activeTab === "void" ? "bg-primary/5" : "bg-primary/5")
                       )}
                     >
                       <div className="relative">
@@ -255,7 +255,7 @@ export function ConversationListPanel({
                               className={cn(
                                 "h-2 w-2 rounded-full flex-shrink-0 ml-2 animate-pulse",
                                 activeTab === "void"
-                                  ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
+                                  ? "bg-primary shadow-[0_0_8px_rgba(168,85,247,0.5)]"
                                   : "bg-primary shadow-[0_0_8px_rgba(0,255,136,0.5)]"
                               )}
                             />

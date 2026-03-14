@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/20",
-        primary: "bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/20",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-        danger: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-white",
-        secondary: "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700",
-        ghost: "text-zinc-400 hover:text-white hover:bg-zinc-800/50",
-        link: "text-purple-400 underline-offset-4 hover:underline",
+        default: "bg-primary text-background hover:bg-primary-dark shadow-lg shadow-primary/20",
+        primary: "bg-primary text-background hover:bg-primary-dark shadow-lg shadow-primary/20",
+        destructive: "bg-error text-white hover:bg-error/90",
+        danger: "bg-error text-white hover:bg-error/90",
+        outline: "border border-border bg-transparent text-text-secondary hover:bg-surface-light hover:text-text",
+        secondary: "bg-surface-light text-text-secondary hover:bg-surface-lighter hover:text-text border border-border",
+        ghost: "text-text-muted hover:text-text hover:bg-surface-light/50",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

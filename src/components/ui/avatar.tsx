@@ -80,9 +80,9 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
     const frameStyles = {
       none: "",
       default: "ring-2 ring-border",
-      epic: "ring-4 ring-purple-500 shadow-lg shadow-purple-500/50",
-      legendary: "ring-4 ring-yellow-500 shadow-lg shadow-yellow-500/50 animate-pulse-subtle",
-      mythic: "ring-4 ring-gradient-mythic shadow-xl shadow-pink-500/30",
+      epic: "ring-4 ring-primary shadow-lg shadow-primary/50",
+      legendary: "ring-4 ring-warning shadow-lg shadow-warning/50 animate-pulse-subtle",
+      mythic: "ring-4 ring-gradient-mythic shadow-xl shadow-secondary/30",
       rgb: "avatar-rgb-border",
     };
 

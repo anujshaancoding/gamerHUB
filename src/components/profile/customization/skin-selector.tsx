@@ -15,7 +15,7 @@ function SkinPreview({ colors }: { colors: [string, string, string] }) {
 
   return (
     <div
-      className="w-full h-20 rounded-lg overflow-hidden border border-white/10 relative"
+      className="w-full h-20 rounded-lg overflow-hidden border border-border relative"
       style={{ backgroundColor: bg }}
     >
       {/* Mini banner */}
@@ -84,13 +84,13 @@ export function SkinSelector({ value, onChange }: SkinSelectorProps) {
               onClick={() => onChange(skin.id === "default" ? null : skin.id)}
               className={`relative flex flex-col gap-2 p-3 rounded-xl border-2 transition-all duration-200 text-left ${
                 isSelected
-                  ? "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                  ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                  : "border-border bg-surface-light hover:border-border/80 hover:bg-surface-lighter"
               }`}
             >
               {isSelected && (
                 <div className="absolute top-2 right-2 z-10">
-                  <Check className="h-4 w-4 text-purple-400" />
+                  <Check className="h-4 w-4 text-primary" />
                 </div>
               )}
 
@@ -101,11 +101,11 @@ export function SkinSelector({ value, onChange }: SkinSelectorProps) {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-base">{skin.icon}</span>
-                  <span className="text-sm font-semibold text-white/90 truncate">
+                  <span className="text-sm font-semibold text-text/90 truncate">
                     {skin.name}
                   </span>
                 </div>
-                <p className="text-xs text-white/50 line-clamp-2">
+                <p className="text-xs text-text-muted line-clamp-2">
                   {skin.description}
                 </p>
               </div>
@@ -115,7 +115,7 @@ export function SkinSelector({ value, onChange }: SkinSelectorProps) {
                 {skin.previewColors.map((color, i) => (
                   <div
                     key={i}
-                    className="w-4 h-4 rounded-full border border-white/20"
+                    className="w-4 h-4 rounded-full border border-border"
                     style={{ backgroundColor: color }}
                   />
                 ))}

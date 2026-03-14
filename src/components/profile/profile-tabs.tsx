@@ -51,7 +51,7 @@ export function ProfileTabs({ children, defaultTab = "overview" }: ProfileTabsPr
                   relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-colors whitespace-nowrap flex-1 justify-center
                   ${isActive
-                    ? "text-white"
+                    ? "text-text"
                     : "text-text-muted hover:text-text-secondary"
                   }
                 `}

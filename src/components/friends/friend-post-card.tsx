@@ -278,7 +278,7 @@ export function FriendPostCard({
                 showStatus={false}
               />
               <div>
-                <p className="font-semibold text-white text-sm sm:text-base leading-tight flex items-center gap-1">
+                <p className="font-semibold text-text text-sm sm:text-base leading-tight flex items-center gap-1">
                   {post.user?.display_name || post.user?.username}
                   {post.user?.is_verified && (
                     <CheckCircle className="h-3.5 w-3.5 text-primary flex-shrink-0" />
@@ -294,7 +294,7 @@ export function FriendPostCard({
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDeleting}
-                  className="p-1.5 rounded-lg text-text-dim hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="p-1.5 rounded-lg text-text-dim hover:text-error hover:bg-error/10 transition-all"
                   title="Delete post"
                   aria-label="Delete post"
                 >
@@ -342,8 +342,8 @@ export function FriendPostCard({
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 group/like",
                   liked
-                    ? "text-red-400 bg-red-500/10"
-                    : "text-text-muted hover:text-red-400 hover:bg-red-500/10"
+                    ? "text-error bg-error/10"
+                    : "text-text-muted hover:text-error hover:bg-error/10"
                 )}
               >
                 <Heart
@@ -499,7 +499,7 @@ export function FriendPostCard({
                           {user && comment.user_id === user.id && (
                             <button
                               onClick={() => setCommentToDelete(comment.id)}
-                              className="text-[11px] text-text-dim hover:text-red-400 transition-colors opacity-0 group-hover/cmt:opacity-100"
+                              className="text-[11px] text-text-dim hover:text-error transition-colors opacity-0 group-hover/cmt:opacity-100"
                             >
                               Delete
                             </button>

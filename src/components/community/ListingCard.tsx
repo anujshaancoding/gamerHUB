@@ -38,10 +38,10 @@ const LISTING_TYPE_ICONS: Record<ListingType, typeof Trophy> = {
 };
 
 const STATUS_COLORS: Record<ListingStatus, string> = {
-  active: "bg-green-500/10 text-green-500",
+  active: "bg-success/10 text-success",
   completed: "bg-primary/10 text-primary",
-  cancelled: "bg-red-500/10 text-red-500",
-  draft: "bg-gray-500/10 text-gray-500",
+  cancelled: "bg-error/10 text-error",
+  draft: "bg-surface-light/50 text-text-muted",
 };
 
 export function ListingCard({
@@ -84,7 +84,7 @@ export function ListingCard({
         "rounded-xl border overflow-hidden transition-all duration-300 cursor-pointer group",
         "bg-surface hover:shadow-lg hover:-translate-y-0.5",
         theme.isMonochrome
-          ? "border-gray-700 hover:border-gray-500"
+          ? "border-border hover:border-text-muted"
           : `border-border hover:${theme.primaryBorder}/40`
       )}
       onClick={onClick}
@@ -100,15 +100,15 @@ export function ListingCard({
         "from-gray-700 to-gray-900"
       )}>
         <div className="flex items-center gap-2">
-          <TypeIcon className="h-4 w-4 text-white" />
-          <span className="text-xs font-bold text-white uppercase tracking-wider">
+          <TypeIcon className="h-4 w-4 text-text" />
+          <span className="text-xs font-bold text-text uppercase tracking-wider">
             {isTournament ? "Tournament" : "Giveaway"}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {listing.game && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-black/30 text-white/90">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-black/30 text-text/90">
               <Gamepad2 className="h-3 w-3" />
               {listing.game.name}
             </span>
@@ -156,7 +156,7 @@ export function ListingCard({
         <div>
           <h3 className={cn(
             "font-bold text-lg mb-1 group-hover:transition-colors",
-            theme.isMonochrome ? "text-white group-hover:text-gray-300" : `text-text group-hover:${theme.primaryText}`
+            theme.isMonochrome ? "text-text group-hover:text-text-secondary" : `text-text group-hover:${theme.primaryText}`
           )}>
             {listing.title}
           </h3>
@@ -176,7 +176,7 @@ export function ListingCard({
                 rel="noopener noreferrer"
                 className={cn(
                   "hover:underline font-medium",
-                  theme.isMonochrome ? "text-gray-300" : theme.primaryText
+                  theme.isMonochrome ? "text-text-secondary" : theme.primaryText
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -193,7 +193,7 @@ export function ListingCard({
           <div className={cn(
             "flex items-center gap-3 p-3 rounded-lg border",
             theme.isMonochrome
-              ? "border-gray-700 bg-gray-800/50"
+              ? "border-border bg-surface-light/50"
               : `border-${theme.primary}/20 bg-${theme.primary}/5`
           )}>
             <div className="flex-1 text-center">
@@ -202,8 +202,8 @@ export function ListingCard({
               <p className="text-xs text-text-muted">{formatTime(startDate)}</p>
             </div>
             <div className="flex items-center gap-1">
-              <div className={cn("w-6 h-px", theme.isMonochrome ? "bg-gray-600" : `bg-${theme.primary}/30`)} />
-              <ArrowRight className={cn("h-3.5 w-3.5", theme.isMonochrome ? "text-gray-500" : theme.primaryText)} />
+              <div className={cn("w-6 h-px", theme.isMonochrome ? "bg-border" : `bg-${theme.primary}/30`)} />
+              <ArrowRight className={cn("h-3.5 w-3.5", theme.isMonochrome ? "text-text-muted" : theme.primaryText)} />
             </div>
             {endDate && (
               <div className="flex-1 text-center">
@@ -231,11 +231,11 @@ export function ListingCard({
           <div className={cn(
             "flex items-start gap-2 p-2.5 rounded-lg border",
             theme.isMonochrome
-              ? "border-gray-600 bg-gray-800/50"
+              ? "border-border bg-surface-light/50"
               : "border-yellow-500/20 bg-yellow-500/5"
           )}>
-            <Trophy className={cn("h-4 w-4 flex-shrink-0 mt-0.5", theme.isMonochrome ? "text-gray-400" : "text-yellow-500")} />
-            <p className={cn("text-sm font-medium line-clamp-2", theme.isMonochrome ? "text-gray-300" : "text-yellow-500")}>
+            <Trophy className={cn("h-4 w-4 flex-shrink-0 mt-0.5", theme.isMonochrome ? "text-text-muted" : "text-yellow-500")} />
+            <p className={cn("text-sm font-medium line-clamp-2", theme.isMonochrome ? "text-text-secondary" : "text-yellow-500")}>
               {listing.prize_description}
             </p>
           </div>
@@ -245,11 +245,11 @@ export function ListingCard({
         {hasWinners && (
           <div className={cn(
             "p-3 rounded-lg border",
-            theme.isMonochrome ? "border-gray-700 bg-gray-800/30" : "border-yellow-500/10 bg-yellow-500/5"
+            theme.isMonochrome ? "border-border bg-surface-light/30" : "border-yellow-500/10 bg-yellow-500/5"
           )}>
             <div className="flex items-center gap-2 mb-2">
-              <Crown className={cn("h-4 w-4", theme.isMonochrome ? "text-gray-400" : "text-yellow-500")} />
-              <span className={cn("text-sm font-bold", theme.isMonochrome ? "text-gray-300" : "text-yellow-500")}>Winners</span>
+              <Crown className={cn("h-4 w-4", theme.isMonochrome ? "text-text-muted" : "text-yellow-500")} />
+              <span className={cn("text-sm font-bold", theme.isMonochrome ? "text-text-secondary" : "text-yellow-500")}>Winners</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {listing.winners!
@@ -284,7 +284,7 @@ export function ListingCard({
             className={cn(
               "flex items-center justify-center gap-2 w-full py-2 rounded-lg text-sm font-medium transition-all",
               theme.isMonochrome
-                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                ? "bg-surface-light text-text-secondary hover:bg-surface-lighter"
                 : `bg-${theme.primary}/10 ${theme.primaryText} hover:bg-${theme.primary}/20`
             )}
           >
@@ -324,8 +324,8 @@ export function ListingCard({
                 className={cn(
                   "flex items-center gap-1 text-xs transition-colors",
                   listing.user_liked
-                    ? "text-red-500"
-                    : "text-text-dim hover:text-red-500"
+                    ? "text-error"
+                    : "text-text-dim hover:text-error"
                 )}
               >
                 <Heart className={cn("h-3.5 w-3.5", listing.user_liked ? "fill-current" : "")} />

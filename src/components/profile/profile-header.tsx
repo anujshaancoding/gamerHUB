@@ -318,9 +318,9 @@ export function ProfileHeader({
               <div
                 className={`
                   px-4 py-2 rounded-full backdrop-blur-md font-bold text-sm uppercase tracking-wider
-                  ${profile.gaming_style === "pro" ? "bg-purple-500/30 text-purple-300 border border-purple-500/50" : ""}
+                  ${profile.gaming_style === "pro" ? "bg-primary/30 text-primary/80 border border-primary/50" : ""}
                   ${profile.gaming_style === "competitive" ? "bg-cyan-500/30 text-cyan-300 border border-cyan-500/50" : ""}
-                  ${profile.gaming_style === "casual" ? "bg-green-500/30 text-green-300 border border-green-500/50" : ""}
+                  ${profile.gaming_style === "casual" ? "bg-success/30 text-success border border-success/50" : ""}
                 `}
               >
                 <span className="flex items-center gap-2">

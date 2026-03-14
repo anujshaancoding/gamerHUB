@@ -33,15 +33,15 @@ interface ProfileBadgesProps {
 
 const rarityColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
   common: {
-    bg: "bg-gray-500/20",
-    border: "border-gray-500/50",
-    text: "text-gray-300",
+    bg: "bg-surface-lighter/50",
+    border: "border-border",
+    text: "text-text-secondary",
     glow: "",
   },
   uncommon: {
-    bg: "bg-green-500/20",
-    border: "border-green-500/50",
-    text: "text-green-400",
+    bg: "bg-success/20",
+    border: "border-success/50",
+    text: "text-success",
     glow: "shadow-green-500/20",
   },
   rare: {
@@ -51,9 +51,9 @@ const rarityColors: Record<string, { bg: string; border: string; text: string; g
     glow: "shadow-blue-500/30",
   },
   epic: {
-    bg: "bg-purple-500/20",
-    border: "border-purple-500/50",
-    text: "text-purple-400",
+    bg: "bg-primary/20",
+    border: "border-primary/50",
+    text: "text-primary",
     glow: "shadow-purple-500/40",
   },
   legendary: {
@@ -178,7 +178,7 @@ function BadgeDetailModal({ userBadge, onClose }: { userBadge: UserBadge; onClos
           onClick={onClose}
           className="absolute top-3 right-3 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
         >
-          <X className="h-4 w-4 text-white" />
+          <X className="h-4 w-4 text-text" />
         </button>
 
         <div className="flex flex-col items-center text-center">
@@ -206,11 +206,11 @@ function BadgeDetailModal({ userBadge, onClose }: { userBadge: UserBadge; onClos
 
           {/* Description */}
           {badge.description && (
-            <p className="text-white/80 text-sm mb-3">{badge.description}</p>
+            <p className="text-text/80 text-sm mb-3">{badge.description}</p>
           )}
 
           {/* Category + Points */}
-          <div className="flex items-center gap-4 text-sm text-white/60">
+          <div className="flex items-center gap-4 text-sm text-text/60">
             <span className="flex items-center gap-1 capitalize">
               <Icon className="h-3.5 w-3.5" />
               {badge.category}
@@ -222,7 +222,7 @@ function BadgeDetailModal({ userBadge, onClose }: { userBadge: UserBadge; onClos
           </div>
 
           {/* Earned date */}
-          <div className="flex items-center gap-1.5 mt-3 text-xs text-white/50">
+          <div className="flex items-center gap-1.5 mt-3 text-xs text-text/50">
             <Calendar className="h-3 w-3" />
             Earned {new Date(userBadge.earned_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
           </div>

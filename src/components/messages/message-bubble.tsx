@@ -68,7 +68,7 @@ function MessageStatusIcon({ status }: { status: MessageStatus }) {
     // Double check marks (blue) - seen by other user
     return (
       <span className="inline-flex items-center ml-1" title="Seen">
-        <DoubleCheck className="text-[#00bfff]" />
+        <DoubleCheck className="text-accent" />
       </span>
     );
   }

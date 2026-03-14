@@ -63,7 +63,7 @@ export function CategoryTabs({ selected, onChange }: CategoryTabsProps) {
           className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border shrink-0 ${
             !selected
               ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border-primary/50 shadow-lg shadow-primary/10"
-              : "bg-surface-light text-text-muted border-border hover:bg-surface-lighter hover:text-white hover:border-border-light"
+              : "bg-surface-light text-text-muted border-border hover:bg-surface-lighter hover:text-text hover:border-border-light"
           }`}
         >
           <LayoutGrid className="w-4 h-4" />

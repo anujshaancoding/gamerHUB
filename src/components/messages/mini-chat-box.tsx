@@ -103,7 +103,7 @@ export function MiniChatBox({
           {friend.avatarUrl ? (
             <Avatar src={friend.avatarUrl} alt={friend.name} size="sm" />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-text text-xs font-bold">
               {friend.avatar}
             </div>
           )}
@@ -175,7 +175,7 @@ export function MiniChatBox({
                       <div
                         className={`max-w-[85%] px-3 py-1.5 rounded-xl text-xs ${
                           isOwn
-                            ? "bg-primary text-white rounded-br-sm"
+                            ? "bg-primary text-text rounded-br-sm"
                             : "bg-surface-light text-text rounded-bl-sm"
                         }`}
                       >
@@ -218,7 +218,7 @@ export function MiniChatBox({
                 disabled={!inputValue.trim() || !conversationId}
                 className="p-2 bg-primary hover:bg-primary/80 rounded transition-colors disabled:opacity-50"
               >
-                <Send className="h-4 w-4 text-white" />
+                <Send className="h-4 w-4 text-text" />
               </button>
             </div>
           </div>

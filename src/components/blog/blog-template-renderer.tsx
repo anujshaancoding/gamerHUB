@@ -151,7 +151,7 @@ function PostMeta({ post }: { post: BlogPost }) {
             alt={post.author.display_name || post.author.username || "Author"}
             size="sm"
           />
-          <span className="font-medium text-white">
+          <span className="font-medium text-text">
             {post.author.display_name || post.author.username}
           </span>
         </div>
@@ -301,7 +301,7 @@ function MagazineTemplate({ post }: { post: BlogPost }) {
             {post.excerpt && (
               <CollapsibleExcerpt
                 text={post.excerpt}
-                className="text-lg text-white/80 max-w-2xl"
+                className="text-lg text-text/80 max-w-2xl"
               />
             )}
           </div>
@@ -419,7 +419,7 @@ function MinimalTemplate({ post }: { post: BlogPost }) {
   return (
     <article className="max-w-2xl mx-auto py-8">
       {/* Clean title */}
-      <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-snug text-white">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-snug text-text">
         {post.title}
       </h1>
 
@@ -567,7 +567,7 @@ function GamingStreamTemplate({ post }: { post: BlogPost }) {
           {post.excerpt && (
             <CollapsibleExcerpt
               text={post.excerpt}
-              className="text-white/80 text-sm sm:text-base max-w-3xl"
+              className="text-text/80 text-sm sm:text-base max-w-3xl"
             />
           )}
         </div>

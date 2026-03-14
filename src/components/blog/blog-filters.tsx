@@ -76,7 +76,7 @@ export function BlogFiltersComponent({
                     setSearchInput("");
                     handleChange("search", "");
                   }}
-                  className="px-3 text-text-dim hover:text-white transition-colors"
+                  className="px-3 text-text-dim hover:text-text transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </motion.button>
@@ -188,7 +188,7 @@ export function BlogFiltersComponent({
                       <div className="w-10 h-6 bg-surface-lighter rounded-full peer-checked:bg-primary/20 transition-colors" />
                       <div className="absolute left-1 top-1 w-4 h-4 bg-text-dim rounded-full peer-checked:translate-x-4 peer-checked:bg-primary transition-all" />
                     </div>
-                    <span className="text-sm text-text-secondary group-hover:text-white transition-colors flex items-center gap-1.5">
+                    <span className="text-sm text-text-secondary group-hover:text-text transition-colors flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
                       Featured Only
                     </span>
@@ -208,7 +208,7 @@ export function BlogFiltersComponent({
                         variant="ghost"
                         size="sm"
                         onClick={clearFilters}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        className="text-error hover:text-error/80 hover:bg-error/10"
                       >
                         <X className="w-4 h-4 mr-1.5" />
                         Clear all
@@ -240,7 +240,7 @@ export function BlogFiltersComponent({
                     setSearchInput("");
                     handleChange("search", "");
                   }}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-text"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -253,7 +253,7 @@ export function BlogFiltersComponent({
                   filters.game}
                 <button
                   onClick={() => handleChange("game", "")}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-text"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -264,7 +264,7 @@ export function BlogFiltersComponent({
                 {BLOG_CATEGORIES[filters.category]?.label || filters.category}
                 <button
                   onClick={() => handleChange("category", "")}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-text"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -284,7 +284,7 @@ export function BlogFiltersComponent({
             )}
             <button
               onClick={clearFilters}
-              className="text-xs text-text-dim hover:text-white transition-colors"
+              className="text-xs text-text-dim hover:text-text transition-colors"
             >
               Clear all
             </button>

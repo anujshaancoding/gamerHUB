@@ -130,7 +130,7 @@ function StatusToast({ status }: { status: "saved" | "error" | null }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -4, scale: 0.9 }}
           transition={{ duration: 0.2 }}
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg ${
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text shadow-lg ${
             status === "saved"
               ? "bg-green-500/90 shadow-green-500/20"
               : "bg-red-500/90 shadow-red-500/20"
@@ -165,25 +165,25 @@ function AccordionSection({
   const Icon = section.icon;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden transition-colors hover:border-white/15">
+    <div className="rounded-xl border border-border bg-surface-light/30 overflow-hidden transition-colors hover:border-border/80">
       {/* Header */}
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.03]"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-light/50"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
-          <Icon className="h-4.5 w-4.5 text-purple-400" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-4.5 w-4.5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-white">{section.title}</h3>
-          <p className="text-xs text-white/50 truncate">{section.description}</p>
+          <h3 className="text-sm font-semibold text-text">{section.title}</h3>
+          <p className="text-xs text-text-muted truncate">{section.description}</p>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.25, ease: "easeInOut" }}
         >
-          <ChevronDown className="h-4 w-4 text-white/40" />
+          <ChevronDown className="h-4 w-4 text-text-muted" />
         </motion.div>
       </button>
 
@@ -360,13 +360,13 @@ export function CustomizationTab({
     <section className="space-y-6">
       {/* Section header */}
       <div className="flex items-center gap-3">
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/15">
-          <Wand2 className="h-5 w-5 text-purple-400" />
+        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+          <Wand2 className="h-5 w-5 text-primary" />
           <Sparkles className="absolute -top-1 -right-1 h-3.5 w-3.5 text-amber-400" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-white">Customize Your Profile</h2>
-          <p className="text-sm text-white/50">Make your profile uniquely yours</p>
+          <h2 className="text-lg font-bold text-text">Customize Your Profile</h2>
+          <p className="text-sm text-text-muted">Make your profile uniquely yours</p>
         </div>
       </div>
 
@@ -378,19 +378,19 @@ export function CustomizationTab({
             return (
               <div
                 key={section.id}
-                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 opacity-60"
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface-light/30 px-4 py-3.5 opacity-60"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
-                  <section.icon className="h-4.5 w-4.5 text-purple-400" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <section.icon className="h-4.5 w-4.5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-white">{section.title}</h3>
+                    <h3 className="text-sm font-semibold text-text-secondary">{section.title}</h3>
                     <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/20">
                       Coming Soon
                     </span>
                   </div>
-                  <p className="text-xs text-white/50 truncate">{section.description}</p>
+                  <p className="text-xs text-text-muted truncate">{section.description}</p>
                 </div>
               </div>
             );

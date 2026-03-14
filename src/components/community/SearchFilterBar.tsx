@@ -123,7 +123,7 @@ export function SearchFilterBar({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={clearSearch}
-                  className="px-2 sm:px-3 text-text-dim hover:text-white transition-colors"
+                  className="px-2 sm:px-3 text-text-dim hover:text-text transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </motion.button>
@@ -254,7 +254,7 @@ export function SearchFilterBar({
                             <div className="w-9 sm:w-10 h-5 sm:h-6 bg-surface-lighter rounded-full peer-checked:bg-primary/20 transition-colors" />
                             <div className="absolute left-0.5 sm:left-1 top-0.5 sm:top-1 w-4 h-4 bg-text-dim rounded-full peer-checked:translate-x-4 peer-checked:bg-primary transition-all" />
                           </div>
-                          <span className="text-xs sm:text-sm text-text-secondary group-hover:text-white transition-colors flex items-center gap-1.5">
+                          <span className="text-xs sm:text-sm text-text-secondary group-hover:text-text transition-colors flex items-center gap-1.5">
                             {field.icon}
                             {field.label}
                           </span>
@@ -282,7 +282,7 @@ export function SearchFilterBar({
                           clearSearch();
                           onClearAll?.();
                         }}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs sm:text-sm"
+                        className="text-error hover:text-error hover:bg-error/10 text-xs sm:text-sm"
                       >
                         <X className="w-3.5 h-3.5 mr-1" />
                         Clear all
@@ -309,7 +309,7 @@ export function SearchFilterBar({
               <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-surface rounded-full text-xs sm:text-sm text-text-secondary border border-border">
                 <Search className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 &quot;{searchValue}&quot;
-                <button onClick={clearSearch} className="ml-0.5 sm:ml-1 hover:text-white">
+                <button onClick={clearSearch} className="ml-0.5 sm:ml-1 hover:text-text">
                   <X className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </button>
               </span>
@@ -331,7 +331,7 @@ export function SearchFilterBar({
                   {getFilterLabel(field, value)}
                   <button
                     onClick={() => onFilterChange?.(field.key, undefined)}
-                    className="ml-0.5 sm:ml-1 hover:text-white"
+                    className="ml-0.5 sm:ml-1 hover:text-text"
                   >
                     <X className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                   </button>
@@ -343,7 +343,7 @@ export function SearchFilterBar({
                 clearSearch();
                 onClearAll?.();
               }}
-              className="text-xs text-text-dim hover:text-white transition-colors"
+              className="text-xs text-text-dim hover:text-text transition-colors"
             >
               Clear all
             </button>

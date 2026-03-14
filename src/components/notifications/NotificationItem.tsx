@@ -35,8 +35,8 @@ export function NotificationItem({
       className={cn(
         "p-4 transition-colors cursor-pointer group",
         notification.is_read
-          ? "bg-zinc-900/30 border-zinc-800"
-          : "bg-zinc-900/50 border-purple-500/30 hover:border-purple-500/50",
+          ? "bg-surface/30 border-border"
+          : "bg-surface/50 border-primary/30 hover:border-primary/50",
         compact && "p-3"
       )}
       onClick={handleClick}
@@ -46,7 +46,7 @@ export function NotificationItem({
         <div
           className={cn(
             "shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg",
-            notification.is_read ? "bg-zinc-800" : "bg-purple-500/20"
+            notification.is_read ? "bg-surface-light" : "bg-primary/20"
           )}
         >
           {notification.icon || getNotificationIcon(notification.type)}
@@ -59,20 +59,20 @@ export function NotificationItem({
               <p
                 className={cn(
                   "text-sm font-medium truncate",
-                  notification.is_read ? "text-zinc-400" : "text-white"
+                  notification.is_read ? "text-text-muted" : "text-text"
                 )}
               >
                 {notification.title}
               </p>
               {notification.body && !compact && (
-                <p className="text-sm text-zinc-500 mt-0.5 line-clamp-2">
+                <p className="text-sm text-text-muted mt-0.5 line-clamp-2">
                   {notification.body}
                 </p>
               )}
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-text-muted">
                 {formatNotificationTime(notification.created_at)}
               </span>
               {onArchive && (
@@ -112,7 +112,7 @@ export function NotificationItem({
 
         {/* Unread indicator */}
         {!notification.is_read && (
-          <div className="shrink-0 w-2 h-2 rounded-full bg-purple-500 mt-2" />
+          <div className="shrink-0 w-2 h-2 rounded-full bg-primary mt-2" />
         )}
       </div>
 

@@ -118,14 +118,14 @@ export function PaletteSelector({ selected, onSelect }: PaletteSelectorProps) {
                   />
                   <h3 className={cn(
                     "font-semibold text-sm",
-                    isSelected ? "text-white" : "text-text"
+                    isSelected ? "text-text" : "text-text"
                   )}>
                     {palette.label}
                   </h3>
                 </div>
                 <p className={cn(
                   "text-xs",
-                  isSelected ? "text-white/60" : "text-text-muted"
+                  isSelected ? "text-text/60" : "text-text-muted"
                 )}>
                   {palette.description}
                 </p>

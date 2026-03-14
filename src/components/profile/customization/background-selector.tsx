@@ -102,20 +102,20 @@ export function BackgroundSelector({ value, onChange }: BackgroundSelectorProps)
           onClick={() => onChange(null)}
           className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-left ${
             value === null
-              ? "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-              : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+              ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+              : "border-border bg-surface-light hover:border-border/80 hover:bg-surface-lighter"
           }`}
         >
           {value === null && (
             <div className="absolute top-2 right-2">
-              <Check className="h-4 w-4 text-purple-400" />
+              <Check className="h-4 w-4 text-primary" />
             </div>
           )}
-          <div className="w-full h-12 rounded-lg bg-gray-800/50 flex items-center justify-center border border-white/5">
-            <Ban className="h-5 w-5 text-white/30" />
+          <div className="w-full h-12 rounded-lg bg-surface-lighter flex items-center justify-center border border-border/50">
+            <Ban className="h-5 w-5 text-text/30" />
           </div>
-          <span className="text-sm font-semibold text-white/90">None</span>
-          <span className="text-xs text-white/50">No background</span>
+          <span className="text-sm font-semibold text-text/90">None</span>
+          <span className="text-xs text-text-muted">No background</span>
         </motion.button>
 
         {/* Background options */}
@@ -131,13 +131,13 @@ export function BackgroundSelector({ value, onChange }: BackgroundSelectorProps)
               onClick={() => onChange(bg.id)}
               className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                 isSelected
-                  ? "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                  ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                  : "border-border bg-surface-light hover:border-border/80 hover:bg-surface-lighter"
               }`}
             >
               {isSelected && (
                 <div className="absolute top-2 right-2">
-                  <Check className="h-4 w-4 text-purple-400" />
+                  <Check className="h-4 w-4 text-primary" />
                 </div>
               )}
 
@@ -149,7 +149,7 @@ export function BackgroundSelector({ value, onChange }: BackgroundSelectorProps)
               )}
 
               {/* Animated preview */}
-              <div className="w-full h-12 rounded-lg overflow-hidden relative border border-white/5">
+              <div className="w-full h-12 rounded-lg overflow-hidden relative border border-border/50">
                 <div
                   className="absolute inset-0"
                   style={preview}
@@ -158,9 +158,9 @@ export function BackgroundSelector({ value, onChange }: BackgroundSelectorProps)
 
               <div className="flex items-center gap-1.5">
                 <span className="text-base">{bg.icon}</span>
-                <span className="text-sm font-semibold text-white/90 truncate">{bg.name}</span>
+                <span className="text-sm font-semibold text-text/90 truncate">{bg.name}</span>
               </div>
-              <span className="text-xs text-white/50 text-center line-clamp-2">{bg.description}</span>
+              <span className="text-xs text-text-muted text-center line-clamp-2">{bg.description}</span>
             </motion.button>
           );
         })}

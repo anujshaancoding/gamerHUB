@@ -256,7 +256,7 @@ export function HoverCardEditor({ value, onChange }: HoverCardEditorProps) {
                       : "border-text-dim"
                   }`}
                 >
-                  {checked && <Check className="w-3 h-3 text-white" />}
+                  {checked && <Check className="w-3 h-3 text-text" />}
                 </div>
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{stat.label}</span>

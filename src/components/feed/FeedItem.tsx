@@ -64,8 +64,8 @@ const activityIcons: Record<string, React.ComponentType<{ className?: string }>>
 const activityColors: Record<string, string> = {
   match_completed: "bg-blue-500/20 text-blue-400",
   tournament_won: "bg-yellow-500/20 text-yellow-400",
-  badge_earned: "bg-purple-500/20 text-purple-400",
-  level_up: "bg-green-500/20 text-green-400",
+  badge_earned: "bg-primary/20 text-primary",
+  level_up: "bg-success/20 text-success",
   clan_joined: "bg-orange-500/20 text-orange-400",
 };
 
@@ -105,7 +105,7 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
   const [localUserReaction, setLocalUserReaction] = useState(activity.user_reaction);
 
   const Icon = activityIcons[activity.activity_type] || Star;
-  const colorClass = activityColors[activity.activity_type] || "bg-zinc-500/20 text-zinc-400";
+  const colorClass = activityColors[activity.activity_type] || "bg-surface-light/20 text-text-muted";
 
   const handleReact = () => {
     if (!onReact) return;
@@ -123,11 +123,11 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
   };
 
   return (
-    <Card className="p-4 bg-zinc-900/50 border-zinc-800">
+    <Card className="p-4 bg-surface/50 border-border">
       <div className="flex gap-3">
         {/* Avatar */}
         <Link href={`/profile/${activity.user.username}`}>
-          <Avatar className="h-10 w-10 border border-zinc-700">
+          <Avatar className="h-10 w-10 border border-border">
             {activity.user.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -136,7 +136,7 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="h-full w-full bg-zinc-800 flex items-center justify-center text-zinc-400">
+              <div className="h-full w-full bg-surface-light flex items-center justify-center text-text-muted">
                 {activity.user.username[0].toUpperCase()}
               </div>
             )}
@@ -149,11 +149,11 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
             <div>
               <Link
                 href={`/profile/${activity.user.username}`}
-                className="font-semibold text-white hover:underline"
+                className="font-semibold text-text hover:underline"
               >
                 {activity.user.display_name || activity.user.username}
               </Link>
-              <span className="text-zinc-400 ml-1">{getActivityText(activity)}</span>
+              <span className="text-text-muted ml-1">{getActivityText(activity)}</span>
             </div>
 
             <div className={cn("p-2 rounded-lg shrink-0", colorClass)}>
@@ -162,7 +162,7 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
           </div>
 
           {/* Timestamp */}
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-text-muted mt-1">
             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
           </p>
 
@@ -176,8 +176,8 @@ export function FeedItem({ activity, onReact, isReacting }: FeedItemProps) {
               className={cn(
                 "h-8 px-2",
                 localUserReaction
-                  ? "text-red-400 hover:text-red-300"
-                  : "text-zinc-400 hover:text-white"
+                  ? "text-error hover:text-error/80"
+                  : "text-text-muted hover:text-text"
               )}
             >
               <Heart

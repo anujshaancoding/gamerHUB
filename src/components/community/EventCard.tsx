@@ -34,13 +34,13 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 };
 
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
-  tournament: "bg-purple-500/10 text-purple-500",
+  tournament: "bg-primary/10 text-primary",
   viewing_party: "bg-blue-500/10 text-blue-500",
-  meetup: "bg-green-500/10 text-green-500",
-  stream: "bg-red-500/10 text-red-500",
+  meetup: "bg-success/10 text-success",
+  stream: "bg-error/10 text-error",
   practice: "bg-yellow-500/10 text-yellow-500",
   workshop: "bg-orange-500/10 text-orange-500",
-  other: "bg-gray-500/10 text-gray-500",
+  other: "bg-surface-light/50 text-text-muted",
 };
 
 export function EventCard({
@@ -75,17 +75,17 @@ export function EventCard({
       going: {
         icon: Check,
         label: "Going",
-        activeClass: "bg-green-500 text-white",
+        activeClass: "bg-success text-background",
       },
       maybe: {
         icon: HelpCircle,
         label: "Maybe",
-        activeClass: "bg-yellow-500 text-white",
+        activeClass: "bg-warning text-background",
       },
       not_going: {
         icon: X,
         label: "Can't Go",
-        activeClass: "bg-gray-500 text-white",
+        activeClass: "bg-surface-lighter text-text",
       },
     };
 

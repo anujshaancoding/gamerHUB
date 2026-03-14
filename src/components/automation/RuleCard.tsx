@@ -54,7 +54,7 @@ export function RuleCard({
   return (
     <Card
       className={cn(
-        "p-4 bg-zinc-900/50 border-zinc-800 transition-colors",
+        "p-4 bg-surface/50 border-border transition-colors",
         !rule.is_enabled && "opacity-60"
       )}
     >
@@ -71,9 +71,9 @@ export function RuleCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h3 className="font-medium text-white">{rule.name}</h3>
+              <h3 className="font-medium text-text">{rule.name}</h3>
               {rule.description && (
-                <p className="text-sm text-zinc-400 mt-0.5">
+                <p className="text-sm text-text-muted mt-0.5">
                   {rule.description}
                 </p>
               )}
@@ -96,7 +96,7 @@ export function RuleCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="text-red-400 focus:text-red-400"
+                  className="text-error focus:text-error"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -111,11 +111,11 @@ export function RuleCard({
               <span className="mr-1">{triggerInfo?.icon}</span>
               {triggerInfo?.label || rule.trigger_type}
             </Badge>
-            <ArrowRight className="h-4 w-4 text-zinc-500" />
+            <ArrowRight className="h-4 w-4 text-text-muted" />
             <Badge
               variant="outline"
               className={cn(
-                "bg-green-500/10 border-green-500/30 text-green-400",
+                "bg-success/10 border-success/30 text-success",
                 actionInfo?.requiresDiscord && "border-indigo-500/30 text-indigo-400 bg-indigo-500/10"
               )}
             >
@@ -125,7 +125,7 @@ export function RuleCard({
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+          <div className="flex items-center gap-4 mt-3 text-xs text-text-muted">
             <span className="flex items-center gap-1">
               <Zap className="h-3 w-3" />
               {rule.trigger_count} triggers
@@ -148,7 +148,7 @@ export function RuleCard({
 
           {/* Created by */}
           {rule.created_by_profile && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-800">
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
               <Avatar className="h-5 w-5">
                 {rule.created_by_profile.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -158,13 +158,13 @@ export function RuleCard({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-purple-600 flex items-center justify-center text-white text-xs">
+                  <div className="h-full w-full bg-primary flex items-center justify-center text-text text-xs">
                     {(rule.created_by_profile.display_name ||
                       rule.created_by_profile.username)[0].toUpperCase()}
                   </div>
                 )}
               </Avatar>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-text-muted">
                 Created by{" "}
                 {rule.created_by_profile.display_name ||
                   rule.created_by_profile.username}

@@ -80,7 +80,7 @@ function CommentItem({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       layout="position"
-      className={`${isReply ? "ml-8 pl-4 border-l border-gray-800" : ""}`}
+      className={`${isReply ? "ml-8 pl-4 border-l border-border" : ""}`}
     >
       <div className="flex gap-3">
         <Avatar
@@ -90,24 +90,24 @@ function CommentItem({
         />
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-white">
+            <span className="font-medium text-text">
               {comment.author?.display_name || comment.author?.username}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-text-muted">
               {formatDistanceToNow(new Date(comment.created_at), {
                 addSuffix: true,
               })}
             </span>
           </div>
-          <p className="text-gray-300 text-sm mb-2">{comment.content}</p>
+          <p className="text-text-secondary text-sm mb-2">{comment.content}</p>
           <div className="flex items-center gap-4">
             <button
               onClick={handleLike}
               className={cn(
                 "flex items-center gap-1 text-xs transition-all duration-200",
                 liked
-                  ? "text-red-400"
-                  : "text-gray-500 hover:text-red-400"
+                  ? "text-error"
+                  : "text-text-muted hover:text-error"
               )}
             >
               <Heart
@@ -123,7 +123,7 @@ function CommentItem({
                 onClick={() =>
                   onSetReplyingTo(replyingTo === comment.id ? null : comment.id)
                 }
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition"
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-primary transition"
               >
                 <Reply className="w-3.5 h-3.5" />
                 Reply
@@ -243,7 +243,7 @@ export function ContentComments({
 
   if (!allowComments) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-text-muted">
         Comments are disabled.
       </div>
     );
@@ -251,7 +251,7 @@ export function ContentComments({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-white">
+      <h3 className="text-xl font-bold text-text">
         {title} ({comments.length})
       </h3>
 
@@ -272,9 +272,9 @@ export function ContentComments({
 
       {/* Comments list */}
       {loading ? (
-        <div className="text-center py-8 text-gray-500">Loading comments...</div>
+        <div className="text-center py-8 text-text-muted">Loading comments...</div>
       ) : comments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-text-muted">
           No comments yet. Be the first to comment!
         </div>
       ) : (

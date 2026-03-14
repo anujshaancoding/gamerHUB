@@ -197,7 +197,7 @@ export function WidgetLayoutEditor({ value, onChange }: WidgetLayoutEditorProps)
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-text/60">
           Drag widgets to rearrange your profile layout. Toggle visibility with the eye icon.
         </p>
         <button
@@ -211,7 +211,7 @@ export function WidgetLayoutEditor({ value, onChange }: WidgetLayoutEditorProps)
       </div>
 
       {/* Grid editor */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-2 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface-light/30 p-2 overflow-hidden">
         <ResponsiveGridLayout
           layouts={{ lg: rglLayout, md: rglLayout, sm: rglLayout }}
           breakpoints={{ lg: 700, md: 400, sm: 0 }}
@@ -234,19 +234,19 @@ export function WidgetLayoutEditor({ value, onChange }: WidgetLayoutEditorProps)
                 key={item.i}
                 className={`group rounded-xl border-2 transition-all duration-200 overflow-hidden flex flex-col ${
                   hidden
-                    ? "border-dashed border-white/10 bg-white/[0.02] opacity-50"
-                    : "border-white/10 bg-white/5 hover:border-purple-500/40"
+                    ? "border-dashed border-border/50 bg-surface-light/20 opacity-50"
+                    : "border-border bg-surface-light hover:border-primary/40"
                 }`}
               >
                 {/* Widget header */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
                   {/* Drag handle */}
-                  <div className="widget-drag-handle cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-white/10 transition-colors">
-                    <GripVertical className="w-4 h-4 text-white/30 group-hover:text-white/60" />
+                  <div className="widget-drag-handle cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-surface-lighter transition-colors">
+                    <GripVertical className="w-4 h-4 text-text/30 group-hover:text-text/60" />
                   </div>
 
-                  <Icon className="w-4 h-4 text-purple-400 shrink-0" />
-                  <span className="text-sm font-medium text-white/80 truncate flex-1">
+                  <Icon className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium text-text/80 truncate flex-1">
                     {def.name}
                   </span>
 
@@ -257,13 +257,13 @@ export function WidgetLayoutEditor({ value, onChange }: WidgetLayoutEditorProps)
                       e.stopPropagation();
                       toggleVisibility(item.i);
                     }}
-                    className="p-1 rounded-md hover:bg-white/10 transition-colors"
+                    className="p-1 rounded-md hover:bg-surface-lighter transition-colors"
                     title={hidden ? "Show widget" : "Hide widget"}
                   >
                     {hidden ? (
-                      <EyeOff className="w-3.5 h-3.5 text-white/30" />
+                      <EyeOff className="w-3.5 h-3.5 text-text/30" />
                     ) : (
-                      <Eye className="w-3.5 h-3.5 text-white/50 hover:text-white/80" />
+                      <Eye className="w-3.5 h-3.5 text-text/50 hover:text-text/80" />
                     )}
                   </button>
                 </div>
@@ -273,12 +273,12 @@ export function WidgetLayoutEditor({ value, onChange }: WidgetLayoutEditorProps)
                   <div className="flex flex-col items-center gap-1.5 text-center">
                     <Icon
                       className={`w-6 h-6 ${
-                        hidden ? "text-white/10" : "text-purple-500/30"
+                        hidden ? "text-text/10" : "text-primary/30"
                       }`}
                     />
                     <span
                       className={`text-[10px] uppercase tracking-wider font-medium ${
-                        hidden ? "text-white/20" : "text-white/30"
+                        hidden ? "text-text/20" : "text-text/30"
                       }`}
                     >
                       {hidden ? "Hidden" : def.name}

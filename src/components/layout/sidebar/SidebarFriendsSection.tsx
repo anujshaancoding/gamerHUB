@@ -85,7 +85,7 @@ export function SidebarFriendsSection({
                     showStatus
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-text text-sm font-bold">
                     {friend.avatar}
                   </div>
                 )}

@@ -79,7 +79,7 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
         />
         {meme.caption && (
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-            <p className="text-white text-sm text-center font-medium">
+            <p className="text-text text-sm text-center font-medium">
               {meme.caption}
             </p>
           </div>
@@ -99,7 +99,7 @@ export function MemeCard({ meme, onLike, isLiking }: MemeCardProps) {
             size="sm"
             onClick={onLike}
             disabled={isLiking}
-            className={meme.user_liked ? "text-red-500 hover:text-red-600" : ""}
+            className={meme.user_liked ? "text-error hover:text-error/90" : ""}
           >
             {isLiking ? (
               <Loader2 className="h-4 w-4 animate-spin" />

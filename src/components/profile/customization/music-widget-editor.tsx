@@ -84,7 +84,7 @@ export function MusicWidgetEditor({ value, onChange }: MusicWidgetEditorProps) {
     <div className="space-y-4">
       {/* Input area */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm text-white/60">
+        <div className="flex items-center gap-2 text-sm text-text/60">
           <Link2 className="h-4 w-4" />
           <span>Paste a YouTube link for your profile theme song</span>
         </div>
@@ -99,20 +99,20 @@ export function MusicWidgetEditor({ value, onChange }: MusicWidgetEditorProps) {
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleBlur}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 transition-all ${
+            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-light border text-sm text-text placeholder-text-muted focus:outline-none focus:ring-2 transition-all ${
               error
-                ? "border-red-500/50 focus:ring-red-500/30"
+                ? "border-error/50 focus:ring-error/30"
                 : videoId
-                ? "border-green-500/50 focus:ring-green-500/30"
-                : "border-white/10 focus:ring-purple-500/30"
+                ? "border-success/50 focus:ring-success/30"
+                : "border-border focus:ring-primary/30"
             }`}
           />
           {hasInput && (
             <button
               onClick={handleRemove}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-surface-lighter transition-colors"
             >
-              <Trash2 className="h-3.5 w-3.5 text-white/40 hover:text-red-400" />
+              <Trash2 className="h-3.5 w-3.5 text-text-muted hover:text-red-400" />
             </button>
           )}
         </div>
@@ -143,11 +143,11 @@ export function MusicWidgetEditor({ value, onChange }: MusicWidgetEditorProps) {
             className="overflow-hidden"
           >
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-white/60">
-                <Music className="h-4 w-4 text-purple-400" />
+              <div className="flex items-center gap-2 text-sm text-text/60">
+                <Music className="h-4 w-4 text-primary" />
                 <span>Preview</span>
               </div>
-              <div className="rounded-xl overflow-hidden border border-white/10 bg-black">
+              <div className="rounded-xl overflow-hidden border border-border bg-black">
                 <iframe
                   width="300"
                   height="170"
@@ -166,7 +166,7 @@ export function MusicWidgetEditor({ value, onChange }: MusicWidgetEditorProps) {
 
       {/* Helper text */}
       {!hasInput && (
-        <p className="text-xs text-white/30">
+        <p className="text-xs text-text/30">
           Visitors can click to play your theme song on your profile. Supports youtube.com and youtu.be links.
         </p>
       )}

@@ -26,9 +26,9 @@ interface MatchHistoryCardProps {
 }
 
 const resultColors = {
-  win: "bg-green-500/20 text-green-300 border-green-500/50",
-  loss: "bg-red-500/20 text-red-300 border-red-500/50",
-  draw: "bg-yellow-500/20 text-yellow-300 border-yellow-500/50",
+  win: "bg-success/20 text-success border-success/50",
+  loss: "bg-error/20 text-error border-error/50",
+  draw: "bg-warning/20 text-warning border-warning/50",
 };
 
 const gameIcons: Record<string, string> = {
@@ -55,15 +55,15 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
   return (
     <Card
       className={cn(
-        "p-3 bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors",
-        result === "win" && "border-l-2 border-l-green-500",
-        result === "loss" && "border-l-2 border-l-red-500"
+        "p-3 bg-surface/50 border-border hover:border-border transition-colors",
+        result === "win" && "border-l-2 border-l-success",
+        result === "loss" && "border-l-2 border-l-error"
       )}
     >
       <div className="flex items-center gap-4">
         {/* Game Icon */}
-        <div className="w-10 h-10 rounded bg-zinc-800 flex items-center justify-center shrink-0">
-          <span className="text-xs font-bold text-zinc-400">
+        <div className="w-10 h-10 rounded bg-surface-light flex items-center justify-center shrink-0">
+          <span className="text-xs font-bold text-text-muted">
             {gameIcons[match.game_id] || match.game_id.slice(0, 3).toUpperCase()}
           </span>
         </div>
@@ -86,7 +86,7 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
             </Badge>
 
             {match.game_mode && (
-              <span className="text-xs text-zinc-500 capitalize">
+              <span className="text-xs text-text-muted capitalize">
                 {match.game_mode.replace(/_/g, " ")}
               </span>
             )}
@@ -95,14 +95,14 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
           <div className="flex items-center gap-4 text-sm">
             {/* Character/Agent */}
             {match.agent_or_champion && (
-              <span className="text-white font-medium truncate max-w-[100px]">
+              <span className="text-text font-medium truncate max-w-[100px]">
                 {match.agent_or_champion}
               </span>
             )}
 
             {/* KDA */}
             {kda && (
-              <span className="text-zinc-400">
+              <span className="text-text-muted">
                 <Swords className="h-3 w-3 inline mr-1" />
                 {kda}
               </span>
@@ -110,7 +110,7 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
 
             {/* Score */}
             {score && (score.team_score !== undefined || score.team_kills !== undefined) && (
-              <span className="text-zinc-500">
+              <span className="text-text-muted">
                 {score.team_score !== undefined
                   ? `${score.team_score} - ${score.enemy_score}`
                   : `${score.team_kills} kills`}
@@ -123,7 +123,7 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
         <div className="text-right shrink-0">
           {/* Map */}
           {match.map_name && (
-            <div className="flex items-center justify-end gap-1 text-xs text-zinc-500 mb-1">
+            <div className="flex items-center justify-end gap-1 text-xs text-text-muted mb-1">
               <MapPin className="h-3 w-3" />
               <span className="capitalize">{match.map_name}</span>
             </div>
@@ -131,14 +131,14 @@ export function MatchHistoryCard({ match, gameName }: MatchHistoryCardProps) {
 
           {/* Duration */}
           {match.duration_seconds && (
-            <div className="flex items-center justify-end gap-1 text-xs text-zinc-500 mb-1">
+            <div className="flex items-center justify-end gap-1 text-xs text-text-muted mb-1">
               <Clock className="h-3 w-3" />
               <span>{formatDuration(match.duration_seconds)}</span>
             </div>
           )}
 
           {/* Time ago */}
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-text-muted">
             {formatDistanceToNow(new Date(match.played_at), { addSuffix: true })}
           </p>
         </div>
@@ -162,9 +162,9 @@ export function MatchHistoryList({
 
   if (displayMatches.length === 0) {
     return (
-      <Card className="p-6 text-center bg-zinc-900/50 border-zinc-800">
-        <Swords className="h-8 w-8 text-zinc-600 mx-auto mb-2" />
-        <p className="text-sm text-zinc-500">No match history yet</p>
+      <Card className="p-6 text-center bg-surface/50 border-border">
+        <Swords className="h-8 w-8 text-text-muted mx-auto mb-2" />
+        <p className="text-sm text-text-muted">No match history yet</p>
       </Card>
     );
   }

@@ -113,7 +113,7 @@ export function FeedbackWidget() {
       {/* Floating trigger button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-purple-500/25 transition-all hover:bg-purple-700 hover:shadow-purple-500/40 active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-text shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-primary/40 active:scale-95"
         aria-label="Send feedback"
       >
         {open ? (
@@ -126,11 +126,11 @@ export function FeedbackWidget() {
 
       {/* Feedback panel */}
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-80 rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+        <div className="fixed bottom-20 right-6 z-50 w-80 rounded-xl border border-border/50 bg-surface shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-200">
           {/* Header */}
-          <div className="border-b border-zinc-800 px-4 py-3">
-            <p className="text-sm font-semibold text-white">Send Feedback</p>
-            <p className="text-xs text-zinc-400">
+          <div className="border-b border-border px-4 py-3">
+            <p className="text-sm font-semibold text-text">Send Feedback</p>
+            <p className="text-xs text-text-muted">
               Help us improve — bugs, ideas, anything!
             </p>
           </div>
@@ -145,8 +145,8 @@ export function FeedbackWidget() {
                   onClick={() => setCategory(c.value)}
                   className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                     category === c.value
-                      ? "bg-purple-600/20 text-purple-400 ring-1 ring-purple-500/40"
-                      : "bg-zinc-800 text-zinc-400 hover:text-zinc-300"
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                      : "bg-surface-light text-text-muted hover:text-text-secondary"
                   }`}
                 >
                   <span>{c.emoji}</span>
@@ -162,7 +162,7 @@ export function FeedbackWidget() {
               placeholder="What's on your mind?"
               maxLength={2000}
               rows={3}
-              className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="w-full resize-none rounded-lg border border-border bg-surface-light/50 px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
 
             {/* Image preview */}
@@ -171,11 +171,11 @@ export function FeedbackWidget() {
                 <img
                   src={imagePreview}
                   alt="Attached"
-                  className="h-24 w-full rounded-lg border border-zinc-700 object-cover"
+                  className="h-24 w-full rounded-lg border border-border object-cover"
                 />
                 <button
                   onClick={removeImage}
-                  className="absolute right-1.5 top-1.5 rounded-full bg-black/70 p-1 text-zinc-300 hover:text-white"
+                  className="absolute right-1.5 top-1.5 rounded-full bg-black/70 p-1 text-text-secondary hover:text-text"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -194,7 +194,7 @@ export function FeedbackWidget() {
                 />
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface-light hover:text-text-secondary"
                   title="Attach screenshot"
                 >
                   <ImagePlus className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ export function FeedbackWidget() {
               <button
                 onClick={handleSubmit}
                 disabled={!message.trim() || sending}
-                className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3.5 py-1.5 text-xs font-medium text-white transition-all hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-medium text-text transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {sending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

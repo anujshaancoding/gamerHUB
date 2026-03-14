@@ -68,28 +68,28 @@ export function PricingCard({
   return (
     <Card
       className={cn(
-        "relative flex flex-col p-6 bg-zinc-900/50 border-zinc-800",
-        isPopular && "border-purple-500 ring-1 ring-purple-500",
-        isCurrentPlan && "border-green-500 ring-1 ring-green-500",
+        "relative flex flex-col p-6 bg-surface/50 border-border",
+        isPopular && "border-primary ring-1 ring-primary",
+        isCurrentPlan && "border-success ring-1 ring-success",
         className
       )}
     >
       {isPopular && !isCurrentPlan && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500">
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
           Most Popular
         </Badge>
       )}
 
       {isCurrentPlan && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500">
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-success">
           Current Plan
         </Badge>
       )}
 
       <div className="mb-4">
-        <h3 className="text-xl font-bold text-white">{name}</h3>
+        <h3 className="text-xl font-bold text-text">{name}</h3>
         {description && (
-          <p className="text-sm text-zinc-400 mt-1">{description}</p>
+          <p className="text-sm text-text-muted mt-1">{description}</p>
         )}
       </div>
 
@@ -97,21 +97,21 @@ export function PricingCard({
         <div className="flex items-baseline gap-2">
           {isFree ? (
             <>
-              <span className="text-4xl font-bold text-green-400">FREE</span>
+              <span className="text-4xl font-bold text-success">FREE</span>
               {originalMonthlyEquivalent && (
-                <span className="text-lg text-zinc-500 line-through">
+                <span className="text-lg text-text-muted line-through">
                   {formatAmount(originalMonthlyEquivalent)}
                 </span>
               )}
             </>
           ) : (
             <>
-              <span className="text-4xl font-bold text-white">
+              <span className="text-4xl font-bold text-text">
                 {formatAmount(monthlyEquivalent)}
               </span>
-              <span className="text-zinc-400">/month</span>
+              <span className="text-text-muted">/month</span>
               {originalMonthlyEquivalent && originalMonthlyEquivalent !== monthlyEquivalent && (
-                <span className="text-lg text-zinc-500 line-through">
+                <span className="text-lg text-text-muted line-through">
                   {formatAmount(originalMonthlyEquivalent)}
                 </span>
               )}
@@ -121,11 +121,11 @@ export function PricingCard({
 
         {billingCycle === "yearly" && !isFree && (
           <div className="mt-1 space-y-1">
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-text-muted">
               {formatAmount(price)} billed yearly
             </p>
             {savings > 0 && (
-              <p className="text-sm text-green-400">
+              <p className="text-sm text-success">
                 Save {formatAmount(savings)}/year
               </p>
             )}
@@ -133,9 +133,9 @@ export function PricingCard({
         )}
 
         {coupon && (
-          <div className="mt-2 inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-md px-2 py-1">
-            <Tag className="h-3 w-3 text-green-400" />
-            <span className="text-xs text-green-300 font-medium">
+          <div className="mt-2 inline-flex items-center gap-1.5 bg-success/10 border border-success/30 rounded-md px-2 py-1">
+            <Tag className="h-3 w-3 text-success" />
+            <span className="text-xs text-success font-medium">
               {coupon.discount_label} applied
             </span>
           </div>
@@ -145,21 +145,21 @@ export function PricingCard({
       <ul className="space-y-3 mb-6 flex-1">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">
-            <Check className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
-            <span className="text-sm text-zinc-300">{feature}</span>
+            <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
+            <span className="text-sm text-text-secondary">{feature}</span>
           </li>
         ))}
       </ul>
 
       {isCurrentPlan ? (
-        <div className="text-center py-3 px-4 bg-zinc-800 rounded-lg text-zinc-400">
+        <div className="text-center py-3 px-4 bg-surface-light rounded-lg text-text-muted">
           Your current plan
         </div>
       ) : onRedeemCoupon ? (
         <Button
           onClick={onRedeemCoupon}
           disabled={isRedeemingCoupon}
-          className="w-full bg-green-600 hover:bg-green-700"
+          className="w-full bg-success hover:bg-success/90"
         >
           {isRedeemingCoupon ? (
             <>
@@ -174,12 +174,12 @@ export function PricingCard({
         <CheckoutButton
           priceId={priceId}
           mode="subscription"
-          className="w-full bg-purple-600 hover:bg-purple-700"
+          className="w-full bg-primary hover:bg-primary-dark"
         >
           Subscribe Now
         </CheckoutButton>
       ) : (
-        <div className="text-center py-3 px-4 bg-zinc-800 rounded-lg text-zinc-400">
+        <div className="text-center py-3 px-4 bg-surface-light rounded-lg text-text-muted">
           Coming Soon
         </div>
       )}

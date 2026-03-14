@@ -66,7 +66,7 @@ export function DiscordConnectCard({
             <div className="font-medium">Discord</div>
             {status?.connected ? (
               <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <Check className="h-3 w-3 text-green-500" />
+                <Check className="h-3 w-3 text-success" />
                 {status.discord_username}
               </div>
             ) : (
@@ -125,7 +125,7 @@ export function DiscordConnectCard({
           <div className="space-y-4">
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 <span className="text-sm">
                   Connected as <strong>{status.discord_username}</strong>
                 </span>
@@ -196,19 +196,19 @@ export function DiscordConnectCard({
           <div className="space-y-4">
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Auto-post LFG to Discord servers
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Import friends from mutual servers
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Show Discord status on your profile
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Get notifications in Discord
               </li>
             </ul>

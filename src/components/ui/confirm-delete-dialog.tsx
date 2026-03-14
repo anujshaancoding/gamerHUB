@@ -41,8 +41,8 @@ export function ConfirmDeleteDialog({
           <AlertDialogAction
             onClick={onConfirm}
             className={cn(
-              "bg-red-600 text-white hover:bg-red-700",
-              "focus:ring-red-600"
+              "bg-error text-white hover:bg-error/90",
+              "focus:ring-error"
             )}
           >
             {confirmLabel}

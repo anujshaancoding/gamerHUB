@@ -11,10 +11,10 @@ interface GuideCardProps {
 }
 
 const DIFFICULTY_COLORS: Record<GuideDifficulty, string> = {
-  beginner: "bg-green-500/10 text-green-500",
+  beginner: "bg-success/10 text-success",
   intermediate: "bg-yellow-500/10 text-yellow-500",
   advanced: "bg-orange-500/10 text-orange-500",
-  expert: "bg-red-500/10 text-red-500",
+  expert: "bg-error/10 text-error",
 };
 
 const TYPE_LABELS: Record<GuideType, string> = {
@@ -107,7 +107,7 @@ export function GuideCard({ guide, variant = "default" }: GuideCardProps) {
                     className="w-4 h-4 rounded"
                   />
                 )}
-                <span className="text-xs text-white">{guide.game.name}</span>
+                <span className="text-xs text-text">{guide.game.name}</span>
               </div>
             )}
 

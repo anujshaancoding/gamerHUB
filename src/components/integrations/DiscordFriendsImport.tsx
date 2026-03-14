@@ -190,8 +190,8 @@ export function DiscordFriendsImport({
                   className="w-10 h-10 rounded-full"
                 />
                 {friend.is_matched && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-card flex items-center justify-center">
-                    <Check className="h-2.5 w-2.5 text-white" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-success border-2 border-card flex items-center justify-center">
+                    <Check className="h-2.5 w-2.5 text-text" />
                   </div>
                 )}
               </div>

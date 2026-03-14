@@ -101,7 +101,7 @@ export function ConsoleConnectCard({
   // Platform-specific icon
   const PlatformIcon = () => (
     <div
-      className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+      className="w-10 h-10 rounded-lg flex items-center justify-center text-text"
       style={{ backgroundColor: config.color }}
     >
       {platform === "playstation" && (
@@ -132,9 +132,9 @@ export function ConsoleConnectCard({
             {connection ? (
               <div className="text-sm text-muted-foreground flex items-center gap-1">
                 {connection.is_verified ? (
-                  <ShieldCheck className="h-3 w-3 text-green-500" />
+                  <ShieldCheck className="h-3 w-3 text-success" />
                 ) : (
-                  <Shield className="h-3 w-3 text-yellow-500" />
+                  <Shield className="h-3 w-3 text-warning" />
                 )}
                 {connection.online_id || connection.platform_username}
               </div>
@@ -192,8 +192,8 @@ export function ConsoleConnectCard({
             <div
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
                 connection.is_verified
-                  ? "bg-green-500/10 text-green-500"
-                  : "bg-yellow-500/10 text-yellow-500"
+                  ? "bg-success/10 text-success"
+                  : "bg-warning/10 text-warning"
               }`}
             >
               {connection.is_verified ? (
@@ -303,15 +303,15 @@ export function ConsoleConnectCard({
           <div className="space-y-4">
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Show your {config.name} ID on your profile
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Find friends who also play on {config.name}
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 Join crossplay parties with other platforms
               </li>
             </ul>

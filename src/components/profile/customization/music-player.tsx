@@ -54,26 +54,26 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-surface-light border border-border backdrop-blur-sm"
           >
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-500/20 border border-purple-500/30 shrink-0">
-              <Music className="h-4 w-4 text-purple-400" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/20 border border-primary/30 shrink-0">
+              <Music className="h-4 w-4 text-primary" />
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white/80 truncate">
+              <p className="text-sm font-medium text-text/80 truncate">
                 Theme Song
               </p>
-              <p className="text-xs text-white/40">Click play to listen</p>
+              <p className="text-xs text-text-muted">Click play to listen</p>
             </div>
 
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setPlaying(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-purple-500/30 border border-purple-500/40 hover:bg-purple-500/50 transition-colors"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/30 border border-primary/40 hover:bg-primary/50 transition-colors"
             >
-              <Play className="h-4 w-4 text-purple-300 ml-0.5" />
+              <Play className="h-4 w-4 text-primary/80 ml-0.5" />
             </motion.button>
           </motion.div>
         ) : (
@@ -83,21 +83,21 @@ export function MusicPlayer({ url }: MusicPlayerProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
+            className="rounded-xl border border-border bg-surface-light backdrop-blur-sm overflow-hidden"
           >
             {/* Header with stop button */}
             <div className="flex items-center gap-3 px-4 py-2">
-              <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 shrink-0">
-                <Music className="h-3.5 w-3.5 text-purple-400" />
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 shrink-0">
+                <Music className="h-3.5 w-3.5 text-primary" />
                 <motion.div
                   initial={{ scale: 1, opacity: 0.5 }}
                   animate={{ scale: 1.8, opacity: 0 }}
                   transition={{ duration: 1.5, repeat: Infinity }}
-                  className="absolute inset-0 rounded-lg bg-purple-500/30"
+                  className="absolute inset-0 rounded-lg bg-primary/30"
                 />
               </div>
 
-              <p className="flex-1 text-sm font-medium text-white/80 truncate">
+              <p className="flex-1 text-sm font-medium text-text/80 truncate">
                 Theme Song
               </p>
 

@@ -108,10 +108,10 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
 
           {/* Name + rank */}
           <div className="flex-1 min-w-0 pb-1">
-            <h3 className="text-xl font-black text-white truncate">
+            <h3 className="text-xl font-black text-text truncate">
               {profile.display_name || profile.username}
             </h3>
-            <p className="text-sm text-white/60">@{profile.username}</p>
+            <p className="text-sm text-text/60">@{profile.username}</p>
           </div>
         </div>
 
@@ -132,9 +132,9 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
           </div>
 
           {/* Level */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 border border-white/20">
-            <Trophy className="h-3.5 w-3.5 text-white/70" />
-            <span className="text-sm font-bold text-white/90">Lv. {level}</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-text/10 border border-text/20">
+            <Trophy className="h-3.5 w-3.5 text-text/70" />
+            <span className="text-sm font-bold text-text/90">Lv. {level}</span>
           </div>
 
           {/* Primary game rank */}
@@ -149,19 +149,19 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
           {/* Share */}
           <button
             onClick={handleShare}
-            className="ml-auto p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            className="ml-auto p-2 rounded-lg bg-text/10 hover:bg-text/20 transition-colors"
           >
             {copied ? (
-              <Check className="h-4 w-4 text-green-400" />
+              <Check className="h-4 w-4 text-success" />
             ) : (
-              <Share2 className="h-4 w-4 text-white/70" />
+              <Share2 className="h-4 w-4 text-text/70" />
             )}
           </button>
         </div>
 
         {/* Primary game badge */}
         {primaryGame && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-text/10">
             {primaryGame.icon_url && !gameIconError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -171,9 +171,9 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
                 onError={() => setGameIconError(true)}
               />
             ) : (
-              <Gamepad2 className="w-5 h-5 text-white/50" />
+              <Gamepad2 className="w-5 h-5 text-text/50" />
             )}
-            <span className="text-sm text-white/60">{primaryGame.name}</span>
+            <span className="text-sm text-text/60">{primaryGame.name}</span>
             {primaryGame.role && (
               <span
                 className="text-xs px-2 py-0.5 rounded-full ml-auto"

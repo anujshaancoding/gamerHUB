@@ -145,8 +145,8 @@ export function CreateListingModal({ isOpen, onClose }: CreateListingModalProps)
                 "flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all text-sm font-medium",
                 formData.listing_type === type
                   ? type === "tournament"
-                    ? "border-purple-500 bg-purple-500/10 text-purple-500"
-                    : "border-green-500 bg-green-500/10 text-green-500"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-success bg-success/10 text-success"
                   : "border-border bg-surface-light text-text-muted hover:border-border/80"
               )}
             >

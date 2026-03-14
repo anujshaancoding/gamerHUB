@@ -58,7 +58,7 @@ export function FeaturedImageUpload({ value, onChange, authorId }: FeaturedImage
 
   return (
     <div>
-      <label className="block text-xs font-medium text-white/40 mb-1.5 uppercase tracking-wider">
+      <label className="block text-xs font-medium text-text/40 mb-1.5 uppercase tracking-wider">
         Featured Image
       </label>
 
@@ -69,7 +69,7 @@ export function FeaturedImageUpload({ value, onChange, authorId }: FeaturedImage
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="https://... or upload below"
-          className="flex-1 px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-violet-500/50"
+          className="flex-1 px-3 py-2.5 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-text placeholder:text-white/20 focus:outline-none focus:border-violet-500/50"
         />
         <button
           type="button"
@@ -109,7 +109,7 @@ export function FeaturedImageUpload({ value, onChange, authorId }: FeaturedImage
           <button
             type="button"
             onClick={() => onChange("")}
-            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+            className="absolute -top-2 -right-2 p-1 bg-error text-white rounded-full hover:bg-error/80 transition-colors"
           >
             <X className="w-3 h-3" />
           </button>

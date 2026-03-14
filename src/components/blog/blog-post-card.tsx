@@ -110,7 +110,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
               {/* Read indicator */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="p-2 bg-black/60 backdrop-blur-sm rounded-full">
-                  <ArrowUpRight className="w-4 h-4 text-white" />
+                  <ArrowUpRight className="w-4 h-4 text-text" />
                 </div>
               </div>
             </div>
@@ -152,7 +152,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
 
           {/* Title */}
           <h3
-            className={`font-bold text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
+            className={`font-bold text-text mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
               featured ? "text-xl" : "text-base"
             }`}
           >
@@ -206,7 +206,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium text-text truncate">
                   {post.author?.display_name || post.author?.username}
                 </p>
                 {authorRoleInfo && (
@@ -225,7 +225,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
                   ? `${(post.views_count / 1000).toFixed(1)}k`
                   : post.views_count}
               </span>
-              <span className="flex items-center gap-1 hover:text-red-400 transition-colors">
+              <span className="flex items-center gap-1 hover:text-error transition-colors">
                 <Heart className="w-3.5 h-3.5" />
                 {post.likes_count}
               </span>

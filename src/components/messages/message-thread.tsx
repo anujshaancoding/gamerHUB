@@ -360,10 +360,10 @@ export function MessageThread({
 
       {/* The Void banner for non-friend conversations */}
       {isVoid && (
-        <div className="relative z-20 px-4 py-3 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-between">
+        <div className="relative z-20 px-4 py-3 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Ghost className="h-4 w-4 text-purple-400" />
-            <span className="text-sm text-purple-300">
+            <Ghost className="h-4 w-4 text-primary" />
+            <span className="text-sm text-primary/80">
               This message is from someone not on your friends list
             </span>
           </div>
@@ -372,13 +372,13 @@ export function MessageThread({
               variant="outline"
               size="sm"
               onClick={handleAddFriend}
-              className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10 gap-1.5"
+              className="border-primary/30 text-primary/80 hover:bg-primary/10 gap-1.5"
             >
               <UserPlus className="h-3.5 w-3.5" />
               Add Friend
             </Button>
           ) : (
-            <span className="text-xs text-purple-400/70">Request sent</span>
+            <span className="text-xs text-primary/70">Request sent</span>
           )}
         </div>
       )}

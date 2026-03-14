@@ -477,7 +477,7 @@ export function GameProfileModal({
 
         {/* Error */}
         {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <div className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm">
             {error}
           </div>
         )}

@@ -137,7 +137,7 @@ export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
         className="w-60 p-2"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-2 py-1.5">
+        <div className="text-xs font-semibold text-text-muted uppercase tracking-wider px-2 py-1.5">
           Set Status
         </div>
 
@@ -161,8 +161,8 @@ export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
                   }}
                   className={cn(
                     "w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors",
-                    "hover:bg-zinc-800",
-                    isActive && "bg-zinc-800"
+                    "hover:bg-surface-light",
+                    isActive && "bg-surface-light"
                   )}
                 >
                   <span
@@ -170,16 +170,16 @@ export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
                     style={{ backgroundColor: optColors.bg }}
                   />
                   <div className="flex-1 text-left">
-                    <div className="font-medium text-white">{option.label}</div>
-                    <div className="text-xs text-zinc-400">
+                    <div className="font-medium text-text">{option.label}</div>
+                    <div className="text-xs text-text-muted">
                       {option.description}
                     </div>
                   </div>
                   {isActive && !option.showDuration && (
-                    <Check className="h-4 w-4 text-green-400 shrink-0" />
+                    <Check className="h-4 w-4 text-success shrink-0" />
                   )}
                   {option.showDuration && (
-                    <ChevronRight className="h-4 w-4 text-zinc-400 shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-text-muted shrink-0" />
                   )}
                 </button>
               );
@@ -188,15 +188,15 @@ export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
             {/* Auto option — shown when user has manually set a status */}
             {myStatusPreference !== "auto" && (
               <>
-                <div className="h-px bg-zinc-700 my-1" />
+                <div className="h-px bg-border my-1" />
                 <button
                   onClick={() => handleSelect("auto")}
-                  className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-zinc-800"
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-surface-light"
                 >
-                  <Clock className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <Clock className="w-3 h-3 text-text-muted shrink-0" />
                   <div className="flex-1 text-left">
-                    <div className="font-medium text-white">Auto</div>
-                    <div className="text-xs text-zinc-400">
+                    <div className="font-medium text-text">Auto</div>
+                    <div className="text-xs text-text-muted">
                       Let the system decide
                     </div>
                   </div>
@@ -209,23 +209,23 @@ export function StatusSelector({ size = "lg" }: StatusSelectorProps) {
           <div className="space-y-0.5">
             <button
               onClick={() => setShowDurations(false)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-text-muted hover:text-text transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
               Back
             </button>
-            <div className="h-px bg-zinc-700 my-1" />
-            <div className="text-xs text-zinc-400 px-2 py-1">
+            <div className="h-px bg-border my-1" />
+            <div className="text-xs text-text-muted px-2 py-1">
               Appear offline for...
             </div>
             {DURATION_OPTIONS.map((dur) => (
               <button
                 key={dur.label}
                 onClick={() => handleSelect("offline", dur.minutes)}
-                className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-zinc-800"
+                className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm hover:bg-surface-light"
               >
-                <Clock className="w-3 h-3 text-zinc-400 shrink-0" />
-                <span className="text-white">{dur.label}</span>
+                <Clock className="w-3 h-3 text-text-muted shrink-0" />
+                <span className="text-text">{dur.label}</span>
               </button>
             ))}
           </div>
