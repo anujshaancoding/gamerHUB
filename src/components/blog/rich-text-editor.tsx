@@ -346,7 +346,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={addLink}
-            className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90"
+            className="px-3 py-1.5 text-sm bg-primary text-background rounded-lg hover:bg-primary/90"
           >
             Add
           </button>
@@ -383,7 +383,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={addImage}
-            className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90"
+            className="px-3 py-1.5 text-sm bg-primary text-background rounded-lg hover:bg-primary/90"
           >
             Add
           </button>

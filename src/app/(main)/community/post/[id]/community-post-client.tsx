@@ -464,7 +464,7 @@ export function CommunityPostPage() {
                 post.game === "valorant" ? "bg-red-500 text-white" :
                 post.game === "bgmi" ? "bg-orange-500 text-white" :
                 post.game === "freefire" ? "bg-yellow-500 text-black" :
-                "bg-primary text-white"
+                "bg-primary text-background"
               )}>
                 <Gamepad2 className="h-4 w-4" />
                 {post.game}

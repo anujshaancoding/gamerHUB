@@ -131,8 +131,8 @@ export function ThemeSwitcher() {
               >
                 <span
                   className={cn(
-                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                    preferGameTheme ? "translate-x-5" : "translate-x-0.5"
+                    "pointer-events-none inline-block h-5 w-5 rounded-full shadow-sm transition-transform",
+                    preferGameTheme ? "translate-x-5 bg-background" : "translate-x-0.5 bg-text"
                   )}
                 />
               </button>

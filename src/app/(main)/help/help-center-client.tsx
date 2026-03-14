@@ -425,7 +425,7 @@ export function HelpCenterClient() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                 !activeCategory
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-background"
                   : "bg-surface border border-border text-text-muted hover:text-text hover:bg-surface-light"
               )}
             >
@@ -438,7 +438,7 @@ export function HelpCenterClient() {
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                   activeCategory === cat.id
-                    ? "bg-primary text-white"
+                    ? "bg-primary text-background"
                     : "bg-surface border border-border text-text-muted hover:text-text hover:bg-surface-light"
                 )}
               >
@@ -485,7 +485,7 @@ export function HelpCenterClient() {
         </p>
         <Link
           href="/feedback"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-background text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
           Send Feedback
