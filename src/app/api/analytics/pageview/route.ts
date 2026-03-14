@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
+import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {

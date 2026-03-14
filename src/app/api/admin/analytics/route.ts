@@ -38,12 +38,14 @@ export async function GET(request: NextRequest) {
     const daily = dailyResult.data || [];
     const topPages = topPagesResult.data || [];
 
-    // Compute summary stats
+    // Compute summary stats — normalize dates for comparison since DB may return
+    // full timestamps (e.g. "2026-03-13T00:00:00+00:00") or just "2026-03-13"
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-    const todayData = daily.find((d: { date: string }) => d.date === today);
-    const yesterdayData = daily.find((d: { date: string }) => d.date === yesterday);
+    const normalizeDate = (d: string) => typeof d === "string" ? d.split("T")[0] : "";
+    const todayData = daily.find((d: { date: string }) => normalizeDate(d.date) === today);
+    const yesterdayData = daily.find((d: { date: string }) => normalizeDate(d.date) === yesterday);
 
     const totalViews = daily.reduce(
       (sum: number, d: { total_views: number }) => sum + Number(d.total_views),

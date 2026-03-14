@@ -20,7 +20,8 @@ export function PageViewTracker() {
 
   useEffect(() => {
     if (!pathname || pathname === lastPath.current) return;
-    if (window.location.hostname !== "gglobby.in") return;
+    const host = window.location.hostname;
+    if (host !== "gglobby.in" && host !== "www.gglobby.in") return;
     lastPath.current = pathname;
 
     // Debounce to avoid double-counting rapid navigations

@@ -39,8 +39,21 @@ function formatNumber(n: number): string {
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // Handle various date formats from the DB (YYYY-MM-DD, full ISO timestamp, etc.)
+  const normalized = typeof dateStr === "string" ? dateStr.split("T")[0] : "";
+  const parts = normalized.split("-");
+  if (parts.length === 3) {
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+  }
+  // Fallback: try direct parse
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return dateStr || "Unknown";
 }
 
 function PercentChange({ current, previous }: { current: number; previous: number }) {

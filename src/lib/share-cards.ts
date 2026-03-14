@@ -493,19 +493,18 @@ export async function generateCtaCard(
   ctx.fillStyle = palette.primary;
   ctx.fillText("gglobby.in", CARD_SIZE / 2, 280);
 
-  // QR Code
+  // QR Code — draw directly from matrix data (avoids intermediate canvas/data URL issues)
   const qrSize = 280;
   const qrX = (CARD_SIZE - qrSize) / 2;
   const qrY = 340;
 
   try {
-    const qrDataUrl = await QRCode.toDataURL(articleUrl, {
-      width: qrSize,
-      margin: 2,
-      color: { dark: palette.primary, light: "#00000000" },
-      errorCorrectionLevel: "M",
-    });
-    const qrImg = await loadImage(qrDataUrl);
+    const qrData = QRCode.create(articleUrl, { errorCorrectionLevel: "M" });
+    const modules = qrData.modules;
+    const moduleCount = modules.size;
+    const margin = 2;
+    const totalModules = moduleCount + margin * 2;
+    const moduleSize = qrSize / totalModules;
 
     // QR border box
     ctx.strokeStyle = palette.primary + "40";
@@ -513,9 +512,22 @@ export async function generateCtaCard(
     roundRect(ctx, qrX - 20, qrY - 20, qrSize + 40, qrSize + 40, 16);
     ctx.stroke();
 
-    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-    // qr image drawn
-  } catch {
+    // Draw QR modules
+    ctx.fillStyle = palette.primary;
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        if (modules.get(row, col)) {
+          ctx.fillRect(
+            qrX + (col + margin) * moduleSize,
+            qrY + (row + margin) * moduleSize,
+            Math.ceil(moduleSize),
+            Math.ceil(moduleSize),
+          );
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[share-cards] QR code generation failed:", e);
     // Fallback — just show the URL more prominently
     ctx.font = `500 26px ${FONT_STACK}`;
     ctx.fillStyle = palette.primary;
