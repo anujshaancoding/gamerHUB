@@ -16,22 +16,28 @@ export function getPublicUrlVersioned(storagePath: string): string {
 }
 
 /**
- * Extract the storage path from a public URL.
- * Handles both legacy storage URLs and new self-hosted URLs.
+ * Normalize an image URL — rewrites any old Supabase storage URLs
+ * to the self-hosted /uploads/ path.
  */
-export function storagePathFromUrl(publicUrl: string): string | null {
-  // Legacy format: .../object/public/media/{path}?v=...
-  const legacyMarker = "/object/public/media/";
-  const legacyIdx = publicUrl.indexOf(legacyMarker);
-  if (legacyIdx !== -1) {
-    return decodeURIComponent(publicUrl.substring(legacyIdx + legacyMarker.length).split("?")[0]);
+export function normalizeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const marker = "/object/public/media/";
+  const idx = url.indexOf(marker);
+  if (idx !== -1) {
+    return "/uploads/" + url.substring(idx + marker.length);
   }
+  return url;
+}
 
-  // New format: /uploads/{path}?v=...
+/** Extract the storage path from a public URL. */
+export function storagePathFromUrl(publicUrl: string): string | null {
+  // Normalize first to handle any old URLs
+  const normalized = normalizeImageUrl(publicUrl) ?? publicUrl;
+
   const uploadsMarker = "/uploads/";
-  const uploadsIdx = publicUrl.indexOf(uploadsMarker);
+  const uploadsIdx = normalized.indexOf(uploadsMarker);
   if (uploadsIdx !== -1) {
-    return decodeURIComponent(publicUrl.substring(uploadsIdx + uploadsMarker.length).split("?")[0]);
+    return decodeURIComponent(normalized.substring(uploadsIdx + uploadsMarker.length).split("?")[0]);
   }
 
   return null;

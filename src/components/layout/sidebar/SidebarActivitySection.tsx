@@ -11,13 +11,13 @@ export function SidebarActivitySection() {
   const { items, loading } = useSidebarActivity();
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
         <Activity className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-text">Activity</h3>
       </div>
 
-      <div className="space-y-0.5">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
         {loading ? (
           [...Array(4)].map((_, i) => (
             <div key={i} className="flex items-start gap-2.5 px-2 py-2 animate-pulse">
@@ -40,12 +40,14 @@ export function SidebarActivitySection() {
       </div>
 
       {items.length > 0 && (
-        <Link href="/community">
-          <Button variant="ghost" size="sm" className="w-full mt-2 text-text-muted">
-            View All
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-        </Link>
+        <div className="shrink-0 pt-2 border-t border-border mt-2">
+          <Link href="/community">
+            <Button variant="ghost" size="sm" className="w-full text-text-muted">
+              View All
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
+        </div>
       )}
     </div>
   );

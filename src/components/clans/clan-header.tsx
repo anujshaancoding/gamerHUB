@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Avatar, Badge, Button, Modal } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
+import { normalizeImageUrl } from "@/lib/storage";
 import type { Clan, Game, ClanMemberRole } from "@/types/database";
 
 interface ClanHeaderProps {
@@ -53,7 +54,7 @@ export function ClanHeader({
         <div className="h-48 bg-gradient-to-br from-primary/20 via-surface to-accent/20 rounded-xl overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={clan.banner_url || `/images/banners/gaming-${((clan.name?.charCodeAt(0) || 0) % 5) + 1}.svg`}
+            src={normalizeImageUrl(clan.banner_url) || `/images/banners/gaming-${((clan.name?.charCodeAt(0) || 0) % 5) + 1}.svg`}
             alt={`${clan.name} banner`}
             className="w-full h-full object-cover"
             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/images/banners/gaming-1.svg"; }}

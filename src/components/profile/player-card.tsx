@@ -6,6 +6,7 @@ import { Share2, Check, Trophy, Zap, Gamepad2 } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
 import { AnimatedRankEmblem } from "@/components/profile/animated-rank-emblem";
+import { normalizeImageUrl } from "@/lib/storage";
 import type { Profile } from "@/types/database";
 
 interface PlayerCardProps {
@@ -24,6 +25,7 @@ interface PlayerCardProps {
 export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: PlayerCardProps) {
   const { theme } = useGameTheme();
   const [copied, setCopied] = useState(false);
+  const bannerUrl = normalizeImageUrl(bannerUrl);
   const [bannerError, setBannerError] = useState(false);
   const [gameIconError, setGameIconError] = useState(false);
 
@@ -81,10 +83,10 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
 
       {/* Banner strip */}
       <div className="h-20 relative">
-        {profile.banner_url && !bannerError ? (
+        {bannerUrl && !bannerError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={profile.banner_url}
+            src={bannerUrl}
             alt="Profile banner"
             className="w-full h-full object-cover"
             onError={() => setBannerError(true)}

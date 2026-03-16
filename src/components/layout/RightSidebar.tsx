@@ -116,7 +116,7 @@ export function RightSidebar() {
       </div>
 
       {/* Top half: Activity Feed */}
-      <div className="flex-1 min-h-0 overflow-y-auto border-b border-border p-4">
+      <div className="flex-1 min-h-0 flex flex-col border-b border-border p-4">
         <SidebarActivitySection />
       </div>
 

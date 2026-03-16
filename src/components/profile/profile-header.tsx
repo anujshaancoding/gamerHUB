@@ -38,6 +38,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePresence } from "@/lib/presence/PresenceProvider";
 import { SocialListModal } from "@/components/social-lists";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
+import { normalizeImageUrl } from "@/lib/storage";
 import type { Profile, UserProgressionWithDetails, UserBadgeWithDetails, TrustBadges as TrustBadgesType } from "@/types/database";
 
 interface RecentViewer {
@@ -112,6 +113,9 @@ export function ProfileHeader({
   // For own profile, use myStatus since the current user isn't in the onlineUserIds set
   const profileStatus = isOwnProfile ? myStatus : getUserStatus(profile.id);
 
+  // Normalize old Supabase storage URLs to self-hosted /uploads/ path
+  const bannerUrl = normalizeImageUrl(bannerUrl);
+
   const [actionLoading, setActionLoading] = useState<"follow" | "friend" | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);
   const [socialListType, setSocialListType] = useState<"friends" | "followers" | "following" | null>(null);
@@ -120,13 +124,13 @@ export function ProfileHeader({
 
   // Toggle class on <html> so the right sidebar becomes translucent when banner is present
   useEffect(() => {
-    if (profile.banner_url) {
+    if (bannerUrl) {
       document.documentElement.classList.add("has-profile-banner");
     }
     return () => {
       document.documentElement.classList.remove("has-profile-banner");
     };
-  }, [profile.banner_url]);
+  }, [bannerUrl]);
 
   // Close viewers dropdown on outside click
   useEffect(() => {
@@ -243,12 +247,12 @@ export function ProfileHeader({
   return (
     <>
       {/* Side Background Images — rendered outside motion.div to escape its stacking context */}
-      {profile.banner_url && (
+      {bannerUrl && (
         <>
           <div
             className="profile-bg-left hidden xl:block"
             style={{
-              backgroundImage: `url(${profile.banner_url})`,
+              backgroundImage: `url(${bannerUrl})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -256,7 +260,7 @@ export function ProfileHeader({
           <div
             className="profile-bg-right hidden xl:block"
             style={{
-              backgroundImage: `url(${profile.banner_url})`,
+              backgroundImage: `url(${bannerUrl})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -280,9 +284,9 @@ export function ProfileHeader({
 
         {/* Banner Section */}
         <div className="h-40 sm:h-56 md:h-72 xl:h-80 relative group overflow-hidden">
-          {profile.banner_url ? (
+          {bannerUrl ? (
             <img
-              src={profile.banner_url}
+              src={bannerUrl}
               alt="Profile banner"
               className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/banners/gaming-1.svg'; }}

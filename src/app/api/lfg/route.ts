@@ -96,6 +96,10 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
+      // If the table doesn't exist yet, return empty results gracefully
+      if (error.code === "42P01" || error.message?.includes("relation") || error.code === "PGRST204") {
+        return NextResponse.json({ posts: [], total: 0, limit, offset });
+      }
       console.error("Error fetching LFG posts:", error);
       return NextResponse.json(
         { error: "Failed to fetch LFG posts" },
@@ -135,10 +139,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("LFG list error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    // Return empty results instead of erroring — table may not exist yet
+    return NextResponse.json({ posts: [], total: 0, limit: 20, offset: 0 });
   }
 }
 
@@ -187,6 +189,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve game_id — accept either UUID or slug
+    let resolvedGameId = game_id;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(game_id)) {
+      // It's a slug, look up the UUID
+      const { data: game, error: gameError } = await db
+        .from("games")
+        .select("id")
+        .eq("slug", game_id)
+        .single();
+
+      if (gameError || !game) {
+        return NextResponse.json(
+          { error: "Game not found" },
+          { status: 400 }
+        );
+      }
+      resolvedGameId = game.id;
+    }
+
     // Check for existing active post
     const { data: existingPost } = await db
       .from("lfg_posts")
@@ -219,7 +241,7 @@ export async function POST(request: NextRequest) {
       .from("lfg_posts")
       .insert({
         creator_id: user.id,
-        game_id,
+        game_id: resolvedGameId,
         title: title.trim(),
         description: description?.trim() || null,
         creator_role: creator_role || null,

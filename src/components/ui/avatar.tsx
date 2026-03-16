@@ -3,6 +3,7 @@
 import { forwardRef, useState } from "react";
 import Image from "next/image";
 import { cn, generateAvatarFallback } from "@/lib/utils";
+import { normalizeImageUrl } from "@/lib/storage";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;
@@ -87,8 +88,10 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
     };
 
     const displayFallback = fallback || generateAvatarFallback(alt);
+    // Normalize old Supabase storage URLs to self-hosted /uploads/ path
+    const normalizedSrc = normalizeImageUrl(src);
     // Uploaded images are already compressed to WebP — skip Next.js optimization
-    const isLocalUpload = src?.startsWith("/uploads/");
+    const isLocalUpload = normalizedSrc?.startsWith("/uploads/");
 
     return (
       <div
@@ -119,9 +122,9 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
           )}
           style={glowColor ? { boxShadow: `0 0 30px ${glowColor}` } : undefined}
         >
-          {src && !imageError ? (
+          {normalizedSrc && !imageError ? (
             <Image
-              src={src}
+              src={normalizedSrc}
               alt={alt}
               fill
               sizes={imageSizes[size]}

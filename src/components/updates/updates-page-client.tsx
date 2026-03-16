@@ -35,6 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-16T18:00:00",
+    version: "1.16.0",
+    type: "feature",
+    title: "Looking For Group (LFG) & Infrastructure Cleanup",
+    description: "Find teammates faster with the new LFG system integrated into the Find Gamers page. Create posts specifying your game, region, and play style to find the right squad. Also migrated all legacy image URLs to our self-hosted infrastructure for better reliability.",
+    highlights: [
+      "New 'Looking For Group' tab on the Find Gamers page — create and browse LFG posts",
+      "Filter LFG posts by game, region, and play style",
+      "Apply to join other players' LFG posts",
+      "Migrated all avatar and banner images to self-hosted storage for faster loading",
+    ],
+  },
+  {
     date: "2026-03-11T18:00:00",
     version: "1.15.0",
     type: "feature",
