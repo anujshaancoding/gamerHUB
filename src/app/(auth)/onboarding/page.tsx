@@ -61,13 +61,14 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (user && !displayNameInitialized.current) {
       displayNameInitialized.current = true;
-      const googleName = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const googleName = String(user.user_metadata?.full_name || user.user_metadata?.name || "");
       if (googleName) {
         setFormData((prev) => ({ ...prev, display_name: googleName }));
       }
       // Pre-fill avatar from Google if available
-      if (user.user_metadata?.avatar_url && !avatarPreview) {
-        setAvatarPreview(user.user_metadata.avatar_url);
+      const avatarUrl = user.user_metadata?.avatar_url;
+      if (avatarUrl && typeof avatarUrl === "string" && !avatarPreview) {
+        setAvatarPreview(avatarUrl);
       }
     }
   }, [user, avatarPreview]);
