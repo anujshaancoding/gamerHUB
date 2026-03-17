@@ -10,7 +10,7 @@ export default function AuthLayout({
         <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-accent/10 rounded-full blur-3xl" />
       </div>
-      <div className="relative z-10">{children}</div>
+      <main id="main-content" className="relative z-10">{children}</main>
     </div>
   );
 }

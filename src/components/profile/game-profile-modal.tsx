@@ -207,10 +207,18 @@ export function GameProfileModal({
                         alt={game.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          // Hide broken image — the parent already has a fallback via CSS
                           e.currentTarget.onerror = null;
                           e.currentTarget.style.display = "none";
-                          e.currentTarget.parentElement!.innerHTML =
-                            '<svg class="h-5 w-5 text-text-muted" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 11V5a2 2 0 012-2h8a2 2 0 012 2v6"/><path d="M2 11h20v4a6 6 0 01-6 6H8a6 6 0 01-6-6v-4z"/></svg>';
+                          // Show fallback icon safely using DOM API (no innerHTML)
+                          const parent = e.currentTarget.parentElement;
+                          if (parent && !parent.querySelector("svg")) {
+                            const fallback = document.createElement("span");
+                            fallback.className = "flex items-center justify-center w-full h-full";
+                            fallback.textContent = game.name.charAt(0).toUpperCase();
+                            fallback.setAttribute("aria-hidden", "true");
+                            parent.appendChild(fallback);
+                          }
                         }}
                       />
                     ) : (

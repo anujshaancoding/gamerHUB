@@ -11,10 +11,8 @@ const ALLOWED_HOSTS = new Set([
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
-  console.log("[image-proxy] Request received, url param:", url);
 
   if (!url) {
-    console.log("[image-proxy] Missing url param");
     return NextResponse.json({ error: "Missing url param" }, { status: 400 });
   }
 
@@ -22,20 +20,16 @@ export async function GET(req: NextRequest) {
   try {
     parsed = new URL(url);
   } catch {
-    console.log("[image-proxy] Invalid url:", url);
     return NextResponse.json({ error: "Invalid url" }, { status: 400 });
   }
 
-  console.log("[image-proxy] Hostname:", parsed.hostname);
-
-  // Also allow our own domain and *.googleusercontent.com host
+  // Allow our own domain and *.googleusercontent.com host
   const isAllowed =
     ALLOWED_HOSTS.has(parsed.hostname) ||
     parsed.hostname === "gglobby.in" ||
     parsed.hostname.endsWith(".googleusercontent.com");
 
   if (!isAllowed) {
-    console.log("[image-proxy] Host not allowed:", parsed.hostname);
     return NextResponse.json({ error: "Host not allowed" }, { status: 403 });
   }
 
@@ -43,7 +37,6 @@ export async function GET(req: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    console.log("[image-proxy] Fetching upstream:", url);
     const res = await fetch(url, {
       signal: controller.signal,
       cache: "no-store",
@@ -57,10 +50,8 @@ export async function GET(req: NextRequest) {
     });
 
     clearTimeout(timeout);
-    console.log("[image-proxy] Upstream response:", res.status, res.statusText, "content-type:", res.headers.get("content-type"));
 
     if (!res.ok) {
-      console.error("[image-proxy] Upstream returned error:", res.status);
       return NextResponse.json(
         { error: `Upstream returned ${res.status}` },
         { status: 502 },
@@ -69,18 +60,22 @@ export async function GET(req: NextRequest) {
 
     const contentType = res.headers.get("content-type") || "image/jpeg";
     const buffer = await res.arrayBuffer();
-    console.log("[image-proxy] SUCCESS - buffer size:", buffer.byteLength, "content-type:", contentType);
+
+    // Restrict CORS to own domain
+    const origin = req.headers.get("origin") || "";
+    const allowedOrigins = ["https://gglobby.in", "https://www.gglobby.in"];
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : "https://gglobby.in";
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=86400, s-maxage=86400",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": corsOrigin,
       },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[image-proxy] Fetch failed:", message, err);
+    console.error("[image-proxy] Fetch failed:", message);
     return NextResponse.json(
       { error: `Failed to fetch image: ${message}` },
       { status: 502 },

@@ -30,12 +30,32 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   ".gif":  ["image/gif"],
   ".webp": ["image/webp"],
   ".avif": ["image/avif"],
-  ".svg":  ["image/svg+xml"],
   ".mp4":  ["video/mp4"],
   ".webm": ["video/webm"],
+  // SVG intentionally excluded — can contain JavaScript and execute in browser context.
+  // If SVG support is needed, serve with Content-Disposition: attachment and sanitize.
 };
 
 const ALLOWED_EXTENSIONS = new Set(Object.keys(ALLOWED_TYPES));
+
+// Magic byte signatures for file content validation
+const MAGIC_BYTES: Record<string, number[][]> = {
+  ".jpg":  [[0xFF, 0xD8, 0xFF]],
+  ".jpeg": [[0xFF, 0xD8, 0xFF]],
+  ".png":  [[0x89, 0x50, 0x4E, 0x47]],
+  ".gif":  [[0x47, 0x49, 0x46, 0x38]],           // GIF8
+  ".webp": [[0x52, 0x49, 0x46, 0x46]],            // RIFF (WebP container)
+  ".mp4":  [],                                      // MP4 has variable header; rely on MIME
+  ".webm": [[0x1A, 0x45, 0xDF, 0xA3]],            // EBML header
+};
+
+function validateMagicBytes(buffer: Buffer, ext: string): boolean {
+  const signatures = MAGIC_BYTES[ext];
+  if (!signatures || signatures.length === 0) return true; // No signature to check
+  return signatures.some((sig) =>
+    sig.every((byte, i) => buffer[i] === byte)
+  );
+}
 
 function isAllowedFile(filename: string, mimeType: string): boolean {
   const ext = extname(filename).toLowerCase();
@@ -120,8 +140,17 @@ export async function POST(request: NextRequest) {
     // Ensure directory exists
     await mkdir(dirname(fullPath), { recursive: true });
 
-    // Write file
+    // Read file into buffer and validate content matches claimed type
     const buffer = Buffer.from(await file.arrayBuffer());
+    const ext = extname(file.name).toLowerCase();
+    if (!validateMagicBytes(buffer, ext)) {
+      return NextResponse.json(
+        { error: "File content does not match file type" },
+        { status: 400 }
+      );
+    }
+
+    // Write file
     await writeFile(fullPath, buffer);
 
     // Delete old file if provided and different

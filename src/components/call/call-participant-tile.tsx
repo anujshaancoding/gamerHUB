@@ -34,12 +34,15 @@ export function CallParticipantTile({
     ? JSON.parse(participant.metadata)
     : {};
 
-  // Monitor speaking state
+  // Monitor speaking state via event listener (not polling)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsSpeaking(participant.isSpeaking);
-    }, 100);
-    return () => clearInterval(interval);
+    const handler = () => setIsSpeaking(participant.isSpeaking);
+    participant.on("isSpeakingChanged", handler);
+    // Sync initial state
+    setIsSpeaking(participant.isSpeaking);
+    return () => {
+      participant.off("isSpeakingChanged", handler);
+    };
   }, [participant]);
 
   return (

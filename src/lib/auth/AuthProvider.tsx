@@ -62,6 +62,13 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const loading = status === "loading";
 
+  // Install global CSRF fetch interceptor once on mount
+  useEffect(() => {
+    import("@/lib/security/csrf-fetch").then(({ installCsrfFetchInterceptor }) => {
+      installCsrfFetchInterceptor();
+    });
+  }, []);
+
   const fetchProfileVersion = useRef(0);
 
   // Map Auth.js session to our AuthUser shape

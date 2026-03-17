@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Calendar, Clock, Eye, User, Gamepad2, Tag, ChevronDown } from "lucide-react";
+import { sanitizeHtml } from "@/lib/utils/sanitize";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -92,11 +93,14 @@ function CollapsibleContent({
   const [needsCollapse, setNeedsCollapse] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Sanitize HTML to prevent XSS — blog content may come from rich text editors
+  const safeHtml = sanitizeHtml(html);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     setNeedsCollapse(el.scrollHeight > CONTENT_COLLAPSED_HEIGHT + 100);
-  }, [html]);
+  }, [safeHtml]);
 
   return (
     <div className="relative">
@@ -109,7 +113,7 @@ function CollapsibleContent({
             ? { maxHeight: CONTENT_COLLAPSED_HEIGHT, overflow: "hidden" }
             : {}),
         }}
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
       {needsCollapse && !expanded && (
         <>

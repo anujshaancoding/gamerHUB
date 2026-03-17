@@ -169,8 +169,9 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="hidden lg:block relative" ref={searchRef}>
-              <form onSubmit={handleSearch}>
+              <form onSubmit={handleSearch} role="search">
                 <Input
+                  aria-label="Search content"
                   placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
                   value={searchQuery}
                   onChange={(e) => {
@@ -359,20 +360,14 @@ export function Navbar() {
 
                 {/* User Menu - hidden on mobile since My Profile is in hamburger */}
                 <div className="relative hidden sm:block" ref={userMenuRef}>
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     aria-label="User menu"
+                    aria-expanded={showUserMenu}
+                    aria-haspopup="true"
                     onClick={() => {
                       setShowUserMenu(!showUserMenu);
                       setShowNotifications(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setShowUserMenu(!showUserMenu);
-                        setShowNotifications(false);
-                      }
                     }}
                     className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-light transition-colors cursor-pointer"
                   >
@@ -390,7 +385,7 @@ export function Navbar() {
                       {profile?.display_name || profile?.username}
                       {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
                     </span>
-                  </div>
+                  </button>
 
                   {showUserMenu && (
                     <div
@@ -453,8 +448,9 @@ export function Navbar() {
         >
           <div className="px-4 py-3 space-y-2">
             <div className="relative mb-3">
-              <form onSubmit={handleSearch}>
+              <form onSubmit={handleSearch} role="search">
                 <Input
+                  aria-label="Search content"
                   placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
                   value={searchQuery}
                   onChange={(e) => {

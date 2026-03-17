@@ -41,7 +41,7 @@ function MessagesContent() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
         <p className="text-text-muted">Please log in to view messages</p>
       </div>
     );
@@ -50,7 +50,7 @@ function MessagesContent() {
   // Show loading while redirecting to the conversation
   if (redirecting || targetUserId) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-3">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-4rem)] gap-3">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
         <p className="text-sm text-text-muted">Opening conversation...</p>
       </div>
@@ -58,7 +58,7 @@ function MessagesContent() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] -m-4 lg:-m-6 overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] -m-4 lg:-m-6 overflow-hidden">
       {/* Conversation list */}
       <ConversationListPanel
         conversations={conversations}

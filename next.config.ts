@@ -56,10 +56,12 @@ const nextConfig: NextConfig = {
   // Allow local network devices (phone, tablet) to access dev server
   allowedDevOrigins: ["192.168.0.126"],
 
-  // Turbopack's built-in TS checker hits "Map maximum size exceeded" on large type files.
-  // Types are valid (tsc --noEmit passes with 0 errors). Use tsc directly for type checking.
-  typescript: {
-    ignoreBuildErrors: true,
+  // Run `tsc --noEmit` separately for type checking (Turbopack's checker can OOM on large type files).
+  // Do NOT set ignoreBuildErrors — build must fail on type errors.
+
+  // Optimize tree-shaking for barrel-exported packages
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns", "framer-motion", "@radix-ui/react-icons"],
   },
 
   // Security + caching headers

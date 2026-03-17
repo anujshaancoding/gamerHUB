@@ -192,9 +192,16 @@ export async function GET(
       overlay_id: overlay.id
     }).then(() => {}).catch(() => {});
 
-    // Set CORS headers for OBS browser source
+    // CORS for OBS browser source — restrict to known origins + allow null (local OBS)
+    const origin = request.headers.get("origin") || "";
+    const allowedOrigins = ["https://gglobby.in", "https://www.gglobby.in"];
+    // OBS browser source sends origin "null" or no origin — allow those too
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : (origin === "null" || !origin ? "*" : "");
+
     const response = NextResponse.json({ overlay: overlayData });
-    response.headers.set("Access-Control-Allow-Origin", "*");
+    if (corsOrigin) {
+      response.headers.set("Access-Control-Allow-Origin", corsOrigin);
+    }
     response.headers.set("Access-Control-Allow-Methods", "GET");
     response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
 
