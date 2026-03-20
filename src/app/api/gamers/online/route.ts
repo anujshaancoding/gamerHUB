@@ -53,17 +53,23 @@ export async function GET(request: NextRequest) {
       query = query.not("id", "in", `(${excludeIds.join(",")})`);
     }
 
-    const { data: profiles, error: profilesError } = await query;
-
-    if (profilesError) {
-      console.error("Error fetching online gamers:", profilesError);
-      return NextResponse.json(
-        { error: "Failed to fetch online gamers", details: profilesError.message },
-        { status: 500 }
-      );
+    let profiles: Record<string, unknown>[] | null = null;
+    try {
+      const { data, error: profilesError } = await query;
+      if (profilesError) {
+        console.error("Error fetching online gamers:", profilesError);
+        return NextResponse.json(
+          { error: "Failed to fetch online gamers", details: profilesError.message },
+          { status: 500 }
+        );
+      }
+      profiles = data as Record<string, unknown>[] | null;
+    } catch (queryError) {
+      console.error("Online gamers query crashed:", queryError);
+      return NextResponse.json({ gamers: [], hasMore: false });
     }
 
-    if (!profiles || profiles.length === 0) {
+    if (!profiles || !Array.isArray(profiles) || profiles.length === 0) {
       return NextResponse.json({ gamers: [], hasMore: false });
     }
 
@@ -75,6 +81,10 @@ export async function GET(request: NextRequest) {
       if (typeof privacy === "object" && privacy.profile_visible === false) return false;
       return true;
     });
+
+    if (visibleProfiles.length === 0) {
+      return NextResponse.json({ gamers: [], hasMore: false });
+    }
 
     const profileIds = visibleProfiles.map((p) => p.id as string);
 
@@ -97,12 +107,16 @@ export async function GET(request: NextRequest) {
     }));
 
     // Check if there are more results
-    const { count } = await db
+    let countQuery = db
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("is_online", true)
-      .not("id", "in", `(${excludeIds.length > 0 ? excludeIds.join(",") : "00000000-0000-0000-0000-000000000000"})`);
+      .eq("is_online", true);
 
+    if (excludeIds.length > 0) {
+      countQuery = countQuery.not("id", "in", `(${excludeIds.join(",")})`);
+    }
+
+    const { count } = await countQuery;
     const hasMore = (count || 0) > offset + limit;
 
     return NextResponse.json({ gamers, hasMore });

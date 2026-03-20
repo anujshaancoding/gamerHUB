@@ -175,7 +175,7 @@ export function MiniChatBox({
                       <div
                         className={`max-w-[85%] px-3 py-1.5 rounded-xl text-xs ${
                           isOwn
-                            ? "bg-primary text-text rounded-br-sm"
+                            ? "bg-primary text-background rounded-br-sm"
                             : "bg-surface-light text-text rounded-bl-sm"
                         }`}
                       >

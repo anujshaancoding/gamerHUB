@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-20T18:00:00",
+    version: "1.16.1",
+    type: "fix",
+    title: "Profile Page Crash Fix & Monochrome Theme Contrast",
+    description: "Fixed a critical bug that prevented profile pages from loading, and resolved text visibility issues on the Monochrome theme across multiple components.",
+    highlights: [
+      "Fixed profile page crash caused by a variable initialization error",
+      "Fixed invisible button/text on Monochrome theme across PWA install prompt, feedback widget, chat, medals, and more",
+      "Hardened the online gamers API to prevent crashes from unexpected responses",
+    ],
+  },
+  {
     date: "2026-03-16T18:00:00",
     version: "1.16.0",
     type: "feature",

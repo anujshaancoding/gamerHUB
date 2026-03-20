@@ -114,7 +114,7 @@ export function ProfileHeader({
   const profileStatus = isOwnProfile ? myStatus : getUserStatus(profile.id);
 
   // Normalize old Supabase storage URLs to self-hosted /uploads/ path
-  const bannerUrl = normalizeImageUrl(bannerUrl);
+  const bannerUrl = normalizeImageUrl(profile.banner_url);
 
   const [actionLoading, setActionLoading] = useState<"follow" | "friend" | null>(null);
   const [showShareToast, setShowShareToast] = useState(false);

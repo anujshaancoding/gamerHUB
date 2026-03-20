@@ -479,7 +479,7 @@ export function CommunityPageClient({
       case "valorant": return "bg-red-500/90 text-white";
       case "bgmi": return "bg-orange-500/90 text-white";
       case "freefire": return "bg-yellow-500/90 text-black";
-      default: return "bg-primary/90 text-white";
+      default: return "bg-primary/90 text-background";
     }
   };
 

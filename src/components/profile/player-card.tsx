@@ -25,7 +25,7 @@ interface PlayerCardProps {
 export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: PlayerCardProps) {
   const { theme } = useGameTheme();
   const [copied, setCopied] = useState(false);
-  const bannerUrl = normalizeImageUrl(bannerUrl);
+  const bannerUrl = normalizeImageUrl(profile.banner_url);
   const [bannerError, setBannerError] = useState(false);
   const [gameIconError, setGameIconError] = useState(false);
 

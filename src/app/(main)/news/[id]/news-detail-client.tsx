@@ -241,7 +241,7 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
           <div className="absolute top-4 left-4">
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
-                GAME_COLORS[article.game_slug] || "bg-primary/90 text-white"
+                GAME_COLORS[article.game_slug] || "bg-primary/90 text-background"
               }`}
             >
               <Gamepad2 className="h-3.5 w-3.5" />
@@ -268,7 +268,7 @@ export function NewsDetailClient({ article }: NewsDetailClientProps) {
           <div className="absolute top-4 left-4">
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
-                GAME_COLORS[article.game_slug] || "bg-primary/90 text-white"
+                GAME_COLORS[article.game_slug] || "bg-primary/90 text-background"
               }`}
             >
               <Gamepad2 className="h-3.5 w-3.5" />

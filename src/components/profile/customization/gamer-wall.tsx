@@ -198,7 +198,7 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
           <button
             type="submit"
             disabled={!content.trim() || submitting}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium text-text transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium text-background transition-colors"
           >
             <Send className="h-4 w-4" />
             {submitting ? "Posting..." : "Post to Wall"}

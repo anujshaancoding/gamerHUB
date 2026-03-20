@@ -158,7 +158,7 @@ export function RuleCard({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full bg-primary flex items-center justify-center text-text text-xs">
+                  <div className="h-full w-full bg-primary flex items-center justify-center text-background text-xs">
                     {(rule.created_by_profile.display_name ||
                       rule.created_by_profile.username)[0].toUpperCase()}
                   </div>

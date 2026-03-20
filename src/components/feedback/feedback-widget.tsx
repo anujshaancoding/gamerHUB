@@ -113,7 +113,7 @@ export function FeedbackWidget() {
       {/* Floating trigger button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-text shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-primary/40 active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-background shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-primary/40 active:scale-95"
         aria-label="Send feedback"
       >
         {open ? (
@@ -205,7 +205,7 @@ export function FeedbackWidget() {
               <button
                 onClick={handleSubmit}
                 disabled={!message.trim() || sending}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-medium text-text transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-medium text-background transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {sending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -738,7 +738,7 @@ export function ProfileMedals({
                     className={`
                       text-xs font-semibold px-3 py-1.5 rounded-full transition-all
                       ${isActive
-                        ? "bg-primary text-text shadow-md"
+                        ? "bg-primary text-background shadow-md"
                         : "bg-surface-light text-text-muted hover:bg-surface-light/80"}
                     `}
                   >
