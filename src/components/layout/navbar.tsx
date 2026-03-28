@@ -25,6 +25,7 @@ import {
   Megaphone,
   UserCheck,
   Shield,
+  BookOpen,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -73,8 +74,9 @@ const mobileNavItems = [
   { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
   { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
+  { href: "/blog", label: "Blog", icon: BookOpen, requiresAuth: false },
+  { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
-  { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
@@ -217,8 +219,18 @@ export function Navbar() {
 
             {/* Show Login/Sign Up for guests, or Notifications/User Menu for logged in users */}
             {!user ? (
-              /* Guest User - Show Login/Sign Up */
-              <div className="flex items-center gap-2">
+              /* Guest User - Show nav links + Login/Sign Up */
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link href="/blog" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Blog
+                </Link>
+                <Link href="/find-gamers" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Find Gamers
+                </Link>
+                <Link href="/community" className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Community
+                </Link>
+                <div className="hidden md:block w-px h-6 bg-border mx-1" />
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">
                     Log In
@@ -360,14 +372,22 @@ export function Navbar() {
 
                 {/* User Menu - hidden on mobile since My Profile is in hamburger */}
                 <div className="relative hidden sm:block" ref={userMenuRef}>
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     aria-label="User menu"
                     aria-expanded={showUserMenu}
                     aria-haspopup="true"
                     onClick={() => {
                       setShowUserMenu(!showUserMenu);
                       setShowNotifications(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setShowUserMenu(!showUserMenu);
+                        setShowNotifications(false);
+                      }
                     }}
                     className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-light transition-colors cursor-pointer"
                   >
@@ -385,7 +405,7 @@ export function Navbar() {
                       {profile?.display_name || profile?.username}
                       {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
                     </span>
-                  </button>
+                  </div>
 
                   {showUserMenu && (
                     <div

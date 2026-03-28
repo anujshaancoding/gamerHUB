@@ -45,14 +45,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     {
-      url: `${BASE_URL}/login`,
-      changeFrequency: "monthly",
-      priority: 0.3,
+      url: `${BASE_URL}/updates`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.5,
     },
     {
-      url: `${BASE_URL}/register`,
+      url: `${BASE_URL}/overview`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/help`,
       changeFrequency: "monthly",
-      priority: 0.3,
+      priority: 0.4,
     },
   ];
 
@@ -60,12 +73,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = createClient();
   const { data: posts } = await db
     .from("blog_posts")
-    .select("id, updated_at")
+    .select("id, slug, updated_at")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
   const postPages: MetadataRoute.Sitemap = (posts || []).map(
-    (post: { id: string; updated_at: string }) => ({
+    (post: { id: string; slug?: string; updated_at: string }) => ({
       url: `${BASE_URL}/community/post/${post.id}`,
       lastModified: new Date(post.updated_at),
       changeFrequency: "weekly" as const,
@@ -73,5 +86,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
-  return [...staticPages, ...postPages];
+  const blogSlugPages: MetadataRoute.Sitemap = (posts || [])
+    .filter((post: any) => post.slug)
+    .map((post: any) => ({
+      url: `${BASE_URL}/blog/${post.slug}`,
+      lastModified: new Date(post.updated_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+  return [...staticPages, ...postPages, ...blogSlugPages];
 }

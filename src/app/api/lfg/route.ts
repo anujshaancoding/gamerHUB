@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { parsePagination } from "@/lib/security/pagination";
 
 // GET - List LFG posts with filters
 export async function GET(request: NextRequest) {
@@ -18,8 +19,7 @@ export async function GET(request: NextRequest) {
     const language = searchParams.get("language");
     const hasSlots = searchParams.get("hasSlots") === "true";
     const creatorId = searchParams.get("creatorId");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const { limit, offset } = parsePagination(searchParams);
 
     let query = db
       .from("lfg_posts")

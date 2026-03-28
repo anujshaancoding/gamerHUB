@@ -18,6 +18,10 @@ export default function robots(): MetadataRoute.Robots {
           "/privacy",
           "/terms",
           "/guidelines",
+          "/overview",
+          "/blog",
+          "/blog/*",
+          "/updates",
         ],
         disallow: [
           "/api/",

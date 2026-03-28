@@ -4,6 +4,7 @@ import { createClient } from "@/lib/db/client";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
 import { getUser } from "@/lib/auth/get-user";
+import { parsePagination } from "@/lib/security/pagination";
 
 // GET - List published blog posts with filters
 export async function GET(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const author = searchParams.get("author");
     const featured = searchParams.get("featured") === "true";
     const search = searchParams.get("search");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const { limit } = parsePagination(searchParams);
     const cursor = searchParams.get("cursor"); // ISO date string of last item's published_at
 
     let query = db

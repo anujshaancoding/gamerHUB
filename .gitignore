@@ -46,6 +46,9 @@ yarn-error.log*
 # blog content
 /Blog Content
 
+# content creation strategy
+/content-creation
+
 # vercel
 .vercel
 

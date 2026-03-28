@@ -85,6 +85,7 @@ interface CommunityPost {
   read_time_minutes: number;
   is_featured: boolean;
   is_pinned: boolean;
+  allow_comments: boolean;
   created_at: string;
   author: Author;
 }
@@ -544,6 +545,7 @@ export function CommunityPostPage() {
           >
             {post.likes_count}
           </Button>
+          {post.allow_comments !== false && (
           <Button
             variant="outline"
             size="sm"
@@ -552,6 +554,7 @@ export function CommunityPostPage() {
           >
             {post.comments_count}
           </Button>
+          )}
           <Button
             variant={bookmarked ? "default" : "outline"}
             size="sm"
@@ -696,6 +699,7 @@ export function CommunityPostPage() {
         </Card>
 
         {/* Comments Section */}
+        {post?.allow_comments !== false && (
         <div className="mb-8" ref={commentsSectionRef}>
           <h3 className="text-xl font-semibold text-text mb-6 flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -806,6 +810,7 @@ export function CommunityPostPage() {
             </div>
           )}
         </div>
+        )}
       </motion.article>
 
       <ConfirmDeleteDialog

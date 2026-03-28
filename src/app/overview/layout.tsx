@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Overview - Explore All Features",
+  title: "Overview — Find Teammates, Join Clans, Level Up | ggLobby",
   description:
-    "Discover everything ggLobby has to offer. Explore 40+ features for gaming social networking, tournaments, clans, messaging, and more.",
+    "ggLobby is the gaming social platform where you find teammates, join clans, track stats, complete quests, and build your gaming reputation — all for free.",
 };
 
 export default function OverviewLayout({

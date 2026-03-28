@@ -35,6 +35,40 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-22T22:00:00",
+    version: "1.17.1",
+    type: "security",
+    title: "Full-Stack Security Audit, SEO Fixes & Performance Hardening",
+    description: "Comprehensive security and SEO audit across the entire platform. Fixed critical homepage SEO issue, hardened API endpoints, added rate limiting to public routes, and opened public pages to guest visitors.",
+    highlights: [
+      "Fixed critical SEO issue: homepage now serves real landing page content to search engines instead of a loading spinner",
+      "Added rate limiting to newsletter subscribe and username check endpoints to prevent abuse",
+      "Created pagination bounds utility — API routes now cap limit/offset to prevent DoS via unbounded queries",
+      "Blog, Updates, Help, Privacy, Terms, and Guidelines pages now accessible to guest visitors without auth gate",
+      "Sitemap cleaned up: removed auth pages, added /updates page",
+      "URL validation added to feedback API to prevent stored XSS via malicious URLs",
+      "Homepage converted from client-side redirect to server-side for crawler compatibility",
+      "Added skeleton loading screens for Community, Profile, Messages, Blog, Clans, and Find Gamers pages",
+      "Added preconnect/dns-prefetch hints for Google Fonts, Google Tag Manager, DiceBear, and Discord CDN",
+    ],
+  },
+  {
+    date: "2026-03-22T18:00:00",
+    version: "1.17.0",
+    type: "improvement",
+    title: "New Landing Page, SEO Overhaul & Blog Revamp",
+    description: "Rebuilt the landing page with a premium design to convert visitors into users. Created a dedicated SEO-friendly blog page, improved navigation for guests, added newsletter signup, and fixed sitemap/robots.txt for better search engine visibility.",
+    highlights: [
+      "New premium landing page with animated hero, social proof, game badges, and newsletter signup",
+      "Dedicated /blog page with category filters, search, and responsive card grid — no more redirect",
+      "Navbar now shows Blog, Find Gamers, and Community links to guest visitors",
+      "Sitemap now includes /overview, /blog, and all blog post slug URLs for SEO",
+      "Added /lfg redirect to /find-gamers for common URL pattern",
+      "Newsletter email capture on both landing page and blog page",
+      "Logged-out users now land on the feature-rich overview page instead of an empty dashboard",
+    ],
+  },
+  {
     date: "2026-03-20T18:00:00",
     version: "1.16.1",
     type: "fix",

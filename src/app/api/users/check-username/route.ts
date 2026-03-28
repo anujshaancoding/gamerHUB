@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
+import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 
 const USERNAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
+
+// 30 checks per minute per IP (supports typing-as-you-go UX)
+const usernameLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 30 });
 
 // GET - Check if a username is available
 export async function GET(request: NextRequest) {
   try {
+    const clientId = getClientIdentifier(request);
+    const rl = usernameLimiter(clientId);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { available: false, message: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const username = searchParams.get("username")?.trim().toLowerCase();
 

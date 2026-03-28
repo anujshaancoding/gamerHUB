@@ -67,6 +67,13 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns", "framer-motion", "@radix-ui/react-icons"],
   },
 
+  // Proxy /uploads to VPS in development so images load locally
+  async rewrites() {
+    return process.env.NODE_ENV === "development"
+      ? [{ source: "/uploads/:path*", destination: "https://gglobby.in/uploads/:path*" }]
+      : [];
+  },
+
   // Security + caching headers
   async headers() {
     const securityHeaders = [

@@ -29,14 +29,21 @@ export async function POST(request: NextRequest) {
     const validCategories = ["bug", "feature", "general", "design"];
     const safeCategory = validCategories.includes(category) ? category : "general";
 
+    // Validate URLs if provided — reject non-http(s) schemes to prevent stored XSS / SSRF
+    const isValidUrl = (url: string) => {
+      try { return /^https?:\/\//i.test(new URL(url).href); } catch { return false; }
+    };
+    const safeImageUrl = image_url && typeof image_url === "string" && isValidUrl(image_url) ? image_url : null;
+    const safePageUrl = page_url && typeof page_url === "string" && isValidUrl(page_url) ? page_url : null;
+
     const { error: insertError } = await db
       .from("beta_feedback")
       .insert({
         user_id: user?.id ?? null,
         message: message.trim(),
         category: safeCategory,
-        image_url: image_url || null,
-        page_url: page_url || null,
+        image_url: safeImageUrl,
+        page_url: safePageUrl,
         user_agent: request.headers.get("user-agent") || null,
       });
 

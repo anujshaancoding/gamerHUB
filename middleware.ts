@@ -99,11 +99,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect all users from landing page to community
+  // Authenticated users go straight to community; everyone else (including
+  // crawlers) sees the SEO-friendly overview landing page via a rewrite so
+  // the URL stays "/" while rendering /overview content.
   if (isLandingPage) {
+    if (user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/community";
+      return NextResponse.redirect(url);
+    }
+    // Rewrite (not redirect) so crawlers index "/" with real landing content
     const url = request.nextUrl.clone();
-    url.pathname = "/community";
-    return NextResponse.redirect(url);
+    url.pathname = "/overview";
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();

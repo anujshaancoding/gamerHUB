@@ -5,6 +5,7 @@ import { isPromoPeriodActive } from "@/lib/promo";
 import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
 import type { Clan } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
+import { parsePagination } from "@/lib/security/pagination";
 
 // GET - List/search clans
 export async function GET(request: NextRequest) {
@@ -16,8 +17,7 @@ export async function GET(request: NextRequest) {
     const game = searchParams.get("game");
     const region = searchParams.get("region");
     const recruiting = searchParams.get("recruiting");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const { limit, offset } = parsePagination(searchParams);
 
     // Resolve game slug to ID (the query builder doesn't support filtering on joined columns)
     let gameId: string | null = null;

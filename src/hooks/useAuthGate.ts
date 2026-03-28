@@ -14,6 +14,12 @@ const GUEST_ALLOWED_ROUTES = [
   "/onboarding",
   "/offline",
   "/overview",
+  "/blog",
+  "/updates",
+  "/help",
+  "/privacy",
+  "/terms",
+  "/guidelines",
   "/",
 ];
 

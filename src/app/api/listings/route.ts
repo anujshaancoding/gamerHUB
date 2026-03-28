@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
 import { getUser } from "@/lib/auth/get-user";
+import { parsePagination } from "@/lib/security/pagination";
 
 // GET - List/search community listings
 export async function GET(request: NextRequest) {
@@ -13,8 +14,7 @@ export async function GET(request: NextRequest) {
     const gameId = searchParams.get("game_id");
     const status = searchParams.get("status");
     const search = searchParams.get("search");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const { limit, offset } = parsePagination(searchParams);
 
     let query = db
       .from("community_listings")
