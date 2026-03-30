@@ -12,6 +12,7 @@ const TITLES: Record<string, string> = {
   "/admin/reports": "Reports",
   "/admin/users": "Users",
   "/admin/authors": "Blog Authors",
+  "/admin/automation": "Automation",
 };
 
 function getTitle(pathname: string): string {

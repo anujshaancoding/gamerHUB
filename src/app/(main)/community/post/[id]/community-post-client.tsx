@@ -740,10 +740,25 @@ export function CommunityPostPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="mb-6 p-4 text-center">
-              <p className="text-text-muted text-sm">
-                <Link href="/login" className="text-primary hover:underline">Sign in</Link> to leave a comment.
-              </p>
+            <Card className="mb-6 overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5">
+                <h4 className="text-base font-semibold text-text mb-1">Join the discussion</h4>
+                <p className="text-sm text-text-muted mb-4">
+                  Sign up to comment, like posts, and connect with gamers across India
+                </p>
+                <div className="flex items-center gap-3">
+                  <Link href="/register">
+                    <Button size="sm">
+                      Sign Up Free
+                    </Button>
+                  </Link>
+                  <Link href="/login">
+                    <Button variant="outline" size="sm">
+                      Log In
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </Card>
           )}
 

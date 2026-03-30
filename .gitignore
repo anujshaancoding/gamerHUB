@@ -49,6 +49,9 @@ yarn-error.log*
 # content creation strategy
 /content-creation
 
+# local-only docs (not for git)
+*.local.md
+
 # vercel
 .vercel
 

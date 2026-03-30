@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-03-30T18:00:00",
+    version: "1.18.0",
+    type: "feature",
+    title: "Conversion Improvements & Platform Enhancements",
+    description: "Multiple improvements to increase visitor-to-user conversion and enhance the overall user experience.",
+    highlights: [
+      "Guest visitors now see up to 15 community posts (up from 4) for a better first impression",
+      "Improved blog post signup CTA: engaging call-to-action replaces minimal sign-in link",
+      "Onboarding steps 2 & 3 are now skippable — users can jump straight to the community",
+    ],
+  },
+  {
     date: "2026-03-22T22:00:00",
     version: "1.17.1",
     type: "security",

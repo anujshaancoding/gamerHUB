@@ -12,11 +12,25 @@ import { getPool } from "./index";
 
 export interface SiteSettings {
   hide_news: boolean;
-  // Add more feature flags here as needed
+  // Automation settings
+  automation_enabled: boolean;
+  automation_posts_per_day: number;        // target posts per day (3-15)
+  automation_comments_per_day: number;     // target comments per day (2-10)
+  automation_active_hours_start: number;   // IST hour (0-23), e.g. 10
+  automation_active_hours_end: number;     // IST hour (0-23), e.g. 23
+  automation_min_gap_minutes: number;      // minimum minutes between actions
+  automation_weekend_boost: boolean;       // post more on weekends
 }
 
 const DEFAULTS: SiteSettings = {
-  hide_news: true, // hidden by default as requested
+  hide_news: true,
+  automation_enabled: false,
+  automation_posts_per_day: 5,
+  automation_comments_per_day: 4,
+  automation_active_hours_start: 10,
+  automation_active_hours_end: 23,
+  automation_min_gap_minutes: 25,
+  automation_weekend_boost: true,
 };
 
 // ── In-memory cache ──────────────────────────────────────────────────────────
@@ -65,7 +79,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     const settings: SiteSettings = { ...DEFAULTS };
     for (const row of rows) {
       if (row.key in settings) {
-        (settings as Record<string, unknown>)[row.key] = row.value;
+        (settings as unknown as Record<string, unknown>)[row.key] = row.value;
       }
     }
 

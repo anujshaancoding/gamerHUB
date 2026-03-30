@@ -331,7 +331,7 @@ export function CommunityPageClient({
       if (isGuest) {
         return (posts || [])
           .filter((p: FriendPost) => p.user !== null && p.user?.is_verified)
-          .slice(0, 4);
+          .slice(0, 15);
       }
       return (posts || []) as FriendPost[];
     },

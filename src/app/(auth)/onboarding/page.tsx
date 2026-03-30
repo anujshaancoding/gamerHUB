@@ -160,6 +160,30 @@ export default function OnboardingPage() {
 
   const isStep1Valid = username.length >= 3 && usernameStatus === "available";
 
+  const handleSkipToFinish = async () => {
+    if (!user) {
+      setError("You're not signed in. Please log in and try again.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: profileError } = await updateProfile({
+        username: username,
+        display_name: formData.display_name || null,
+      });
+      if (profileError) {
+        setError("Failed to save profile. Please try again.");
+        setLoading(false);
+        return;
+      }
+      router.replace("/community");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  };
+
   const handleNext = async () => {
     if (currentStep === 1 && !isStep1Valid) {
       setError("Please choose a valid, available username to continue.");
@@ -771,7 +795,7 @@ export default function OnboardingPage() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between items-center mt-8">
           <Button
             variant="ghost"
             onClick={handleBack}
@@ -780,14 +804,26 @@ export default function OnboardingPage() {
           >
             Back
           </Button>
-          <Button
-            onClick={handleNext}
-            isLoading={loading}
-            disabled={currentStep === 1 && !isStep1Valid}
-            rightIcon={<ChevronRight className="h-4 w-4" />}
-          >
-            {currentStep === 3 ? "Complete Setup" : "Next"}
-          </Button>
+          <div className="flex items-center gap-3">
+            {currentStep > 1 && (
+              <Button
+                variant="ghost"
+                onClick={handleSkipToFinish}
+                isLoading={loading}
+                className="text-text-muted hover:text-text"
+              >
+                Skip, I&apos;ll do this later
+              </Button>
+            )}
+            <Button
+              onClick={handleNext}
+              isLoading={loading}
+              disabled={currentStep === 1 && !isStep1Valid}
+              rightIcon={<ChevronRight className="h-4 w-4" />}
+            >
+              {currentStep === 3 ? "Complete Setup" : "Next"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

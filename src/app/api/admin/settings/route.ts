@@ -49,7 +49,16 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { key, value } = body as { key: string; value: unknown };
 
-    const validKeys: (keyof SiteSettings)[] = ["hide_news"];
+    const validKeys: (keyof SiteSettings)[] = [
+      "hide_news",
+      "automation_enabled",
+      "automation_posts_per_day",
+      "automation_comments_per_day",
+      "automation_active_hours_start",
+      "automation_active_hours_end",
+      "automation_min_gap_minutes",
+      "automation_weekend_boost",
+    ];
     if (!validKeys.includes(key as keyof SiteSettings)) {
       return NextResponse.json(
         { error: `Invalid setting key: ${key}` },

@@ -13,6 +13,7 @@ import {
   Newspaper,
   MessageSquarePlus,
   BarChart3,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
@@ -26,6 +27,7 @@ const allNavItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquarePlus },
+  { href: "/admin/automation", label: "Automation", icon: Bot },
 ];
 
 export function AdminSidebar() {
