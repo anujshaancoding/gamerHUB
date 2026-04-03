@@ -52,6 +52,9 @@ yarn-error.log*
 # local-only docs (not for git)
 *.local.md
 
+# automation setup script (contains persona password hash — keep local)
+scripts/setup-automation-personas.sql
+
 # vercel
 .vercel
 
