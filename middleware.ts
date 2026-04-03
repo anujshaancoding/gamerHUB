@@ -74,7 +74,7 @@ export async function middleware(request: NextRequest) {
   if (isUserApi && ["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
     // Skip CSRF for auth endpoints (login/register need to work without a prior page visit)
     // and for upload (multipart forms don't easily carry the CSRF header)
-    const csrfExemptPrefixes = ["/api/auth/", "/api/upload", "/api/analytics/", "/api/stripe/webhook"];
+    const csrfExemptPrefixes = ["/api/auth/", "/api/upload", "/api/analytics/", "/api/stripe/webhook", "/api/cron/"];
     const isExempt = csrfExemptPrefixes.some((p) => path.startsWith(p));
 
     if (!isExempt && !validateCsrfToken(request)) {
