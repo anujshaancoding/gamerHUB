@@ -19,6 +19,16 @@ import {
   Search,
   Loader2,
   RefreshCw,
+  User,
+  Image,
+  Shield,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Globe,
+  Gamepad2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +56,14 @@ interface Persona {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  banner_url: string | null;
+  bio: string | null;
+  gaming_style: string | null;
+  region: string | null;
   is_verified: boolean;
+  is_premium: boolean;
+  status: string;
+  email: string | null;
   total_actions: number;
   last_action_at: string | null;
 }
@@ -99,6 +116,8 @@ const TEMPLATE_TYPES = ["community_post", "comment", "lfg_post", "news_discussio
 const TEMPLATE_CATEGORIES = ["hot_take", "question", "discussion", "daily", "reaction", "lfg", "hype", "tip", "general"];
 const MOODS = ["neutral", "excited", "frustrated", "chill", "curious", "hyped"];
 const GAMES = ["valorant", "bgmi", "freefire"];
+const GAMING_STYLES = ["casual", "competitive", "semi-pro", "streamer", "content-creator"];
+const REGIONS = ["India - North", "India - South", "India - East", "India - West", "Southeast Asia", "Middle East"];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -518,7 +537,25 @@ function OverviewTab({
 function PersonasTab({ personas, onRefresh }: { personas: Persona[]; onRefresh: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState(false); // true = create new account, false = link existing
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const [form, setForm] = useState({
+    // Account fields (only for create mode)
+    email: "",
+    password: "",
+    // Profile fields
+    username: "",
+    display_name: "",
+    avatar_url: "",
+    banner_url: "",
+    bio: "",
+    gaming_style: "",
+    region: "",
+    // Persona fields
     profile_id: "",
     persona_style: "casual",
     preferred_games: [] as string[],
@@ -527,29 +564,114 @@ function PersonasTab({ personas, onRefresh }: { personas: Persona[]; onRefresh: 
   });
 
   const resetForm = () => {
-    setForm({ profile_id: "", persona_style: "casual", preferred_games: [], posting_style: "mixed", bio_note: "" });
+    setForm({
+      email: "", password: "", username: "", display_name: "", avatar_url: "", banner_url: "",
+      bio: "", gaming_style: "", region: "", profile_id: "", persona_style: "casual",
+      preferred_games: [], posting_style: "mixed", bio_note: "",
+    });
     setEditingId(null);
     setShowForm(false);
+    setCreateMode(false);
+    setShowPassword(false);
   };
 
   const handleSave = async () => {
-    if (!editingId && !form.profile_id) {
+    if (createMode && !editingId) {
+      if (!form.username || !form.email || !form.password) {
+        toast.error("Username, email, and password are required");
+        return;
+      }
+      if (form.password.length < 6) {
+        toast.error("Password must be at least 6 characters");
+        return;
+      }
+    } else if (!editingId && !form.profile_id) {
       toast.error("Enter a profile ID");
       return;
     }
 
-    const url = "/api/admin/automation/personas";
-    const method = editingId ? "PATCH" : "POST";
-    const body = editingId ? { id: editingId, ...form } : form;
+    setSaving(true);
+    try {
+      const url = "/api/admin/automation/personas";
 
-    const res = await fetchWithCsrf(url, { method, body: JSON.stringify(body) });
-    if (res.ok) {
-      toast.success(editingId ? "Persona updated" : "Persona added");
-      resetForm();
-      onRefresh();
-    } else {
-      const err = await res.json();
-      toast.error(err.error || "Failed to save");
+      if (editingId) {
+        // Update existing persona + profile
+        const res = await fetchWithCsrf(url, {
+          method: "PATCH",
+          body: JSON.stringify({
+            id: editingId,
+            username: form.username || undefined,
+            display_name: form.display_name || undefined,
+            avatar_url: form.avatar_url || undefined,
+            banner_url: form.banner_url || undefined,
+            bio: form.bio || undefined,
+            gaming_style: form.gaming_style || undefined,
+            region: form.region || undefined,
+            persona_style: form.persona_style,
+            preferred_games: form.preferred_games,
+            posting_style: form.posting_style,
+            bio_note: form.bio_note || undefined,
+          }),
+        });
+        if (res.ok) {
+          toast.success("Persona & profile updated");
+          resetForm();
+          onRefresh();
+        } else {
+          const err = await res.json();
+          toast.error(err.error || "Failed to update");
+        }
+      } else if (createMode) {
+        // Create new bot account
+        const res = await fetchWithCsrf(url, {
+          method: "POST",
+          body: JSON.stringify({
+            create_account: true,
+            email: form.email,
+            password: form.password,
+            username: form.username,
+            display_name: form.display_name || form.username,
+            avatar_url: form.avatar_url || undefined,
+            bio: form.bio || undefined,
+            gaming_style: form.gaming_style || undefined,
+            region: form.region || undefined,
+            persona_style: form.persona_style,
+            preferred_games: form.preferred_games,
+            posting_style: form.posting_style,
+            bio_note: form.bio_note || undefined,
+          }),
+        });
+        if (res.ok) {
+          toast.success("Bot account created & linked as persona");
+          resetForm();
+          onRefresh();
+        } else {
+          const err = await res.json();
+          toast.error(err.error || "Failed to create account");
+        }
+      } else {
+        // Link existing profile
+        const res = await fetchWithCsrf(url, {
+          method: "POST",
+          body: JSON.stringify({
+            profile_id: form.profile_id,
+            persona_style: form.persona_style,
+            preferred_games: form.preferred_games,
+            posting_style: form.posting_style,
+            bio_note: form.bio_note || undefined,
+          }),
+        });
+        if (res.ok) {
+          toast.success("Persona added");
+          resetForm();
+          onRefresh();
+        } else {
+          const err = await res.json();
+          toast.error(err.error || "Failed to save");
+        }
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -561,124 +683,336 @@ function PersonasTab({ personas, onRefresh }: { personas: Persona[]; onRefresh: 
     onRefresh();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Remove this persona?")) return;
-    await fetchWithCsrf(`/api/admin/automation/personas?id=${id}`, { method: "DELETE" });
-    toast.success("Persona removed");
-    onRefresh();
+  const handleDelete = async (id: string, deleteAccount: boolean) => {
+    const msg = deleteAccount
+      ? "DELETE FULL ACCOUNT? This will permanently remove the user account, profile, and all associated data. This cannot be undone!"
+      : "Remove this persona link? The user account will remain.";
+    if (!confirm(msg)) return;
+
+    setDeletingId(id);
+    try {
+      const url = deleteAccount
+        ? `/api/admin/automation/personas?id=${id}&delete_account=true`
+        : `/api/admin/automation/personas?id=${id}`;
+      const res = await fetchWithCsrf(url, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(deleteAccount ? "Account fully deleted" : "Persona removed");
+        setExpandedId(null);
+        onRefresh();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to delete");
+      }
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleEdit = (p: Persona) => {
     setForm({
+      email: p.email || "",
+      password: "",
+      username: p.username || "",
+      display_name: p.display_name || "",
+      avatar_url: p.avatar_url || "",
+      banner_url: p.banner_url || "",
+      bio: p.bio || "",
+      gaming_style: p.gaming_style || "",
+      region: p.region || "",
       profile_id: p.profile_id,
       persona_style: p.persona_style,
-      preferred_games: p.preferred_games,
+      preferred_games: p.preferred_games || [],
       posting_style: p.posting_style,
       bio_note: p.bio_note || "",
     });
     setEditingId(p.id);
+    setCreateMode(false);
     setShowForm(true);
   };
 
+  const inputClass = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-violet-500/50 placeholder:text-white/20";
+  const labelClass = "block text-sm text-white/50 mb-1.5";
+  const selectClass = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none";
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-white/40">{personas.length} persona(s) configured</p>
-        <button
-          onClick={() => { resetForm(); setShowForm(!showForm); }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-300 text-sm hover:bg-violet-500/30 transition-colors"
-        >
-          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showForm ? "Cancel" : "Add Persona"}
-        </button>
+        <div className="flex items-center gap-2">
+          {!showForm && (
+            <>
+              <button
+                onClick={() => { resetForm(); setCreateMode(true); setShowForm(true); }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-sm hover:bg-emerald-500/30 transition-colors"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create Bot Account
+              </button>
+              <button
+                onClick={() => { resetForm(); setCreateMode(false); setShowForm(true); }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-300 text-sm hover:bg-violet-500/30 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Link Existing
+              </button>
+            </>
+          )}
+          {showForm && (
+            <button
+              onClick={resetForm}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/50 text-sm hover:bg-white/10 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-violet-300">
-            {editingId ? "Edit Persona" : "Link a Profile as Persona"}
+        <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-5 space-y-5">
+          <h3 className="text-sm font-semibold text-violet-300 flex items-center gap-2">
+            {editingId ? (
+              <><Pencil className="h-4 w-4" /> Edit Persona & Profile</>
+            ) : createMode ? (
+              <><UserPlus className="h-4 w-4" /> Create New Bot Account</>
+            ) : (
+              <><Plus className="h-4 w-4" /> Link Existing Profile</>
+            )}
           </h3>
-          {!editingId && (
+
+          {/* Account Credentials (create mode only) */}
+          {createMode && !editingId && (
+            <div className="space-y-3 pb-4 border-b border-white/5">
+              <p className="text-xs text-white/30 flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5" /> Account Credentials
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                    <input
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="bot@example.com"
+                      type="email"
+                      className={cn(inputClass, "pl-9")}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                    <input
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Min 6 characters"
+                      type={showPassword ? "text" : "password"}
+                      className={cn(inputClass, "pl-9 pr-9")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Link existing profile (non-create, non-edit mode) */}
+          {!createMode && !editingId && (
             <div>
-              <label className="block text-sm text-white/50 mb-1.5">Profile ID (UUID)</label>
+              <label className={labelClass}>Profile ID (UUID)</label>
               <input
                 value={form.profile_id}
                 onChange={(e) => setForm({ ...form, profile_id: e.target.value })}
                 placeholder="Paste the user's profile UUID"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-violet-500/50"
+                className={inputClass}
               />
               <p className="text-xs text-white/30 mt-1">Find this in Admin &gt; Users, copy the user ID</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-white/50 mb-1.5">Personality Style</label>
-              <select
-                value={form.persona_style}
-                onChange={(e) => setForm({ ...form, persona_style: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none"
-              >
-                {PERSONA_STYLES.map((s) => (
-                  <option key={s} value={s} className="bg-[#0a0a12]">{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-white/50 mb-1.5">Posting Style</label>
-              <select
-                value={form.posting_style}
-                onChange={(e) => setForm({ ...form, posting_style: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none"
-              >
-                {POSTING_STYLES.map((s) => (
-                  <option key={s} value={s} className="bg-[#0a0a12]">{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          {/* Profile Fields (create mode + edit mode) */}
+          {(createMode || editingId) && (
+            <div className="space-y-3 pb-4 border-b border-white/5">
+              <p className="text-xs text-white/30 flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" /> Profile Details
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Username</label>
+                  <input
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                    placeholder="e.g. clutch_king_69"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Display Name</label>
+                  <input
+                    value={form.display_name}
+                    onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+                    placeholder="e.g. Clutch King"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm text-white/50 mb-1.5">Preferred Games</label>
-            <div className="flex gap-2">
-              {GAMES.map((g) => (
-                <button
-                  key={g}
-                  onClick={() => {
-                    const games = form.preferred_games.includes(g)
-                      ? form.preferred_games.filter((x) => x !== g)
-                      : [...form.preferred_games, g];
-                    setForm({ ...form, preferred_games: games });
-                  }}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm border transition-colors",
-                    form.preferred_games.includes(g)
-                      ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                      : "bg-white/5 border-white/10 text-white/40 hover:text-white/60",
-                  )}
+              <div>
+                <label className={labelClass}>Avatar URL</label>
+                <div className="flex gap-3 items-start">
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                    {form.avatar_url ? (
+                      <img src={form.avatar_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <Image className="h-5 w-5 text-white/20" />
+                    )}
+                  </div>
+                  <input
+                    value={form.avatar_url}
+                    onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
+                    placeholder="https://example.com/avatar.jpg"
+                    className={cn(inputClass, "flex-1")}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Banner URL (optional)</label>
+                <input
+                  value={form.banner_url}
+                  onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
+                  placeholder="https://example.com/banner.jpg"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Bio</label>
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  placeholder="e.g. Valorant addict | Jett main | Always headshots, sometimes teammates"
+                  rows={2}
+                  className={cn(inputClass, "resize-none")}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Gaming Style</label>
+                  <select
+                    value={form.gaming_style}
+                    onChange={(e) => setForm({ ...form, gaming_style: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="" className="bg-[#0a0a12]">Not set</option>
+                    {GAMING_STYLES.map((s) => (
+                      <option key={s} value={s} className="bg-[#0a0a12]">{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Region</label>
+                  <select
+                    value={form.region}
+                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="" className="bg-[#0a0a12]">Not set</option>
+                    {REGIONS.map((r) => (
+                      <option key={r} value={r} className="bg-[#0a0a12]">{r}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Persona / Automation Settings */}
+          <div className="space-y-3">
+            <p className="text-xs text-white/30 flex items-center gap-1.5">
+              <Bot className="h-3.5 w-3.5" /> Automation Settings
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Personality Style</label>
+                <select
+                  value={form.persona_style}
+                  onChange={(e) => setForm({ ...form, persona_style: e.target.value })}
+                  className={selectClass}
                 >
-                  {g === "bgmi" ? "BGMI" : g === "freefire" ? "Free Fire" : "Valorant"}
-                </button>
-              ))}
+                  {PERSONA_STYLES.map((s) => (
+                    <option key={s} value={s} className="bg-[#0a0a12]">{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Posting Style</label>
+                <select
+                  value={form.posting_style}
+                  onChange={(e) => setForm({ ...form, posting_style: e.target.value })}
+                  className={selectClass}
+                >
+                  {POSTING_STYLES.map((s) => (
+                    <option key={s} value={s} className="bg-[#0a0a12]">{s}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm text-white/50 mb-1.5">Internal Note (optional)</label>
-            <input
-              value={form.bio_note}
-              onChange={(e) => setForm({ ...form, bio_note: e.target.value })}
-              placeholder="e.g. 'My alt account - Valorant main'"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-violet-500/50"
-            />
+            <div>
+              <label className={labelClass}>Preferred Games</label>
+              <div className="flex flex-wrap gap-2">
+                {GAMES.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      const games = form.preferred_games.includes(g)
+                        ? form.preferred_games.filter((x) => x !== g)
+                        : [...form.preferred_games, g];
+                      setForm({ ...form, preferred_games: games });
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                      form.preferred_games.includes(g)
+                        ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
+                        : "bg-white/5 border-white/10 text-white/40 hover:text-white/60",
+                    )}
+                  >
+                    {g === "bgmi" ? "BGMI" : g === "freefire" ? "Free Fire" : "Valorant"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Internal Note (optional)</label>
+              <input
+                value={form.bio_note}
+                onChange={(e) => setForm({ ...form, bio_note: e.target.value })}
+                placeholder="e.g. 'My alt account - Valorant main'"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors"
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors disabled:opacity-50"
           >
-            {editingId ? "Update Persona" : "Add Persona"}
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {editingId ? "Update Persona & Profile" : createMode ? "Create Bot Account" : "Add Persona"}
           </button>
         </div>
       )}
@@ -686,81 +1020,167 @@ function PersonasTab({ personas, onRefresh }: { personas: Persona[]; onRefresh: 
       {/* Persona List */}
       <div className="space-y-3">
         {personas.map((p) => (
-          <div
-            key={p.id}
-            className={cn(
-              "rounded-xl border bg-white/[0.02] p-4 flex items-center gap-4",
-              p.is_active ? "border-white/5" : "border-white/5 opacity-50",
-            )}
-          >
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
-              {p.avatar_url ? (
-                <img src={p.avatar_url} alt={p.username} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white/50 text-sm font-bold">{(p.username || "?")[0].toUpperCase()}</span>
-              )}
-            </div>
+          <div key={p.id} className={cn("rounded-xl border bg-white/[0.02] overflow-hidden transition-all", p.is_active ? "border-white/5" : "border-white/5 opacity-60")}>
+            {/* Main Row */}
+            <div className="p-4 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                {p.avatar_url ? (
+                  <img src={p.avatar_url} alt={p.username} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white/50 text-sm font-bold">{(p.username || "?")[0].toUpperCase()}</span>
+                )}
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-white">@{p.username}</span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                  {p.persona_style}
-                </span>
-                {!p.is_active && (
-                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
-                    paused
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-white">@{p.username}</span>
+                  {p.display_name && p.display_name !== p.username && (
+                    <span className="text-xs text-white/30">({p.display_name})</span>
+                  )}
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    {p.persona_style}
                   </span>
-                )}
+                  {p.is_verified && (
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">verified</span>
+                  )}
+                  {!p.is_active && (
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">paused</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                  <span className="text-xs text-white/30">{p.preferred_games?.join(", ") || "all games"}</span>
+                  <span className="text-xs text-white/20">|</span>
+                  <span className="text-xs text-white/30">{p.total_actions} actions</span>
+                  {p.last_action_at && (
+                    <>
+                      <span className="text-xs text-white/20">|</span>
+                      <span className="text-xs text-white/30">last: {timeAgo(p.last_action_at)}</span>
+                    </>
+                  )}
+                </div>
+                {p.bio_note && <p className="text-xs text-white/20 mt-0.5 italic">{p.bio_note}</p>}
               </div>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="text-xs text-white/30">
-                  {p.preferred_games?.join(", ") || "all games"}
-                </span>
-                <span className="text-xs text-white/20">|</span>
-                <span className="text-xs text-white/30">{p.total_actions} actions</span>
-                {p.last_action_at && (
-                  <>
-                    <span className="text-xs text-white/20">|</span>
-                    <span className="text-xs text-white/30">last: {timeAgo(p.last_action_at)}</span>
-                  </>
-                )}
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => handleToggle(p.id, p.is_active)}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    p.is_active ? "text-green-400 hover:bg-green-500/10" : "text-white/30 hover:bg-white/5",
+                  )}
+                  title={p.is_active ? "Pause" : "Activate"}
+                >
+                  {p.is_active ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => handleEdit(p)}
+                  className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+                  title="Edit profile & persona"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    expandedId === p.id ? "text-violet-400 bg-violet-500/10" : "text-white/30 hover:text-white/60 hover:bg-white/5",
+                  )}
+                  title="View details"
+                >
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", expandedId === p.id && "rotate-180")} />
+                </button>
               </div>
-              {p.bio_note && <p className="text-xs text-white/20 mt-0.5 italic">{p.bio_note}</p>}
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => handleToggle(p.id, p.is_active)}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  p.is_active
-                    ? "text-green-400 hover:bg-green-500/10"
-                    : "text-white/30 hover:bg-white/5",
+            {/* Expanded Profile Details */}
+            {expandedId === p.id && (
+              <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Email</span>
+                    <p className="text-sm text-white/60">{p.email || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Profile ID</span>
+                    <p className="text-sm text-white/40 font-mono text-[11px] break-all">{p.profile_id}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Gaming Style</span>
+                    <p className="text-sm text-white/60">{p.gaming_style || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Region</span>
+                    <p className="text-sm text-white/60">{p.region || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Status</span>
+                    <p className="text-sm text-white/60">{p.status || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Posting Style</span>
+                    <p className="text-sm text-white/60">{p.posting_style}</p>
+                  </div>
+                </div>
+
+                {p.bio && (
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/30 uppercase tracking-wider">Bio</span>
+                    <p className="text-sm text-white/50">{p.bio}</p>
+                  </div>
                 )}
-                title={p.is_active ? "Pause" : "Activate"}
-              >
-                {p.is_active ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-              </button>
-              <button
-                onClick={() => handleEdit(p)}
-                className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(p.id)}
-                className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+
+                {/* Avatar & Banner preview */}
+                <div className="flex gap-3 flex-wrap">
+                  {p.avatar_url && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-white/30 uppercase tracking-wider">Avatar</span>
+                      <div className="w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+                        <img src={p.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  )}
+                  {p.banner_url && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-white/30 uppercase tracking-wider">Banner</span>
+                      <div className="w-32 h-16 rounded-lg overflow-hidden border border-white/10">
+                        <img src={p.banner_url} alt="banner" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-300 text-xs hover:bg-violet-500/20 transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Edit Profile & Persona
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id, false)}
+                    disabled={deletingId === p.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 text-white/40 text-xs hover:bg-white/10 hover:text-white/60 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" /> Unlink Persona
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id, true)}
+                    disabled={deletingId === p.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors ml-auto"
+                  >
+                    {deletingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                    Delete Full Account
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
 
         {personas.length === 0 && (
           <div className="text-center py-12 text-white/30 text-sm">
-            No personas configured yet. Add one to get started.
+            No personas configured yet. Create a bot account or link an existing profile to get started.
           </div>
         )}
       </div>
