@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/auth.config";
 import { validateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
+import { verifyAdminTokenLight } from "@/lib/security/admin-token-edge";
 
 // Global rate limiter for public API mutations: 60 requests per minute
 const apiRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60 });
@@ -52,13 +53,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin API routes (except verify-pin) require the PIN cookie server-side
+  // Admin API routes (except verify-pin) require a valid signed admin token
   if (isAdminApi && !isVerifyPinRoute && !isCheckPinRoute) {
-    if (!user) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const pinCookie = request.cookies.get("admin_pin_verified");
-    if (pinCookie?.value !== "true") {
+    if (!pinCookie?.value || !verifyAdminTokenLight(pinCookie.value, user.id)) {
       return NextResponse.json({ error: "Admin PIN verification required" }, { status: 403 });
     }
 

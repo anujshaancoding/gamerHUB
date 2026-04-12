@@ -60,7 +60,7 @@ export function QuestCard({ quest, onClaim, compact = false }: QuestCardProps) {
           {quest.quest.icon_url ? (
             <img
               src={quest.quest.icon_url}
-              alt=""
+              alt={`${quest.quest.name} icon`}
               className={compact ? "w-5 h-5" : "w-6 h-6"}
             />
           ) : (

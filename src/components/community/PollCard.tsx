@@ -155,7 +155,7 @@ export function PollCard({ poll, onVote, isVoting }: PollCardProps) {
                   {option.image_url && (
                     <img
                       src={option.image_url}
-                      alt=""
+                      alt={option.option_text}
                       className="w-8 h-8 rounded object-cover"
                     />
                   )}

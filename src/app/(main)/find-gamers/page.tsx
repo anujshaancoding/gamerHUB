@@ -36,6 +36,7 @@ import {
 } from "@/lib/hooks/useLFG";
 import { DURATION_OPTIONS } from "@/types/lfg";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import type { Profile, UserGame, Game } from "@/types/database";
 import type { LFGPost, LFGFilters, CreateLFGPostInput } from "@/types/lfg";
 
@@ -120,10 +121,13 @@ function LFGPostCard({
         {/* Creator Info */}
         <div className="flex items-center gap-2">
           {post.creator?.avatar_url ? (
-            <img
+            <Image
               src={post.creator.avatar_url}
-              alt=""
+              alt={`${post.creator.display_name || post.creator.username || "User"}'s avatar`}
+              width={24}
+              height={24}
               className="h-6 w-6 rounded-full object-cover"
+              unoptimized
             />
           ) : (
             <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">

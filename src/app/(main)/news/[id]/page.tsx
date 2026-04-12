@@ -64,6 +64,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: article.thumbnail_url ? [article.thumbnail_url] : undefined,
     },
+    alternates: {
+      canonical: `https://gglobby.in/news/${id}`,
+    },
   };
 }
 
@@ -83,5 +86,29 @@ export default async function NewsArticlePage({ params }: Props) {
   const admin = createAdminClient();
   admin.rpc("increment_news_view", { article_id: id }).then(() => {}, () => {});
 
-  return <NewsDetailClient article={article} />;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt || article.summary?.slice(0, 160) || "",
+    image: article.thumbnail_url || undefined,
+    datePublished: article.published_at || undefined,
+    url: `https://gglobby.in/news/${id}`,
+    publisher: {
+      "@type": "Organization",
+      name: "ggLobby",
+      url: "https://gglobby.in",
+    },
+    ...(article.source?.name ? { author: { "@type": "Organization", name: article.source.name } } : {}),
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <NewsDetailClient article={article} />
+    </>
+  );
 }

@@ -410,7 +410,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Automation cron error:", error);
     return NextResponse.json(
-      { action: "error", details: String(error) },
+      { action: "error", details: "Automation task failed" },
       { status: 500 },
     );
   }
@@ -430,7 +430,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Automation manual trigger error:", error);
     return NextResponse.json(
-      { action: "error", details: String(error) },
+      { action: "error", details: "Automation task failed" },
       { status: 500 },
     );
   }

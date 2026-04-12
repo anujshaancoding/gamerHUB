@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Community Guidelines",
   description: "The rules that keep ggLobby a positive, fair, and fun gaming community for everyone.",
+  alternates: { canonical: "https://gglobby.in/guidelines" },
 };
 
 export default function CommunityGuidelinesPage() {

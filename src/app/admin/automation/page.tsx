@@ -1493,7 +1493,7 @@ function LogsTab({
           <div key={log.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-3 flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
               {log.avatar_url ? (
-                <img src={log.avatar_url} alt="" className="w-full h-full object-cover" />
+                <img src={log.avatar_url} alt={`${log.persona_username}'s avatar`} className="w-full h-full object-cover" />
               ) : (
                 <Bot className="h-4 w-4 text-white/30" />
               )}

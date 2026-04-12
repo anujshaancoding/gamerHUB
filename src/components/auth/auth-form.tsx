@@ -74,8 +74,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
         }
-        if (password.length < 6) {
-          throw new Error("Password must be at least 6 characters");
+        if (password.length < 8) {
+          throw new Error("Password must be at least 8 characters");
+        }
+        if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+          throw new Error("Password must contain at least one letter and one number");
         }
         const { data, error } = await signUpWithEmail(email, password, username);
         if (error) throw error;
@@ -219,7 +222,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               </button>
             }
             required
-            minLength={6}
+            minLength={8}
           />
           {!isLogin && (
             <Input
@@ -243,7 +246,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </button>
               }
               required
-              minLength={6}
+              minLength={8}
             />
           )}
 

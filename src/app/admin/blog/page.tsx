@@ -250,7 +250,7 @@ export default function AdminBlogPage() {
                         {post.featured_image_url && (
                           <img
                             src={post.featured_image_url}
-                            alt=""
+                            alt={post.title}
                             className="h-10 w-14 rounded object-cover hidden sm:block"
                           />
                         )}
@@ -275,7 +275,7 @@ export default function AdminBlogPage() {
                         {author?.avatar_url ? (
                           <img
                             src={author.avatar_url}
-                            alt=""
+                            alt={`${author.display_name || author.username || "Author"}'s avatar`}
                             className="h-6 w-6 rounded-full"
                           />
                         ) : (

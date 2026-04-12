@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
@@ -32,6 +33,46 @@ import type { Profile, TraitEndorsementStats, TrustBadges, StandingLevel } from 
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
+}
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const db = createClient();
+  const { data: profile } = await db
+    .from("profiles")
+    .select("username, display_name, bio, avatar_url")
+    .eq("username", username)
+    .single();
+
+  if (!profile) {
+    return { title: "Gamer Not Found" };
+  }
+
+  const displayName = profile.display_name as string | null;
+  const bio = profile.bio as string | null;
+  const avatarUrl = profile.avatar_url as string | null;
+
+  const title = displayName || (profile.username as string);
+  const description = bio?.slice(0, 160) || `Check out ${title}'s gaming profile on ggLobby`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | ggLobby`,
+      description,
+      images: avatarUrl ? [{ url: avatarUrl }] : [],
+      type: "profile",
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | ggLobby`,
+      description,
+    },
+    alternates: {
+      canonical: `https://gglobby.in/profile/${username}`,
+    },
+  };
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {

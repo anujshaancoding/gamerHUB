@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "Read the terms and conditions for using ggLobby.",
+  alternates: { canonical: "https://gglobby.in/terms" },
 };
 
 export default function TermsOfServicePage() {

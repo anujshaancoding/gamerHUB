@@ -122,7 +122,7 @@ export function NotificationItem({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={notification.image_url}
-            alt=""
+            alt="Notification preview"
             className="rounded-lg max-h-32 object-cover"
           />
         </div>

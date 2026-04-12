@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { sanitizeHtml } from "@/lib/utils/sanitize";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -452,11 +453,14 @@ export function CommunityPostPage() {
         {/* Cover Image */}
         {post.featured_image_url && (
           <div className="relative aspect-video rounded-xl overflow-hidden mb-8">
-            <img
+            <Image
               src={post.featured_image_url}
               alt={post.title}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/banners/gaming-1.svg'; }}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              unoptimized
+              onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = '/images/banners/gaming-1.svg'; }}
             />
             {/* Overlays */}
             <div className="absolute top-4 left-4 flex gap-2">

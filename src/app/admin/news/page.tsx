@@ -806,7 +806,7 @@ export default function AdminNewsPage() {
                         {article.thumbnail_url && (
                           <img
                             src={article.thumbnail_url}
-                            alt=""
+                            alt={article.title}
                             className="h-10 w-14 rounded object-cover hidden sm:block flex-shrink-0"
                           />
                         )}

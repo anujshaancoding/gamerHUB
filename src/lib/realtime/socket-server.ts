@@ -74,7 +74,9 @@ export function setupSocketHandlers(io: Server) {
       }
 
       // Record heartbeat activity
-      await sql`SELECT record_heartbeat_activity(${userId})`.catch(() => {});
+      await sql`SELECT record_heartbeat_activity(${userId})`.catch((err) => {
+        console.error(`[SOCKET] record_heartbeat_activity failed on connect for ${userId.slice(0, 8)}...:`, err?.message || err);
+      });
     } catch {
       // DB might not be ready yet
     }
@@ -158,9 +160,11 @@ export function setupSocketHandlers(io: Server) {
           UPDATE profiles SET last_seen = NOW(), is_online = true
           WHERE id = ${userId}
         `;
-        await sql`SELECT record_heartbeat_activity(${userId})`.catch(() => {});
-      } catch {
-        // Ignore heartbeat errors
+        await sql`SELECT record_heartbeat_activity(${userId})`.catch((err) => {
+          console.error(`[SOCKET] record_heartbeat_activity failed in heartbeat for ${userId.slice(0, 8)}...:`, err?.message || err);
+        });
+      } catch (err) {
+        console.error(`[SOCKET] Heartbeat DB error for ${userId.slice(0, 8)}...:`, (err as Error)?.message || err);
       }
     }, 30000);
 

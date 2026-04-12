@@ -155,7 +155,7 @@ export default function AdminAuthorsPage() {
                         {author.user?.avatar_url ? (
                           <img
                             src={author.user.avatar_url}
-                            alt=""
+                            alt={`${author.user.display_name || author.user.username || "Author"}'s avatar`}
                             className="h-8 w-8 rounded-full"
                           />
                         ) : (

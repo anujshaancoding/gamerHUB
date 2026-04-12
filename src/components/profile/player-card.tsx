@@ -74,6 +74,7 @@ export function PlayerCard({ profile, primaryGame, powerLevel = 0, level = 1 }: 
           <img
             src={theme.watermark.iconPath}
             alt=""
+            role="presentation"
             className="w-24 h-24 select-none"
             style={{ filter: "brightness(0) invert(1)" }}
             onError={(e) => { e.currentTarget.style.display = 'none'; }}

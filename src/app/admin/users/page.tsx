@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {user.avatar_url ? (
-                          <Image src={user.avatar_url} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
+                          <Image src={user.avatar_url} alt={`${user.display_name || user.username || "User"}'s avatar`} width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/40">
                             {(user.username || "?")[0].toUpperCase()}
