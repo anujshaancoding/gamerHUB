@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-04-12T14:00:00",
+    version: "1.18.1",
+    type: "fix",
+    title: "Activity Calendar Fixed & Loading Improvements",
+    description: "Fixed the profile activity calendar that had been showing all zeros since late February, and added loading skeletons and not-found pages across the platform.",
+    highlights: [
+      "Fixed activity tracking: heartbeat was silently failing — activity calendar and streak stats now work correctly",
+      "Added loading skeletons for LFG, News, Help, Notifications, Premium, Search, Settings, Updates, and more",
+      "Added proper not-found pages for profiles, community posts, news articles, and clans",
+    ],
+  },
+  {
     date: "2026-03-30T18:00:00",
     version: "1.18.0",
     type: "feature",
