@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { isPromoPeriodActive } from "@/lib/promo";
-import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 import type { Clan } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 import { parsePagination } from "@/lib/security/pagination";

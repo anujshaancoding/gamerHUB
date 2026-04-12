@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { CreateGuideRequest } from "@/types/community";
 import { getUser } from "@/lib/auth/get-user";
-import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 
 function generateSlug(title: string): string {
   return title

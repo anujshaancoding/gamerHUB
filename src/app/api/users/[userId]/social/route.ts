@@ -3,7 +3,7 @@ import { createClient } from "@/lib/db/client";
 import {
   getUserFriendsList,
 } from "@/lib/db/rpc-types";
-import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 import type { Profile } from "@/types/database";
 
 export interface ProfileWithRelationship extends Profile {

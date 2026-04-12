@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
-import { sanitizeSearchQuery } from "@/lib/utils/sanitize";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 
 // GET - List recruitment posts
 export async function GET(request: NextRequest) {
