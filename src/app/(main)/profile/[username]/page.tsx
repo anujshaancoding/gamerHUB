@@ -55,19 +55,22 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const title = displayName || (profile.username as string);
   const description = bio?.slice(0, 160) || `Check out ${title}'s gaming profile on ggLobby`;
 
+  const ogImageUrl = `https://gglobby.in/api/og/profile?username=${encodeURIComponent(username)}`;
+
   return {
     title,
     description,
     openGraph: {
       title: `${title} | ggLobby`,
       description,
-      images: avatarUrl ? [{ url: avatarUrl }] : [],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${title}'s gaming profile` }],
       type: "profile",
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${title} | ggLobby`,
       description,
+      images: [ogImageUrl],
     },
     alternates: {
       canonical: `https://gglobby.in/profile/${username}`,
@@ -489,6 +492,24 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       role: userGames[0].role,
                       icon_url: userGames[0].game?.icon_url,
                     } : null}
+                    ggCardData={{
+                      level: 0,
+                      currentXp: 0,
+                      xpToNext: 1000,
+                      totalXp: 0,
+                      prestigeLevel: 0,
+                      matchesPlayed: (profile as unknown as { total_matches_played?: number }).total_matches_played || 0,
+                      matchesWon: 0,
+                      currentStreak: currentStreak,
+                      bestStreak: longestStreak,
+                      gamesLinked: userGames?.length || 0,
+                      badgeCount: userBadges?.length || 0,
+                      isPremium: isPremium,
+                      clanName: (clanMemberships as unknown as Array<{ clan: { name: string; tag: string } }>)?.[0]?.clan?.name || null,
+                      clanTag: (clanMemberships as unknown as Array<{ clan: { name: string; tag: string } }>)?.[0]?.clan?.tag || null,
+                      primaryGame: null,
+                      region: profile.region,
+                    }}
                   />
                 </div>
                 {/* Row 2: Games (hero) + Stat Trackers */}

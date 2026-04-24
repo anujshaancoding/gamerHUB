@@ -48,6 +48,7 @@ const RPC_ALLOWLIST = new Set([
   "search_profiles",
   "get_trending_posts",
   "get_community_stats",
+  "increment_blog_view",
 ]);
 
 // Tables where the user_id must match the authenticated user

@@ -155,7 +155,11 @@ export function CommunityPostPage() {
     const viewKey = `viewed_blog_${post.slug}`;
     if (!sessionStorage.getItem(viewKey)) {
       sessionStorage.setItem(viewKey, "1");
-      db.rpc("increment_blog_view", { post_slug: post.slug }).then();
+      db.rpc("increment_blog_view", { post_slug: post.slug }).then((result) => {
+        if (result.error) {
+          console.error("Failed to increment blog view:", result.error);
+        }
+      });
     }
   }, [post?.slug, db]);
 
