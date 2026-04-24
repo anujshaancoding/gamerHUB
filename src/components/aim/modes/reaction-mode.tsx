@@ -19,6 +19,7 @@ export function ReactionMode({ onComplete }: Props) {
   const [lastTime, setLastTime] = useState<number | null>(null);
   const startRef = useRef<number>(0);
   const timerRef = useRef<number | null>(null);
+  const mouseDownRef = useRef(false);
 
   const clearTimer = () => {
     if (timerRef.current !== null) {
@@ -45,7 +46,10 @@ export function ReactionMode({ onComplete }: Props) {
     scheduleGo();
   };
 
-  const handleClick = () => {
+  const handlePress = (e: React.PointerEvent | React.MouseEvent) => {
+    e.preventDefault();
+    if (mouseDownRef.current) return; // ignore key-repeat / double-fire
+    mouseDownRef.current = true;
     if (phase === "waiting") {
       clearTimer();
       setPhase("tooEarly");
@@ -118,9 +122,11 @@ export function ReactionMode({ onComplete }: Props) {
       </div>
 
       <button
-        onClick={handleClick}
+        onPointerDown={handlePress}
+        onPointerUp={() => { mouseDownRef.current = false; }}
+        onPointerCancel={() => { mouseDownRef.current = false; }}
         disabled={phase === "idle" || phase === "done"}
-        className={`w-full h-[60vh] min-h-[320px] rounded-2xl border border-border flex items-center justify-center transition-colors duration-150 text-2xl sm:text-4xl font-bold text-white select-none ${bg} ${phase === "idle" ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+        className={`w-full h-[60vh] min-h-[320px] rounded-2xl border border-border flex items-center justify-center text-2xl sm:text-4xl font-bold text-white select-none touch-none ${bg} ${phase === "idle" ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
       >
         {label}
       </button>

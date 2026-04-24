@@ -157,9 +157,12 @@ export function DailyMode({ onComplete }: Props) {
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      clearTimers();
     };
   }, [resize, loop]);
+
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
 
   const randomShot = (rng: Seeded, pad = 40): { x: number; y: number } => {
     const { w, h } = sizeRef.current;

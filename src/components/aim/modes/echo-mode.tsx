@@ -149,9 +149,12 @@ export function EchoMode({ onComplete }: Props) {
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      clearTimers();
     };
   }, [resize, loop]);
+
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
 
   const generate = (len: number): Shot[] => {
     const { w, h } = sizeRef.current;

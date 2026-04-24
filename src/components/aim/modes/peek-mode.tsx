@@ -203,9 +203,14 @@ export function PeekMode({ onComplete }: Props) {
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      clearTimers();
     };
   }, [resize, loop]);
+
+  // Timers must only be cleared on unmount, not whenever the RAF loop closure
+  // re-creates (which happens on every phase/round change).
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
 
   const begin = () => {
     clearTimers();

@@ -225,9 +225,12 @@ export function ClutchMode({ onComplete }: Props) {
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      clearTimers();
     };
   }, [resize, loop]);
+
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
 
   const begin = async () => {
     clearTimers();
