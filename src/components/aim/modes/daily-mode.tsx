@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import type { AimResult } from "../types";
+import { usePointerLockAim } from "../use-pointer-lock-aim";
+import { SensitivityInlineHint } from "../sensitivity-bar";
 
 // Daily Gauntlet (ggLobby original): a seeded three-stage gauntlet.
 // Same puzzle for every player each day. Score is a composite:
@@ -80,6 +82,8 @@ export function DailyMode({ onComplete }: Props) {
   const [displayPoints, setDisplayPoints] = useState(0);
   const { seed, label } = todaySeed();
 
+  const aim = usePointerLockAim(canvasRef, wrapRef, sizeRef);
+
   const clearTimers = () => {
     for (const id of timersRef.current) window.clearTimeout(id);
     timersRef.current = [];
@@ -100,7 +104,8 @@ export function DailyMode({ onComplete }: Props) {
     const ctx = canvas.getContext("2d");
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     sizeRef.current = { w, h };
-  }, []);
+    aim.center();
+  }, [aim]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -143,7 +148,9 @@ export function DailyMode({ onComplete }: Props) {
         }
       }
     }
-  }, []);
+
+    aim.drawCrosshair(ctx);
+  }, [aim]);
 
   const loop = useCallback(() => {
     draw();
@@ -297,14 +304,12 @@ export function DailyMode({ onComplete }: Props) {
     await beginStage1();
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (phase !== "playing") return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const handleClick = () => {
+    if (phase !== "playing") {
+      aim.requestLock();
+      return;
+    }
+    const { x, y } = aim.getPosition();
     const stage = stageRef.current;
     if (stage === "s1") {
       const s = s1ShotsRef.current[s1IndexRef.current];
@@ -370,14 +375,17 @@ export function DailyMode({ onComplete }: Props) {
         {phase === "playing" && stageRef.current === "s3" && <span className="text-text-muted">Stage 3 · RED only — don't click blue</span>}
       </div>
 
+      <SensitivityInlineHint locked={aim.locked} />
+
       <div
         ref={wrapRef}
+        onClick={handleClick}
         className="relative w-full rounded-2xl overflow-hidden border border-border bg-surface"
       >
         <canvas
           ref={canvasRef}
-          onClick={handleClick}
-          className="block w-full cursor-crosshair bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          className="block w-full cursor-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          style={{ touchAction: "none" }}
         />
         {stageLabel && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

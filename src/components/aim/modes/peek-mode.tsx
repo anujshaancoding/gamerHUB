@@ -3,20 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import type { AimResult } from "../types";
+import { usePointerLockAim } from "../use-pointer-lock-aim";
+import { SensitivityInlineHint } from "../sensitivity-bar";
 
 // Peek Duel (ggLobby original): targets appear briefly from behind cover.
 // Each round the window shrinks. Pre-aim is the point — you cannot flick in time.
 
 const ROUNDS = 10;
 const WINDOW_MS = (round: number) => Math.max(160, 520 - round * 36);
-const PRE_DELAY_MS = 650;
-
-type Phase = "idle" | "waiting" | "peek" | "resolved" | "done";
+const PRE_DELAY_MIN = 650;
+const PRE_DELAY_JITTER = 400;
 
 interface CoverSlot {
   x: number;
   y: number;
-  side: "left" | "right" | "top" | "bottom";
 }
 
 interface Props {
@@ -30,153 +30,58 @@ export function PeekMode({ onComplete }: Props) {
   const slotsRef = useRef<CoverSlot[]>([]);
   const activeRef = useRef<CoverSlot | null>(null);
   const peekStartRef = useRef(0);
+  const peekWindowRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const timeoutsRef = useRef<number[]>([]);
+  const timersRef = useRef<number[]>([]);
+  const finishedRef = useRef(false);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const phaseRef = useRef<"idle" | "waiting" | "peek" | "resolved" | "done">("idle");
+  const roundRef = useRef(0);
+  const hitsRef = useRef(0);
+  const streakRef = useRef(0);
+  const bestStreakRef = useRef(0);
+  const flashRef = useRef<"hit" | "miss" | null>(null);
+
+  // display mirrors
+  const [phase, setPhase] = useState<"idle" | "waiting" | "peek" | "resolved" | "done">("idle");
   const [round, setRound] = useState(0);
   const [hits, setHits] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [flash, setFlash] = useState<"hit" | "miss" | null>(null);
 
+  const aim = usePointerLockAim(canvasRef, wrapRef, sizeRef);
+
+  const setPhaseBoth = useCallback((p: typeof phaseRef.current) => {
+    phaseRef.current = p;
+    setPhase(p);
+  }, []);
+
+  const setFlashBoth = useCallback((f: "hit" | "miss" | null) => {
+    flashRef.current = f;
+    setFlash(f);
+  }, []);
+
+  const pushTimer = (id: number) => timersRef.current.push(id);
+  const clearAllTimers = () => {
+    for (const id of timersRef.current) window.clearTimeout(id);
+    timersRef.current = [];
+  };
+
   const rebuildSlots = useCallback(() => {
     const { w, h } = sizeRef.current;
     const pad = 70;
     slotsRef.current = [
-      { x: pad, y: h / 2, side: "left" },
-      { x: w - pad, y: h / 2, side: "right" },
-      { x: w / 2, y: pad, side: "top" },
-      { x: w / 2, y: h - pad, side: "bottom" },
-      { x: w * 0.28, y: h * 0.3, side: "top" },
-      { x: w * 0.72, y: h * 0.7, side: "bottom" },
-      { x: w * 0.25, y: h * 0.75, side: "left" },
-      { x: w * 0.78, y: h * 0.28, side: "right" },
+      { x: pad, y: h / 2 },
+      { x: w - pad, y: h / 2 },
+      { x: w / 2, y: pad },
+      { x: w / 2, y: h - pad },
+      { x: w * 0.28, y: h * 0.3 },
+      { x: w * 0.72, y: h * 0.7 },
+      { x: w * 0.25, y: h * 0.75 },
+      { x: w * 0.78, y: h * 0.28 },
     ];
   }, []);
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const { w, h } = sizeRef.current;
-    ctx.clearRect(0, 0, w, h);
-
-    // draw cover blocks
-    ctx.fillStyle = "rgba(148, 163, 184, 0.16)";
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
-    ctx.lineWidth = 2;
-    for (const slot of slotsRef.current) {
-      ctx.beginPath();
-      ctx.arc(slot.x, slot.y, 34, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // crosshair hint dot at center
-    ctx.fillStyle = "rgba(139, 92, 246, 0.6)";
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // active peeking target
-    const active = activeRef.current;
-    if (active && phase === "peek") {
-      const age = performance.now() - peekStartRef.current;
-      const window = WINDOW_MS(round);
-      const fade = Math.min(1, age / 80);
-      const exit = age > window - 80 ? Math.max(0, (window - age) / 80) : 1;
-      const alpha = fade * exit;
-
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      ctx.arc(active.x, active.y, 30, 0, Math.PI * 2);
-      ctx.fillStyle = "#ef4444";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(active.x, active.y, 14, 0, Math.PI * 2);
-      ctx.fillStyle = "#fecaca";
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  }, [phase, round]);
-
-  const loop = useCallback(() => {
-    draw();
-    rafRef.current = requestAnimationFrame(loop);
-  }, [draw]);
-
-  const clearTimers = () => {
-    for (const id of timeoutsRef.current) window.clearTimeout(id);
-    timeoutsRef.current = [];
-  };
-
-  const endRoundOutcome = useCallback((hit: boolean) => {
-    setFlash(hit ? "hit" : "miss");
-    setTimeout(() => setFlash(null), 220);
-
-    setStreak((s) => {
-      const next = hit ? s + 1 : 0;
-      setBestStreak((b) => Math.max(b, next));
-      return next;
-    });
-
-    if (hit) setHits((h) => h + 1);
-
-    activeRef.current = null;
-    setPhase("resolved");
-
-    const id = window.setTimeout(() => {
-      setRound((r) => {
-        const next = r + 1;
-        if (next >= ROUNDS) {
-          // done
-          setPhase("done");
-          setTimeout(() => {
-            setHits((finalHits) => {
-              setBestStreak((finalBest) => {
-                onComplete({
-                  mode: "peek",
-                  score: finalHits,
-                  label: `${finalHits}/10 peeks`,
-                  detail: `Best streak: ${finalBest} · windows tightened each round`,
-                  playedAt: Date.now(),
-                });
-                return finalBest;
-              });
-              return finalHits;
-            });
-          }, 200);
-          return next;
-        }
-        // queue next peek
-        startPeek(next);
-        return next;
-      });
-    }, 480);
-    timeoutsRef.current.push(id);
-  }, [onComplete]);
-
-  const startPeek = useCallback((roundIndex: number) => {
-    const slots = slotsRef.current;
-    const active = slots[Math.floor(Math.random() * slots.length)];
-    activeRef.current = active;
-    setPhase("waiting");
-
-    const t1 = window.setTimeout(() => {
-      peekStartRef.current = performance.now();
-      setPhase("peek");
-      const t2 = window.setTimeout(() => {
-        // window closed without hit
-        if (activeRef.current) {
-          endRoundOutcome(false);
-        }
-      }, WINDOW_MS(roundIndex));
-      timeoutsRef.current.push(t2);
-    }, PRE_DELAY_MS + Math.random() * 400);
-    timeoutsRef.current.push(t1);
-  }, [endRoundOutcome]);
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current;
@@ -194,7 +99,60 @@ export function PeekMode({ onComplete }: Props) {
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     sizeRef.current = { w, h };
     rebuildSlots();
-  }, [rebuildSlots]);
+    aim.center();
+  }, [rebuildSlots, aim]);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const { w, h } = sizeRef.current;
+    ctx.clearRect(0, 0, w, h);
+
+    // cover blocks
+    ctx.fillStyle = "rgba(148, 163, 184, 0.16)";
+    ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
+    ctx.lineWidth = 2;
+    for (const slot of slotsRef.current) {
+      ctx.beginPath();
+      ctx.arc(slot.x, slot.y, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // center hint dot
+    ctx.fillStyle = "rgba(139, 92, 246, 0.6)";
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    const active = activeRef.current;
+    if (active && phaseRef.current === "peek") {
+      const age = performance.now() - peekStartRef.current;
+      const windowMs = peekWindowRef.current;
+      const fade = Math.min(1, age / 80);
+      const exit = age > windowMs - 80 ? Math.max(0, (windowMs - age) / 80) : 1;
+      const alpha = fade * exit;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(active.x, active.y, 30, 0, Math.PI * 2);
+      ctx.fillStyle = "#ef4444";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(active.x, active.y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = "#fecaca";
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    aim.drawCrosshair(ctx);
+  }, [aim]);
+
+  const loop = useCallback(() => {
+    draw();
+    rafRef.current = requestAnimationFrame(loop);
+  }, [draw]);
 
   useEffect(() => {
     resize();
@@ -206,34 +164,108 @@ export function PeekMode({ onComplete }: Props) {
     };
   }, [resize, loop]);
 
-  // Timers must only be cleared on unmount, not whenever the RAF loop closure
-  // re-creates (which happens on every phase/round change).
   useEffect(() => {
-    return () => clearTimers();
+    return () => clearAllTimers();
   }, []);
 
+  // --- progression ---
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    clearAllTimers();
+    setPhaseBoth("done");
+    const finalHits = hitsRef.current;
+    const finalBest = bestStreakRef.current;
+    setTimeout(() => {
+      onComplete({
+        mode: "peek",
+        score: finalHits,
+        label: `${finalHits}/${ROUNDS} peeks`,
+        detail: `Best streak: ${finalBest} · windows tightened each round`,
+        playedAt: Date.now(),
+      });
+    }, 200);
+  }, [onComplete, setPhaseBoth]);
+
+  const resolveRound = useCallback((hit: boolean) => {
+    if (phaseRef.current !== "peek") return;
+    setFlashBoth(hit ? "hit" : "miss");
+    pushTimer(window.setTimeout(() => setFlashBoth(null), 220));
+
+    if (hit) {
+      hitsRef.current += 1;
+      setHits(hitsRef.current);
+      streakRef.current += 1;
+    } else {
+      streakRef.current = 0;
+    }
+    if (streakRef.current > bestStreakRef.current) {
+      bestStreakRef.current = streakRef.current;
+      setBestStreak(bestStreakRef.current);
+    }
+    setStreak(streakRef.current);
+
+    activeRef.current = null;
+    setPhaseBoth("resolved");
+
+    pushTimer(window.setTimeout(() => {
+      const nextRound = roundRef.current + 1;
+      roundRef.current = nextRound;
+      setRound(nextRound);
+      if (nextRound >= ROUNDS) {
+        finish();
+      } else {
+        startPeek();
+      }
+    }, 460));
+  }, [finish, setFlashBoth, setPhaseBoth]);
+
+  const startPeek = useCallback(() => {
+    const slots = slotsRef.current;
+    if (slots.length === 0) return;
+    const active = slots[Math.floor(Math.random() * slots.length)];
+    activeRef.current = active;
+    setPhaseBoth("waiting");
+
+    pushTimer(window.setTimeout(() => {
+      if (phaseRef.current !== "waiting") return;
+      peekStartRef.current = performance.now();
+      peekWindowRef.current = WINDOW_MS(roundRef.current);
+      setPhaseBoth("peek");
+
+      pushTimer(window.setTimeout(() => {
+        if (phaseRef.current === "peek" && activeRef.current) {
+          resolveRound(false);
+        }
+      }, peekWindowRef.current));
+    }, PRE_DELAY_MIN + Math.random() * PRE_DELAY_JITTER));
+  }, [resolveRound, setPhaseBoth]);
+
   const begin = () => {
-    clearTimers();
+    clearAllTimers();
+    finishedRef.current = false;
+    roundRef.current = 0;
+    hitsRef.current = 0;
+    streakRef.current = 0;
+    bestStreakRef.current = 0;
     setRound(0);
     setHits(0);
     setStreak(0);
     setBestStreak(0);
-    startPeek(0);
+    aim.center();
+    startPeek();
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (phase !== "peek") return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleClick = () => {
+    if (phaseRef.current !== "peek") {
+      aim.requestLock();
+      return;
+    }
     const active = activeRef.current;
     if (!active) return;
-    const dx = x - active.x;
-    const dy = y - active.y;
-    const hit = Math.sqrt(dx * dx + dy * dy) <= 34;
-    endRoundOutcome(hit);
+    const { x, y } = aim.getPosition();
+    const hit = Math.hypot(x - active.x, y - active.y) <= 34;
+    resolveRound(hit);
   };
 
   return (
@@ -254,8 +286,11 @@ export function PeekMode({ onComplete }: Props) {
         )}
       </div>
 
+      <SensitivityInlineHint locked={aim.locked} />
+
       <div
         ref={wrapRef}
+        onClick={handleClick}
         className={`w-full rounded-2xl overflow-hidden border transition-colors ${
           flash === "hit"
             ? "border-success bg-success/10"
@@ -264,15 +299,11 @@ export function PeekMode({ onComplete }: Props) {
             : "border-border bg-surface"
         }`}
       >
-        <canvas
-          ref={canvasRef}
-          onClick={handleClick}
-          className="block w-full cursor-crosshair"
-        />
+        <canvas ref={canvasRef} className="block w-full cursor-none" style={{ touchAction: "none" }} />
       </div>
 
       <p className="text-xs text-text-muted mt-3 text-center">
-        Tip: Park your crosshair at head height on the cover you're most afraid of.
+        Tip: Park your crosshair where the peek is most likely. Click inside the arena to lock/unlock the mouse.
       </p>
     </div>
   );

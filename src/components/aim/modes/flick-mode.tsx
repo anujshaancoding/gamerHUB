@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import type { AimResult } from "../types";
+import { usePointerLockAim } from "../use-pointer-lock-aim";
+import { SensitivityInlineHint } from "../sensitivity-bar";
 
 const DURATION_MS = 30_000;
 const TARGET_RADIUS = 28;
@@ -29,11 +31,14 @@ export function FlickMode({ onComplete }: Props) {
   const hitTimesRef = useRef<number[]>([]);
   const rafRef = useRef<number | null>(null);
   const sizeRef = useRef<{ w: number; h: number }>({ w: 800, h: 500 });
+  const lastDisplayRef = useRef(0);
 
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [remaining, setRemaining] = useState(DURATION_MS / 1000);
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
+
+  const aim = usePointerLockAim(canvasRef, wrapRef, sizeRef);
 
   const spawnTarget = useCallback(() => {
     const { w, h } = sizeRef.current;
@@ -51,7 +56,6 @@ export function FlickMode({ onComplete }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const { w, h } = sizeRef.current;
-
     ctx.clearRect(0, 0, w, h);
 
     const target = targetRef.current;
@@ -59,27 +63,27 @@ export function FlickMode({ onComplete }: Props) {
       const age = performance.now() - target.spawnedAt;
       const pulse = 1 + Math.sin(age / 120) * 0.04;
       const r = TARGET_RADIUS * pulse;
-
       ctx.beginPath();
       ctx.arc(target.x, target.y, r + 6, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
       ctx.fill();
-
       ctx.beginPath();
       ctx.arc(target.x, target.y, r, 0, Math.PI * 2);
       ctx.fillStyle = "#ef4444";
       ctx.fill();
-
       ctx.beginPath();
       ctx.arc(target.x, target.y, r * 0.45, 0, Math.PI * 2);
       ctx.fillStyle = "#fca5a5";
       ctx.fill();
     }
-  }, []);
+
+    aim.drawCrosshair(ctx);
+  }, [aim]);
 
   const loop = useCallback(() => {
     if (!runningRef.current) return;
-    const left = endAtRef.current - performance.now();
+    const now = performance.now();
+    const left = endAtRef.current - now;
     if (left <= 0) {
       runningRef.current = false;
       const totalHits = hitsRef.current;
@@ -99,7 +103,13 @@ export function FlickMode({ onComplete }: Props) {
       }, 400);
       return;
     }
-    setRemaining(Math.max(0, left / 1000));
+    // throttle HUD updates to 10Hz
+    if (now - lastDisplayRef.current > 100) {
+      lastDisplayRef.current = now;
+      setRemaining(Math.max(0, left / 1000));
+      setHits(hitsRef.current);
+      setMisses(missesRef.current);
+    }
     draw();
     rafRef.current = requestAnimationFrame(loop);
   }, [draw, onComplete]);
@@ -119,17 +129,27 @@ export function FlickMode({ onComplete }: Props) {
     const ctx = canvas.getContext("2d");
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     sizeRef.current = { w, h };
+    aim.center();
     draw();
-  }, [draw]);
+  }, [draw, aim]);
 
   useEffect(() => {
     resize();
     window.addEventListener("resize", resize);
+    // idle draw so users see an empty board
+    let idleRaf: number | null = null;
+    const idleDraw = () => {
+      if (runningRef.current) return;
+      draw();
+      idleRaf = requestAnimationFrame(idleDraw);
+    };
+    idleRaf = requestAnimationFrame(idleDraw);
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (idleRaf) cancelAnimationFrame(idleRaf);
     };
-  }, [resize]);
+  }, [resize, draw]);
 
   const begin = () => {
     hitsRef.current = 0;
@@ -140,30 +160,27 @@ export function FlickMode({ onComplete }: Props) {
     endAtRef.current = performance.now() + DURATION_MS;
     runningRef.current = true;
     setPhase("playing");
+    aim.center();
     spawnTarget();
     rafRef.current = requestAnimationFrame(loop);
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (phase !== "playing") return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleClick = () => {
+    if (phase !== "playing") {
+      aim.requestLock();
+      return;
+    }
     const target = targetRef.current;
     if (!target) return;
+    const { x, y } = aim.getPosition();
     const dx = x - target.x;
     const dy = y - target.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist <= TARGET_RADIUS + 4) {
+    if (Math.hypot(dx, dy) <= TARGET_RADIUS + 4) {
       hitTimesRef.current.push(performance.now() - target.spawnedAt);
       hitsRef.current += 1;
-      setHits(hitsRef.current);
       spawnTarget();
     } else {
       missesRef.current += 1;
-      setMisses(missesRef.current);
       endAtRef.current -= MISS_PENALTY_MS;
     }
   };
@@ -186,11 +203,13 @@ export function FlickMode({ onComplete }: Props) {
         )}
       </div>
 
-      <div ref={wrapRef} className="w-full rounded-2xl overflow-hidden border border-border bg-surface">
+      <SensitivityInlineHint locked={aim.locked} />
+
+      <div ref={wrapRef} onClick={handleClick} className="w-full rounded-2xl overflow-hidden border border-border bg-surface">
         <canvas
           ref={canvasRef}
-          onClick={handleClick}
-          className="block w-full cursor-crosshair bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          className="block w-full cursor-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          style={{ touchAction: "none" }}
         />
       </div>
 

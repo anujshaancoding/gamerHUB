@@ -13,6 +13,7 @@ import { EchoMode } from "./modes/echo-mode";
 import { ClutchMode } from "./modes/clutch-mode";
 import { DailyMode } from "./modes/daily-mode";
 import { ResultCard } from "./result-card";
+import { SensitivityBar } from "./sensitivity-bar";
 
 type View =
   | { kind: "hub" }
@@ -42,16 +43,15 @@ export function AimHub() {
   const backToHub = () => setView({ kind: "hub" });
 
   if (view.kind === "playing") {
+    const isAimMode = view.mode !== "reaction";
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={backToHub}>
             ← All modes
           </Button>
-          <span className="text-xs text-text-muted">
-            Personal best reset? Clear site storage.
-          </span>
         </div>
+        {isAimMode && <SensitivityBar />}
         {view.mode === "reaction" && <ReactionMode onComplete={handleComplete} />}
         {view.mode === "flick" && <FlickMode onComplete={handleComplete} />}
         {view.mode === "tracking" && <TrackingMode onComplete={handleComplete} />}

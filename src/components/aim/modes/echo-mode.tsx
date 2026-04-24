@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import type { AimResult } from "../types";
+import { usePointerLockAim } from "../use-pointer-lock-aim";
+import { SensitivityInlineHint } from "../sensitivity-bar";
 
 // Ghost Echo (ggLobby original): a ghost fires a sequence of shots on screen.
-// You must reproduce the same targets, same order, within a timing window.
-// Each level adds one shot; sequence regenerates per level.
+// You must reproduce the same targets in order. Each level adds one shot.
 
 const START_LENGTH = 3;
 const MAX_LEVEL = 9;
-const TIMING_TOLERANCE_MS = 700;
 const TARGET_RADIUS = 28;
 
 interface Shot {
@@ -31,19 +31,37 @@ export function EchoMode({ onComplete }: Props) {
   const sizeRef = useRef<{ w: number; h: number }>({ w: 800, h: 500 });
   const rafRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
+  const finishedRef = useRef(false);
+
   const sequenceRef = useRef<Shot[]>([]);
   const playbackStartRef = useRef(0);
   const reproStartRef = useRef(0);
   const userIndexRef = useRef(0);
-  const errorRef = useRef(0); // ms sum
+  const errorRef = useRef(0);
+  const phaseRef = useRef<Phase>("idle");
+  const levelRef = useRef(1);
+  const completedRef = useRef(0);
+  const flashRef = useRef<"hit" | "miss" | null>(null);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [level, setLevel] = useState(1);
   const [completed, setCompleted] = useState(0);
-  const [hintIdx, setHintIdx] = useState(-1);
   const [flash, setFlash] = useState<"hit" | "miss" | null>(null);
+  const [, forceTick] = useState(0);
 
-  const clearTimers = () => {
+  const aim = usePointerLockAim(canvasRef, wrapRef, sizeRef);
+
+  const setPhaseBoth = useCallback((p: Phase) => {
+    phaseRef.current = p;
+    setPhase(p);
+  }, []);
+  const setFlashBoth = useCallback((f: "hit" | "miss" | null) => {
+    flashRef.current = f;
+    setFlash(f);
+  }, []);
+
+  const pushTimer = (id: number) => timersRef.current.push(id);
+  const clearAllTimers = () => {
     for (const id of timersRef.current) window.clearTimeout(id);
     timersRef.current = [];
   };
@@ -63,7 +81,8 @@ export function EchoMode({ onComplete }: Props) {
     const ctx = canvas.getContext("2d");
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     sizeRef.current = { w, h };
-  }, []);
+    aim.center();
+  }, [aim]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -74,8 +93,9 @@ export function EchoMode({ onComplete }: Props) {
     ctx.clearRect(0, 0, w, h);
 
     const seq = sequenceRef.current;
+    const ph = phaseRef.current;
 
-    if (phase === "playback") {
+    if (ph === "playback") {
       const t = performance.now() - playbackStartRef.current;
       for (let i = 0; i < seq.length; i++) {
         const s = seq[i];
@@ -84,18 +104,15 @@ export function EchoMode({ onComplete }: Props) {
         const alpha = Math.max(0, 1 - age / 900);
         if (alpha <= 0) continue;
         ctx.globalAlpha = alpha;
-        // ghost ring
         ctx.beginPath();
         ctx.arc(s.x, s.y, TARGET_RADIUS + age * 0.08, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(139, 92, 246, 0.9)";
         ctx.lineWidth = 2;
         ctx.stroke();
-        // ghost fill
         ctx.beginPath();
         ctx.arc(s.x, s.y, TARGET_RADIUS * 0.6, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(139, 92, 246, 0.35)";
         ctx.fill();
-        // order number
         ctx.globalAlpha = Math.min(1, alpha * 1.5);
         ctx.fillStyle = "#fff";
         ctx.font = "bold 16px system-ui";
@@ -106,36 +123,29 @@ export function EchoMode({ onComplete }: Props) {
       }
     }
 
-    if (phase === "reproduce") {
-      // show faint dots for already-hit shots + highlight next target lightly
+    if (ph === "reproduce") {
       for (let i = 0; i < seq.length; i++) {
         const s = seq[i];
         if (i < userIndexRef.current) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(34, 197, 94, 0.5)";
+          ctx.fillStyle = "rgba(34, 197, 94, 0.55)";
           ctx.fill();
         } else if (i === userIndexRef.current) {
           const pulse = 1 + Math.sin(performance.now() / 140) * 0.08;
           ctx.beginPath();
           ctx.arc(s.x, s.y, TARGET_RADIUS * pulse, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+          ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
           ctx.fill();
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.35)";
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.4)";
           ctx.lineWidth = 2;
           ctx.stroke();
         }
       }
-
-      if (hintIdx >= 0 && hintIdx === userIndexRef.current) {
-        const s = seq[hintIdx];
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, TARGET_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(239, 68, 68, 0.6)";
-        ctx.fill();
-      }
     }
-  }, [phase, hintIdx]);
+
+    aim.drawCrosshair(ctx);
+  }, [aim]);
 
   const loop = useCallback(() => {
     draw();
@@ -153,7 +163,7 @@ export function EchoMode({ onComplete }: Props) {
   }, [resize, loop]);
 
   useEffect(() => {
-    return () => clearTimers();
+    return () => clearAllTimers();
   }, []);
 
   const generate = (len: number): Shot[] => {
@@ -178,106 +188,99 @@ export function EchoMode({ onComplete }: Props) {
     return out;
   };
 
+  const finish = useCallback((reachedCleared: number) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    clearAllTimers();
+    setPhaseBoth("done");
+    const avgErr = reachedCleared > 0 ? Math.round(errorRef.current / reachedCleared) : 0;
+    setTimeout(() => {
+      onComplete({
+        mode: "echo",
+        score: reachedCleared,
+        label: `Level ${reachedCleared} cleared`,
+        detail:
+          reachedCleared === 0
+            ? "Dropped on level 1 — the ghost out-remembered you."
+            : `Survived through level ${reachedCleared}${avgErr > 0 ? ` · avg timing drift ${avgErr}ms` : ""}`,
+        playedAt: Date.now(),
+      });
+    }, 400);
+  }, [onComplete, setPhaseBoth]);
+
   const startLevel = useCallback((lvl: number) => {
-    clearTimers();
     const len = START_LENGTH + (lvl - 1);
     const seq = generate(len);
     sequenceRef.current = seq;
     userIndexRef.current = 0;
     errorRef.current = 0;
-    setPhase("playback");
+    levelRef.current = lvl;
+    setLevel(lvl);
+    setPhaseBoth("playback");
     playbackStartRef.current = performance.now();
 
     const total = seq[seq.length - 1].atMs + 900;
-    const id = window.setTimeout(() => {
+    pushTimer(window.setTimeout(() => {
+      if (phaseRef.current !== "playback") return;
       reproStartRef.current = performance.now();
-      setPhase("reproduce");
-    }, total);
-    timersRef.current.push(id);
-  }, []);
+      setPhaseBoth("reproduce");
+    }, total));
+  }, [setPhaseBoth]);
 
   const begin = () => {
-    setLevel(1);
+    clearAllTimers();
+    finishedRef.current = false;
+    completedRef.current = 0;
     setCompleted(0);
+    aim.center();
     startLevel(1);
   };
 
   const nextLevel = useCallback((lvl: number) => {
     if (lvl > MAX_LEVEL) {
-      setPhase("done");
-      const finished = lvl - 1;
-      const avgErr = finished > 0 ? Math.round(errorRef.current / finished) : 0;
-      setTimeout(() => {
-        onComplete({
-          mode: "echo",
-          score: finished,
-          label: `Level ${finished} cleared`,
-          detail: `Survived through level ${finished} of ${MAX_LEVEL}${avgErr > 0 ? ` · avg timing drift ${avgErr}ms` : ""}`,
-          playedAt: Date.now(),
-        });
-      }, 400);
+      finish(lvl - 1);
       return;
     }
-    setLevel(lvl);
     startLevel(lvl);
-  }, [onComplete, startLevel]);
+  }, [finish, startLevel]);
 
   const failLevel = useCallback((reachedLevel: number) => {
-    setFlash("miss");
-    setTimeout(() => setFlash(null), 250);
-    setPhase("fail");
-    setTimeout(() => {
-      onComplete({
-        mode: "echo",
-        score: reachedLevel - 1,
-        label: `Level ${reachedLevel - 1} cleared`,
-        detail: reachedLevel - 1 === 0
-          ? `Dropped on level 1 — the ghost out-remembered you.`
-          : `Broke the chain on level ${reachedLevel}`,
-        playedAt: Date.now(),
-      });
-    }, 500);
-  }, [onComplete]);
+    setFlashBoth("miss");
+    pushTimer(window.setTimeout(() => setFlashBoth(null), 250));
+    setPhaseBoth("fail");
+    pushTimer(window.setTimeout(() => finish(reachedLevel - 1), 500));
+  }, [finish, setFlashBoth, setPhaseBoth]);
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (phase !== "reproduce") return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const handleClick = () => {
+    if (phaseRef.current !== "reproduce") {
+      aim.requestLock();
+      return;
+    }
     const seq = sequenceRef.current;
     const target = seq[userIndexRef.current];
     if (!target) return;
-
-    const dx = x - target.x;
-    const dy = y - target.y;
-    if (Math.hypot(dx, dy) > TARGET_RADIUS + 6) {
-      setHintIdx(userIndexRef.current);
-      setTimeout(() => setHintIdx(-1), 700);
-      failLevel(level);
+    const { x, y } = aim.getPosition();
+    if (Math.hypot(x - target.x, y - target.y) > TARGET_RADIUS + 6) {
+      failLevel(levelRef.current);
       return;
     }
 
-    // timing check: each shot is paced ~600-850ms apart; we only enforce not
-    // being wildly off the first shot window (within 900ms of playback end)
     const elapsed = performance.now() - reproStartRef.current;
     const expected = target.atMs - seq[0].atMs;
     errorRef.current += Math.abs(elapsed - expected);
 
-    setFlash("hit");
-    setTimeout(() => setFlash(null), 120);
+    setFlashBoth("hit");
+    pushTimer(window.setTimeout(() => setFlashBoth(null), 120));
 
     userIndexRef.current += 1;
+    forceTick((n) => n + 1);
+
     if (userIndexRef.current >= seq.length) {
-      setCompleted((c) => c + 1);
-      setPhase("success");
-      setTimeout(() => nextLevel(level + 1), 500);
+      completedRef.current += 1;
+      setCompleted(completedRef.current);
+      setPhaseBoth("success");
+      pushTimer(window.setTimeout(() => nextLevel(levelRef.current + 1), 500));
     }
-    // tolerance check — if drift exceeds (tolerance * shots) we forgive but
-    // this keeps timing meaningful for share stats
-    void TIMING_TOLERANCE_MS;
   };
 
   return (
@@ -304,16 +307,19 @@ export function EchoMode({ onComplete }: Props) {
         )}
       </div>
 
+      <SensitivityInlineHint locked={aim.locked} />
+
       <div
         ref={wrapRef}
+        onClick={handleClick}
         className={`w-full rounded-2xl overflow-hidden border transition-colors ${
           flash === "hit" ? "border-success/60" : flash === "miss" ? "border-error bg-error/10" : "border-border"
         } bg-surface`}
       >
         <canvas
           ref={canvasRef}
-          onClick={handleClick}
-          className="block w-full cursor-crosshair bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          className="block w-full cursor-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
+          style={{ touchAction: "none" }}
         />
       </div>
 

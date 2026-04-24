@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import type { AimResult } from "../types";
+import { usePointerLockAim } from "../use-pointer-lock-aim";
+import { SensitivityInlineHint } from "../sensitivity-bar";
 
 const DURATION_MS = 20_000;
 const TARGET_RADIUS = 26;
@@ -19,14 +21,17 @@ export function TrackingMode({ onComplete }: Props) {
   const endAtRef = useRef(0);
   const startedAtRef = useRef(0);
   const sizeRef = useRef<{ w: number; h: number }>({ w: 800, h: 500 });
-  const mouseRef = useRef<{ x: number; y: number; down: boolean }>({ x: 0, y: 0, down: false });
+  const holdingRef = useRef(false);
   const onTargetRef = useRef(0);
   const totalHeldRef = useRef(0);
   const lastTickRef = useRef(0);
+  const lastDisplayRef = useRef(0);
 
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [remaining, setRemaining] = useState(DURATION_MS / 1000);
   const [accuracy, setAccuracy] = useState(0);
+
+  const aim = usePointerLockAim(canvasRef, wrapRef, sizeRef);
 
   const targetPos = useCallback((t: number) => {
     const { w, h } = sizeRef.current;
@@ -34,7 +39,6 @@ export function TrackingMode({ onComplete }: Props) {
     const cy = h / 2;
     const rx = w * 0.32;
     const ry = h * 0.3;
-    // procedural wandering path
     const x = cx + Math.sin(t / 820) * rx + Math.cos(t / 1300) * rx * 0.35;
     const y = cy + Math.cos(t / 940) * ry + Math.sin(t / 1500) * ry * 0.35;
     return { x, y };
@@ -47,48 +51,41 @@ export function TrackingMode({ onComplete }: Props) {
     if (!ctx) return;
     const { w, h } = sizeRef.current;
     ctx.clearRect(0, 0, w, h);
-    const t = now - startedAtRef.current;
+    const t = phase === "playing" ? now - startedAtRef.current : now / 10;
     const { x, y } = targetPos(t);
 
-    const mouse = mouseRef.current;
-    const dx = mouse.x - x;
-    const dy = mouse.y - y;
-    const inside = Math.sqrt(dx * dx + dy * dy) <= TARGET_RADIUS;
+    const cursor = aim.getPosition();
+    const inside = Math.hypot(cursor.x - x, cursor.y - y) <= TARGET_RADIUS;
+    const locked = inside && holdingRef.current && phase === "playing";
 
-    const held = mouse.down && phase !== "idle";
-    const locked = inside && held;
-
-    // halo
     ctx.beginPath();
     ctx.arc(x, y, TARGET_RADIUS + 8, 0, Math.PI * 2);
     ctx.fillStyle = locked ? "rgba(34, 197, 94, 0.22)" : "rgba(139, 92, 246, 0.18)";
     ctx.fill();
 
-    // target
     ctx.beginPath();
     ctx.arc(x, y, TARGET_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = locked ? "#22c55e" : "#8b5cf6";
     ctx.fill();
 
-    // inner
     ctx.beginPath();
     ctx.arc(x, y, TARGET_RADIUS * 0.4, 0, Math.PI * 2);
     ctx.fillStyle = "#fff";
     ctx.fill();
-  }, [phase, targetPos]);
+
+    aim.drawCrosshair(ctx);
+  }, [phase, targetPos, aim]);
 
   const loop = useCallback((now: number) => {
     if (!runningRef.current) return;
     const left = endAtRef.current - now;
     if (lastTickRef.current) {
       const dt = now - lastTickRef.current;
-      const mouse = mouseRef.current;
-      if (mouse.down) {
+      if (holdingRef.current) {
         totalHeldRef.current += dt;
         const { x, y } = targetPos(now - startedAtRef.current);
-        const dx = mouse.x - x;
-        const dy = mouse.y - y;
-        if (Math.sqrt(dx * dx + dy * dy) <= TARGET_RADIUS) {
+        const cursor = aim.getPosition();
+        if (Math.hypot(cursor.x - x, cursor.y - y) <= TARGET_RADIUS) {
           onTargetRef.current += dt;
         }
       }
@@ -112,11 +109,15 @@ export function TrackingMode({ onComplete }: Props) {
       }, 400);
       return;
     }
-    setRemaining(Math.max(0, left / 1000));
-    setAccuracy(totalHeldRef.current > 0 ? (onTargetRef.current / totalHeldRef.current) * 100 : 0);
+
+    if (now - lastDisplayRef.current > 100) {
+      lastDisplayRef.current = now;
+      setRemaining(Math.max(0, left / 1000));
+      setAccuracy(totalHeldRef.current > 0 ? (onTargetRef.current / totalHeldRef.current) * 100 : 0);
+    }
     draw(now);
     rafRef.current = requestAnimationFrame(loop);
-  }, [draw, onComplete, targetPos]);
+  }, [draw, onComplete, targetPos, aim]);
 
   const resize = useCallback(() => {
     const canvas = canvasRef.current;
@@ -133,21 +134,39 @@ export function TrackingMode({ onComplete }: Props) {
     const ctx = canvas.getContext("2d");
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     sizeRef.current = { w, h };
-  }, []);
+    aim.center();
+  }, [aim]);
 
   useEffect(() => {
     resize();
     window.addEventListener("resize", resize);
-    const onUp = () => { mouseRef.current.down = false; };
+    const onUp = () => { holdingRef.current = false; };
+    const onDown = (e: MouseEvent) => {
+      // only count hold while pointer locked to canvas or cursor inside wrap
+      if (document.pointerLockElement === canvasRef.current) {
+        if (e.button === 0) holdingRef.current = true;
+      }
+    };
     window.addEventListener("mouseup", onUp);
     window.addEventListener("touchend", onUp);
+    window.addEventListener("mousedown", onDown);
+    // idle draw when not running
+    let idleRaf: number | null = null;
+    const idleDraw = () => {
+      if (runningRef.current) return;
+      draw(performance.now());
+      idleRaf = requestAnimationFrame(idleDraw);
+    };
+    idleRaf = requestAnimationFrame(idleDraw);
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchend", onUp);
+      window.removeEventListener("mousedown", onDown);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (idleRaf) cancelAnimationFrame(idleRaf);
     };
-  }, [resize]);
+  }, [resize, draw]);
 
   const begin = () => {
     onTargetRef.current = 0;
@@ -158,22 +177,23 @@ export function TrackingMode({ onComplete }: Props) {
     runningRef.current = true;
     setPhase("playing");
     setAccuracy(0);
+    aim.center();
     rafRef.current = requestAnimationFrame(loop);
   };
 
-  const updateMouse = (e: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    if ("touches" in e) {
-      const t = e.touches[0];
-      if (!t) return;
-      mouseRef.current.x = t.clientX - rect.left;
-      mouseRef.current.y = t.clientY - rect.top;
-    } else {
-      mouseRef.current.x = e.clientX - rect.left;
-      mouseRef.current.y = e.clientY - rect.top;
+  const handleClick = () => {
+    if (phase !== "playing") {
+      aim.requestLock();
+      return;
     }
+    // inside a running game, hold is managed by mousedown/mouseup listeners
+  };
+
+  const handleTouchStart = () => {
+    holdingRef.current = true;
+  };
+  const handleTouchEnd = () => {
+    holdingRef.current = false;
   };
 
   return (
@@ -186,7 +206,7 @@ export function TrackingMode({ onComplete }: Props) {
               ? `${remaining.toFixed(1)}s · ${accuracy.toFixed(1)}% on target`
               : phase === "done"
               ? "Crunching accuracy…"
-              : "Hold the button. Stay inside the target."}
+              : "Hold the left mouse button. Stay inside the target."}
           </p>
         </div>
         {phase === "idle" && (
@@ -194,14 +214,17 @@ export function TrackingMode({ onComplete }: Props) {
         )}
       </div>
 
-      <div ref={wrapRef} className="w-full rounded-2xl overflow-hidden border border-border bg-surface">
+      <SensitivityInlineHint locked={aim.locked} />
+
+      <div
+        ref={wrapRef}
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="w-full rounded-2xl overflow-hidden border border-border bg-surface"
+      >
         <canvas
           ref={canvasRef}
-          onMouseMove={updateMouse}
-          onMouseDown={(e) => { updateMouse(e); mouseRef.current.down = true; }}
-          onMouseUp={() => { mouseRef.current.down = false; }}
-          onTouchMove={updateMouse}
-          onTouchStart={(e) => { updateMouse(e); mouseRef.current.down = true; }}
           className="block w-full cursor-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]"
           style={{ touchAction: "none" }}
         />
