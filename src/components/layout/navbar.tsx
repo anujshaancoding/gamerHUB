@@ -26,6 +26,7 @@ import {
   UserCheck,
   Shield,
   BookOpen,
+  Crosshair,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -76,6 +77,7 @@ const mobileNavItems = [
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/blog", label: "Blog", icon: BookOpen, requiresAuth: false },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: false },
+  { href: "/aim", label: "Aim Lab", icon: Crosshair, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },

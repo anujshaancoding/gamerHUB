@@ -15,6 +15,7 @@ import {
   UserCheck,
   MessageCircle,
   HelpCircle,
+  Crosshair,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
+  { href: "/aim", label: "Aim Lab", icon: Crosshair, requiresAuth: false },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
 ];
 

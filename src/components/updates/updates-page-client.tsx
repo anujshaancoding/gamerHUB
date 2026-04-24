@@ -35,6 +35,38 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-04-24T18:00:00",
+    version: "1.20.0",
+    type: "launch",
+    title: "Aim Lab — Train your aim. Share the receipt.",
+    description: "A brand-new Aim Lab at /aim with seven browser-native drills — no download, no login needed to play. Every run produces a share card designed for stories and group chats.",
+    highlights: [
+      "Three benchmarks: Reaction, Flick Shots, Tracking — measure the fundamentals",
+      "Four ggLobby originals you won't find elsewhere: Peek Duel (shrinking exposure windows), Ghost Echo (watch-and-repeat muscle memory), Clutch 1v5 (scripted post-plant with HP pressure), Daily Gauntlet (one seeded three-stage puzzle per day, same for everyone)",
+      "Personal bests saved locally, shareable result cards via Web Share / copy-to-clipboard",
+      "Added to sidebar and mobile menu for quick access",
+    ],
+  },
+  {
+    date: "2026-04-22T12:00:00",
+    version: "1.19.1",
+    type: "fix",
+    title: "Blog View Counter Fixed",
+    description: "Blog post view counts were stuck and no longer incrementing. The increment call had been silently rejected by the API proxy since the recent security hardening — view counts now update correctly when posts are read.",
+  },
+  {
+    date: "2026-04-12T20:00:00",
+    version: "1.19.0",
+    type: "feature",
+    title: "Shareable GG Cards",
+    description: "Generate a stunning, personalized gamer identity card from your profile and share it on social media.",
+    highlights: [
+      "One-click GG Card generation from your profile — shows your avatar, rank, stats, XP, clan, and QR code",
+      "Download as PNG (optimized for Instagram Stories) or share directly to WhatsApp, X, Telegram, and more",
+      "Rich link previews when sharing your profile on social media with dynamic OG images",
+    ],
+  },
+  {
     date: "2026-04-12T14:00:00",
     version: "1.18.1",
     type: "fix",
