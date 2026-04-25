@@ -55,6 +55,10 @@ yarn-error.log*
 # automation setup script (contains persona password hash — keep local)
 scripts/setup-automation-personas.sql
 
+# Aim Lab (sideway development — kept local only, do not ship to prod)
+/src/app/(main)/aim
+/src/components/aim
+
 # vercel
 .vercel
 
