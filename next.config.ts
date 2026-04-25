@@ -76,6 +76,15 @@ const nextConfig: NextConfig = {
 
   // Security + caching headers
   async headers() {
+    const isDev = process.env.NODE_ENV === "development";
+    // Next.js/Turbopack dev mode needs eval + ws for HMR and source-map reconstruction.
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com"
+      : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com";
+    const connectSrc = isDev
+      ? "connect-src 'self' ws: wss: https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in"
+      : "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in";
+
     const securityHeaders = [
       { key: "X-Frame-Options", value: "DENY" },
       { key: "X-Content-Type-Options", value: "nosniff" },
@@ -86,11 +95,11 @@ const nextConfig: NextConfig = {
         key: "Content-Security-Policy",
         value: [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+          scriptSrc,
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' data: blob: https://upload.wikimedia.org https://i.pinimg.com https://api.dicebear.com https://images.unsplash.com https://gglobby.in https://api-assets.clashofclans.com https://cdn.discordapp.com https://*.googleusercontent.com https://www.googletagmanager.com",
           "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in",
+          connectSrc,
           "media-src 'self' https:",
           "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.twitch.tv https://js.stripe.com",
           "frame-ancestors 'none'",
