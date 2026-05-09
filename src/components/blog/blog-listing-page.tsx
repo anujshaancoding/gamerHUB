@@ -21,6 +21,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { blogPostHref } from "@/lib/utils/blog-url";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -476,7 +477,7 @@ function NewsletterCTA() {
 // ── Blog Card Component ─────────────────────────────────────────────────────
 
 function BlogCard({ post, index }: { post: BlogListingPost; index: number }) {
-  const postUrl = post.slug ? `/blog/${post.slug}` : `/community/post/${post.id}`;
+  const postUrl = blogPostHref(post);
   const categoryLabel =
     CATEGORY_LABEL_MAP[post.category] || post.category;
   const categoryColor =

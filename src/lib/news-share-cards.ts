@@ -496,14 +496,17 @@ export function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Defer revocation so the browser has time to start the download.
+  // Revoking synchronously can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 export function downloadAllNewsCards(cards: NewsShareCardSet, id: string) {
   downloadBlob(cards.hero, `news-${id}-hero.png`);
-  setTimeout(() => downloadBlob(cards.summary, `news-${id}-summary.png`), 100);
-  setTimeout(() => downloadBlob(cards.cta, `news-${id}-cta.png`), 200);
+  setTimeout(() => downloadBlob(cards.summary, `news-${id}-summary.png`), 400);
+  setTimeout(() => downloadBlob(cards.cta, `news-${id}-cta.png`), 800);
 }

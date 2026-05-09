@@ -35,6 +35,22 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-09T18:00:00",
+    version: "1.20.0",
+    type: "feature",
+    title: "Player Insights Tracker + Blog SEO Overhaul",
+    description: "New multi-game stat tracker that turns raw numbers into a plain-English breakdown of your strengths, weaknesses, and what to practice next — plus a major SEO overhaul of the blog with canonical slug URLs, dynamic social preview images, an RSS feed, and explicit allow-listing for AI search crawlers.",
+    highlights: [
+      "Player Insights (Beta) at /tracker — Valorant and CS2 via API lookup, BGMI and Free Fire via screenshot upload, all with personalized recommendations",
+      "Blog posts now live at /blog/{slug} as the canonical URL — old /community/post/{id} links permanently redirect, so shared and indexed links keep working",
+      "Dynamic OG images for every blog post — richer link previews when shared on WhatsApp, X, Discord, and other socials",
+      "RSS feed at /blog/rss.xml so readers can follow the blog in their favorite reader",
+      "robots.txt now explicitly welcomes AI search crawlers (ChatGPT, Claude, Perplexity, Google AI Overviews, Apple, Meta) so blog content can be cited in AI answers",
+      "Fixed share-card downloads getting canceled on some browsers — multi-card downloads now save reliably",
+      "Friendlier not-found page for blog posts that have been deleted or unpublished",
+    ],
+  },
+  {
     date: "2026-04-22T12:00:00",
     version: "1.19.1",
     type: "fix",

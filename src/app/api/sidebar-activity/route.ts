@@ -107,12 +107,13 @@ export async function GET(request: NextRequest) {
     if (blogResult?.data) {
       for (const b of blogResult.data) {
         const author = b.author as Record<string, unknown> | null;
+        const slug = b.slug as string | null;
         items.push({
           id: b.id as string,
           type: "blog",
           title: b.title as string,
           thumbnailUrl: (b.featured_image_url as string) || null,
-          linkHref: `/community/post/${b.id}`,
+          linkHref: slug ? `/blog/${slug}` : `/community/post/${b.id}`,
           timestamp: b.published_at as string,
           meta: {
             authorName: (author?.display_name || author?.username || undefined) as string | undefined,

@@ -69,7 +69,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // All published blog posts — use /community/post/{id} URLs
+  // All published blog posts — canonical on /blog/{slug}.
+  // Posts without a slug are skipped from the sitemap (they shouldn't be
+  // crawl-promoted under the legacy id URL — that route is now a 308 redirect).
   const db = createClient();
   const { data: posts } = await db
     .from("blog_posts")
@@ -77,23 +79,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
-  const postPages: MetadataRoute.Sitemap = (posts || []).map(
-    (post: { id: string; slug?: string; updated_at: string }) => ({
-      url: `${BASE_URL}/community/post/${post.id}`,
-      lastModified: new Date(post.updated_at),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    })
-  );
-
-  const blogSlugPages: MetadataRoute.Sitemap = (posts || [])
-    .filter((post: any) => post.slug)
-    .map((post: any) => ({
+  const postPages: MetadataRoute.Sitemap = ((posts || []) as Array<{
+    id: string;
+    slug?: string | null;
+    updated_at: string;
+  }>)
+    .filter((post) => !!post.slug)
+    .map((post) => ({
       url: `${BASE_URL}/blog/${post.slug}`,
       lastModified: new Date(post.updated_at),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
 
-  return [...staticPages, ...postPages, ...blogSlugPages];
+  return [...staticPages, ...postPages];
 }

@@ -20,7 +20,7 @@ export async function GET() {
       const keywords = (post.tags || []).join(", ");
       return `
   <url>
-    <loc>${BASE_URL}/community/post/${post.id}</loc>
+    <loc>${BASE_URL}/blog/${post.slug}</loc>
     <news:news>
       <news:publication>
         <news:name>ggLobby</news:name>

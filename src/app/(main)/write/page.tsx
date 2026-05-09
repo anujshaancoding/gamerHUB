@@ -419,7 +419,7 @@ function WritePage() {
         {editSlug && (
           <Button
             variant="ghost"
-            onClick={() => router.push(existingPost?.id ? `/community/post/${existingPost.id}` : `/community`)}
+            onClick={() => router.push(existingPost?.slug ? `/blog/${existingPost.slug}` : existingPost?.id ? `/community/post/${existingPost.id}` : `/community`)}
           >
             <Eye className="w-4 h-4 mr-2" />
             View Post

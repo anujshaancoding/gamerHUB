@@ -39,6 +39,7 @@ import {
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/db/client-browser";
 import { cn } from "@/lib/utils";
+import { blogPostHref } from "@/lib/utils/blog-url";
 import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { STALE_TIMES } from "@/lib/query/provider";
 import { blogKeys } from "@/lib/hooks/useBlog";
@@ -76,6 +77,7 @@ const ListingDetailModal = dynamic(
 
 export interface BlogPost {
   id: string;
+  slug?: string | null;
   title: string;
   excerpt: string;
   content: string;
@@ -281,6 +283,7 @@ export function CommunityPageClient({
 
       const mapped = (posts || []).map((post: Record<string, unknown>): BlogPost => ({
         id: post.id as string,
+        slug: (post.slug as string) || null,
         title: post.title as string,
         excerpt: post.excerpt as string,
         content: "",
@@ -836,7 +839,7 @@ export function CommunityPageClient({
                       className="animate-fadeInUp"
                       style={{ animationDelay: `${index * 100}ms`, animationFillMode: "both" }}
                     >
-                      <Link href={`/community/post/${post.id}`}>
+                      <Link href={blogPostHref(post)}>
                         <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer h-full">
                           {post.cover_image && (
                             <div className="aspect-video bg-surface-light relative">

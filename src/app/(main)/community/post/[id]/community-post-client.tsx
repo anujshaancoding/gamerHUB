@@ -91,7 +91,7 @@ interface CommunityPost {
   author: Author;
 }
 
-export function CommunityPostPage() {
+export function CommunityPostPage({ initialPost }: { initialPost?: CommunityPost | null } = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -114,7 +114,7 @@ export function CommunityPostPage() {
   const { toggleLike, isLiking } = useLikeBlogPost();
   const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
 
-  const postId = params.id as string;
+  const postId = (initialPost?.id as string | undefined) || (params.id as string);
 
   // Fetch post with React Query
   const {
@@ -147,6 +147,7 @@ export function CommunityPostPage() {
     },
     staleTime: STALE_TIMES.BLOG_POST_DETAIL,
     enabled: !!postId,
+    initialData: initialPost && initialPost.id === postId ? initialPost : undefined,
   });
 
   // Deduplicated view counting — only fires once per session per post

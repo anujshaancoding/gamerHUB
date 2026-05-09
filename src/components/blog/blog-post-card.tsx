@@ -17,6 +17,7 @@ import type { BlogPost, BlogColorPalette } from "@/types/blog";
 import { BLOG_CATEGORIES, AUTHOR_ROLES, BLOG_COLOR_PALETTES } from "@/types/blog";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import { blogPostHref } from "@/lib/utils/blog-url";
 
 interface BlogPostCardProps {
   post: BlogPost;
@@ -46,7 +47,7 @@ export function BlogPostCard({ post, featured = false }: BlogPostCardProps) {
   };
 
   return (
-    <Link href={`/community/post/${post.id}`} className="block h-full">
+    <Link href={blogPostHref(post)} className="block h-full">
       <motion.article
         whileHover={{ y: -6 }}
         transition={{ duration: 0.2, ease: "easeOut" }}

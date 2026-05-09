@@ -17,6 +17,7 @@ import { Input, Card, Avatar, Badge, Button } from "@/components/ui";
 import { useUniversalSearch } from "@/lib/hooks/useUniversalSearch";
 import type { SearchCategory } from "@/types/search";
 import { cn } from "@/lib/utils";
+import { blogPostHref } from "@/lib/utils/blog-url";
 
 type Tab = SearchCategory | "all";
 
@@ -188,7 +189,7 @@ function SearchPageContent() {
             >
               <div className="grid gap-3">
                 {blogs.data.map((post) => (
-                  <Link key={post.id} href={`/community/post/${post.id}`}>
+                  <Link key={post.id} href={blogPostHref(post)}>
                     <Card
                       variant="interactive"
                       className="p-4 flex items-center gap-4"

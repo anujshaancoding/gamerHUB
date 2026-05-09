@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/blog",
+    types: {
+      "application/rss+xml": [
+        { url: "/blog/rss.xml", title: "ggLobby Gaming Blog RSS Feed" },
+      ],
+    },
   },
 };
 

@@ -15,6 +15,7 @@ const GUEST_ALLOWED_ROUTES = [
   "/offline",
   "/overview",
   "/blog",
+  "/tracker",
   "/updates",
   "/help",
   "/privacy",

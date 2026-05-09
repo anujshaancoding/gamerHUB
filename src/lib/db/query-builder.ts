@@ -69,10 +69,19 @@ interface FKInfo {
 
 let _fkCache: FKInfo[] | null = null;
 let _fkCachePromise: Promise<FKInfo[]> | null = null;
+// Cache failures briefly so we don't hammer an unreachable DB and spam logs.
+// Cleared automatically on next query attempt after the TTL elapses.
+const FK_FAILURE_TTL_MS = 30_000;
+let _fkFailureUntil = 0;
+let _fkFailureError: unknown = null;
 
 async function getForeignKeys(sql: postgres.Sql): Promise<FKInfo[]> {
   if (_fkCache) return _fkCache;
   if (_fkCachePromise) return _fkCachePromise;
+  if (_fkFailureUntil > Date.now()) {
+    // Re-throw the cached error without making a new connection attempt.
+    throw _fkFailureError;
+  }
 
   _fkCachePromise = (async () => {
     try {
@@ -101,10 +110,13 @@ async function getForeignKeys(sql: postgres.Sql): Promise<FKInfo[]> {
         toTable: r.to_table as string,
         toColumn: r.to_column as string,
       }));
+      _fkFailureUntil = 0;
+      _fkFailureError = null;
       return _fkCache;
     } catch (err) {
-      // Reset so next call retries instead of permanently failing
       _fkCachePromise = null;
+      _fkFailureError = err;
+      _fkFailureUntil = Date.now() + FK_FAILURE_TTL_MS;
       throw err;
     }
   })();
@@ -112,10 +124,22 @@ async function getForeignKeys(sql: postgres.Sql): Promise<FKInfo[]> {
   return _fkCachePromise;
 }
 
+/** Log at most once per FK_FAILURE_TTL_MS window so unreachable-DB spam stops. */
+let _fkLastWarnAt = 0;
+function shouldWarnFkFailure(): boolean {
+  const now = Date.now();
+  if (now - _fkLastWarnAt < FK_FAILURE_TTL_MS) return false;
+  _fkLastWarnAt = now;
+  return true;
+}
+
 /** Clear FK cache (for testing or schema changes) */
 export function clearSchemaCache() {
   _fkCache = null;
   _fkCachePromise = null;
+  _fkFailureUntil = 0;
+  _fkFailureError = null;
+  _fkLastWarnAt = 0;
 }
 
 // ─── Join Reference Parsing ──────────────────────────────────────────────────
@@ -687,7 +711,9 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
         cols = mainColList.map(qi).join(", ");
       } catch (err) {
-        console.warn("FK column augmentation failed, joins may not resolve:", err);
+        if (shouldWarnFkFailure()) {
+          console.warn("FK column augmentation failed, joins may not resolve:", err);
+        }
       }
     }
 
