@@ -573,6 +573,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     profile={profile}
                     matchesPlayed={(profile as unknown as { total_matches_played?: number }).total_matches_played || 0}
                     gamesLinked={userGames?.length || 0}
+                    activityDays={activityRows}
                   />
                 </div>
               </div>

@@ -15,6 +15,7 @@ import {
   UserCheck,
   MessageCircle,
   HelpCircle,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
+  { href: "/tracker", label: "Player Insights", icon: BarChart3, requiresAuth: false, isBeta: true },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
 ];
 
@@ -184,6 +186,9 @@ export function Sidebar() {
               <Badge variant="error" size="sm">
                 {unreadMessages > 99 ? "99+" : unreadMessages}
               </Badge>
+            )}
+            {item.isBeta && (
+              <Badge variant="primary" size="sm">Beta</Badge>
             )}
           </Link>
           );

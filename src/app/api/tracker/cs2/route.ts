@@ -4,17 +4,18 @@
  * Fetches CS2 stats from Steam Web API (or mock fallback) and runs the analyzer.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { fetchCs2Stats, isValidSteamInput } from "@/lib/tracker/cs2-fetcher";
+import { fetchCs2Stats, isValidSteamInput, normalizeSteamInput } from "@/lib/tracker/cs2-fetcher";
 import { analyzeCs2 } from "@/lib/tracker/cs2-analyzer";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const input = req.nextUrl.searchParams.get("steamId")?.trim() ?? "";
+  const raw = req.nextUrl.searchParams.get("steamId")?.trim() ?? "";
+  const input = normalizeSteamInput(raw);
 
   if (!input) {
     return NextResponse.json(
-      { ok: false, error: { code: "INVALID_FORMAT", message: "Enter a SteamID64 or vanity URL fragment." } },
+      { ok: false, error: { code: "INVALID_FORMAT", message: "Enter a SteamID64, vanity, or steamcommunity.com URL." } },
       { status: 400 }
     );
   }
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
         ok: false,
         error: {
           code: "INVALID_FORMAT",
-          message: "Invalid Steam input. Use a 17-digit SteamID64 or your vanity URL (e.g. 'gabe').",
+          message: "Invalid Steam input. Paste your steamcommunity.com URL, a 17-digit SteamID64, or your vanity (e.g. 'gabe').",
         },
       },
       { status: 400 }

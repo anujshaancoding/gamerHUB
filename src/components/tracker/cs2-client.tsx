@@ -71,7 +71,7 @@ export function Cs2Client() {
             type="text"
             value={steamId}
             onChange={(e) => setSteamId(e.target.value)}
-            placeholder="SteamID64 or vanity URL (e.g. gabelogannewell)"
+            placeholder="Paste your steamcommunity.com URL, vanity, or SteamID64"
             disabled={loading}
             className="flex-1"
             aria-label="Steam ID"
@@ -109,9 +109,10 @@ export function Cs2Client() {
       {error ? (
         <NotFoundCard
           error={error}
-          riotId={submittedId}
+          submittedId={submittedId}
           onTrySample={trySample}
           onRetry={() => lookup(submittedId)}
+          kind="cs2"
         />
       ) : null}
 

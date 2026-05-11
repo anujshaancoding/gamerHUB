@@ -87,6 +87,17 @@ export async function fetchValorantStats(riotId: string): Promise<FetchResult> {
     }
   }
 
+  // No HENRIK_API_KEY / TRACKER_USE_LIVE: in production we surface a real error
+  // so users don't see fake stats. In dev we still return mocks so the UI can
+  // be developed without a key.
+  if (process.env.NODE_ENV === "production") {
+    return {
+      kind: "error",
+      code: "UPSTREAM_ERROR",
+      message: "Valorant stat lookup is temporarily unavailable. Please try again later.",
+    };
+  }
+
   // Mock path (also hit when live is disabled)
   const miss = simulateMockMiss(riotId);
   if (miss === "NOT_FOUND") {

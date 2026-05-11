@@ -25,6 +25,19 @@ export function isSteamLiveEnabled(): boolean {
   return !!process.env.STEAM_API_KEY;
 }
 
+/**
+ * Strip a pasted steamcommunity.com URL down to the bare SteamID64 or vanity.
+ * Accepts: full URLs (https/http, with or without www), bare SteamID64s, bare vanity fragments.
+ */
+export function normalizeSteamInput(input: string): string {
+  const trimmed = input.trim().replace(/\/+$/, "");
+  const profileMatch = trimmed.match(/steamcommunity\.com\/profiles\/(\d{17})(?:\b|\/|$)/i);
+  if (profileMatch) return profileMatch[1];
+  const vanityMatch = trimmed.match(/steamcommunity\.com\/id\/([A-Za-z0-9_-]{3,32})(?:\b|\/|$)/i);
+  if (vanityMatch) return vanityMatch[1];
+  return trimmed;
+}
+
 /** Accept either a 17-digit SteamID64 or a vanity URL fragment. */
 export function isValidSteamInput(input: string): boolean {
   const trimmed = input.trim();
@@ -212,6 +225,18 @@ export async function fetchCs2Stats(input: string): Promise<Cs2FetchResult> {
       // fall through
     }
   }
+
+  // No STEAM_API_KEY: in production we surface a real error so users don't see
+  // fake stats labelled with their input. In dev we still return mocks so the
+  // UI can be developed without a key.
+  if (process.env.NODE_ENV === "production") {
+    return {
+      kind: "error",
+      code: "UPSTREAM_ERROR",
+      message: "CS2 stat lookup is temporarily unavailable. Please try again later.",
+    };
+  }
+
   const miss = simulateCs2Miss(input);
   if (miss === "NOT_FOUND") {
     return { kind: "error", code: "NOT_FOUND", message: `Couldn't find a Steam profile matching "${input}".` };

@@ -35,6 +35,17 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-10T16:00:00",
+    version: "1.20.1",
+    type: "fix",
+    title: "Profile Activity: Smarter Empty States",
+    description: "The profile's Usually Online card now auto-derives your typical play window from your recent activity instead of showing blank --:-- placeholders, and the Monthly Trend chart waits until you have at least two months of activity before drawing a (otherwise misleading) line.",
+    highlights: [
+      "Usually Online card auto-fills from your real first/last seen times once you have a few active days — no manual setup needed",
+      "Monthly Trend now shows a 'trend takes shape over time' message for new accounts instead of a flat-zero line",
+    ],
+  },
+  {
     date: "2026-05-09T18:00:00",
     version: "1.20.0",
     type: "feature",

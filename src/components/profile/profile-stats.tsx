@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Gamepad2,
@@ -13,18 +14,74 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
 import type { Profile } from "@/types/database";
 
+interface ActivityDayInput {
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  minutes_online: number;
+}
+
 interface ProfileStatsProps {
   profile: Profile;
   matchesPlayed: number;
   gamesLinked: number;
+  activityDays?: ActivityDayInput[];
+}
+
+const MIN_DAYS_FOR_AUTO_HOURS = 3;
+
+function formatHHMM(totalMinutes: number): string {
+  const h = ((Math.floor(totalMinutes / 60) % 24) + 24) % 24;
+  const m = ((Math.round(totalMinutes) % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Average a set of timestamps modulo 24h using vector math so values straddling
+// midnight don't average to noon.
+function averageTimeOfDay(timestamps: string[]): number | null {
+  if (timestamps.length === 0) return null;
+  let sumX = 0;
+  let sumY = 0;
+  for (const ts of timestamps) {
+    const d = new Date(ts);
+    const minutes = d.getHours() * 60 + d.getMinutes();
+    const angle = (minutes / (24 * 60)) * 2 * Math.PI;
+    sumX += Math.cos(angle);
+    sumY += Math.sin(angle);
+  }
+  const meanAngle = Math.atan2(sumY / timestamps.length, sumX / timestamps.length);
+  const normalized = (meanAngle + 2 * Math.PI) % (2 * Math.PI);
+  return (normalized / (2 * Math.PI)) * 24 * 60;
 }
 
 export function ProfileStats({
   profile,
   matchesPlayed,
   gamesLinked,
+  activityDays,
 }: ProfileStatsProps) {
   const { theme } = useGameTheme();
+
+  const autoHours = useMemo(() => {
+    if (!activityDays || activityDays.length === 0) return null;
+    const validDays = activityDays.filter(
+      (d) => d.first_seen_at && d.last_seen_at && d.minutes_online > 0,
+    );
+    if (validDays.length < MIN_DAYS_FOR_AUTO_HOURS) return null;
+
+    const startMins = averageTimeOfDay(validDays.map((d) => d.first_seen_at as string));
+    const endMins = averageTimeOfDay(validDays.map((d) => d.last_seen_at as string));
+    if (startMins === null || endMins === null) return null;
+
+    return { start: formatHHMM(startMins), end: formatHHMM(endMins) };
+  }, [activityDays]);
+
+  const manualHours = (profile.online_hours && typeof profile.online_hours === "object"
+    ? (profile.online_hours as { start?: string; end?: string })
+    : null);
+
+  const startTime = autoHours?.start || manualHours?.start;
+  const endTime = autoHours?.end || manualHours?.end;
+  const hasOnlineHours = Boolean(startTime && endTime);
 
   const statItems = [
     { label: "Games Linked", value: gamesLinked, icon: Gamepad2, color: theme.colors.primary },
@@ -96,11 +153,11 @@ export function ProfileStats({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {profile.online_hours && typeof profile.online_hours === "object" ? (
+            {hasOnlineHours ? (
               <div className="flex items-center justify-center gap-2 sm:gap-4">
                 <div className="text-center">
-                  <p className="text-lg sm:text-2xl font-bold" style={{ color: theme.colors.primary }}>
-                    {(profile.online_hours as { start?: string }).start || "--:--"}
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums" style={{ color: theme.colors.primary }}>
+                    {startTime}
                   </p>
                   <p className="text-[10px] sm:text-xs text-text-muted uppercase">Start</p>
                 </div>
@@ -116,8 +173,8 @@ export function ProfileStats({
                   />
                 </div>
                 <div className="text-center">
-                  <p className="text-lg sm:text-2xl font-bold" style={{ color: theme.colors.accent }}>
-                    {(profile.online_hours as { end?: string }).end || "--:--"}
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums" style={{ color: theme.colors.accent }}>
+                    {endTime}
                   </p>
                   <p className="text-[10px] sm:text-xs text-text-muted uppercase">End</p>
                 </div>
@@ -125,7 +182,7 @@ export function ProfileStats({
             ) : (
               <div className="text-center py-4">
                 <Clock className="h-8 w-8 text-text-muted mx-auto mb-2 opacity-50" />
-                <p className="text-text-muted text-sm">Not set</p>
+                <p className="text-text-muted text-sm">Not enough activity yet</p>
               </div>
             )}
           </CardContent>

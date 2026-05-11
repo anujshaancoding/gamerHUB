@@ -121,9 +121,10 @@ export function ValorantClient() {
       {error ? (
         <NotFoundCard
           error={error}
-          riotId={submittedId}
+          submittedId={submittedId}
           onTrySample={trySample}
           onRetry={() => lookup(submittedId)}
+          kind="valorant"
         />
       ) : null}
 

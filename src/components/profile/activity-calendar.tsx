@@ -237,7 +237,7 @@ export function ActivityCalendar({
   }, [normalizedDays]);
 
   // Compute monthly trend (hours per month over last 12 months)
-  const monthlyData = useMemo(() => {
+  const { monthlyData, activeMonths } = useMemo(() => {
     const now = new Date();
     const joinDate = new Date(memberSince);
     const monthMap = new Map<string, number>();
@@ -261,13 +261,17 @@ export function ActivityCalendar({
       }
     });
 
-    return Array.from(monthMap.entries()).map(([key, minutes]) => {
+    const data = Array.from(monthMap.entries()).map(([key, minutes]) => {
       const [year, month] = key.split("-");
       return {
         month: `${MONTH_NAMES[parseInt(month) - 1]} '${year.slice(2)}`,
         hours: Math.round((minutes / 60) * 10) / 10,
       };
     });
+
+    const active = Array.from(monthMap.values()).filter((minutes) => minutes > 0).length;
+
+    return { monthlyData: data, activeMonths: active };
   }, [normalizedDays, memberSince]);
 
   const primaryColor = theme.colors.primary;
@@ -602,47 +606,61 @@ export function ActivityCalendar({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[180px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyData} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
-                    <defs>
-                      <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor={accentColor} />
-                        <stop offset="100%" stopColor={primaryColor} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }}
-                      tickLine={false}
-                      axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => `${v}h`}
-                    />
-                    <RechartsTooltip
-                      content={({ active, payload, label }) => (
-                        <ChartTooltipContent active={active} payload={payload as never} label={label as string} suffix=" hours" />
-                      )}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="hours"
-                      stroke="url(#lineGradient)"
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: primaryColor, stroke: "#000", strokeWidth: 2 }}
-                      activeDot={{ r: 5, fill: primaryColor, stroke: "#000", strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <p className="text-[10px] text-text-muted mt-2 text-center">
-                Total hours online per month over the last year
-              </p>
+              {activeMonths < 2 ? (
+                <div className="h-[180px] w-full flex flex-col items-center justify-center gap-2 text-center">
+                  <div className="p-3 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
+                    <TrendingUp className="h-6 w-6" style={{ color: primaryColor, opacity: 0.5 }} />
+                  </div>
+                  <p className="text-sm text-text-secondary">Trend takes shape over time</p>
+                  <p className="text-xs text-text-muted max-w-sm">
+                    We need activity across at least two months to draw a meaningful monthly trend.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="h-[180px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlyData} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
+                        <defs>
+                          <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor={accentColor} />
+                            <stop offset="100%" stopColor={primaryColor} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }}
+                          tickLine={false}
+                          axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => `${v}h`}
+                        />
+                        <RechartsTooltip
+                          content={({ active, payload, label }) => (
+                            <ChartTooltipContent active={active} payload={payload as never} label={label as string} suffix=" hours" />
+                          )}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="hours"
+                          stroke="url(#lineGradient)"
+                          strokeWidth={2.5}
+                          dot={{ r: 3, fill: primaryColor, stroke: "#000", strokeWidth: 2 }}
+                          activeDot={{ r: 5, fill: primaryColor, stroke: "#000", strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-2 text-center">
+                    Total hours online per month over the last year
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
