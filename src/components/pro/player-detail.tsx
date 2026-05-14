@@ -40,13 +40,15 @@ const SHOPPABLE_LABELS = new Set([
   "Triggers",
 ]);
 
-function fmtPct(n: number | null | undefined) {
-  if (n == null) return "—";
-  return `${n.toFixed(1)}%`;
+function fmtPct(n: number | string | null | undefined) {
+  const v = typeof n === "string" ? Number(n) : n;
+  if (v == null || !Number.isFinite(v)) return "—";
+  return `${v.toFixed(1)}%`;
 }
-function fmtNum(n: number | null | undefined, digits = 2) {
-  if (n == null) return "—";
-  return n.toFixed(digits);
+function fmtNum(n: number | string | null | undefined, digits = 2) {
+  const v = typeof n === "string" ? Number(n) : n;
+  if (v == null || !Number.isFinite(v)) return "—";
+  return v.toFixed(digits);
 }
 
 interface PlayerDetailProps {
@@ -175,11 +177,12 @@ export function PlayerDetail({ detail }: PlayerDetailProps) {
             )}
             <StatCard
               label="Win %"
-              value={
-                current_stats.matches_played && current_stats.wins != null
-                  ? `${((current_stats.wins / current_stats.matches_played) * 100).toFixed(1)}%`
-                  : "—"
-              }
+              value={(() => {
+                const mp = Number(current_stats.matches_played);
+                const w = Number(current_stats.wins);
+                if (!Number.isFinite(mp) || mp <= 0 || !Number.isFinite(w)) return "—";
+                return `${((w / mp) * 100).toFixed(1)}%`;
+              })()}
             />
           </div>
         ) : (

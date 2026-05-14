@@ -40,34 +40,48 @@ const GAME_LABEL: Record<ProGame, string> = {
 
 type StatRow = { label: string; a: string | number | null; b: string | number | null; betterWhen?: "higher" | "lower" };
 
+function toNum(v: number | string | null | undefined): number | null {
+  if (v == null) return null;
+  const n = typeof v === "string" ? Number(v) : v;
+  return Number.isFinite(n) ? n : null;
+}
+function pct(v: number | string | null | undefined): string | null {
+  const n = toNum(v);
+  return n == null ? null : `${n.toFixed(1)}%`;
+}
+
 function statRowsFor(game: ProGame, a: ProPlayerDetail | null, b: ProPlayerDetail | null): StatRow[] {
   const sa = a?.current_stats;
   const sb = b?.current_stats;
-  const winPct = (s: typeof sa) =>
-    s?.matches_played && s.wins != null ? +(s.wins / s.matches_played * 100).toFixed(1) : null;
+  const winPct = (s: typeof sa) => {
+    const mp = toNum(s?.matches_played);
+    const w = toNum(s?.wins);
+    if (mp == null || mp <= 0 || w == null) return null;
+    return +((w / mp) * 100).toFixed(1);
+  };
   const rows: StatRow[] = [
     { label: "Matches", a: sa?.matches_played ?? null, b: sb?.matches_played ?? null, betterWhen: "higher" },
     { label: "Win %", a: winPct(sa) != null ? `${winPct(sa)}%` : null, b: winPct(sb) != null ? `${winPct(sb)}%` : null, betterWhen: "higher" },
-    { label: "K/D", a: sa?.k_d_ratio ?? null, b: sb?.k_d_ratio ?? null, betterWhen: "higher" },
-    { label: game === "valorant" ? "ADR" : "Avg DMG", a: sa?.adr ?? null, b: sb?.adr ?? null, betterWhen: "higher" },
-    { label: "HS %", a: sa?.hs_pct != null ? `${sa.hs_pct.toFixed(1)}%` : null, b: sb?.hs_pct != null ? `${sb.hs_pct.toFixed(1)}%` : null, betterWhen: "higher" },
+    { label: "K/D", a: toNum(sa?.k_d_ratio), b: toNum(sb?.k_d_ratio), betterWhen: "higher" },
+    { label: game === "valorant" ? "ADR" : "Avg DMG", a: toNum(sa?.adr), b: toNum(sb?.adr), betterWhen: "higher" },
+    { label: "HS %", a: pct(sa?.hs_pct), b: pct(sb?.hs_pct), betterWhen: "higher" },
   ];
   if (game === "valorant") {
-    rows.splice(3, 0, { label: "ACS", a: sa?.acs ?? null, b: sb?.acs ?? null, betterWhen: "higher" });
+    rows.splice(3, 0, { label: "ACS", a: toNum(sa?.acs), b: toNum(sb?.acs), betterWhen: "higher" });
   }
   if (game === "bgmi") {
     const bA = sa?.game_stats as BgmiGameStats | undefined;
     const bB = sb?.game_stats as BgmiGameStats | undefined;
     rows.push(
-      { label: "Finishes/match", a: bA?.finishes_per_match ?? null, b: bB?.finishes_per_match ?? null, betterWhen: "higher" },
-      { label: "Survival %", a: bA?.survival_rate != null ? `${bA.survival_rate.toFixed(1)}%` : null, b: bB?.survival_rate != null ? `${bB.survival_rate.toFixed(1)}%` : null, betterWhen: "higher" }
+      { label: "Finishes/match", a: toNum(bA?.finishes_per_match), b: toNum(bB?.finishes_per_match), betterWhen: "higher" },
+      { label: "Survival %", a: pct(bA?.survival_rate), b: pct(bB?.survival_rate), betterWhen: "higher" }
     );
   }
   if (game === "freefire") {
     const fA = sa?.game_stats as FreefireGameStats | undefined;
     const fB = sb?.game_stats as FreefireGameStats | undefined;
     rows.push(
-      { label: "Booyah %", a: fA?.booyah_rate != null ? `${fA.booyah_rate.toFixed(1)}%` : null, b: fB?.booyah_rate != null ? `${fB.booyah_rate.toFixed(1)}%` : null, betterWhen: "higher" }
+      { label: "Booyah %", a: pct(fA?.booyah_rate), b: pct(fB?.booyah_rate), betterWhen: "higher" }
     );
   }
   return rows;

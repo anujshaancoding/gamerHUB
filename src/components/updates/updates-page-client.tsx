@@ -35,6 +35,14 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-14T20:00:00",
+    version: "1.22.1",
+    type: "fix",
+    title: "Fixed crash on pro player pages and compare tool",
+    description:
+      "Resolved a 'Something went wrong' error that appeared on Valorant, BGMI and Free Fire pro player profiles and on the head-to-head compare view when rendering stats like K/D, ACS, ADR and HS%.",
+  },
+  {
     date: "2026-05-14T18:00:00",
     version: "1.22.0",
     type: "feature",
