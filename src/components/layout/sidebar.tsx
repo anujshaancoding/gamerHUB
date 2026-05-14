@@ -7,7 +7,6 @@ import {
   Users,
   Settings,
   Gamepad2,
-  Crown,
   Eye,
   LogIn,
   UserPlus,
@@ -23,9 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useSocialCounts } from "@/lib/hooks/useFriends";
 import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import { Avatar, Button, Badge } from "@/components/ui";
-import { PremiumBadge } from "@/components/premium";
 import { Logo } from "@/components/layout/logo";
 import { StatusSelector } from "@/components/presence/StatusSelector";
 import { usePresence } from "@/lib/presence/PresenceProvider";
@@ -40,7 +37,6 @@ const navItems = [
   { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false, isBeta: true },
   { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false, isBeta: true },
   { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false, isBeta: true },
-  { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
 ];
 
 const bottomItems = [
@@ -55,7 +51,6 @@ export function Sidebar() {
   const isAuthenticated = !!user;
   const { counts } = useSocialCounts(user?.id);
   const unreadMessages = useUnreadMessageCount(isAuthenticated);
-  const { isPremium } = useSubscription({ enabled: isAuthenticated });
   const { myStatus } = usePresence();
 
   return (
@@ -123,9 +118,8 @@ export function Sidebar() {
               <div className="flex-1 min-w-0">
                 {profile ? (
                   <>
-                    <span className="font-semibold text-text truncate flex items-center gap-1.5">
+                    <span className="font-semibold text-text truncate">
                       {profile.display_name || profile.username}
-                      {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
                     </span>
                     <p className="text-sm text-text-muted truncate">
                       @{profile.username}
@@ -175,8 +169,7 @@ export function Sidebar() {
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
               isActive
                 ? "bg-primary/10 text-primary border-l-2 border-primary"
-                : "text-text-secondary hover:text-text hover:bg-surface-light",
-              item.isPremium && "text-warning hover:text-warning"
+                : "text-text-secondary hover:text-text hover:bg-surface-light"
             )}
           >
             <item.icon className="h-5 w-5" />
@@ -207,26 +200,12 @@ export function Sidebar() {
               <Eye className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-text">Profile Views</span>
             </div>
-            {isPremium ? (
-              <>
-                <p className="text-2xl font-bold text-primary">
-                  {(profile as Record<string, unknown>)?.profile_views as number ?? 0}
-                </p>
-                <p className="text-xs text-text-muted mt-1">
-                  Total views on your profile
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-2xl font-bold text-primary">--</p>
-                <p className="text-xs text-text-muted mt-1">
-                  <Link href="/premium" className="text-warning hover:underline">
-                    Upgrade to Premium
-                  </Link>{" "}
-                  to see who viewed your profile
-                </p>
-              </>
-            )}
+            <p className="text-2xl font-bold text-primary">
+              {(profile as Record<string, unknown>)?.profile_views as number ?? 0}
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              Total views on your profile
+            </p>
           </div>
         </div>
       )}

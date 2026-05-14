@@ -1,16 +1,15 @@
 // =============================================================================
-// Launch Promotion: Premium free for all users for the first 3 months
+// Premium is currently disabled site-wide: all logged-in users get every
+// feature for free. The /premium section is hidden from navigation while
+// the team decides on the long-term monetization shape.
 // =============================================================================
 
-// Promo runs from launch until May 20, 2026
-export const PROMO_END_DATE = new Date("2026-05-20T23:59:59Z");
+// Kept as a future cutover date for when the unlocked period should end.
+// `isPromoPeriodActive` currently returns true unconditionally regardless.
+export const PROMO_END_DATE = new Date("2099-01-01T00:00:00Z");
 
-/**
- * Returns true if the current date is within the launch promo period.
- * During this period, all users get premium features for free.
- */
 export function isPromoPeriodActive(): boolean {
-  return new Date() < PROMO_END_DATE;
+  return true;
 }
 
 /**

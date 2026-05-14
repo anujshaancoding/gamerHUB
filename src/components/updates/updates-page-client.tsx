@@ -35,6 +35,14 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-14T23:55:00",
+    version: "1.23.0",
+    type: "improvement",
+    title: "Premium is paused — every section unlocked for logged-in users",
+    description:
+      "We're hiding the Premium tier from navigation while we rework what it should include. Every previously gated feature — reporting, blog publishing, profile-visitor details and more — is now available to all logged-in users for free, and the /premium page has been retired for now.",
+  },
+  {
     date: "2026-05-14T23:30:00",
     version: "1.22.3",
     type: "improvement",

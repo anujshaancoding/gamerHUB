@@ -15,7 +15,6 @@ import {
   Settings,
   User,
   Trophy,
-  Crown,
   Star,
   Users,
   Swords,
@@ -31,11 +30,9 @@ import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useNotifications, useMarkAsRead, formatNotificationTime, type NotificationType } from "@/lib/hooks/useNotifications";
 import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useSocialCounts } from "@/lib/hooks/useFriends";
 import { usePresence } from "@/lib/presence/PresenceProvider";
 import { StatusSelector } from "@/components/presence/StatusSelector";
-import { PremiumBadge } from "@/components/premium";
 import { Logo } from "@/components/layout/logo";
 import { SearchDropdown } from "@/components/search";
 import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
@@ -77,7 +74,6 @@ const mobileNavItems = [
   { href: "/blog", label: "Blog", icon: BookOpen, requiresAuth: false },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: false },
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
-  { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
 
@@ -86,7 +82,6 @@ export function Navbar() {
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
   const isAuthenticated = !!user;
-  const { isPremium } = useSubscription({ enabled: isAuthenticated });
   const { myStatus } = usePresence();
 
   const { hideNews } = useSiteSettings();
@@ -403,7 +398,6 @@ export function Navbar() {
                     </div>
                     <span className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-text">
                       {profile?.display_name || profile?.username}
-                      {isPremium && <PremiumBadge size="sm" showLabel={false} animate={false} />}
                     </span>
                   </div>
 
@@ -528,8 +522,7 @@ export function Navbar() {
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-text-secondary hover:text-text hover:bg-surface-light",
-                    item.isPremium && "text-warning hover:text-warning"
+                      : "text-text-secondary hover:text-text hover:bg-surface-light"
                   )}
                 >
                   <item.icon className="h-5 w-5" />

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import type { UserPermissionContext } from "@/lib/permissions";
+import { isPromoPeriodActive } from "@/lib/promo";
 
 /**
  * Server-side helper for API routes.
@@ -21,8 +22,10 @@ export async function getUserPermissionContext(): Promise<UserPermissionContext 
 
   if (!profile) return null;
 
-  // Check premium status: either has active premium flag or premium_until hasn't expired
+  // Premium is currently unlocked for every logged-in user (see lib/promo.ts).
+  // Once paid premium returns, drop the promo override and the DB flags take over.
   const isPremium =
+    isPromoPeriodActive() ||
     profile.is_premium === true ||
     (profile.premium_until
       ? new Date(profile.premium_until) > new Date()
