@@ -1,4 +1,4 @@
--- 009b: Seed default forum sections (HLTV-style top-level categories).
+-- 009b: Seed default forum sections (top-level categories).
 -- Idempotent — re-running just updates titles/descriptions.
 
 INSERT INTO forum_categories (slug, name, description, icon, color, game_id, display_order)

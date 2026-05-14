@@ -35,6 +35,22 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-14T23:30:00",
+    version: "1.22.3",
+    type: "improvement",
+    title: "Forum activity feed now bumps the freshest threads to the top",
+    description:
+      "Any new thread, reply or comment in the Forum instantly rises to the top of the right-side activity panel — same vibe as classic discussion boards. Brand-new threads with zero replies also count as activity, so they no longer get buried under older threads that happened to have a stale reply.",
+  },
+  {
+    date: "2026-05-14T22:00:00",
+    version: "1.22.2",
+    type: "improvement",
+    title: "Player Insights paused while we rework data sources",
+    description:
+      "We've put Player Insights on hold and removed it from the sidebar. The current setup couldn't reliably source real BGMI and Free Fire stats, and we'd rather pause the feature than show numbers we don't trust. The page now shows a brief explainer; we'll bring it back once the data path is solid.",
+  },
+  {
     date: "2026-05-14T20:00:00",
     version: "1.22.1",
     type: "fix",
@@ -46,11 +62,11 @@ const updates: UpdateEntry[] = [
     date: "2026-05-14T18:00:00",
     version: "1.22.0",
     type: "feature",
-    title: "Gamer Tools, HLTV-style Forum, Pick'em, Community Sens Share",
+    title: "Gamer Tools, Forum, Pick'em, Community Sens Share",
     description:
-      "Eight new tools and a full discussion forum. Crosshair gallery pulls every Indian Valorant pro's code into one searchable grid; a community sens-share lets anyone publish their BGMI/Free Fire/Valorant config; tournament pick'em rides on top of the existing event calendar. The Forum brings HLTV-style sections (Valorant, BGMI, Free Fire, Hardware, LFG, Off-topic) with threaded replies, upvotes and tags.",
+      "Eight new tools and a full discussion forum. Crosshair gallery pulls every Indian Valorant pro's code into one searchable grid; a community sens-share lets anyone publish their BGMI/Free Fire/Valorant config; tournament pick'em rides on top of the existing event calendar. The Forum brings sections (Valorant, BGMI, Free Fire, Hardware, LFG, Off-topic) with threaded replies, upvotes and tags.",
     highlights: [
-      "New /forum — HLTV-style discussion board with 8 sections, post types (discussion / question / guide / LFG), nested replies, upvote/downvote, view counts",
+      "New /forum — discussion board with 8 sections, post types (discussion / question / guide / LFG), nested replies, upvote/downvote, view counts",
       "New /tools hub linking every utility — sens converter, FOV calc, crosshair gallery, sens share, monitor guide, rank percentile, tier list maker, skin estimator, pick'em",
       "FOV calculator at /tools/fov — converts FOV between Valorant, CS2, Apex, COD, Fortnite, R6, OW2 and more (handles Hor+, Vert-, 4:3 stretched, ultrawide)",
       "Pro crosshair gallery at /tools/crosshairs — every Indian Valorant pro's crosshair code with one-click copy, filterable by role",

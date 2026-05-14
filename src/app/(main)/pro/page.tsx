@@ -146,7 +146,7 @@ export default function ProLandingPage() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-text">Forum</h3>
-              <p className="text-xs text-text-muted mt-0.5">HLTV-style discussion threads by game and topic.</p>
+              <p className="text-xs text-text-muted mt-0.5">Discussion threads by game and topic.</p>
             </div>
           </div>
         </Link>

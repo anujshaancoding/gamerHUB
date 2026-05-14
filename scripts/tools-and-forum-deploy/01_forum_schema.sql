@@ -1,4 +1,4 @@
--- 009: Forum (HLTV-style discussions) — categories, threads, replies, votes
+-- 009: Forum — categories, threads, replies, votes
 --
 -- Powers /forum: section-first discussion board (Valorant, BGMI, Free Fire,
 -- General, Tech, Off-topic). Threads have nested 1-level replies + upvote /
@@ -148,8 +148,10 @@ BEGIN
     EXIT WHEN v_attempt > 50;
   END LOOP;
 
-  INSERT INTO forum_posts (category_id, author_id, title, slug, content, post_type, tags)
-  VALUES (p_category_id, p_author_id, p_title, v_slug, p_content, p_post_type, COALESCE(p_tags, '{}'))
+  -- Seed last_reply_at with creation time so brand-new threads sort into the
+  -- activity feed alongside threads that already have replies.
+  INSERT INTO forum_posts (category_id, author_id, title, slug, content, post_type, tags, last_reply_at)
+  VALUES (p_category_id, p_author_id, p_title, v_slug, p_content, p_post_type, COALESCE(p_tags, '{}'), NOW())
   RETURNING id INTO v_post_id;
 
   UPDATE forum_categories SET post_count = post_count + 1 WHERE id = p_category_id;

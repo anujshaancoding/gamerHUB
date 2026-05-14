@@ -2,7 +2,7 @@
 
 Schema and seeds for the new gamer-tools rollout:
 
-- **Forum** (HLTV-style sections, threads, nested replies, vote toggle)
+- **Forum** (sectioned threads, nested replies, vote toggle)
 - **Sensitivity Share** (community-uploaded sens configs across PC + mobile)
 - **Pick'em** (tournament-bracket predictions attached to `pro_events`)
 

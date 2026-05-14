@@ -11,7 +11,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Forum — Indian gamer discussions · ggLobby",
   description:
-    "HLTV-style discussion board for Indian gamers. Sections for Valorant, BGMI, Free Fire, hardware, LFG and more.",
+    "Discussion board for Indian gamers. Sections for Valorant, BGMI, Free Fire, hardware, LFG and more.",
   alternates: { canonical: "/forum" },
   openGraph: {
     title: "ggLobby Forum",
@@ -36,13 +36,13 @@ export default async function ForumLandingPage() {
           <Badge variant="primary" size="sm" className="mb-2">Beta</Badge>
           <h1 className="text-3xl md:text-4xl font-bold text-text">Forum</h1>
           <p className="text-text-muted mt-2 max-w-2xl">
-            HLTV-style discussions for the Indian gaming scene. Pick a section, jump
+            Discussions for the Indian gaming scene. Pick a section, jump
             into threads, or start your own.
           </p>
         </div>
         <Link
           href="/forum/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary text-background px-4 py-2 text-sm font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20 ring-1 ring-primary/50"
         >
           <PlusCircle className="h-4 w-4" /> New thread
         </Link>

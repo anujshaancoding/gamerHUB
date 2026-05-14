@@ -156,7 +156,7 @@ export default function ToolsLandingPage() {
           <Link href="/forum" className="text-primary font-medium hover:underline">
             Forum
           </Link>
-          . HLTV-style threads with sections per game and nested replies.
+          . Threaded discussions with sections per game and nested replies.
         </p>
       </div>
     </div>
