@@ -1,6 +1,14 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Pin Turbopack's workspace root to this directory. Without this, Next 16
+  // mis-infers the root as the parent dir when the project path contains a
+  // space (e.g. "e:\OFFICE WORK\gamer hub"), which breaks tailwindcss resolution.
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
+
   // Remove X-Powered-By header for security + smaller response
   poweredByHeader: false,
 

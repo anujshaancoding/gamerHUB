@@ -16,6 +16,9 @@ import {
   MessageCircle,
   HelpCircle,
   BarChart3,
+  Trophy,
+  Wrench,
+  MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -36,6 +39,9 @@ const navItems = [
   { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
   { href: "/tracker", label: "Player Insights", icon: BarChart3, requiresAuth: false, isBeta: true },
+  { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false, isBeta: true },
+  { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false, isBeta: true },
+  { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false, isBeta: true },
   { href: "/premium", label: "Premium", icon: Crown, isPremium: true, requiresAuth: true },
 ];
 

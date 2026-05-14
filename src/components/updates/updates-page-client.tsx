@@ -35,6 +35,46 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-14T18:00:00",
+    version: "1.22.0",
+    type: "feature",
+    title: "Gamer Tools, HLTV-style Forum, Pick'em, Community Sens Share",
+    description:
+      "Eight new tools and a full discussion forum. Crosshair gallery pulls every Indian Valorant pro's code into one searchable grid; a community sens-share lets anyone publish their BGMI/Free Fire/Valorant config; tournament pick'em rides on top of the existing event calendar. The Forum brings HLTV-style sections (Valorant, BGMI, Free Fire, Hardware, LFG, Off-topic) with threaded replies, upvotes and tags.",
+    highlights: [
+      "New /forum — HLTV-style discussion board with 8 sections, post types (discussion / question / guide / LFG), nested replies, upvote/downvote, view counts",
+      "New /tools hub linking every utility — sens converter, FOV calc, crosshair gallery, sens share, monitor guide, rank percentile, tier list maker, skin estimator, pick'em",
+      "FOV calculator at /tools/fov — converts FOV between Valorant, CS2, Apex, COD, Fortnite, R6, OW2 and more (handles Hor+, Vert-, 4:3 stretched, ultrawide)",
+      "Pro crosshair gallery at /tools/crosshairs — every Indian Valorant pro's crosshair code with one-click copy, filterable by role",
+      "Community sens share at /tools/sens-share — publish your full BGMI/FF/Valorant/CODM/Apex/CS2 sens, upvote configs, copy with one tap",
+      "Monitor & Hz guide at /tools/monitor — refresh-rate frametime table, response time vs input lag, viewing-distance calculator",
+      "Rank percentile estimator at /tools/rank-percentile — see what % of the ranked playerbase you're above (Valorant, BGMI, Free Fire)",
+      "Tier list maker at /tools/tier-list — drag-and-drop S/A/B/C/D builder with Valorant agents, BGMI weapons, Free Fire characters, Indian pros presets",
+      "Valorant skin estimator at /tools/skin-estimator — count your skins by tier and see the rough VP / INR / USD total",
+      "Tournament Pick'em on every upcoming /pro/events tournament — predict every match, climb the live leaderboard (+3 pt bonus for finals winner)",
+    ],
+  },
+  {
+    date: "2026-05-12T18:00:00",
+    version: "1.21.0",
+    type: "feature",
+    title: "Pro Scene India: Rankings, Gear, Tournaments, Compare & Sens Converter",
+    description:
+      "A brand new section dedicated to India's competitive scene — covering Valorant, BGMI and Free Fire from day one. Browse the national ranking, drill into each player's career stats and full setup, jump into the tournament calendar, settle debates with the head-to-head compare tool, move your aim between games with the sensitivity converter, and follow your favourite pros so they show up on your dashboard.",
+    highlights: [
+      "New /pro section with national ranking tables for Indian Valorant, BGMI and Free Fire pros",
+      "Valorant player pages: K/D, ACS, ADR, HS%, agent pool with pick & win rates, full PC rig + peripherals, one-click crosshair-code copy",
+      "BGMI player pages: K/D, Avg Damage, finishes per match, survival rate, device + grip style + trigger setup, full ADS sensitivity table per scope",
+      "Free Fire player pages: K/D, booyah rate, character pool, device + grip + sensitivity",
+      "Tournament calendar at /pro/events — BMPS, VCT Challengers SA, FFWS India and more, with dates, prize pools, venues, official streams",
+      "Compare tool at /pro/compare — pick any two same-game pros and see stats + gear head-to-head, with the winning side highlighted on each row",
+      "Sensitivity converter at /pro/sens-converter — exact PC math for Valorant ↔ CS2 ↔ Apex ↔ Overwatch 2 ↔ R6 ↔ The Finals, plus mobile BGMI ↔ CODM ↔ Free Fire approximations and cm/360° + eDPI",
+      "Follow your favourite pros from any player page — a Player of the Week and your followed pros now appear on your dashboard",
+      "Amazon India 'Buy on Amazon' links next to each peripheral on every gear card",
+      "Verified socials (X, Instagram, YouTube, Twitch) on every player page",
+    ],
+  },
+  {
     date: "2026-05-10T16:00:00",
     version: "1.20.1",
     type: "fix",

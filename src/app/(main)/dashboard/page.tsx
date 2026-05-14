@@ -21,6 +21,7 @@ import { useProgression } from "@/lib/hooks/useProgression";
 import { PremiumBadge } from "@/components/premium";
 import { useQuests } from "@/lib/hooks/useQuests";
 import { ProgressionOverview, QuestList } from "@/components/gamification";
+import { PlayerOfWeekCard, FollowedProsCard } from "@/components/pro/pro-dashboard-widgets";
 import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { Match, Challenge, Profile, Game, UserGame } from "@/types/database";
 
@@ -266,6 +267,24 @@ export default function DashboardPage() {
               resetTime={resets?.weekly}
             />
           )}
+        </motion.div>
+      </div>
+
+      {/* Pro Scene widgets */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <PlayerOfWeekCard />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <FollowedProsCard />
         </motion.div>
       </div>
 

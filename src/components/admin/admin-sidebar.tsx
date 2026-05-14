@@ -14,6 +14,7 @@ import {
   MessageSquarePlus,
   BarChart3,
   Bot,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
@@ -23,6 +24,7 @@ const allNavItems = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
   { href: "/admin/news", label: "News", icon: Newspaper, newsOnly: true },
+  { href: "/admin/pro", label: "Pro Hub", icon: Trophy },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
