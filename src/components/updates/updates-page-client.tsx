@@ -35,6 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-21T18:00:00",
+    version: "1.26.0",
+    type: "improvement",
+    title: "Tier list maker now uses real Valorant artwork",
+    description:
+      "Every item in the tier list maker now shows real in-game art instead of plain text, and there's a new preset for ranking agent ultimates.",
+    highlights: [
+      "Agents, weapons and maps presets now display official in-game icons and map art on every chip",
+      "New 'Valorant agent ultimates' preset — rank every agent's ultimate by its real ability icon",
+      "Updated to the full current roster: all playable agents, every weapon and all 12 maps",
+    ],
+  },
+  {
     date: "2026-05-19T17:00:00",
     version: "1.25.0",
     type: "feature",

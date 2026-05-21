@@ -4,7 +4,7 @@ import { TierListMaker } from "@/components/tools/tier-list-maker";
 export const metadata: Metadata = {
   title: "Tier List Maker — Drag-and-drop S/A/B/C/D rankings · ggLobby",
   description:
-    "Build a shareable tier list. Pre-loaded with Valorant agents, weapons and maps — or upload your own images.",
+    "Build a shareable tier list. Pre-loaded with Valorant agents, agent ultimates, weapons and maps — every item shown with real in-game art.",
   alternates: { canonical: "/tier-list" },
 };
 
@@ -14,8 +14,9 @@ export default function TierListPage() {
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-text">Tier list maker</h1>
         <p className="text-text-muted mt-2 leading-relaxed">
-          Drag items into S / A / B / C / D rows. Switch presets or upload your own
-          images. Download the finished tier list as a PNG to share.
+          Drag items onto the S / A / B / C / D / F rows. Switch presets to rank
+          Valorant agents, agent ultimates, weapons or maps — then screenshot the
+          board to share.
         </p>
       </header>
 

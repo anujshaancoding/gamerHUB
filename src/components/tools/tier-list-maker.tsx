@@ -4,7 +4,11 @@ import { useMemo, useRef, useState } from "react";
 import { Camera, Plus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { TIER_PRESETS, DEFAULT_ROWS } from "@/lib/tools/tier-list-presets";
+import {
+  TIER_PRESETS,
+  DEFAULT_ROWS,
+  type TierItem,
+} from "@/lib/tools/tier-list-presets";
 
 type ItemPlacement = Record<string, string>; // itemId -> rowId | 'pool'
 
@@ -59,7 +63,7 @@ export function TierListMaker() {
         {DEFAULT_ROWS.map((row) => (
           <div
             key={row.id}
-            className="flex items-stretch gap-1 min-h-[64px]"
+            className="flex items-stretch gap-1 min-h-[84px]"
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(row.id)}
           >
@@ -97,18 +101,32 @@ export function TierListMaker() {
   );
 }
 
-function TierChip({ item, onDragStart, active }: { item: { id: string; label: string }; onDragStart: () => void; active: boolean }) {
+function TierChip({ item, onDragStart, active }: { item: TierItem; onDragStart: () => void; active: boolean }) {
   return (
     <div
       draggable
       onDragStart={onDragStart}
+      title={item.label}
       className={cn(
-        "px-3 py-1.5 rounded-md bg-surface border border-border text-sm text-text cursor-grab select-none",
+        "flex flex-col items-center justify-center gap-1 rounded-md bg-surface border border-border cursor-grab select-none transition-colors",
         "hover:border-primary/40 hover:bg-surface-light",
+        item.image ? "p-1.5" : "px-3 py-2.5",
         active && "opacity-50"
       )}
     >
-      {item.label}
+      {item.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.image}
+          alt={item.label}
+          draggable={false}
+          loading="lazy"
+          className="h-14 w-auto max-w-[150px] object-contain pointer-events-none"
+        />
+      )}
+      <span className="line-clamp-2 max-w-[150px] text-center text-[11px] leading-tight text-text">
+        {item.label}
+      </span>
     </div>
   );
 }
