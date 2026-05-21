@@ -3,13 +3,11 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { BASE_URL } from "@/lib/seo/constants";
-import { isNewsHidden } from "@/lib/news/visibility";
 import {
   CommunityPageClient,
   type BlogPost,
   type FriendPost,
 } from "@/components/community/community-page-client";
-import type { NewsArticle } from "@/types/news";
 
 // Dynamic OG metadata when sharing a specific friend post via ?post= param
 export async function generateMetadata({
@@ -99,11 +97,9 @@ export async function generateMetadata({
 
 export default async function CommunityPage() {
   const db = createClient();
-  const admin = createAdminClient();
-  const hideNews = await isNewsHidden();
 
   // Pre-fetch data sources in parallel for fastest initial load
-  const [rawBlogPosts, rawFriendPostsData, rawNewsArticles] = await Promise.all([
+  const [rawBlogPosts, rawFriendPostsData] = await Promise.all([
     db
       .from("blog_posts")
       .select(`
@@ -124,20 +120,6 @@ export default async function CommunityPage() {
       .order("created_at", { ascending: false })
       .limit(4)
       .then((r) => r.data),
-
-    // Skip news fetch entirely when hidden
-    hideNews
-      ? Promise.resolve(null)
-      : admin
-          .from("news_articles")
-          .select(
-            "id, title, excerpt, thumbnail_url, game_slug, category, region, tags, views_count, published_at, is_featured, is_pinned, created_at, original_url, source:news_sources(name, slug)"
-          )
-          .eq("status", "published")
-          .order("is_pinned", { ascending: false })
-          .order("published_at", { ascending: false })
-          .limit(20)
-          .then((r) => r.data),
   ]);
 
   // Manually join friend post authors
@@ -182,15 +164,11 @@ export default async function CommunityPage() {
     (p: Record<string, unknown>) => p.user !== null
   ) as FriendPost[];
 
-  const newsArticles: NewsArticle[] = (rawNewsArticles || []) as NewsArticle[];
-
   return (
     <Suspense>
       <CommunityPageClient
         initialBlogPosts={blogPosts}
         initialFriendPosts={friendPosts}
-        initialNewsArticles={newsArticles}
-        hideNews={hideNews}
       />
     </Suspense>
   );

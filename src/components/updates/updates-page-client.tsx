@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-21T20:00:00",
+    version: "1.27.0",
+    type: "improvement",
+    title: "Community section is back in the navigation",
+    description:
+      "The Community page is reachable again from the sidebar and the mobile menu, bringing Valorant blogs, tournaments, giveaways and the friend feed back into one place.",
+    highlights: [
+      "Community added to the sidebar (under 'You') and the mobile navigation menu",
+      "Retired the News tab from the Community page — blogs, tournaments/giveaways and the friend feed remain",
+    ],
+  },
+  {
     date: "2026-05-21T18:00:00",
     version: "1.26.0",
     type: "improvement",

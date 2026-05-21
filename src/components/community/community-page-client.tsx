@@ -22,12 +22,7 @@ import {
   Trophy,
   Lock,
   UserPlus,
-  Newspaper,
-  ExternalLink,
-  Star,
-  Pin,
   Sparkles,
-  Globe,
 } from "lucide-react";
 import {
   Card,
@@ -44,11 +39,8 @@ import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { STALE_TIMES } from "@/lib/query/provider";
 import { blogKeys } from "@/lib/hooks/useBlog";
 import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
-import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
 import { BLOG_CATEGORIES } from "@/types/blog";
 import { SearchFilterBar } from "@/components/community/SearchFilterBar";
-import type { NewsArticle, NewsFilters } from "@/types/news";
-import type { BlogCategory } from "@/types/blog";
 import type { CommunityListing } from "@/types/listings";
 
 const TournamentsTab = dynamic(
@@ -116,31 +108,12 @@ export interface FriendPost {
   };
 }
 
-// Query keys for news in community context
-const newsKeys = {
-  all: ["community-news"] as const,
-  published: (filters?: NewsFilters) => ["community-news", "published", filters] as const,
-};
-
-type TabId = "news" | "blog" | "tournaments" | "friends";
+type TabId = "blog" | "tournaments" | "friends";
 
 interface CommunityPageClientProps {
   initialBlogPosts: BlogPost[];
   initialFriendPosts: FriendPost[];
-  initialNewsArticles: NewsArticle[];
-  hideNews?: boolean;
 }
-
-// ── News category filter options ────────────────────────────────────────
-const newsCategoryOptions = Object.entries(NEWS_CATEGORIES).map(([key, val]) => ({
-  value: key,
-  label: val.label,
-}));
-
-const newsRegionOptions = Object.entries(NEWS_REGIONS).map(([key, val]) => ({
-  value: key,
-  label: val.label,
-}));
 
 // ── Blog category filter options ────────────────────────────────────────
 const blogCategoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, val]) => ({
@@ -156,8 +129,6 @@ const SUPPORTED_GAME_OPTIONS: { value: string; label: string }[] = [
 export function CommunityPageClient({
   initialBlogPosts,
   initialFriendPosts,
-  initialNewsArticles,
-  hideNews = false,
 }: CommunityPageClientProps) {
   const { user, profile } = useAuth();
   const db = useMemo(() => createClient(), []);
@@ -167,13 +138,11 @@ export function CommunityPageClient({
   const pathname = usePathname();
   const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
-  // Read initial tab from URL: ?tab=blog, ?tab=tournaments, ?tab=friends, or default
+  // Read initial tab from URL: ?tab=tournaments, ?tab=friends, or default (blog)
   const sharedPostId = searchParams.get("post");
   const tabParam = searchParams.get("tab");
-  const validTabs: TabId[] = hideNews
-    ? ["blog", "tournaments", "friends"]
-    : ["news", "blog", "tournaments", "friends"];
-  const defaultTab: TabId = hideNews ? "blog" : "news";
+  const validTabs: TabId[] = ["blog", "tournaments", "friends"];
+  const defaultTab: TabId = "blog";
   const initialTab: TabId = sharedPostId
     ? "friends"
     : validTabs.includes(tabParam as TabId)
@@ -182,8 +151,6 @@ export function CommunityPageClient({
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   // ── Filter states per tab ─────────────────────────────────────────────
-  const [newsFilters, setNewsFilters] = useState<NewsFilters>({});
-  const [newsSort, setNewsSort] = useState("newest");
   const [blogFilters, setBlogFilters] = useState<{ search?: string; game?: string; category?: string; featured?: boolean }>({});
   const [friendSearch, setFriendSearch] = useState("");
 
@@ -214,35 +181,6 @@ export function CommunityPageClient({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // News articles query (with filters)
-  const {
-    data: newsArticles = [],
-    isLoading: newsLoading,
-    error: newsError,
-  } = useQuery({
-    queryKey: [...newsKeys.published(newsFilters), newsSort],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set("limit", "20");
-      if (newsFilters.game) params.set("game", newsFilters.game);
-      if (newsFilters.category) params.set("category", newsFilters.category);
-      if (newsFilters.region) params.set("region", newsFilters.region);
-      if (newsFilters.search) params.set("search", newsFilters.search);
-      if (newsFilters.featured) params.set("featured", "true");
-      if (newsSort === "most_viewed") params.set("sort", "most_viewed");
-      const res = await fetch(`/api/news?${params}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to fetch news");
-      return json.articles as NewsArticle[];
-    },
-    staleTime: STALE_TIMES.NEWS_ARTICLES,
-    enabled: !hideNews && activeTab === "news",
-    initialData:
-      initialNewsArticles.length > 0 && Object.keys(newsFilters).length === 0
-        ? initialNewsArticles
-        : undefined,
-  });
 
   // Blog posts query (with filters)
   const {
@@ -390,12 +328,11 @@ export function CommunityPageClient({
   }, [sharedPostId, friendLoading, displayFriendPosts]);
 
   const loading =
-    activeTab === "news" ? newsLoading :
     activeTab === "blog" ? blogLoading :
     activeTab === "friends" ? friendLoading :
     false;
 
-  const fetchError = newsError || blogError || friendError;
+  const fetchError = blogError || friendError;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -471,7 +408,6 @@ export function CommunityPageClient({
   };
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
-    ...(!hideNews ? [{ id: "news" as TabId, label: "News", icon: Newspaper }] : []),
     { id: "blog", label: "Blog", icon: BookOpen },
     { id: "tournaments", label: "Tournaments/Giveaways", icon: Trophy },
     { id: "friends", label: "Friends", icon: Users },
@@ -483,39 +419,6 @@ export function CommunityPageClient({
       default: return "bg-primary/90 text-background";
     }
   };
-
-  // ── News filter config ────────────────────────────────────────────────
-  const newsFilterFields = useMemo(() => [
-    {
-      key: "game",
-      label: "Game",
-      icon: <Gamepad2 className="w-3.5 h-3.5" />,
-      type: "select" as const,
-      options: SUPPORTED_GAME_OPTIONS,
-      placeholder: "All Games",
-    },
-    {
-      key: "category",
-      label: "Category",
-      type: "select" as const,
-      options: newsCategoryOptions,
-      placeholder: "All Categories",
-    },
-    {
-      key: "region",
-      label: "Region",
-      icon: <Globe className="w-3.5 h-3.5" />,
-      type: "select" as const,
-      options: newsRegionOptions,
-      placeholder: "All Regions",
-    },
-    {
-      key: "featured",
-      label: "Featured Only",
-      icon: <Sparkles className="w-3.5 h-3.5" />,
-      type: "toggle" as const,
-    },
-  ], []);
 
   // ── Blog filter config ────────────────────────────────────────────────
   const blogFilterFields = useMemo(() => [
@@ -595,25 +498,6 @@ export function CommunityPageClient({
         />
       ) : (
         <>
-          {/* ── Search & Filters for News ─────────────────────────────── */}
-          {activeTab === "news" && (
-            <SearchFilterBar
-              searchPlaceholder="Search news articles, topics..."
-              searchValue={newsFilters.search || ""}
-              onSearchChange={(val) => setNewsFilters((f) => ({ ...f, search: val || undefined }))}
-              filters={newsFilterFields}
-              filterValues={newsFilters as Record<string, string | boolean | undefined>}
-              onFilterChange={(key, val) => setNewsFilters((f) => ({ ...f, [key]: val }))}
-              onClearAll={() => { setNewsFilters({}); setNewsSort("newest"); }}
-              sortOptions={[
-                { value: "newest", label: "Newest First" },
-                { value: "most_viewed", label: "Most Viewed" },
-              ]}
-              sortValue={newsSort}
-              onSortChange={setNewsSort}
-            />
-          )}
-
           {/* ── Search & Filters for Blog ─────────────────────────────── */}
           {activeTab === "blog" && (
             <SearchFilterBar
@@ -663,145 +547,6 @@ export function CommunityPageClient({
                   </div>
                 </div>
               ))}
-            </div>
-          ) : activeTab === "news" ? (
-            /* News Section */
-            <div className="space-y-6">
-              {newsArticles.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <Newspaper className="h-12 w-12 text-text-muted mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-text mb-2">
-                    {newsFilters.search || Object.keys(newsFilters).length > 0
-                      ? "No matching news found"
-                      : "No news yet"}
-                  </h3>
-                  <p className="text-text-muted">
-                    {newsFilters.search || Object.keys(newsFilters).length > 0
-                      ? "Try adjusting your search or filters to find what you're looking for."
-                      : "Stay tuned for the latest gaming news and updates!"}
-                  </p>
-                  {(newsFilters.search || Object.keys(newsFilters).length > 0) && (
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => { setNewsFilters({}); setNewsSort("newest"); }}
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </Card>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {newsArticles.map((article, index) => (
-                    <div
-                      key={article.id}
-                      className="animate-fadeInUp"
-                      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "both" }}
-                    >
-                      <Link
-                        href={`/news/${article.id}`}
-                        className="block"
-                      >
-                        <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer h-full">
-                          {article.thumbnail_url ? (
-                            <div className="aspect-video bg-surface-light relative">
-                              <Image
-                                src={article.thumbnail_url}
-                                alt={article.title}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, 50vw"
-                                priority={index < 2}
-                                unoptimized
-                              />
-                              {/* Game badge */}
-                              <div className="absolute top-3 left-3">
-                                <span className={cn(
-                                  "px-2 py-1 rounded text-xs font-semibold uppercase",
-                                  getGameColor(article.game_slug)
-                                )}>
-                                  <Gamepad2 className="h-3 w-3 inline mr-1" />
-                                  {article.game_slug}
-                                </span>
-                              </div>
-                              {/* Category badge */}
-                              <div className="absolute top-3 right-3 flex gap-1.5">
-                                {article.is_pinned && (
-                                  <span className="px-1.5 py-1 rounded bg-yellow-500/90 text-black">
-                                    <Pin className="h-3 w-3" />
-                                  </span>
-                                )}
-                                {article.is_featured && (
-                                  <span className="px-1.5 py-1 rounded bg-purple-500/90 text-white">
-                                    <Star className="h-3 w-3" />
-                                  </span>
-                                )}
-                                <span className="px-2 py-1 rounded text-xs font-medium bg-background/80 text-text capitalize">
-                                  {NEWS_CATEGORIES[article.category]?.label || article.category}
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="aspect-video bg-surface-light relative flex items-center justify-center">
-                              <Newspaper className="h-12 w-12 text-text-dim" />
-                              <div className="absolute top-3 left-3">
-                                <span className={cn(
-                                  "px-2 py-1 rounded text-xs font-semibold uppercase",
-                                  getGameColor(article.game_slug)
-                                )}>
-                                  <Gamepad2 className="h-3 w-3 inline mr-1" />
-                                  {article.game_slug}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-2 mb-2 text-xs text-text-muted">
-                              <Clock className="h-3 w-3" />
-                              <RelativeTime date={article.published_at || article.created_at} />
-                              {article.source?.name && (
-                                <>
-                                  <span className="mx-1">·</span>
-                                  <span className="flex items-center gap-1">
-                                    <ExternalLink className="h-3 w-3" />
-                                    {article.source.name}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                            <h3 className="text-lg font-semibold text-text mb-2 line-clamp-2">
-                              {article.title}
-                            </h3>
-                            {article.excerpt && (
-                              <p className="text-text-muted text-sm line-clamp-3 mb-3">
-                                {article.excerpt}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-4 text-text-muted text-sm">
-                              <span className="flex items-center gap-1">
-                                <Eye className="h-4 w-4" />
-                                {article.views_count.toLocaleString()}
-                              </span>
-                              {article.tags.length > 0 && (
-                                <div className="flex gap-1 flex-wrap">
-                                  {article.tags.slice(0, 2).map((tag) => (
-                                    <span
-                                      key={tag}
-                                      className="px-1.5 py-0.5 rounded text-[10px] bg-surface-light text-text-muted"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : activeTab === "blog" ? (
             /* Blog Section */

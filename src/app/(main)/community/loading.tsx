@@ -3,7 +3,7 @@ export default function CommunityLoading() {
     <div className="space-y-6 animate-pulse">
       {/* Tab bar skeleton */}
       <div className="flex gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-9 w-24 rounded-lg bg-surface-light" />
         ))}
       </div>

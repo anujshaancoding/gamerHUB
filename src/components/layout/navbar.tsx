@@ -64,9 +64,9 @@ const getNotificationIcon = (type: NotificationType) => {
   }
 };
 
-// Mobile menu navigation items — mirrors the sidebar IA. Phase-3 social
-// features (community/friends/messages/clans/find-gamers) are frozen and
-// intentionally not surfaced (see V2-PLAN.md).
+// Mobile menu navigation items — mirrors the sidebar IA. Remaining Phase-3
+// social features (standalone friends/messages pages, clans, find-gamers)
+// stay frozen and intentionally not surfaced (see V2-PLAN.md).
 const mobileNavItems = [
   { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
   { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
@@ -78,6 +78,7 @@ const mobileNavItems = [
   { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
+  { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
 
@@ -158,7 +159,7 @@ export function Navbar() {
 
   return (
     <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] 2xl:right-[calc(var(--app-inset)_+_18rem)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="px-4 lg:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo - pinned left on all screen sizes */}
           <div className="flex-shrink-0">
