@@ -26,6 +26,26 @@ const STORAGE_KEY = "gamerhub-theme";
 const STORAGE_PREFER_GAME = "gamerhub-prefer-game-theme";
 const STORAGE_PREFERRED_GAME = "gamerhub-preferred-game";
 
+// Bump this whenever the default theme changes app-wide. On a version
+// mismatch we clear any stale saved theme (e.g. V1's black-white /
+// neon-green-black) so every returning user lands on the new VALORANT
+// default. They can still pick a different theme afterward — that choice
+// is saved under the current version and persists.
+const STORAGE_VERSION_KEY = "gamerhub-theme-version";
+const STORAGE_VERSION = "2";
+
+/** Returns true if stale theme prefs were cleared (caller should use DEFAULT_THEME). */
+function migrateThemeStorage(): boolean {
+  if (localStorage.getItem(STORAGE_VERSION_KEY) === STORAGE_VERSION) {
+    return false;
+  }
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_PREFER_GAME);
+  localStorage.removeItem(STORAGE_PREFERRED_GAME);
+  localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION);
+  return true;
+}
+
 function applyThemeToDOM(theme: Theme) {
   const root = document.documentElement;
 
@@ -61,6 +81,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Initialize from localStorage
   useEffect(() => {
+    // One-time reset for users upgrading from a previous default theme.
+    if (migrateThemeStorage()) {
+      applyThemeToDOM(DEFAULT_THEME);
+      setMounted(true);
+      return;
+    }
+
     const storedThemeId = localStorage.getItem(STORAGE_KEY);
     const storedPreferGame = localStorage.getItem(STORAGE_PREFER_GAME);
     const storedPreferredGame = localStorage.getItem(STORAGE_PREFERRED_GAME);

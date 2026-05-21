@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentComments } from "@/components/engagement/ContentComments";
+import { ContentComments, type Comment } from "@/components/engagement/ContentComments";
 import { useBlogComments, useAddBlogComment, useLikeBlogComment } from "@/lib/hooks/useBlog";
 
 interface BlogCommentsProps {
@@ -15,7 +15,7 @@ export function BlogComments({ postSlug }: BlogCommentsProps) {
   return (
     <ContentComments
       contentId={postSlug}
-      comments={comments}
+      comments={comments as unknown as Comment[]}
       allowComments={allowComments}
       loading={loading}
       onAddComment={async ({ content, parent_id }) => {

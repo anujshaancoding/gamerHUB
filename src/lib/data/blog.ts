@@ -142,10 +142,11 @@ export async function getBlogPostBySlug(
 
   // View counting is handled client-side with sessionStorage dedup
 
+  const postRecord = post as Record<string, unknown>;
   return {
-    ...post,
+    ...postRecord,
     author: {
-      ...post.author,
+      ...(postRecord.author as Record<string, unknown>),
       blog_author: blogAuthor,
     },
   } as unknown as BlogPost;
@@ -169,7 +170,7 @@ export async function getAllPublishedSlugs(): Promise<
     return [];
   }
 
-  return data || [];
+  return (data || []) as unknown as { slug: string; updated_at: string }[];
 }
 
 // Fetch recent published posts for Google News sitemap (last 48 hours)
@@ -199,7 +200,13 @@ export async function getRecentPublishedPosts(): Promise<
     return [];
   }
 
-  return data || [];
+  return (data || []) as unknown as {
+    slug: string;
+    title: string;
+    published_at: string;
+    category: string;
+    tags: string[];
+  }[];
 }
 
 // Fetch available games for filter dropdowns
@@ -218,5 +225,10 @@ export async function getGames(): Promise<
     return [];
   }
 
-  return data || [];
+  return (data || []) as unknown as {
+    id: string;
+    slug: string;
+    name: string;
+    icon_url: string | null;
+  }[];
 }

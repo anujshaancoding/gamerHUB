@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui
 interface FeaturedPlayer {
   id: string;
   slug: string;
-  game: "valorant" | "bgmi" | "freefire";
+  game: "valorant";
   ign: string;
   real_name: string | null;
   role: string | null;
@@ -25,7 +25,7 @@ interface FeaturedPlayer {
 interface FollowedPlayer {
   id: string;
   slug: string;
-  game: "valorant" | "bgmi" | "freefire";
+  game: "valorant";
   ign: string;
   role: string | null;
   photo_url: string | null;
@@ -35,14 +35,10 @@ interface FollowedPlayer {
 
 const GAME_LABEL: Record<FeaturedPlayer["game"], string> = {
   valorant: "Valorant",
-  bgmi: "BGMI",
-  freefire: "Free Fire",
 };
 
 const GAME_ACCENT: Record<FeaturedPlayer["game"], string> = {
   valorant: "bg-red-500/10 text-red-300 border-red-500/30",
-  bgmi: "bg-orange-500/10 text-orange-300 border-orange-500/30",
-  freefire: "bg-purple-500/10 text-purple-300 border-purple-500/30",
 };
 
 export function PlayerOfWeekCard() {
@@ -83,7 +79,7 @@ export function PlayerOfWeekCard() {
       </CardHeader>
       <CardContent className="pt-0">
         <Link
-          href={`/pro/${player.game}/${player.slug}`}
+          href={`/pros/${player.slug}`}
           className="flex items-start gap-3 group"
         >
           <div className="relative h-14 w-14 rounded-xl bg-surface-light overflow-hidden flex-shrink-0">
@@ -194,7 +190,7 @@ export function FollowedProsCard() {
             {players.slice(0, 6).map((p) => (
               <Link
                 key={p.id}
-                href={`/pro/${p.game}/${p.slug}`}
+                href={`/pros/${p.slug}`}
                 className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-surface-light transition-colors group"
               >
                 <div className="relative h-9 w-9 rounded-full bg-surface-light overflow-hidden flex-shrink-0">

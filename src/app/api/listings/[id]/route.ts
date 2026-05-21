@@ -58,9 +58,41 @@ export async function PATCH(
 
     const body = await request.json();
 
+    // Strip identity / moderation / metric / system columns so a listing owner
+    // cannot escalate privileges or tamper with counts via mass-assignment.
+    const PROTECTED_FIELDS = new Set([
+      "id",
+      "creator_id",
+      "is_featured",
+      "featured",
+      "is_pinned",
+      "status",
+      "moderation_status",
+      "vote_count",
+      "like_count",
+      "comment_count",
+      "view_count",
+      "views",
+      "prize_pool",
+      "created_at",
+      "updated_at",
+    ]);
+    const updates = Object.fromEntries(
+      Object.entries(body as Record<string, unknown>).filter(
+        ([k]) => !PROTECTED_FIELDS.has(k)
+      )
+    );
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No editable fields provided" },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await db
       .from("community_listings")
-      .update(body)
+      .update(updates)
       .eq("id", id)
       .eq("creator_id", user.id)
       .select(

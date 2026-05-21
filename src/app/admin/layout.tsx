@@ -65,9 +65,11 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-[#06060e]">
       <AdminSidebar />
-      <div className="ml-64">
+      <div className="lg:ml-64">
+        {/* Spacer so the mobile hamburger (fixed, top-left) doesn't overlap content */}
+        <div className="h-12 lg:hidden" />
         <AdminHeader />
-        <main className="p-6">{children}</main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

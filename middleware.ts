@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const pinCookie = request.cookies.get("admin_pin_verified");
-    if (!pinCookie?.value || !verifyAdminTokenLight(pinCookie.value, user.id)) {
+    if (!pinCookie?.value || !(await verifyAdminTokenLight(pinCookie.value, user.id))) {
       return NextResponse.json({ error: "Admin PIN verification required" }, { status: 403 });
     }
 
@@ -93,23 +93,26 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users from auth routes to community
+  // Already-authenticated users hitting an auth route go INTO the app
+  // (/agents renders the app shell with nav + account menu). NOT /overview
+  // (logged-out marketing page, no account menu) and NOT the frozen
+  // /community feed — see V2-PLAN.md.
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/community";
+    url.pathname = "/agents";
     return NextResponse.redirect(url);
   }
 
-  // Authenticated users go straight to community; everyone else (including
-  // crawlers) sees the SEO-friendly overview landing page via a rewrite so
-  // the URL stays "/" while rendering /overview content.
+  // Landing "/": authenticated users go into the app shell (/agents);
+  // everyone else (anonymous visitors + crawlers) sees the SEO-friendly
+  // marketing landing via a rewrite so the URL stays "/" while rendering
+  // /overview content. V2 is content-first — there is no post-login feed.
   if (isLandingPage) {
     if (user) {
       const url = request.nextUrl.clone();
-      url.pathname = "/community";
+      url.pathname = "/agents";
       return NextResponse.redirect(url);
     }
-    // Rewrite (not redirect) so crawlers index "/" with real landing content
     const url = request.nextUrl.clone();
     url.pathname = "/overview";
     return NextResponse.rewrite(url);

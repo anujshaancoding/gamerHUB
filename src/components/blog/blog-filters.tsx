@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, SlidersHorizontal, Gamepad2, Sparkles, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { LegacySelect } from "@/components/ui/select";
 import type { BlogFilters, BlogCategory } from "@/types/blog";
 import { BLOG_CATEGORIES } from "@/types/blog";
 
@@ -16,8 +16,6 @@ interface BlogFiltersProps {
 
 const SUPPORTED_GAMES = [
   { slug: "valorant", name: "Valorant" },
-  { slug: "bgmi", name: "BGMI" },
-  { slug: "freefire", name: "Free Fire Max" },
 ];
 
 const categoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, value]) => ({
@@ -135,18 +133,17 @@ export function BlogFiltersComponent({
                     <Gamepad2 className="w-3.5 h-3.5" />
                     Game
                   </label>
-                  <Select
+                  <LegacySelect
                     value={filters.game || ""}
-                    onValueChange={(v) => handleChange("game", v)}
-                    placeholder="All Games"
-                  >
-                    <option value="">All Games</option>
-                    {SUPPORTED_GAMES.map((game) => (
-                      <option key={game.slug} value={game.slug}>
-                        {game.name}
-                      </option>
-                    ))}
-                  </Select>
+                    onChange={(e) => handleChange("game", e.target.value)}
+                    options={[
+                      { value: "", label: "All Games" },
+                      ...SUPPORTED_GAMES.map((game) => ({
+                        value: game.slug,
+                        label: game.name,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 {/* Category filter */}
@@ -154,20 +151,19 @@ export function BlogFiltersComponent({
                   <label className="block text-xs font-medium text-text-muted mb-2">
                     Category
                   </label>
-                  <Select
+                  <LegacySelect
                     value={filters.category || ""}
-                    onValueChange={(v) =>
-                      handleChange("category", v as BlogCategory)
+                    onChange={(e) =>
+                      handleChange("category", e.target.value as BlogCategory)
                     }
-                    placeholder="All Categories"
-                  >
-                    <option value="">All Categories</option>
-                    {categoryOptions.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </Select>
+                    options={[
+                      { value: "", label: "All Categories" },
+                      ...categoryOptions.map((cat) => ({
+                        value: cat.value,
+                        label: cat.label,
+                      })),
+                    ]}
+                  />
                 </div>
 
                 {/* Featured filter */}

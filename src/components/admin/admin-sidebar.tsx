@@ -15,6 +15,10 @@ import {
   BarChart3,
   Bot,
   Trophy,
+  Mail,
+  Crosshair,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
@@ -25,8 +29,10 @@ const allNavItems = [
   { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
   { href: "/admin/news", label: "News", icon: Newspaper, newsOnly: true },
   { href: "/admin/pro", label: "Pro Hub", icon: Trophy },
+  { href: "/admin/lineups", label: "Lineups", icon: Crosshair },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/emails", label: "Emails", icon: Mail },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquarePlus },
   { href: "/admin/automation", label: "Automation", icon: Bot },
@@ -35,6 +41,7 @@ const allNavItems = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const [hideNews, setHideNews] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -44,6 +51,21 @@ export function AdminSidebar() {
       })
       .catch(() => {});
   }, []);
+
+  // Close the mobile drawer on navigation.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Close on Escape.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   const navItems = hideNews
     ? allNavItems.filter((item) => !item.newsOnly)
@@ -55,9 +77,35 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="fixed left-[var(--app-inset)] top-0 bottom-0 w-64 bg-[#0a0a12] border-r border-white/5 flex flex-col z-40">
+    <>
+      {/* Mobile hamburger — visible only below lg */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open admin menu"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-[#0a0a12] border border-white/10 text-white/70"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Backdrop for mobile drawer */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed left-[var(--app-inset)] top-0 bottom-0 w-64 bg-[#0a0a12] border-r border-white/5 flex flex-col z-40 transition-transform duration-200",
+          "lg:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
       {/* Logo */}
-      <div className="p-5 border-b border-white/5">
+      <div className="p-5 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Logo size="sm" showText={false} href={undefined} />
           <div>
@@ -65,6 +113,14 @@ export function AdminSidebar() {
             <p className="text-[11px] text-white/40 font-medium">Admin Panel</p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close admin menu"
+          className="lg:hidden p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -105,6 +161,7 @@ export function AdminSidebar() {
           Back to ggLobby
         </Link>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

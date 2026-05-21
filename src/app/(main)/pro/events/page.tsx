@@ -5,13 +5,13 @@ import { listProEvents } from "@/lib/pro/queries";
 import { EventsList } from "@/components/pro/events-list";
 
 export const metadata: Metadata = {
-  title: "Indian Esports Tournament Calendar · ggLobby",
+  title: "Indian Valorant Tournament Calendar · ggLobby",
   description:
-    "Upcoming and live Valorant, BGMI and Free Fire tournaments in India — BMPS, VCT Challengers South Asia, FFWS India and more. Dates, prize pools, venues, official streams.",
+    "Upcoming and live Valorant tournaments in India — VCT Challengers South Asia and more. Dates, prize pools, venues, official streams.",
   openGraph: {
-    title: "Indian Esports Tournament Calendar",
+    title: "Indian Valorant Tournament Calendar",
     description:
-      "BMPS, VCT Challengers SA, FFWS India and other Indian esports events. Dates, prize pools, streams.",
+      "VCT Challengers SA and other Indian Valorant events. Dates, prize pools, streams.",
     type: "website",
   },
 };
@@ -35,7 +35,7 @@ export default async function ProEventsPage() {
           Indian Esports Calendar
         </h1>
         <p className="text-text-muted mt-2 max-w-2xl">
-          Upcoming and live tournaments in India across Valorant, BGMI and Free Fire.
+          Upcoming and live Valorant tournaments in India.
           Dates, prize pools, venues and official broadcast links.
         </p>
       </div>
@@ -43,8 +43,8 @@ export default async function ProEventsPage() {
       <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-secondary">
         <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
         <p>
-          Beta. We currate this calendar manually from official sources (Krafton Esports,
-          Riot SA, Garena India) and the major tournament organizers. Missing an event?{" "}
+          Beta. We currate this calendar manually from official sources (Riot SA and
+          VALORANT Esports) and the major tournament organizers. Missing an event?{" "}
           <Link href="/help" className="text-primary hover:underline">
             Tell us.
           </Link>

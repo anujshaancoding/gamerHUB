@@ -10,6 +10,7 @@ import { ProfileRatings } from "@/components/profile/profile-ratings";
 import { ProfileBadges } from "@/components/profile/profile-badges";
 import { GameThemeProvider } from "@/components/profile/game-theme-provider";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
+import { ProfileMediaGallery } from "@/components/profile/profile-media-gallery";
 import { PowerLevelGauge } from "@/components/profile/power-level-gauge";
 import { ActivityCalendar } from "@/components/profile/activity-calendar";
 import { PlayerCard } from "@/components/profile/player-card";
@@ -468,6 +469,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         {/* Tabbed Content */}
         <ProfileTabs>
           {{
+            showcase: (
+              <ProfileMediaGallery
+                userId={profile.id}
+                username={profile.username}
+                isOwner={isOwnProfile}
+              />
+            ),
             overview: (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {/* Row 1: Power Level (hero) + Clan/Player Card */}

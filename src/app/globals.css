@@ -1,46 +1,46 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* GamerHub Dark Gaming Theme */
+/* ggLobby — VALORANT default theme (overridable via [data-theme] in Settings) */
 :root {
   /* App max-width constraint for ultrawide screens */
   --app-max-width: 1920px;
   --app-inset: max(0px, calc((100vw - var(--app-max-width)) / 2));
 
-  /* Background colors */
-  --background: #0a0a0f;
-  --surface: #12121a;
-  --surface-light: #1a1a25;
-  --surface-lighter: #22222f;
+  /* Background colors — VALORANT tactical navy-black */
+  --background: #0f1923;
+  --surface: #1b232d;
+  --surface-light: #232e39;
+  --surface-lighter: #2c3947;
 
   /* Border colors */
-  --border: #2a2a35;
-  --border-light: #3a3a45;
+  --border: #2f3b47;
+  --border-light: #3d4a57;
 
-  /* Primary - Neon Green */
-  --primary: #00ff88;
-  --primary-dark: #00cc6a;
-  --primary-glow: rgba(0, 255, 136, 0.3);
+  /* Primary — signature VALORANT red */
+  --primary: #ff4655;
+  --primary-dark: #bd3944;
+  --primary-glow: rgba(255, 70, 85, 0.32);
 
-  /* Accent - Cyan */
-  --accent: #00d4ff;
-  --accent-dark: #00a8cc;
-  --accent-glow: rgba(0, 212, 255, 0.3);
+  /* Accent — tactical teal */
+  --accent: #0ac8b9;
+  --accent-dark: #089b8f;
+  --accent-glow: rgba(10, 200, 185, 0.3);
 
-  /* Secondary colors */
-  --secondary: #ff00ff;
-  --warning: #ffaa00;
+  /* Secondary / semantic colors */
+  --secondary: #ff4655;
+  --warning: #ffb23e;
   --error: #ff4444;
-  --success: #00ff88;
+  --success: #1fd18e;
 
-  /* Text colors — contrast ratios checked against --background (#0a0a0f) */
-  --text: #ffffff;
-  --text-secondary: #b8b8c8; /* ~8.3:1 — WCAG AAA */
-  --text-muted: #9e9eae;     /* ~6.5:1 — WCAG AA (was #8b8b9a ~5.0:1) */
-  --text-dim: #7a7a8a;       /* ~4.6:1 — WCAG AA (was #5a5a6a ~3.2:1 FAIL) */
+  /* Text colors — VALORANT cream, contrast-checked against --background */
+  --text: #ece8e1;
+  --text-secondary: #c5c2ba;
+  --text-muted: #98a0a6;
+  --text-dim: #6b7780;
 
   /* Foreground for compatibility */
-  --foreground: #ffffff;
+  --foreground: #ece8e1;
 }
 
 @theme inline {

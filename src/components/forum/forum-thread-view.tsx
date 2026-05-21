@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { ArrowDown, ArrowUp, MessageSquare, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, Button } from "@/components/ui";
@@ -172,7 +173,7 @@ function NewReplyForm({ postId, parentId, onPosted, compact = false }: { postId:
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || "Failed to reply");
+        toast.error(j.error || "Failed to reply");
         return;
       }
       setContent("");

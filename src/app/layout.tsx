@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: "%s | ggLobby",
   },
   description: "The ultimate gaming social platform. Connect with gamers, find teammates, and compete worldwide. GG starts here.",
-  keywords: ["gaming", "social", "esports", "multiplayer", "valorant", "bgmi", "freefire", "gg", "lobby", "gamer"],
+  keywords: ["gaming", "social", "esports", "multiplayer", "valorant", "gg", "lobby", "gamer"],
   authors: [{ name: "ggLobby" }],
   icons: {
     icon: [

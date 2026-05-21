@@ -123,7 +123,7 @@ export interface CrosshairEntry {
 }
 
 // Pulls every Valorant pro that has a crosshair code in their gear blob.
-// Used by /tools/crosshairs.
+// Used by /crosshairs.
 export async function listValorantCrosshairs(): Promise<CrosshairEntry[]> {
   const admin = createAdminClient();
   const { data, error } = await admin

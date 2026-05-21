@@ -270,7 +270,7 @@ export async function POST() {
     // Auto-cleanup: keep only the 5 most recent pending fetched articles per game
     // Published/approved articles are never removed
     const KEEP_PER_GAME = 5;
-    const gameSlugs = ["valorant", "bgmi", "freefire"];
+    const gameSlugs = ["valorant"];
     let totalRemoved = 0;
 
     for (const gameSlug of gameSlugs) {

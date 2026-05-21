@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 
-type Game = "valorant" | "bgmi" | "freefire";
+type Game = "valorant";
 type Platform = "pc" | "mobile";
 
 interface PlayerData {
@@ -402,8 +402,6 @@ export function PlayerForm({ playerId }: { playerId?: string }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="valorant">Valorant</SelectItem>
-                <SelectItem value="bgmi">BGMI</SelectItem>
-                <SelectItem value="freefire">Free Fire</SelectItem>
               </SelectContent>
             </Select>
           </Field>

@@ -18,20 +18,20 @@ export const TIER_PRESETS: TierPreset[] = [
     ].map((n) => ({ id: n.toLowerCase().replace(/\W+/g, "-"), label: n })),
   },
   {
-    id: "bgmi-guns",
-    label: "BGMI weapons",
+    id: "val-weapons",
+    label: "Valorant weapons",
     items: [
-      "M416", "AKM", "Beryl M762", "SCAR-L", "G36C", "AUG A3", "Groza", "M249",
-      "Kar98K", "M24", "AWM", "Mini14", "SLR", "SKS", "Mk14",
-      "UMP45", "Vector", "P90", "Thompson", "MP5K",
+      "Vandal", "Phantom", "Operator", "Sheriff", "Guardian", "Marshal",
+      "Outlaw", "Bulldog", "Spectre", "Stinger", "Ghost", "Classic",
+      "Judge", "Bucky", "Ares", "Odin", "Frenzy", "Shorty", "Knife",
     ].map((n) => ({ id: n.toLowerCase().replace(/\W+/g, "-"), label: n })),
   },
   {
-    id: "ff-characters",
-    label: "Free Fire characters",
+    id: "val-maps",
+    label: "Valorant maps",
     items: [
-      "Chrono", "Alok", "K", "Skyler", "Dimitri", "Wukong", "Kelly", "Jota",
-      "Hayato", "Moco", "Maxim", "Caroline", "Joseph", "Andrew", "Kapella", "Notora", "A124", "Olivia",
+      "Ascent", "Bind", "Haven", "Split", "Icebox", "Breeze", "Fracture",
+      "Pearl", "Lotus", "Sunset", "Abyss", "Corrode",
     ].map((n) => ({ id: n.toLowerCase().replace(/\W+/g, "-"), label: n })),
   },
   {

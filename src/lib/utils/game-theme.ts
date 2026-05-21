@@ -22,26 +22,6 @@ const GAME_THEMES: Record<string, Omit<GameTheme, 'slug' | 'isMonochrome'>> = {
     gradientHeader: 'from-red-600 to-red-900',
     glow: 'shadow-red-500/20',
   },
-  bgmi: {
-    primary: 'orange-500',
-    primaryBg: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    primaryText: 'text-orange-400',
-    primaryBorder: 'border-orange-500',
-    borderLeft: 'border-l-orange-500',
-    gradient: 'from-orange-500 to-orange-700',
-    gradientHeader: 'from-orange-600 to-orange-900',
-    glow: 'shadow-orange-500/20',
-  },
-  freefire: {
-    primary: 'yellow-500',
-    primaryBg: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    primaryText: 'text-yellow-400',
-    primaryBorder: 'border-yellow-500',
-    borderLeft: 'border-l-yellow-500',
-    gradient: 'from-yellow-500 to-yellow-700',
-    gradientHeader: 'from-yellow-600 to-yellow-900',
-    glow: 'shadow-yellow-500/20',
-  },
 };
 
 const MONOCHROME_THEME: Omit<GameTheme, 'slug' | 'isMonochrome'> = {

@@ -47,7 +47,7 @@ export default function UpdatePasswordPage() {
       if (!res.ok) throw new Error(data.error || "Failed to update password");
 
       setSuccess(true);
-      setTimeout(() => router.push("/community"), 2000);
+      setTimeout(() => router.push("/agents"), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

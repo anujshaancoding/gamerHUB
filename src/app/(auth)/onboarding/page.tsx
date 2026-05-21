@@ -177,7 +177,7 @@ export default function OnboardingPage() {
         setLoading(false);
         return;
       }
-      router.replace("/community");
+      router.replace("/agents");
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);
@@ -258,7 +258,7 @@ export default function OnboardingPage() {
         }
       }
 
-      router.replace("/community");
+      router.replace("/agents");
     } catch (err) {
       console.error("Onboarding error:", err);
       setError("Something went wrong. Please try again.");
@@ -558,10 +558,10 @@ export default function OnboardingPage() {
               className="space-y-6"
             >
               <h2 className="text-lg font-semibold text-text">
-                Select Your Games
+                Set Up Valorant
               </h2>
               <p className="text-text-muted text-sm">
-                Choose the games you play. You can add more details later.
+                Add your Valorant profile. You can add more details later.
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

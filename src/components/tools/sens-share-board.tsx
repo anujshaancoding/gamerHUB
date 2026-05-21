@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Plus, ArrowUp, ArrowDown, Copy, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, Badge, Button, Modal } from "@/components/ui";
@@ -216,7 +217,7 @@ function SensShareCard({ share, onChange }: { share: SensShare; onChange: () => 
 }
 
 function CreateForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [game, setGame] = useState<SensShareGame>("bgmi");
+  const [game, setGame] = useState<SensShareGame>("valorant");
   const [title, setTitle] = useState("");
   const [device, setDevice] = useState("");
   const [grip, setGrip] = useState("");
@@ -254,7 +255,7 @@ function CreateForm({ onClose, onCreated }: { onClose: () => void; onCreated: ()
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || "Failed to publish");
+        toast.error(j.error || "Failed to publish");
         return;
       }
       onCreated();
@@ -280,7 +281,7 @@ function CreateForm({ onClose, onCreated }: { onClose: () => void; onCreated: ()
 
       <label className="block">
         <span className="text-[11px] uppercase tracking-wider text-text-muted block mb-1">Title</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="4-finger BGMI sens, no gyro" className="w-full bg-surface-light/60 border border-border rounded-lg px-3 py-2 text-sm" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Low-sens Valorant config, 800 DPI" className="w-full bg-surface-light/60 border border-border rounded-lg px-3 py-2 text-sm" />
       </label>
 
       {gameMeta.platform === "mobile" ? (

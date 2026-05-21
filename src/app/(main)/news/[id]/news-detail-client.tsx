@@ -29,14 +29,10 @@ import { InstagramEmbed as ReactInstagramEmbed } from "react-social-media-embed"
 
 const GAME_COLORS: Record<string, string> = {
   valorant: "bg-red-500/90 text-white",
-  bgmi: "bg-orange-500/90 text-white",
-  freefire: "bg-yellow-500/90 text-black",
 };
 
 const GAME_NAMES: Record<string, string> = {
   valorant: "VALORANT",
-  bgmi: "BGMI",
-  freefire: "FREE FIRE",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {

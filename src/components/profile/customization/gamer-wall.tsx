@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pin, PinOff, Trash2, MessageSquare, Send } from "lucide-react";
+import { Pin, PinOff, Trash2, MessageSquare, Send, Heart } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { RelativeTime } from "@/components/ui";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
@@ -15,6 +15,8 @@ interface WallPost {
   reaction: string | null;
   is_pinned: boolean;
   created_at: string;
+  like_count: number;
+  liked_by_me: boolean;
   author_avatar_url: string | null;
   author_username: string | null;
   author_display_name: string | null;
@@ -145,6 +147,57 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
     }
   };
 
+  const handleToggleLike = async (postId: string) => {
+    if (!currentUserId) return;
+
+    const target = posts.find((p) => p.id === postId);
+    if (!target) return;
+
+    // Optimistic update
+    const nextLiked = !target.liked_by_me;
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              liked_by_me: nextLiked,
+              like_count: Math.max(0, p.like_count + (nextLiked ? 1 : -1)),
+            }
+          : p
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/wall-posts/${postId}/like`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+      // Reconcile with server truth
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, liked_by_me: data.liked, like_count: data.like_count }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      // Revert optimistic change
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                liked_by_me: target.liked_by_me,
+                like_count: target.like_count,
+              }
+            : p
+        )
+      );
+    }
+  };
+
   const canDelete = (post: WallPost) => {
     if (!currentUserId) return false;
     return post.author_id === currentUserId || isOwnProfile;
@@ -263,14 +316,39 @@ export function GamerWall({ profileId, isOwnProfile, currentUserId }: GamerWallP
                     {post.content}
                   </p>
 
-                  {/* Reaction Badge */}
-                  {post.reaction && REACTION_BADGE_COLORS[post.reaction] && (
-                    <span
-                      className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${REACTION_BADGE_COLORS[post.reaction]}`}
+                  {/* Footer: Reaction Badge + Like */}
+                  <div className="mt-2 flex items-center gap-3 flex-wrap">
+                    {post.reaction && REACTION_BADGE_COLORS[post.reaction] && (
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${REACTION_BADGE_COLORS[post.reaction]}`}
+                      >
+                        {REACTION_LABELS[post.reaction] || post.reaction}
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleLike(post.id)}
+                      disabled={!currentUserId}
+                      title={
+                        !currentUserId
+                          ? "Sign in to like"
+                          : post.liked_by_me
+                            ? "Unlike"
+                            : "Like"
+                      }
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border transition-all ${
+                        post.liked_by_me
+                          ? "bg-pink-500/20 text-pink-400 border-pink-500/30"
+                          : "bg-surface-light text-text-muted border-border hover:bg-surface-lighter"
+                      } ${!currentUserId ? "cursor-default" : "cursor-pointer"}`}
                     >
-                      {REACTION_LABELS[post.reaction] || post.reaction}
-                    </span>
-                  )}
+                      <Heart
+                        className={`h-3.5 w-3.5 ${post.liked_by_me ? "fill-current" : ""}`}
+                      />
+                      {post.like_count > 0 && <span>{post.like_count}</span>}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}

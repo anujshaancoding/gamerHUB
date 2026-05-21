@@ -88,7 +88,7 @@ export function MonitorGuide() {
             <dd className="leading-relaxed mt-0.5">
               TN is old; only useful if you find a 360 Hz one cheap. IPS is the default for FPS now —
               fast enough, much better colours. OLED is the best motion clarity money can buy, but
-              burn-in is a real risk with static HUDs (BGMI minimap, Val map). Use it for non-comp too.
+              burn-in is a real risk with static HUDs (the Valorant minimap and HUD). Use it for non-comp too.
             </dd>
           </div>
         </dl>

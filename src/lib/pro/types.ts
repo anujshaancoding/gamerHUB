@@ -1,4 +1,4 @@
-export type ProGame = "valorant" | "bgmi" | "freefire";
+export type ProGame = "valorant";
 
 export type Platform = "pc" | "mobile";
 
@@ -71,22 +71,7 @@ export interface ValorantGameStats {
   notes?: string;
 }
 
-export interface BgmiGameStats {
-  avg_damage?: number;
-  finishes_per_match?: number;
-  survival_rate?: number;
-  preferred_mode?: "TPP" | "FPP" | "TPP+FPP";
-  notes?: string;
-}
-
-export interface FreefireGameStats {
-  booyah_rate?: number;
-  character_usage?: { character: string; pick_rate: number }[];
-  preferred_mode?: string;
-  notes?: string;
-}
-
-export type GameStatsBlob = ValorantGameStats | BgmiGameStats | FreefireGameStats | Record<string, unknown>;
+export type GameStatsBlob = ValorantGameStats | Record<string, unknown>;
 
 export interface ProPlayerStats {
   id: string;

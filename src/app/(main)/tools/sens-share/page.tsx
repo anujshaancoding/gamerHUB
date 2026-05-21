@@ -4,9 +4,9 @@ import { ArrowLeft, Smartphone } from "lucide-react";
 import { SensShareBoard } from "@/components/tools/sens-share-board";
 
 export const metadata: Metadata = {
-  title: "Community Sensitivity Share — BGMI, Free Fire & Valorant configs · ggLobby",
+  title: "Community Sensitivity Share — Valorant configs · ggLobby",
   description:
-    "Publish your full sens config (BGMI, Free Fire, CODM, Valorant, Apex, CS2). Copy any pro's setup with one click — sorted by upvotes.",
+    "Publish your full Valorant sens config. Copy any pro's setup with one click — sorted by upvotes.",
   alternates: { canonical: "/tools/sens-share" },
 };
 

@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useCall } from "@/components/call";
 import { useFriends } from "@/lib/hooks/useFriends";
 import { formatRelativeTime } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Profile } from "@/types/database";
 
 interface MessageThreadProps {
@@ -103,6 +104,70 @@ export function MessageThread({
       setFriendRequestSent(true);
     } catch (err) {
       console.error("Failed to send friend request:", err);
+    }
+  };
+
+  const [actionPending, setActionPending] = useState(false);
+
+  const handleBlockUser = async () => {
+    if (!otherUser?.id || actionPending) return;
+    if (
+      !window.confirm(
+        `Block ${otherUser.display_name || otherUser.username}? You will no longer see their messages.`
+      )
+    ) {
+      return;
+    }
+    setActionPending(true);
+    try {
+      const res = await fetch(`/api/users/${otherUser.id}/block`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Failed to block user");
+        return;
+      }
+      toast.success("User blocked");
+      setShowMenu(false);
+      router.push("/messages");
+    } catch {
+      toast.error("Failed to block user");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleReportUser = async () => {
+    if (!otherUser?.id || actionPending) return;
+    const description = window.prompt(
+      "Briefly describe the issue (harassment, spam, etc.):"
+    );
+    if (description === null) return;
+    setActionPending(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reported_user_id: otherUser.id,
+          report_type: "harassment",
+          description: description.trim() || "Reported from direct messages",
+          context_type: "conversation",
+          context_id: conversationId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Failed to submit report");
+        return;
+      }
+      toast.success("Report submitted. Our team will review it.");
+      setShowMenu(false);
+    } catch {
+      toast.error("Failed to submit report");
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -338,15 +403,17 @@ export function MessageThread({
                   className="absolute right-0 mt-1 w-48 bg-surface/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-xl py-1 z-50"
                 >
                   <button
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-text-secondary hover:text-error hover:bg-error/5 transition-colors"
-                    onClick={() => setShowMenu(false)}
+                    disabled={actionPending}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-text-secondary hover:text-error hover:bg-error/5 transition-colors disabled:opacity-50"
+                    onClick={handleBlockUser}
                   >
                     <ShieldAlert className="h-4 w-4" />
                     Block User
                   </button>
                   <button
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-text-secondary hover:text-warning hover:bg-warning/5 transition-colors"
-                    onClick={() => setShowMenu(false)}
+                    disabled={actionPending}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-text-secondary hover:text-warning hover:bg-warning/5 transition-colors disabled:opacity-50"
+                    onClick={handleReportUser}
                   >
                     <Flag className="h-4 w-4" />
                     Report User

@@ -4,13 +4,13 @@ import { ChevronLeft } from "lucide-react";
 import { SensConverter } from "@/components/pro/sens-converter";
 
 export const metadata: Metadata = {
-  title: "Sensitivity Converter — Valorant, CS2, Apex, BGMI, CODM · ggLobby",
+  title: "Sensitivity Converter — Valorant, CS2, Apex, CODM · ggLobby",
   description:
-    "Convert your mouse sensitivity between Valorant, CS2, Apex Legends, Overwatch 2, Rainbow Six Siege and more — or between BGMI, COD Mobile and Free Fire. cm/360 and eDPI included.",
+    "Convert your mouse sensitivity between Valorant, CS2, Apex Legends, Overwatch 2, Rainbow Six Siege and more — or between COD Mobile and PUBG: New State. cm/360 and eDPI included.",
   openGraph: {
     title: "Sensitivity Converter — PC & Mobile",
     description:
-      "Convert between Valorant / CS2 / Apex / OW2 and between BGMI / CODM / Free Fire.",
+      "Convert between Valorant / CS2 / Apex / OW2 and between CODM / PUBG: New State.",
     type: "website",
   },
 };

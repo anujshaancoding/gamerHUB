@@ -85,7 +85,7 @@ export function RankingTable({ game, players }: RankingTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/pro/${game}/${p.slug}`}
+                        href={`/pros/${p.slug}`}
                         className="flex items-center gap-3 group"
                       >
                         <div className="relative h-9 w-9 rounded-full bg-surface-light overflow-hidden flex-shrink-0">
@@ -161,7 +161,7 @@ export function RankingTable({ game, players }: RankingTableProps) {
             {filtered.map((p) => (
               <Link
                 key={p.id}
-                href={`/pro/${game}/${p.slug}`}
+                href={`/pros/${p.slug}`}
                 className="block rounded-lg border border-border bg-surface p-3 hover:bg-surface-light transition-colors"
               >
                 <div className="flex items-center gap-3">

@@ -57,8 +57,6 @@ interface BlogListingPageProps {
 const CATEGORIES = [
   { key: "all", label: "All", color: "primary" },
   { key: "valorant", label: "Valorant", color: "red" },
-  { key: "bgmi", label: "BGMI", color: "yellow" },
-  { key: "freefire", label: "Free Fire", color: "orange" },
   { key: "esports", label: "Esports", color: "cyan" },
   { key: "guide", label: "Guide", color: "green" },
 ] as const;
@@ -238,9 +236,8 @@ export function BlogListingPage({ posts }: BlogListingPageProps) {
               </span>
             </h1>
             <p className="text-text-secondary text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Stay ahead with the latest gaming guides, patch notes, esports
-              coverage, and in-depth analysis for Valorant, BGMI, Free Fire and
-              more.
+              Stay ahead with the latest Valorant guides, patch notes, esports
+              coverage, and in-depth analysis.
             </p>
           </motion.div>
 

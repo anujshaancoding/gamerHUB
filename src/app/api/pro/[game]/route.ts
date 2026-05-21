@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import type { ProGame } from "@/lib/pro/types";
 
-const VALID_GAMES: ProGame[] = ["valorant", "bgmi", "freefire"];
+const VALID_GAMES: ProGame[] = ["valorant"];
 
 export async function GET(
   request: NextRequest,

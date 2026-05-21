@@ -1,16 +1,16 @@
+import { VALORANT } from "@/lib/theme/valorant-theme";
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 pt-16 sm:pt-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Gradient orbs for visual effect */}
-        <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-accent/10 rounded-full blur-3xl" />
-      </div>
-      <main id="main-content" className="relative z-10">{children}</main>
+    <div
+      className="min-h-screen"
+      style={{ background: VALORANT.bg, color: VALORANT.cream }}
+    >
+      <main id="main-content">{children}</main>
     </div>
   );
 }

@@ -176,7 +176,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/matches/create">
+          <Link href="/lfg">
             <Button leftIcon={<Plus className="h-4 w-4" />}>
               Schedule Match
             </Button>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Upcoming Matches</CardTitle>
-            <Link href="/matches">
+            <Link href="/lfg">
               <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
                 View All
               </Button>
@@ -404,7 +404,7 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Calendar className="h-12 w-12 text-text-muted mx-auto mb-3" />
                 <p className="text-text-muted">No upcoming matches</p>
-                <Link href="/matches/create">
+                <Link href="/lfg">
                   <Button variant="outline" size="sm" className="mt-3">
                     Schedule One
                   </Button>
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                 {upcomingMatches.map((match) => (
                   <Link
                     key={match.id}
-                    href={`/matches/${match.id}`}
+                    href="/lfg"
                     className="flex items-center justify-between p-3 rounded-lg bg-surface-light hover:bg-surface-lighter transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -443,7 +443,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Active Challenges</CardTitle>
-            <Link href="/challenges">
+            <Link href="/community">
               <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
                 View All
               </Button>
@@ -454,7 +454,7 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Swords className="h-12 w-12 text-text-muted mx-auto mb-3" />
                 <p className="text-text-muted">No active challenges</p>
-                <Link href="/challenges/create">
+                <Link href="/community">
                   <Button variant="outline" size="sm" className="mt-3">
                     Create Challenge
                   </Button>
@@ -465,7 +465,7 @@ export default function DashboardPage() {
                 {activeChallenges.map((challenge) => (
                   <Link
                     key={challenge.id}
-                    href={`/challenges/${challenge.id}`}
+                    href="/community"
                     className="flex items-center justify-between p-3 rounded-lg bg-surface-light hover:bg-surface-lighter transition-colors"
                   >
                     <div className="flex items-center gap-3">

@@ -115,7 +115,7 @@ const POSTING_STYLES = ["mixed", "questions", "hot_takes", "lfg", "reactions"];
 const TEMPLATE_TYPES = ["community_post", "comment", "lfg_post", "news_discussion"];
 const TEMPLATE_CATEGORIES = ["hot_take", "question", "discussion", "daily", "reaction", "lfg", "hype", "tip", "general"];
 const MOODS = ["neutral", "excited", "frustrated", "chill", "curious", "hyped"];
-const GAMES = ["valorant", "bgmi", "freefire"];
+const GAMES = ["valorant"];
 const GAMING_STYLES = ["casual", "competitive", "semi-pro", "streamer", "content-creator"];
 const REGIONS = ["India - North", "India - South", "India - East", "India - West", "Southeast Asia", "Middle East"];
 
@@ -989,7 +989,7 @@ function PersonasTab({ personas, onRefresh }: { personas: Persona[]; onRefresh: 
                         : "bg-white/5 border-white/10 text-white/40 hover:text-white/60",
                     )}
                   >
-                    {g === "bgmi" ? "BGMI" : g === "freefire" ? "Free Fire" : "Valorant"}
+                    {"Valorant"}
                   </button>
                 ))}
               </div>
@@ -1341,7 +1341,7 @@ function TemplatesTab({ templates, onRefresh }: { templates: Template[]; onRefre
               >
                 <option value="" className="bg-[#0a0a12]">Any game</option>
                 {GAMES.map((g) => (
-                  <option key={g} value={g} className="bg-[#0a0a12]">{g === "bgmi" ? "BGMI" : g === "freefire" ? "Free Fire" : "Valorant"}</option>
+                  <option key={g} value={g} className="bg-[#0a0a12]">Valorant</option>
                 ))}
               </select>
             </div>

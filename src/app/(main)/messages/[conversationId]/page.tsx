@@ -57,14 +57,14 @@ function ConversationContent() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
         <p className="text-text-muted">Please log in to view messages</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] -m-4 lg:-m-6 overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] -m-4 lg:-m-6 overflow-hidden">
       {/* Desktop: Conversation list on left */}
       <div className="hidden lg:block">
         <ConversationListPanel
@@ -104,7 +104,7 @@ export default function ConversationPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
       }

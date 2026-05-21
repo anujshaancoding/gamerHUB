@@ -7,10 +7,16 @@ import {
   Gamepad2,
   Trophy,
   Activity,
+  Images,
 } from "lucide-react";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
 
-export type ProfileTabKey = "overview" | "games" | "achievements" | "activity";
+export type ProfileTabKey =
+  | "showcase"
+  | "overview"
+  | "games"
+  | "achievements"
+  | "activity";
 
 interface TabDefinition {
   key: ProfileTabKey;
@@ -19,6 +25,7 @@ interface TabDefinition {
 }
 
 const TABS: TabDefinition[] = [
+  { key: "showcase", label: "Showcase", icon: Images },
   { key: "overview", label: "Overview", icon: LayoutGrid },
   { key: "games", label: "Games & Stats", icon: Gamepad2 },
   { key: "achievements", label: "Achievements", icon: Trophy },
@@ -30,7 +37,7 @@ interface ProfileTabsProps {
   defaultTab?: ProfileTabKey;
 }
 
-export function ProfileTabs({ children, defaultTab = "overview" }: ProfileTabsProps) {
+export function ProfileTabs({ children, defaultTab = "showcase" }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabKey>(defaultTab);
   const { theme } = useGameTheme();
 

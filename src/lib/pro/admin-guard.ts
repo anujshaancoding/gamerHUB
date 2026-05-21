@@ -35,7 +35,7 @@ export function isValidSlug(slug: unknown): slug is string {
   return typeof slug === "string" && slug.length >= 2 && slug.length <= 60 && SLUG_RE.test(slug);
 }
 
-export const PRO_GAMES = ["valorant", "bgmi", "freefire"] as const;
+export const PRO_GAMES = ["valorant"] as const;
 export type ProGameValue = (typeof PRO_GAMES)[number];
 export function isValidGame(g: unknown): g is ProGameValue {
   return typeof g === "string" && (PRO_GAMES as readonly string[]).includes(g);

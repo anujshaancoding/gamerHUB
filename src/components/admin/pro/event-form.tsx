@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 
-type Game = "valorant" | "bgmi" | "freefire";
+type Game = "valorant";
 type Status = "upcoming" | "live" | "completed" | "cancelled";
 
 interface EventData {
@@ -202,8 +202,6 @@ export function EventForm({ eventId }: { eventId?: string }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="valorant">Valorant</SelectItem>
-                <SelectItem value="bgmi">BGMI</SelectItem>
-                <SelectItem value="freefire">Free Fire</SelectItem>
               </SelectContent>
             </Select>
           </EField>
@@ -224,7 +222,7 @@ export function EventForm({ eventId }: { eventId?: string }) {
             </Select>
           </EField>
           <EField label="Name" required>
-            <EInput value={event.name} onChange={(v) => setEvent({ ...event, name: v })} placeholder="BGMI Masters Series 2026 Season 2" />
+            <EInput value={event.name} onChange={(v) => setEvent({ ...event, name: v })} placeholder="Valorant Champions Tour 2026 - Stage 2" />
           </EField>
           <EField label="Short name">
             <EInput value={event.short_name} onChange={(v) => setEvent({ ...event, short_name: v })} placeholder="BMPS S2" />

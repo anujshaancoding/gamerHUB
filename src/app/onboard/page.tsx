@@ -69,10 +69,11 @@ export default function OnboardPage() {
     { value: "100%", label: "Free", sublabel: "To Start" },
   ];
 
-  // Redirect logged-in users to home
+  // Redirect logged-in users into the app shell (NOT /overview — that's the
+  // logged-out marketing page with no account menu; NOT /community — frozen).
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/community");
+      router.replace("/agents");
     }
   }, [user, loading, router]);
 
@@ -203,7 +204,7 @@ export default function OnboardPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-error">x</span>
-                    You prove yourself from scratch in every game
+                    You prove yourself from scratch every season
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-error">x</span>
@@ -224,7 +225,7 @@ export default function OnboardPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
-                    Carry your reputation across games
+                    Carry your reputation across every season
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />

@@ -95,8 +95,6 @@ export function ListingCard({
         "bg-gradient-to-r",
         theme.isMonochrome ? "from-gray-800 to-gray-900" :
         gameSlug === 'valorant' ? "from-red-600/80 to-red-900/80" :
-        gameSlug === 'bgmi' ? "from-orange-600/80 to-orange-900/80" :
-        gameSlug === 'freefire' ? "from-yellow-600/80 to-yellow-900/80" :
         "from-gray-700 to-gray-900"
       )}>
         <div className="flex items-center gap-2">

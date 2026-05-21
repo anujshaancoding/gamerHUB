@@ -1,0 +1,102 @@
+/**
+ * Profile media gallery API — screenshots, clips/GIFs, score shots, skin/asset
+ * showcase. DB-backed (media table) to integrate with the real profile.
+ *
+ *  GET    /api/profile/media?userId=<id>   public items (owner sees all)
+ *  POST   /api/profile/media               auth — add an item
+ *  DELETE /api/profile/media?id=<id>       auth — remove own item
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { getPool } from "@/lib/db/index";
+import { getUser } from "@/lib/auth/get-user";
+
+const ALLOWED_TYPES = ["image", "video"] as const;
+
+export async function GET(request: NextRequest) {
+  try {
+    const userId = request.nextUrl.searchParams.get("userId");
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
+    const viewer = await getUser();
+    const isOwner = viewer?.id === userId;
+    const sql = getPool();
+
+    const rows = isOwner
+      ? await sql`
+          SELECT * FROM media WHERE user_id = ${userId}
+          ORDER BY created_at DESC LIMIT 60`
+      : await sql`
+          SELECT * FROM media
+          WHERE user_id = ${userId} AND is_public = true
+          ORDER BY created_at DESC LIMIT 60`;
+
+    return NextResponse.json({ media: rows });
+  } catch (error) {
+    console.error("Media fetch error:", error);
+    return NextResponse.json({ media: [] });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const type = ALLOWED_TYPES.includes(body.type) ? body.type : "image";
+    const url = typeof body.url === "string" ? body.url : null;
+    if (!url) {
+      return NextResponse.json({ error: "url is required" }, { status: 400 });
+    }
+    const title = (body.title ?? "").toString().slice(0, 120) || null;
+    const description = (body.description ?? "").toString().slice(0, 500) || null;
+    const thumbnail_url =
+      typeof body.thumbnail_url === "string" ? body.thumbnail_url : null;
+    const is_public = body.is_public !== false;
+
+    const sql = getPool();
+    const rows = await sql`
+      INSERT INTO media (user_id, type, url, thumbnail_url, title, description, is_public)
+      VALUES (${user.id}, ${type}, ${url}, ${thumbnail_url}, ${title}, ${description}, ${is_public})
+      RETURNING *`;
+
+    return NextResponse.json({ media: rows[0] }, { status: 201 });
+  } catch (error) {
+    console.error("Media create error:", error);
+    return NextResponse.json(
+      { error: "Failed to add media" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+    const sql = getPool();
+    const rows = await sql`
+      DELETE FROM media WHERE id = ${id} AND user_id = ${user.id}
+      RETURNING id`;
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Media delete error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete media" },
+      { status: 500 }
+    );
+  }
+}

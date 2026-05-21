@@ -19,7 +19,9 @@ export async function GET() {
     logger.error("Followed pros fetch error", followsErr);
     return NextResponse.json({ players: [] });
   }
-  const ids = (follows || []).map((f: { player_id: string }) => f.player_id);
+  const ids = (follows || []).map(
+    (f) => (f as { player_id: string }).player_id
+  );
   if (ids.length === 0) return NextResponse.json({ players: [] });
 
   const { data: players, error: playersErr } = await admin

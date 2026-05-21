@@ -309,8 +309,6 @@ export default function AdminEditNewsPage() {
               className="w-full px-3 py-2.5 bg-zinc-900 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50 [&>option]:bg-zinc-900 [&>option]:text-white"
             >
               <option value="valorant">Valorant</option>
-              <option value="bgmi">BGMI</option>
-              <option value="freefire">Free Fire</option>
             </select>
           </div>
           <div>

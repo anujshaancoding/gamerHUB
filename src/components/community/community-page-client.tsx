@@ -148,11 +148,9 @@ const blogCategoryOptions = Object.entries(BLOG_CATEGORIES).map(([key, val]) => 
   label: val.label,
 }));
 
-// ── Supported games (hardcoded — only 3 supported) ─────────────────────
+// ── Supported games (ggLobby V2 is Valorant-only) ──────────────────────
 const SUPPORTED_GAME_OPTIONS: { value: string; label: string }[] = [
   { value: "valorant", label: "Valorant" },
-  { value: "bgmi", label: "BGMI" },
-  { value: "freefire", label: "Free Fire Max" },
 ];
 
 export function CommunityPageClient({
@@ -277,8 +275,6 @@ export function CommunityPageClient({
       // (blog posts don't always have game_id set — game is inferred from tags)
       const SLUG_TO_TAG: Record<string, string> = {
         valorant: "valorant",
-        bgmi: "bgmi",
-        freefire: "free fire",
       };
 
       const mapped = (posts || []).map((post: Record<string, unknown>): BlogPost => ({
@@ -424,6 +420,10 @@ export function CommunityPageClient({
   const handleCreatePost = async () => {
     if (!newPostContent.trim() && !selectedImage) return;
     if (!user) return;
+    if (newPostContent.length > 500) {
+      toast.error("Posts are limited to 500 characters.");
+      return;
+    }
 
     setIsPosting(true);
     try {
@@ -480,8 +480,6 @@ export function CommunityPageClient({
   const getGameColor = (game: string) => {
     switch (game) {
       case "valorant": return "bg-red-500/90 text-white";
-      case "bgmi": return "bg-orange-500/90 text-white";
-      case "freefire": return "bg-yellow-500/90 text-black";
       default: return "bg-primary/90 text-background";
     }
   };
@@ -944,7 +942,8 @@ export function CommunityPageClient({
                       <div className="flex-1 space-y-3">
                         <textarea
                           value={newPostContent}
-                          onChange={(e) => setNewPostContent(e.target.value)}
+                          onChange={(e) => setNewPostContent(e.target.value.slice(0, 500))}
+                          maxLength={500}
                           placeholder="What's on your mind? Share your gaming moments..."
                           className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 text-text placeholder-text-dim resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
                           rows={3}

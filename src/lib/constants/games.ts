@@ -16,41 +16,12 @@ export const SUPPORTED_GAMES = [
       "Radiant"
     ],
     roles: ["Duelist", "Controller", "Initiator", "Sentinel"]
-  },
-  {
-    slug: "bgmi",
-    name: "BGMI",
-    iconUrl: "/images/games/bgmi.svg",
-    hasApi: false,
-    ranks: [
-      "Bronze V-I", "Silver V-I", "Gold V-I",
-      "Platinum V-I", "Diamond V-I",
-      "Crown V-I", "Ace", "Ace Master",
-      "Ace Dominator", "Conqueror"
-    ],
-    roles: ["Fragger", "Support", "Scout", "IGL"]
-  },
-  {
-    slug: "freefire",
-    name: "Free Fire",
-    iconUrl: "/images/games/freefire.svg",
-    hasApi: false,
-    ranks: [
-      "Bronze I-III", "Silver I-III", "Gold I-IV",
-      "Platinum I-IV", "Diamond I-IV",
-      "Heroic", "Grandmaster"
-    ],
-    roles: ["Rusher", "Support", "Sniper", "Defuser"]
-  },
-  {
-    slug: "other",
-    name: "Other",
-    iconUrl: "/images/games/other.svg",
-    hasApi: false,
-    ranks: [],
-    roles: []
   }
 ] as const;
+
+// ggLobby V2 is Valorant-only. There is intentionally exactly one supported
+// game. Do NOT reintroduce other games here — see V2-PLAN.md.
+export const PRIMARY_GAME = SUPPORTED_GAMES[0];
 
 export const REGIONS = [
   // Indian States

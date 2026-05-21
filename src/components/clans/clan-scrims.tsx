@@ -511,7 +511,7 @@ function CreateScrimModal({
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g., BGMI Custom Room #5"
+            placeholder="e.g., Valorant Custom Lobby #5"
             maxLength={100}
           />
         </div>

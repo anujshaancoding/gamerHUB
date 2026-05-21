@@ -31,9 +31,9 @@ export default function TrackerOnHoldPage() {
           <div className="rounded-lg border border-border bg-surface-light p-4 text-left text-sm text-text-secondary space-y-2">
             <p className="text-text font-medium">Why it&apos;s paused</p>
             <p>
-              CS2 and Valorant have official data paths we can use. BGMI and Free Fire don&apos;t —
-              there&apos;s no official API, and the third-party scrapers break too often to be a
-              real product. We&apos;d rather hold than ship something fake.
+              We&apos;re reworking how we pull Valorant match data so the insights we surface are
+              accurate and reliable. We&apos;d rather hold than ship something that can&apos;t be
+              trusted.
             </p>
           </div>
 

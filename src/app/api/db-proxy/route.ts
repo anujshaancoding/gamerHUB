@@ -2,16 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 
-// Tables that cannot be queried from the client side
-const BLOCKED_TABLES = new Set([
-  "users",
-  "user_credentials",
-  "stripe_customers",
-  "stripe_webhook_events",
-  "payment_transactions",
-]);
-
-// Tables that allow unauthenticated read access
+// Tables that allow UNAUTHENTICATED read access (public, non-sensitive).
 const PUBLIC_READ_TABLES = new Set([
   "games",
   "profiles",
@@ -25,6 +16,41 @@ const PUBLIC_READ_TABLES = new Set([
   "community_challenges",
   "lfg_posts",
   "clan_recruitment_posts",
+]);
+
+// Tables that allow read access for ANY authenticated user (social / non-private
+// data). DEFAULT-DENY: a table that is on neither PUBLIC_READ_TABLES nor this set
+// cannot be read through the proxy at all — sensitive data (auth tokens,
+// messages, payments, verifications, etc.) must go through dedicated,
+// ownership-checked API routes. This is the primary mitigation for the
+// "read any table" account-takeover vector.
+const AUTHED_READ_TABLES = new Set([
+  "user_games",
+  "follows",
+  "clan_members",
+  "achievements",
+  "user_profile_badges",
+  "blog_comments",
+  "blog_likes",
+  "blog_comment_likes",
+  "clan_activity_log",
+  "post_likes",
+  "post_comments",
+]);
+
+// Tables readable by an authenticated user but ONLY their own rows. A mandatory
+// ownership filter is injected server-side on SELECT for these (the client
+// cannot read other users' rows even if it omits/forges the filter).
+const OWNED_READ_TABLES: Record<string, string> = {
+  blog_bookmarks: "user_id",
+  profile_views: "viewer_id",
+  notification_preferences: "user_id",
+};
+
+const READ_ALLOWED_TABLES = new Set<string>([
+  ...PUBLIC_READ_TABLES,
+  ...AUTHED_READ_TABLES,
+  ...Object.keys(OWNED_READ_TABLES),
 ]);
 
 // Tables that allow write operations (insert/update/delete/upsert) from authenticated clients
@@ -51,7 +77,9 @@ const RPC_ALLOWLIST = new Set([
   "increment_blog_view",
 ]);
 
-// Tables where the user_id must match the authenticated user
+// Tables where the user_id must match the authenticated user. Every
+// WRITE_ALLOWED_TABLES entry MUST appear here so ownership is enforced on all
+// mutations (no write-allowed table may be ownership-exempt).
 const USER_OWNED_TABLES = new Set([
   "friend_posts",
   "listings",
@@ -62,6 +90,7 @@ const USER_OWNED_TABLES = new Set([
   "clan_join_requests",
   "trait_endorsements",
   "friend_requests",
+  "notification_preferences",
 ]);
 
 export async function POST(request: NextRequest) {
@@ -69,26 +98,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { table, operation, columns, filters, data, options, rpc, rpcParams, orderBy, rangeFrom, rangeTo, limitCount } = body;
 
-    // Block sensitive tables
-    if (table && BLOCKED_TABLES.has(table)) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
-    }
-
     const user = await getUser();
+
+    // DEFAULT-DENY for reads: a table must be explicitly allowlisted to be
+    // readable through the proxy. Anything not listed (auth tokens, messages,
+    // payments, verifications, …) is rejected outright.
+    if (operation === "select" && table) {
+      if (!READ_ALLOWED_TABLES.has(table)) {
+        console.warn(`[db-proxy] Denied SELECT on non-allowlisted table: ${table}`);
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+      // Reads on non-public tables require authentication.
+      if (!user && !PUBLIC_READ_TABLES.has(table)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      // Owned-read tables: force a server-side ownership filter so a user can
+      // never read another user's rows, even by omitting/forging the filter.
+      if (table in OWNED_READ_TABLES) {
+        if (!user) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
+    }
 
     // For write operations, require authentication
     if (operation && operation !== "select" && !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // For reads on non-public tables, require authentication
-    if (operation === "select" && !user && table && !PUBLIC_READ_TABLES.has(table)) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -129,13 +163,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For insert operations, inject the authenticated user's ID on user-owned tables
+    // For insert AND upsert, force the authenticated user's ID on user-owned
+    // tables. Spread-then-override ensures a client-supplied user_id is always
+    // discarded (closes the mass-assignment / cross-user-write vector).
     let writeData = data;
-    if (operation === "insert" && writeData && user && USER_OWNED_TABLES.has(table)) {
+    if (
+      (operation === "insert" || operation === "upsert") &&
+      writeData &&
+      user &&
+      USER_OWNED_TABLES.has(table)
+    ) {
       if (Array.isArray(writeData)) {
         writeData = writeData.map((row: Record<string, unknown>) => ({ ...row, user_id: user.id }));
       } else {
-        writeData = { ...writeData, user_id: user.id };
+        writeData = { ...(writeData as Record<string, unknown>), user_id: user.id };
       }
     }
 
@@ -184,6 +225,13 @@ export async function POST(request: NextRequest) {
           { error: "Invalid operation" },
           { status: 400 }
         );
+    }
+
+    // Inject a mandatory ownership predicate for owned-read tables so a user
+    // can only ever read their own rows through the proxy, regardless of what
+    // filters the client sent.
+    if (operation === "select" && user && table in OWNED_READ_TABLES) {
+      query = query.eq(OWNED_READ_TABLES[table], user.id);
     }
 
     // Apply filters — only allow safe query-builder methods

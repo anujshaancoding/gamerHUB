@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
   useMemo,
-  useRef,
   ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
@@ -25,21 +24,18 @@ const SocketContext = createContext<SocketContextType>({
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthSession();
   const [connected, setConnected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  // Socket is stored in state (not a ref) so that creating/destroying it
+  // re-renders consumers — reading a ref's `.current` during render is a bug
+  // (consumers would get a stale/null socket).
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
-      // Disconnect if no user
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        setConnected(false);
-      }
       return;
     }
 
     // Connect Socket.io
-    const socket = io({
+    const s = io({
       auth: { userId: user.id },
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -48,29 +44,29 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       reconnectionDelayMax: 10000,
     });
 
-    socket.on("connect", () => {
+    s.on("connect", () => {
       setConnected(true);
     });
 
-    socket.on("disconnect", () => {
+    s.on("disconnect", () => {
       setConnected(false);
     });
 
-    socketRef.current = socket;
+    setSocket(s);
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      s.disconnect();
+      setSocket(null);
       setConnected(false);
     };
   }, [user?.id]);
 
   const value = useMemo(
     () => ({
-      socket: socketRef.current,
+      socket,
       connected,
     }),
-    [connected]
+    [socket, connected]
   );
 
   return (

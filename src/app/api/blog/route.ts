@@ -100,8 +100,6 @@ export async function GET(request: NextRequest) {
     if (game) {
       const slugToTag: Record<string, string> = {
         valorant: "valorant",
-        bgmi: "bgmi",
-        freefire: "free fire",
       };
       const tagPrefix = slugToTag[game];
       if (tagPrefix) {

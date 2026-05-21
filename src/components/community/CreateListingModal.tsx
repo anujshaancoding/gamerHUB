@@ -20,7 +20,6 @@ const GAME_OPTIONS = [
     value: g.slug,
     label: g.name,
   })),
-  { value: "other", label: "Other" },
 ];
 
 export function CreateListingModal({ isOpen, onClose }: CreateListingModalProps) {
@@ -159,7 +158,7 @@ export function CreateListingModal({ isOpen, onClose }: CreateListingModalProps)
         {/* Title */}
         <Input
           label="Title"
-          placeholder="e.g., BGMI Tournament by Dynamo"
+          placeholder="e.g., Valorant Community Cup by Velocity"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           required
@@ -277,7 +276,7 @@ export function CreateListingModal({ isOpen, onClose }: CreateListingModalProps)
         {/* Tags */}
         <Input
           label="Tags (optional)"
-          placeholder="Comma separated, e.g., bgmi, mobile, esports"
+          placeholder="Comma separated, e.g., valorant, ranked, esports"
           value={formData.tags}
           onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
         />

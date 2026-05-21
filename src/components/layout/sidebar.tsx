@@ -7,7 +7,6 @@ import {
   Users,
   Settings,
   Gamepad2,
-  Eye,
   LogIn,
   UserPlus,
   Shield,
@@ -17,6 +16,12 @@ import {
   Trophy,
   Wrench,
   MessagesSquare,
+  Swords,
+  Map,
+  Gift,
+  FileText,
+  ListOrdered,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -27,16 +32,46 @@ import { Logo } from "@/components/layout/logo";
 import { StatusSelector } from "@/components/presence/StatusSelector";
 import { usePresence } from "@/lib/presence/PresenceProvider";
 
-const navItems = [
-  { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
-  { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
-  { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
-  { href: "/community", label: "Community", icon: Users, requiresAuth: false },
-  { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
-  { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: true },
-  { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false, isBeta: true },
-  { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false, isBeta: true },
-  { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false, isBeta: true },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  requiresAuth: boolean;
+  showBadge?: boolean;
+  showMessageBadge?: boolean;
+  isBeta?: boolean;
+};
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  // NOTE: Phase-3 social features (friends, messages, community feed, clans,
+  // find-gamers/LFG) are intentionally NOT in the nav — frozen per V2-PLAN.md
+  // ("keep code, remove from nav"). The routes still exist but are not
+  // surfaced or maintained until Phase 3.
+  {
+    label: "You",
+    items: [
+      { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
+    ],
+  },
+  {
+    label: "Game Hub",
+    items: [
+      { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
+      { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
+      { href: "/patch", label: "Patch & Meta", icon: FileText, requiresAuth: false },
+      { href: "/tier-list", label: "Tier List", icon: ListOrdered, requiresAuth: false },
+      { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false, isBeta: true },
+      { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false, isBeta: true },
+    ],
+  },
+  {
+    label: "Esports",
+    items: [
+      { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false, isBeta: true },
+      { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
+      { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
+    ],
+  },
 ];
 
 const bottomItems = [
@@ -133,82 +168,55 @@ export function Sidebar() {
                 )}
               </div>
             </Link>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <Link href="/friends" className="text-center p-2 rounded-lg bg-surface-light group hover:bg-primary/10 transition-colors cursor-pointer">
-                <p className="text-lg font-bold text-primary group-hover:scale-110 transition-transform">{counts.friends}</p>
-                <span className="text-xs text-text-muted">Friends</span>
-              </Link>
-              <Link href="/friends?tab=following" className="text-center p-2 rounded-lg bg-surface-light group hover:bg-warning/10 transition-colors cursor-pointer">
-                <p className="text-lg font-bold text-warning group-hover:scale-110 transition-transform">{counts.following}</p>
-                <span className="text-xs text-text-muted">Following</span>
-              </Link>
-              <Link href="/friends?tab=followers" className="text-center p-2 rounded-lg bg-surface-light group hover:bg-accent/10 transition-colors cursor-pointer">
-                <p className="text-lg font-bold text-accent group-hover:scale-110 transition-transform">{counts.followers}</p>
-                <span className="text-xs text-text-muted">Followers</span>
-              </Link>
-            </div>
           </>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = item.href === "/profile"
-            ? pathname.startsWith("/profile")
-            : pathname === item.href || pathname.startsWith(item.href + "/");
-
-          return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-              isActive
-                ? "bg-primary/10 text-primary border-l-2 border-primary"
-                : "text-text-secondary hover:text-text hover:bg-surface-light"
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="flex-1">{item.label}</span>
-            {item.showBadge && counts.pending_requests > 0 && (
-              <Badge variant="primary" size="sm">
-                {counts.pending_requests}
-              </Badge>
-            )}
-            {item.showMessageBadge && unreadMessages > 0 && (
-              <Badge variant="error" size="sm">
-                {unreadMessages > 99 ? "99+" : unreadMessages}
-              </Badge>
-            )}
-            {item.isBeta && (
-              <Badge variant="primary" size="sm">Beta</Badge>
-            )}
-          </Link>
-          );
-        })}
-      </nav>
-
-      {/* Profile Views - Only show for logged in users */}
-      {!isGuest && (
-        <div className="p-4 border-t border-border">
-          <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-warning/5 border border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-text">Profile Views</span>
-            </div>
-            <p className="text-2xl font-bold text-primary">
-              {(profile as Record<string, unknown>)?.profile_views as number ?? 0}
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label} className="space-y-1">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-text-dim">
+              {group.label}
             </p>
-            <p className="text-xs text-text-muted mt-1">
-              Total views on your profile
-            </p>
+            {group.items.map((item) => {
+              const isActive = item.href === "/profile"
+                ? pathname.startsWith("/profile")
+                : pathname === item.href || pathname.startsWith(item.href + "/");
+
+              return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-primary/10 text-primary border-l-2 border-primary"
+                    : "text-text-secondary hover:text-text hover:bg-surface-light"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="flex-1">{item.label}</span>
+                {item.showBadge && counts.pending_requests > 0 && (
+                  <Badge variant="primary" size="sm">
+                    {counts.pending_requests}
+                  </Badge>
+                )}
+                {item.showMessageBadge && unreadMessages > 0 && (
+                  <Badge variant="error" size="sm">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </Badge>
+                )}
+                {item.isBeta && (
+                  <Badge variant="primary" size="sm">Beta</Badge>
+                )}
+              </Link>
+              );
+            })}
           </div>
-        </div>
-      )}
+        ))}
+      </nav>
 
       {/* Bottom Items - Only show for logged in users */}
       {!isGuest && (
@@ -237,6 +245,7 @@ export function Sidebar() {
           <Link href="/overview" className="hover:text-text-muted transition-colors">Overview</Link>
           <Link href="/privacy" className="hover:text-text-muted transition-colors">Privacy</Link>
           <Link href="/terms" className="hover:text-text-muted transition-colors">Terms</Link>
+          <Link href="/disclaimer" className="hover:text-text-muted transition-colors">Disclaimer</Link>
           <Link href="/guidelines" className="hover:text-text-muted transition-colors">Guidelines</Link>
           <Link href="/updates" className="hover:text-text-muted transition-colors">Updates</Link>
         </div>

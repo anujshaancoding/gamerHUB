@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { getStripe } from "@/lib/stripe-client";
@@ -64,7 +65,7 @@ export function CheckoutButton({
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("Failed to start checkout. Please try again.");
+      toast.error("Failed to start checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }

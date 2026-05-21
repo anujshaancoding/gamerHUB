@@ -80,23 +80,19 @@ interface EventRow {
   is_featured: boolean;
 }
 
-const GAME_OPTIONS: { value: "all" | "valorant" | "bgmi" | "freefire"; label: string }[] = [
+const GAME_OPTIONS: { value: "all" | "valorant"; label: string }[] = [
   { value: "all", label: "All games" },
   { value: "valorant", label: "Valorant" },
-  { value: "bgmi", label: "BGMI" },
-  { value: "freefire", label: "Free Fire" },
 ];
 
 const GAME_TAG: Record<string, string> = {
   valorant: "bg-red-500/10 text-red-400 border-red-500/20",
-  bgmi: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-  freefire: "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
 
 export default function AdminProHubPage() {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("players");
-  const [game, setGame] = useState<"all" | "valorant" | "bgmi" | "freefire">("all");
+  const [game, setGame] = useState<"all" | "valorant">("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -434,7 +430,7 @@ function PlayersTable({
             <td className="px-4 py-3">
               <div className="flex items-center gap-1">
                 <Link
-                  href={`/pro/${p.game}/${p.slug}`}
+                  href={`/pros/${p.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"

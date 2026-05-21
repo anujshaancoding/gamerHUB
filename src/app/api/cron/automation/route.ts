@@ -114,16 +114,6 @@ const GAME_DATA: Record<string, { agents: string[]; ranks: string[]; maps: strin
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
     maps: ["Bind", "Haven", "Split", "Ascent", "Icebox", "Breeze", "Fracture", "Pearl", "Lotus", "Sunset", "Abyss"],
   },
-  bgmi: {
-    agents: [],
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Crown", "Ace", "Ace Master", "Ace Dominator", "Conqueror"],
-    maps: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Livik", "Nusa"],
-  },
-  freefire: {
-    agents: [],
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Heroic", "Grandmaster"],
-    maps: ["Bermuda", "Kalahari", "Purgatory", "Alpine"],
-  },
 };
 
 function pick<T>(arr: T[]): T {
@@ -133,7 +123,7 @@ function pick<T>(arr: T[]): T {
 function fillPlaceholders(template: string, gameSlug: string): string {
   const game = GAME_DATA[gameSlug] || GAME_DATA.valorant;
   return template
-    .replace(/\{game\}/gi, gameSlug === "bgmi" ? "BGMI" : gameSlug === "freefire" ? "Free Fire" : "Valorant")
+    .replace(/\{game\}/gi, "Valorant")
     .replace(/\{agent\}/gi, game.agents.length > 0 ? pick(game.agents) : "")
     .replace(/\{rank\}/gi, pick(game.ranks))
     .replace(/\{map\}/gi, game.maps.length > 0 ? pick(game.maps) : "")

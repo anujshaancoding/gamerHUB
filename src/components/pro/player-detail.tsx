@@ -26,8 +26,6 @@ import type {
   ProPlayerDetail,
   ProSocials,
   ValorantGameStats,
-  BgmiGameStats,
-  FreefireGameStats,
 } from "@/lib/pro/types";
 
 const SHOPPABLE_LABELS = new Set([
@@ -69,10 +67,7 @@ export function PlayerDetail({ detail }: PlayerDetailProps) {
     }
   };
 
-  const game = player.game;
   const agentPool = (current_stats?.game_stats as ValorantGameStats | undefined)?.agent_pool ?? [];
-  const bgmiStats = game === "bgmi" ? (current_stats?.game_stats as BgmiGameStats | undefined) : undefined;
-  const ffStats = game === "freefire" ? (current_stats?.game_stats as FreefireGameStats | undefined) : undefined;
   const crosshairCode = gear?.ingame_settings?.crosshair_code as string | undefined;
 
   return (
@@ -158,23 +153,12 @@ export function PlayerDetail({ detail }: PlayerDetailProps) {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard label="Matches" value={current_stats.matches_played ?? "—"} />
             <StatCard label="K/D" value={fmtNum(current_stats.k_d_ratio)} />
-            {game === "valorant" && (
-              <StatCard label="ACS" value={fmtNum(current_stats.acs, 1)} />
-            )}
+            <StatCard label="ACS" value={fmtNum(current_stats.acs, 1)} />
             <StatCard
-              label={game === "valorant" ? "ADR" : "Avg DMG"}
+              label="ADR"
               value={fmtNum(current_stats.adr, 1)}
             />
             <StatCard label="HS %" value={fmtPct(current_stats.hs_pct)} />
-            {bgmiStats?.finishes_per_match != null && (
-              <StatCard label="Finishes/match" value={fmtNum(bgmiStats.finishes_per_match)} />
-            )}
-            {bgmiStats?.survival_rate != null && (
-              <StatCard label="Survival %" value={fmtPct(bgmiStats.survival_rate)} />
-            )}
-            {ffStats?.booyah_rate != null && (
-              <StatCard label="Booyah %" value={fmtPct(ffStats.booyah_rate)} />
-            )}
             <StatCard
               label="Win %"
               value={(() => {
@@ -209,31 +193,6 @@ export function PlayerDetail({ detail }: PlayerDetailProps) {
           </div>
         )}
 
-        {(ffStats?.character_usage?.length ?? 0) > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-text-muted mb-2">Character usage</h3>
-            <div className="flex flex-wrap gap-2">
-              {ffStats!.character_usage!.map((c) => (
-                <div
-                  key={c.character}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-                >
-                  <span className="font-medium text-text">{c.character}</span>
-                  <span className="text-text-muted ml-2">{c.pick_rate}% pick</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(bgmiStats?.preferred_mode || ffStats?.preferred_mode) && (
-          <p className="text-xs text-text-muted mt-3">
-            Preferred mode:{" "}
-            <span className="font-medium text-text">
-              {bgmiStats?.preferred_mode || ffStats?.preferred_mode}
-            </span>
-          </p>
-        )}
       </section>
 
       {/* Gear + setup */}

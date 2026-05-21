@@ -9,11 +9,11 @@ import {
 export const metadata: Metadata = {
   title: "Gaming Blog — Guides, News & Updates | ggLobby",
   description:
-    "Read the latest gaming guides, news, patch notes, and analysis for Valorant, BGMI, Free Fire and more on ggLobby.",
+    "Read the latest Valorant guides, news, patch notes, and analysis on ggLobby.",
   openGraph: {
     title: "Gaming Blog — Guides, News & Updates | ggLobby",
     description:
-      "Read the latest gaming guides, news, patch notes, and analysis for Valorant, BGMI, Free Fire and more on ggLobby.",
+      "Read the latest Valorant guides, news, patch notes, and analysis on ggLobby.",
     type: "website",
     url: `${BASE_URL}/blog`,
     siteName: "ggLobby",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gaming Blog — Guides, News & Updates | ggLobby",
     description:
-      "Read the latest gaming guides, news, patch notes, and analysis for Valorant, BGMI, Free Fire and more on ggLobby.",
+      "Read the latest Valorant guides, news, patch notes, and analysis on ggLobby.",
   },
   alternates: {
     canonical: "/blog",

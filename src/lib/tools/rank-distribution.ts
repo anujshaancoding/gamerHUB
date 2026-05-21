@@ -8,7 +8,7 @@
 export type RankRow = { tier: string; pct: number };
 
 export interface RankProfile {
-  game: "valorant" | "bgmi" | "freefire";
+  game: "valorant";
   label: string;
   rows: RankRow[];
 }
@@ -43,36 +43,6 @@ export const RANK_PROFILES: RankProfile[] = [
       { tier: "Immortal 2",    pct: 0.22 },
       { tier: "Immortal 3",    pct: 0.14 },
       { tier: "Radiant",       pct: 0.03 },
-    ],
-  },
-  {
-    game: "bgmi",
-    label: "BGMI",
-    rows: [
-      { tier: "Bronze",      pct: 6.0 },
-      { tier: "Silver",      pct: 9.0 },
-      { tier: "Gold",        pct: 14.0 },
-      { tier: "Platinum",    pct: 19.0 },
-      { tier: "Diamond",     pct: 22.0 },
-      { tier: "Crown",       pct: 17.0 },
-      { tier: "Ace",         pct: 8.0 },
-      { tier: "Ace Master",  pct: 3.0 },
-      { tier: "Ace Dominator", pct: 1.2 },
-      { tier: "Conqueror",   pct: 0.8 },
-    ],
-  },
-  {
-    game: "freefire",
-    label: "Free Fire",
-    rows: [
-      { tier: "Bronze",      pct: 4.0 },
-      { tier: "Silver",      pct: 7.0 },
-      { tier: "Gold",        pct: 13.0 },
-      { tier: "Platinum",    pct: 19.0 },
-      { tier: "Diamond",     pct: 24.0 },
-      { tier: "Heroic",      pct: 18.0 },
-      { tier: "Master",      pct: 10.0 },
-      { tier: "Grandmaster", pct: 5.0 },
     ],
   },
 ];

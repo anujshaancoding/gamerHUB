@@ -33,7 +33,7 @@ export function SensConverter() {
                 : "text-text-muted hover:text-text-secondary"
             )}
           >
-            {f === "pc" ? "PC (Valorant / CS2 / Apex …)" : "Mobile (BGMI / CODM / FF)"}
+            {f === "pc" ? "PC (Valorant / CS2 / Apex …)" : "Mobile (CODM / PUBG: New State)"}
           </button>
         ))}
       </div>
@@ -111,8 +111,8 @@ function PcConverter() {
 
 // ─── Mobile ─────────────────────────────────────────────────────────────────
 function MobileConverter() {
-  const [fromId, setFromId] = useState<MobileGame["id"]>("bgmi");
-  const [toId, setToId] = useState<MobileGame["id"]>("codm");
+  const [fromId, setFromId] = useState<MobileGame["id"]>("codm");
+  const [toId, setToId] = useState<MobileGame["id"]>("pubgnewstate");
   const [sens, setSens] = useState("100");
 
   const from = MOBILE_GAMES.find((g) => g.id === fromId)!;

@@ -54,7 +54,7 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
   };
 
   const handleGoToCommunity = () => {
-    router.push("/community");
+    router.push("/agents");
   };
 
   if (typeof window === "undefined") return null;
@@ -148,7 +148,7 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
                     onClick={handleGoToCommunity}
                     className="text-sm text-text-muted hover:text-primary transition-colors"
                   >
-                    Continue browsing community as guest
+                    Continue browsing as guest
                   </button>
                 </div>
               </div>

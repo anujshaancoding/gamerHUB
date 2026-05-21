@@ -35,6 +35,37 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-19T17:00:00",
+    version: "1.25.0",
+    type: "feature",
+    title: "Patch hub + cleaner content URLs",
+    description:
+      "A new Valorant Patch Hub lands today: every patch broken down into buffs, nerfs and map-pool changes, with the updated meta tier list right alongside it. We also moved the pro database, crosshair gallery and tier list maker to shorter top-level links.",
+    highlights: [
+      "New Patch Hub at /patch — per-patch buff/nerf/rework breakdown with the current meta agent + map tier list, every entry linking to its full guide",
+      "Pro player database moved to /pros (was /pro/valorant)",
+      "Crosshair gallery moved to /crosshairs, tier list maker to /tier-list",
+      "Old links redirect automatically, so any saved or shared URLs still work",
+      "Added Patch & Meta, Tier List and Leaderboard to the navigation",
+      "Streamlined the navigation around the Valorant content experience — sidebar, top bar and mobile menu are now focused on agents, maps, patch, tools, pros and the giveaway",
+    ],
+  },
+  {
+    date: "2026-05-18T18:00:00",
+    version: "1.24.0",
+    type: "improvement",
+    title: "ggLobby is now Valorant-only",
+    description:
+      "We're sharpening our focus. BGMI and Free Fire have been fully removed across the platform — pages, pro profiles, tools and filters now cover Valorant exclusively, so everything you see is built and curated for one game done well.",
+    highlights: [
+      "Removed BGMI and Free Fire pro pages, player profiles and the head-to-head compare entries",
+      "Pro Scene, news, blog and forum filters are now Valorant-focused",
+      "Sensitivity converter's mobile tab now covers CODM and PUBG: New State",
+      "Added a Legal Disclaimer page (/disclaimer) clarifying VALORANT assets are owned by Riot Games",
+      "Streamlined the Friends page — removed the redundant Posts tab; the community feed now lives in one place under Community → Friends",
+    ],
+  },
+  {
     date: "2026-05-14T23:55:00",
     version: "1.23.0",
     type: "improvement",
@@ -56,7 +87,7 @@ const updates: UpdateEntry[] = [
     type: "improvement",
     title: "Player Insights paused while we rework data sources",
     description:
-      "We've put Player Insights on hold and removed it from the sidebar. The current setup couldn't reliably source real BGMI and Free Fire stats, and we'd rather pause the feature than show numbers we don't trust. The page now shows a brief explainer; we'll bring it back once the data path is solid.",
+      "We've put Player Insights on hold and removed it from the sidebar. The current setup couldn't reliably source real match stats, and we'd rather pause the feature than show numbers we don't trust. The page now shows a brief explainer; we'll bring it back once the data path is solid.",
   },
   {
     date: "2026-05-14T20:00:00",
@@ -64,7 +95,7 @@ const updates: UpdateEntry[] = [
     type: "fix",
     title: "Fixed crash on pro player pages and compare tool",
     description:
-      "Resolved a 'Something went wrong' error that appeared on Valorant, BGMI and Free Fire pro player profiles and on the head-to-head compare view when rendering stats like K/D, ACS, ADR and HS%.",
+      "Resolved a 'Something went wrong' error that appeared on Valorant pro player profiles and on the head-to-head compare view when rendering stats like K/D, ACS, ADR and HS%.",
   },
   {
     date: "2026-05-14T18:00:00",
@@ -72,16 +103,16 @@ const updates: UpdateEntry[] = [
     type: "feature",
     title: "Gamer Tools, Forum, Pick'em, Community Sens Share",
     description:
-      "Eight new tools and a full discussion forum. Crosshair gallery pulls every Indian Valorant pro's code into one searchable grid; a community sens-share lets anyone publish their BGMI/Free Fire/Valorant config; tournament pick'em rides on top of the existing event calendar. The Forum brings sections (Valorant, BGMI, Free Fire, Hardware, LFG, Off-topic) with threaded replies, upvotes and tags.",
+      "Eight new tools and a full discussion forum. Crosshair gallery pulls every Indian Valorant pro's code into one searchable grid; a community sens-share lets anyone publish their Valorant config; tournament pick'em rides on top of the existing event calendar. The Forum brings sections (Valorant, Hardware, LFG, Off-topic) with threaded replies, upvotes and tags.",
     highlights: [
       "New /forum — discussion board with 8 sections, post types (discussion / question / guide / LFG), nested replies, upvote/downvote, view counts",
       "New /tools hub linking every utility — sens converter, FOV calc, crosshair gallery, sens share, monitor guide, rank percentile, tier list maker, skin estimator, pick'em",
       "FOV calculator at /tools/fov — converts FOV between Valorant, CS2, Apex, COD, Fortnite, R6, OW2 and more (handles Hor+, Vert-, 4:3 stretched, ultrawide)",
-      "Pro crosshair gallery at /tools/crosshairs — every Indian Valorant pro's crosshair code with one-click copy, filterable by role",
-      "Community sens share at /tools/sens-share — publish your full BGMI/FF/Valorant/CODM/Apex/CS2 sens, upvote configs, copy with one tap",
+      "Pro crosshair gallery at /crosshairs — every Indian Valorant pro's crosshair code with one-click copy, filterable by role",
+      "Community sens share at /tools/sens-share — publish your full Valorant/CODM/Apex/CS2 sens, upvote configs, copy with one tap",
       "Monitor & Hz guide at /tools/monitor — refresh-rate frametime table, response time vs input lag, viewing-distance calculator",
-      "Rank percentile estimator at /tools/rank-percentile — see what % of the ranked playerbase you're above (Valorant, BGMI, Free Fire)",
-      "Tier list maker at /tools/tier-list — drag-and-drop S/A/B/C/D builder with Valorant agents, BGMI weapons, Free Fire characters, Indian pros presets",
+      "Rank percentile estimator at /tools/rank-percentile — see what % of the ranked playerbase you're above (Valorant)",
+      "Tier list maker at /tier-list — drag-and-drop S/A/B/C/D builder with Valorant agents and Indian pros presets",
       "Valorant skin estimator at /tools/skin-estimator — count your skins by tier and see the rough VP / INR / USD total",
       "Tournament Pick'em on every upcoming /pro/events tournament — predict every match, climb the live leaderboard (+3 pt bonus for finals winner)",
     ],
@@ -92,15 +123,13 @@ const updates: UpdateEntry[] = [
     type: "feature",
     title: "Pro Scene India: Rankings, Gear, Tournaments, Compare & Sens Converter",
     description:
-      "A brand new section dedicated to India's competitive scene — covering Valorant, BGMI and Free Fire from day one. Browse the national ranking, drill into each player's career stats and full setup, jump into the tournament calendar, settle debates with the head-to-head compare tool, move your aim between games with the sensitivity converter, and follow your favourite pros so they show up on your dashboard.",
+      "A brand new section dedicated to India's competitive Valorant scene. Browse the national ranking, drill into each player's career stats and full setup, jump into the tournament calendar, settle debates with the head-to-head compare tool, move your aim between games with the sensitivity converter, and follow your favourite pros so they show up on your dashboard.",
     highlights: [
-      "New /pro section with national ranking tables for Indian Valorant, BGMI and Free Fire pros",
+      "New /pro section with national ranking tables for Indian Valorant pros",
       "Valorant player pages: K/D, ACS, ADR, HS%, agent pool with pick & win rates, full PC rig + peripherals, one-click crosshair-code copy",
-      "BGMI player pages: K/D, Avg Damage, finishes per match, survival rate, device + grip style + trigger setup, full ADS sensitivity table per scope",
-      "Free Fire player pages: K/D, booyah rate, character pool, device + grip + sensitivity",
-      "Tournament calendar at /pro/events — BMPS, VCT Challengers SA, FFWS India and more, with dates, prize pools, venues, official streams",
+      "Tournament calendar at /pro/events — VCT Challengers SA and more, with dates, prize pools, venues, official streams",
       "Compare tool at /pro/compare — pick any two same-game pros and see stats + gear head-to-head, with the winning side highlighted on each row",
-      "Sensitivity converter at /pro/sens-converter — exact PC math for Valorant ↔ CS2 ↔ Apex ↔ Overwatch 2 ↔ R6 ↔ The Finals, plus mobile BGMI ↔ CODM ↔ Free Fire approximations and cm/360° + eDPI",
+      "Sensitivity converter at /pro/sens-converter — exact PC math for Valorant ↔ CS2 ↔ Apex ↔ Overwatch 2 ↔ R6 ↔ The Finals, plus mobile CODM ↔ PUBG: New State approximations and cm/360° + eDPI",
       "Follow your favourite pros from any player page — a Player of the Week and your followed pros now appear on your dashboard",
       "Amazon India 'Buy on Amazon' links next to each peripheral on every gear card",
       "Verified socials (X, Instagram, YouTube, Twitch) on every player page",
@@ -124,7 +153,7 @@ const updates: UpdateEntry[] = [
     title: "Player Insights Tracker + Blog SEO Overhaul",
     description: "New multi-game stat tracker that turns raw numbers into a plain-English breakdown of your strengths, weaknesses, and what to practice next — plus a major SEO overhaul of the blog with canonical slug URLs, dynamic social preview images, an RSS feed, and explicit allow-listing for AI search crawlers.",
     highlights: [
-      "Player Insights (Beta) at /tracker — Valorant and CS2 via API lookup, BGMI and Free Fire via screenshot upload, all with personalized recommendations",
+      "Player Insights (Beta) at /tracker — Valorant and CS2 via API lookup, all with personalized recommendations",
       "Blog posts now live at /blog/{slug} as the canonical URL — old /community/post/{id} links permanently redirect, so shared and indexed links keep working",
       "Dynamic OG images for every blog post — richer link previews when shared on WhatsApp, X, Discord, and other socials",
       "RSS feed at /blog/rss.xml so readers can follow the blog in their favorite reader",
@@ -252,7 +281,7 @@ const updates: UpdateEntry[] = [
     version: "1.14.1",
     type: "improvement",
     title: "Blog Game Filter Updated",
-    description: "The game filter in the blog section now only shows the three supported games: Valorant, BGMI, and Free Fire Max.",
+    description: "The game filter in the blog section now focuses on our core title: Valorant.",
   },
   {
     date: "2026-03-07T22:00:00",

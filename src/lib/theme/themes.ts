@@ -225,70 +225,6 @@ const valorantTheme: Theme = {
   },
 };
 
-const bgmiTheme: Theme = {
-  id: "game-bgmi",
-  name: "BGMI",
-  description: "BGMI military tactical theme",
-  category: "game",
-  gameSlug: "bgmi",
-  isDark: true,
-  colors: {
-    background: "#1a1c14",
-    surface: "#24261c",
-    surfaceLight: "#2e3024",
-    surfaceLighter: "#383a2c",
-    border: "#484a3c",
-    borderLight: "#58594c",
-    primary: "#f2a900",
-    primaryDark: "#c28800",
-    primaryGlow: "rgba(242, 169, 0, 0.3)",
-    accent: "#4a5d23",
-    accentDark: "#3b4a1c",
-    accentGlow: "rgba(74, 93, 35, 0.3)",
-    secondary: "#8b7355",
-    warning: "#f2a900",
-    error: "#c94f4f",
-    success: "#4a5d23",
-    text: "#f0ebe0",
-    textSecondary: "#c8c4b8",
-    textMuted: "#8a8678",
-    textDim: "#5a5648",
-    foreground: "#f0ebe0",
-  },
-};
-
-const freefireTheme: Theme = {
-  id: "game-freefire",
-  name: "Free Fire",
-  description: "Free Fire orange blaze theme",
-  category: "game",
-  gameSlug: "freefire",
-  isDark: true,
-  colors: {
-    background: "#1a1210",
-    surface: "#241a16",
-    surfaceLight: "#2e221e",
-    surfaceLighter: "#382a26",
-    border: "#4d3a34",
-    borderLight: "#5d4a44",
-    primary: "#ff5722",
-    primaryDark: "#cc451b",
-    primaryGlow: "rgba(255, 87, 34, 0.3)",
-    accent: "#ff9800",
-    accentDark: "#cc7a00",
-    accentGlow: "rgba(255, 152, 0, 0.3)",
-    secondary: "#8b5e3c",
-    warning: "#ff9800",
-    error: "#ff5722",
-    success: "#4caf50",
-    text: "#fff3e0",
-    textSecondary: "#c8b8a8",
-    textMuted: "#8a7a6a",
-    textDim: "#5a4a3a",
-    foreground: "#fff3e0",
-  },
-};
-
 // Export all themes
 export const THEMES: Theme[] = [
   neonGreenBlack,
@@ -297,11 +233,11 @@ export const THEMES: Theme[] = [
   orangeWhite,
   cyberPurple,
   valorantTheme,
-  bgmiTheme,
-  freefireTheme,
 ];
 
-export const DEFAULT_THEME = neonGreenBlack;
+// V2 default — VALORANT. (Switchable via Settings; ThemeProvider applies this
+// app-wide as inline CSS vars, so it overrides the globals :root fallback.)
+export const DEFAULT_THEME = valorantTheme;
 
 export const getThemeById = (id: string): Theme => {
   return THEMES.find((t) => t.id === id) || DEFAULT_THEME;

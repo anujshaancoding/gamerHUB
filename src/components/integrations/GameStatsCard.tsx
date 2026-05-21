@@ -25,14 +25,10 @@ interface GameStatsCardProps {
 
 const gameColors: Record<string, string> = {
   valorant: "from-red-500/20 to-red-900/20 border-red-500/30",
-  bgmi: "from-orange-500/20 to-orange-900/20 border-orange-500/30",
-  freefire: "from-orange-500/20 to-red-900/20 border-orange-500/30",
 };
 
 const gameLogos: Record<string, string> = {
   valorant: "VAL",
-  bgmi: "BGMI",
-  freefire: "FF",
 };
 
 export function GameStatsCard({

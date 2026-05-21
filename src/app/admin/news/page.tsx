@@ -72,8 +72,6 @@ const STATUS_STYLES: Record<string, { label: string; className: string }> = {
 
 const GAME_STYLES: Record<string, { label: string; className: string }> = {
   valorant: { label: "Valorant", className: "bg-red-500/10 text-red-400 border-red-500/20" },
-  bgmi: { label: "BGMI", className: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-  freefire: { label: "Free Fire", className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
 };
 
 type NewsTab = "manual" | "fetched" | "sources";
@@ -90,15 +88,6 @@ interface NewsSource {
 }
 
 const MANUAL_NEWS_SOURCES = {
-  bgmi: [
-    { name: "Sportskeeda BGMI", url: "https://www.sportskeeda.com/bgmi/news" },
-    { name: "TalkEsport", url: "https://www.talkesport.com/category/news/esports/" },
-    { name: "AFK Gaming", url: "https://afkgaming.com/indian-esports" },
-    { name: "InsideSport BGMI", url: "https://www.insidesport.in/bgmi/" },
-    { name: "KRAFTON Esports (Official)", url: "https://esports.battlegroundsmobileindia.com/" },
-    { name: "BGMI Esports", url: "https://bgmiesports.in/" },
-    { name: "India Esports", url: "https://indiaesports.co.in/" },
-  ],
   valorant: [
     { name: "Sportskeeda Valorant India", url: "https://www.sportskeeda.com/esports/valorant-india" },
     { name: "VLR.gg", url: "https://www.vlr.gg/news" },
@@ -106,13 +95,6 @@ const MANUAL_NEWS_SOURCES = {
     { name: "AFK Gaming", url: "https://afkgaming.com/indian-esports" },
     { name: "Valorant Esports (Official)", url: "https://valorantesports.com/" },
     { name: "Liquipedia Valorant", url: "https://liquipedia.net/valorant/" },
-  ],
-  freefire: [
-    { name: "Sportskeeda Free Fire", url: "https://www.sportskeeda.com/free-fire" },
-    { name: "TalkEsport", url: "https://www.talkesport.com/category/news/esports/" },
-    { name: "India Today Gaming", url: "https://www.indiatodaygaming.com/" },
-    { name: "Outlook Respawn", url: "https://respawn.outlookindia.com/esports/esports-news" },
-    { name: "Liquipedia Free Fire", url: "https://liquipedia.net/freefire/" },
   ],
   general: [
     { name: "16score Esports", url: "https://www.16score.com/esports/" },
@@ -123,9 +105,7 @@ const MANUAL_NEWS_SOURCES = {
 } as const;
 
 const GAME_TAG_COLORS: Record<string, string> = {
-  bgmi: "bg-orange-500/10 text-orange-400 border-orange-500/20",
   valorant: "bg-red-500/10 text-red-400 border-red-500/20",
-  freefire: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   general: "bg-white/5 text-white/50 border-white/10",
 };
 
@@ -661,7 +641,7 @@ export default function AdminNewsPage() {
                 {Object.entries(MANUAL_NEWS_SOURCES).map(([game, sources]) => (
                   <div key={game}>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border mb-2 ${GAME_TAG_COLORS[game]}`}>
-                      {game === "general" ? "General Esports" : game === "bgmi" ? "BGMI" : game === "freefire" ? "Free Fire" : "Valorant"}
+                      {game === "general" ? "General Esports" : "Valorant"}
                     </span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {sources.map((source) => (
@@ -710,8 +690,6 @@ export default function AdminNewsPage() {
           <SelectContent>
             <SelectItem value="all">All Games</SelectItem>
             <SelectItem value="valorant">Valorant</SelectItem>
-            <SelectItem value="bgmi">BGMI</SelectItem>
-            <SelectItem value="freefire">Free Fire</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter || "all"} onValueChange={(v) => { setStatusFilter(v === "all" ? "" : v as NewsStatus); setPage(1); }}>

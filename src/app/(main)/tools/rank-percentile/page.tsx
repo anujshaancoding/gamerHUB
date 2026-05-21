@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { RankPercentile } from "@/components/tools/rank-percentile";
 
 export const metadata: Metadata = {
-  title: "Rank Percentile — Valorant, BGMI & Free Fire ranked distribution · ggLobby",
+  title: "Rank Percentile — Valorant ranked distribution · ggLobby",
   description:
-    "See what % of the ranked playerbase you're above. Live rank-distribution data for Valorant, BGMI and Free Fire.",
+    "See what % of the ranked playerbase you're above. Live rank-distribution data for Valorant.",
   alternates: { canonical: "/tools/rank-percentile" },
 };
 

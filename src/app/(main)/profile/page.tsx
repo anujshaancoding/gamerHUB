@@ -9,8 +9,12 @@ export default function MyProfileRedirect() {
   const { profile, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && profile?.username) {
+    if (loading) return;
+    if (profile?.username) {
       router.replace(`/profile/${profile.username}`);
+    } else {
+      // Guest (no session) — don't spin forever, send to login.
+      router.replace("/login?redirect=/profile");
     }
   }, [loading, profile, router]);
 

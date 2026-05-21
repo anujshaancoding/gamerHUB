@@ -6,11 +6,11 @@ import { CompareView } from "@/components/pro/compare-view";
 import type { ProGame, ProPlayerWithTeam } from "@/lib/pro/types";
 
 export const metadata: Metadata = {
-  title: "Compare Indian Pros — Valorant, BGMI, Free Fire · ggLobby",
+  title: "Compare Indian Valorant Pros · ggLobby",
   description:
-    "Compare any two Indian esports pros side by side. K/D, agent pool, gear, sensitivity — head-to-head in one view.",
+    "Compare any two Indian Valorant pros side by side. K/D, agent pool, gear, sensitivity — head-to-head in one view.",
   openGraph: {
-    title: "Compare Indian Esports Pros — Head-to-head",
+    title: "Compare Indian Valorant Pros — Head-to-head",
     description:
       "Pick two pros and see them side by side: stats, gear, sensitivity.",
     type: "website",
@@ -24,7 +24,7 @@ interface PageProps {
 }
 
 function isValidGame(g: string | undefined): g is ProGame {
-  return g === "valorant" || g === "bgmi" || g === "freefire";
+  return g === "valorant";
 }
 
 export default async function ProComparePage({ searchParams }: PageProps) {
@@ -33,19 +33,15 @@ export default async function ProComparePage({ searchParams }: PageProps) {
   const slugA = params.a || null;
   const slugB = params.b || null;
 
-  const [rosterValorant, rosterBgmi, rosterFreefire, detailA, detailB] =
+  const [rosterValorant, detailA, detailB] =
     await Promise.all([
       listProPlayers("valorant"),
-      listProPlayers("bgmi"),
-      listProPlayers("freefire"),
       slugA ? getProPlayerDetail(game, slugA) : Promise.resolve(null),
       slugB ? getProPlayerDetail(game, slugB) : Promise.resolve(null),
     ]);
 
   const rosterByGame: Record<ProGame, ProPlayerWithTeam[]> = {
     valorant: rosterValorant,
-    bgmi: rosterBgmi,
-    freefire: rosterFreefire,
   };
 
   return (

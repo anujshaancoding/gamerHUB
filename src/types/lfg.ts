@@ -29,8 +29,8 @@ export interface LFGPost {
   max_rank: string | null; // Tier-based rank requirement
   accept_unranked: boolean;
   game_mode: string | null;
-  map_preference: string | null; // For BR games like PUBG
-  perspective: string | null; // TPP/FPP for PUBG
+  map_preference: string | null; // For battle-royale game modes
+  perspective: string | null; // TPP/FPP perspective preference
   region: string | null;
   language: string;
   voice_required: boolean;

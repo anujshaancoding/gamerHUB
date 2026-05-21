@@ -19,7 +19,7 @@ export type NotificationType =
   | "post_like"
   | "post_comment";
 
-export type NotificationChannel = "in_app" | "email" | "discord" | "push";
+export type NotificationChannel = "in_app" | "email" | "push";
 
 export interface Notification {
   id: string;
@@ -48,17 +48,6 @@ export interface NotificationPreference {
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
-}
-
-export interface DiscordConnection {
-  id: string;
-  user_id: string;
-  discord_user_id: string;
-  discord_username: string;
-  discord_discriminator?: string;
-  discord_avatar?: string;
-  is_active: boolean;
-  connected_at: string;
 }
 
 // Notification type display info
@@ -134,7 +123,6 @@ export const NOTIFICATION_TYPE_INFO: Record<NotificationType, { label: string; d
 export const CHANNEL_INFO: Record<NotificationChannel, { label: string; icon: string }> = {
   in_app: { label: "In-App", icon: "🔔" },
   email: { label: "Email", icon: "📧" },
-  discord: { label: "Discord", icon: "💬" },
   push: { label: "Push", icon: "📱" },
 };
 
@@ -222,27 +210,6 @@ async function updateSinglePreference(
   return response.json();
 }
 
-async function fetchDiscordConnection() {
-  const response = await fetch("/api/discord/status");
-  if (!response.ok) {
-    if (response.status === 404) return null;
-    const error = await response.json();
-    throw new Error(error.error || "Failed to fetch Discord connection");
-  }
-  return response.json();
-}
-
-async function disconnectDiscord() {
-  const response = await fetch("/api/discord/disconnect", {
-    method: "POST",
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to disconnect Discord");
-  }
-  return response.json();
-}
-
 // Hooks
 export function useNotifications(options?: {
   limit?: number;
@@ -298,8 +265,6 @@ export function useArchiveNotification() {
 export function useNotificationPreferences() {
   return useQuery<{
     preferences: NotificationPreference[];
-    discordConnected: boolean;
-    discordUsername?: string;
   }>({
     queryKey: queryKeys.notificationPreferences,
     queryFn: fetchPreferences,
@@ -327,26 +292,6 @@ export function useUpdateSinglePreference() {
     }: Partial<NotificationPreference> & { notificationType: NotificationType }) =>
       updateSinglePreference(notificationType, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notificationPreferences });
-    },
-  });
-}
-
-export function useDiscordConnection() {
-  return useQuery<DiscordConnection | null>({
-    queryKey: queryKeys.discordConnection,
-    queryFn: fetchDiscordConnection,
-    retry: false,
-  });
-}
-
-export function useDisconnectDiscord() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: disconnectDiscord,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.discordConnection });
       queryClient.invalidateQueries({ queryKey: queryKeys.notificationPreferences });
     },
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { Check, Lock, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,7 @@ export function PickemBoard({ matches, initialPicks, isAuthed }: Props) {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        alert(j.error || "Could not save pick");
+        toast.error(j.error || "Could not save pick");
         return;
       }
       setPicks((p) => ({ ...p, [match.id]: side }));

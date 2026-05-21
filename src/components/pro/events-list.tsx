@@ -14,14 +14,10 @@ interface EventsListProps {
 
 const GAME_LABEL: Record<ProGame, string> = {
   valorant: "Valorant",
-  bgmi: "BGMI",
-  freefire: "Free Fire",
 };
 
 const GAME_ACCENT: Record<ProGame, string> = {
   valorant: "bg-red-500/10 text-red-300 border-red-500/30",
-  bgmi: "bg-orange-500/10 text-orange-300 border-orange-500/30",
-  freefire: "bg-purple-500/10 text-purple-300 border-purple-500/30",
 };
 
 const STATUS_BADGE: Record<ProEvent["status"], { label: string; cls: string }> = {
@@ -94,7 +90,7 @@ export function EventsList({ events }: EventsListProps) {
           ))}
         </div>
         <div className="flex flex-wrap gap-1">
-          {(["all", "valorant", "bgmi", "freefire"] as const).map((g) => (
+          {(["all", "valorant"] as const).map((g) => (
             <button
               key={g}
               onClick={() => setGame(g)}

@@ -1,8 +1,12 @@
 /**
- * Lightweight admin token validation for Edge Runtime (middleware).
- * Does NOT verify the HMAC signature — Edge Runtime lacks Node.js crypto.createHmac.
- * Checks structure, JSON validity, userId match, and expiry.
- * Full HMAC verification happens in API routes via verifyAdminToken() from admin-token.ts.
+ * Admin token validation for the Edge Runtime (middleware).
+ *
+ * Performs FULL HMAC-SHA256 signature verification using the Web Crypto API
+ * (available in the Edge Runtime), matching `createAdminToken()` in
+ * admin-token.ts (Node) which signs `base64url(payload)` with AUTH_SECRET and
+ * appends a hex digest. A forged cookie can no longer pass the PIN gate.
+ *
+ * Token format: `base64url(payloadJSON).hmacHexDigest`
  */
 
 interface AdminTokenPayload {
@@ -11,14 +15,47 @@ interface AdminTokenPayload {
   expiresAt: number;
 }
 
-export function verifyAdminTokenLight(token: string, userId: string): boolean {
+function hexToBytes(hex: string): Uint8Array | null {
+  if (hex.length === 0 || hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) return null;
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+export async function verifyAdminTokenLight(token: string, userId: string): Promise<boolean> {
   try {
     const dotIdx = token.indexOf(".");
-    if (dotIdx === -1 || dotIdx === 0 || dotIdx === token.length - 1) return false;
+    if (dotIdx <= 0 || dotIdx === token.length - 1) return false;
 
     const payloadB64 = token.slice(0, dotIdx);
+    const signatureHex = token.slice(dotIdx + 1);
 
-    // base64url → base64 for atob compatibility
+    const secret = process.env.AUTH_SECRET;
+    if (!secret) return false;
+
+    const sigBytes = hexToBytes(signatureHex);
+    if (!sigBytes) return false;
+
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      sigBytes as BufferSource,
+      enc.encode(payloadB64)
+    );
+    if (!valid) return false;
+
+    // base64url → base64 for atob
     const base64 = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
     const payload: AdminTokenPayload = JSON.parse(atob(base64));
 

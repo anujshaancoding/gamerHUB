@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { csrfHeaders } from "@/lib/hooks/useCsrfToken";
 
-type Game = "valorant" | "bgmi" | "freefire";
+type Game = "valorant";
 
 interface TeamForm {
   slug: string;
@@ -153,8 +153,6 @@ export function TeamForm({ teamId }: { teamId?: string }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="valorant">Valorant</SelectItem>
-                <SelectItem value="bgmi">BGMI</SelectItem>
-                <SelectItem value="freefire">Free Fire</SelectItem>
               </SelectContent>
             </Select>
           </FormField>

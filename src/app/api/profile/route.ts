@@ -18,7 +18,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ profile: null });
     }
 
-    return NextResponse.json({ profile: rows[0] });
+    const profile = rows[0] as Record<string, unknown>;
+
+    // The owner gets their full profile; everyone else gets an explicit public
+    // projection — never expose admin flags, privacy_settings, or other
+    // internal columns to third parties (or unauthenticated callers).
+    const viewer = await getUser();
+    if (viewer?.id === userId) {
+      return NextResponse.json({ profile });
+    }
+
+    const PUBLIC_FIELDS = [
+      "id", "username", "display_name", "avatar_url", "banner_url", "bio",
+      "gaming_style", "region", "preferred_language", "status", "status_until",
+      "social_links", "favorite_games", "looking_for", "availability",
+      "custom_theme", "profile_effect", "profile_background", "profile_music_url",
+      "widget_layout", "profile_skin", "easter_egg_config", "hover_card_config",
+      "custom_css", "is_online", "last_seen", "created_at",
+    ];
+    const publicProfile: Record<string, unknown> = {};
+    for (const f of PUBLIC_FIELDS) {
+      if (f in profile) publicProfile[f] = profile[f];
+    }
+
+    return NextResponse.json({ profile: publicProfile });
   } catch (error) {
     console.error("Profile fetch error:", error);
     return NextResponse.json(

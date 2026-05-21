@@ -11,14 +11,10 @@ const FONT_STACK = '"Geist", "Geist Sans", system-ui, -apple-system, sans-serif'
 // Game-specific color palettes
 const GAME_PALETTES: Record<string, { primary: string; secondary: string; background: string }> = {
   valorant: { primary: "#ff4655", secondary: "#ff8a8a", background: "#1a0a0c" },
-  bgmi: { primary: "#ff8c00", secondary: "#ffb347", background: "#1a1000" },
-  freefire: { primary: "#ffcc00", secondary: "#ffe680", background: "#1a1600" },
 };
 
 const GAME_NAMES: Record<string, string> = {
   valorant: "VALORANT",
-  bgmi: "BGMI",
-  freefire: "FREE FIRE",
 };
 
 function getGamePalette(gameSlug: string) {

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Save, Bell, Mail, MessageSquare } from "lucide-react";
+import { Loader2, Save, Bell, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -49,8 +49,6 @@ export function NotificationPreferences({
   }
 
   const preferences = data?.preferences || [];
-  const discordConnected = data?.discordConnected || false;
-  const discordUsername = data?.discordUsername;
 
   const getPreference = (type: NotificationType): NotificationPreference => {
     const edited = editedPrefs.get(type);
@@ -125,7 +123,6 @@ export function NotificationPreferences({
     const Icon = {
       in_app: Bell,
       email: Mail,
-      discord: MessageSquare,
       push: Bell,
     }[channel];
 
@@ -149,34 +146,6 @@ export function NotificationPreferences({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Discord status */}
-      {!discordConnected && (
-        <Card className="p-4 bg-yellow-500/10 border-yellow-500/30">
-          <div className="flex items-center gap-3">
-            <MessageSquare className="h-5 w-5 text-yellow-500" />
-            <div className="flex-1">
-              <p className="text-sm text-yellow-200">
-                Connect Discord to receive notifications there
-              </p>
-            </div>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/settings/connections">Connect Discord</a>
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {discordConnected && discordUsername && (
-        <Card className="p-4 bg-green-500/10 border-green-500/30">
-          <div className="flex items-center gap-3">
-            <MessageSquare className="h-5 w-5 text-green-500" />
-            <p className="text-sm text-green-200">
-              Discord connected as <span className="font-medium">{discordUsername}</span>
-            </p>
-          </div>
-        </Card>
-      )}
-
       {/* Preferences list */}
       <div className="space-y-4">
         {Object.entries(NOTIFICATION_TYPE_INFO).map(([type, info]) => {
@@ -236,14 +205,6 @@ export function NotificationPreferences({
                         active={channels.includes("email")}
                         onClick={() =>
                           toggleChannel(type as NotificationType, "email")
-                        }
-                      />
-                      <ChannelButton
-                        channel="discord"
-                        active={channels.includes("discord")}
-                        disabled={!discordConnected}
-                        onClick={() =>
-                          toggleChannel(type as NotificationType, "discord")
                         }
                       />
                     </div>

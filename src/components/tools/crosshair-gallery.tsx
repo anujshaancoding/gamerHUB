@@ -88,7 +88,7 @@ function CrosshairCard({ entry }: { entry: CrosshairEntry }) {
       <div className="flex items-start gap-3">
         <Avatar src={entry.photo_url ?? undefined} alt={entry.ign} size="md" fallback={entry.ign[0]} />
         <div className="flex-1 min-w-0">
-          <Link href={`/pro/valorant/${entry.player_slug}`} className="font-semibold text-text hover:text-primary truncate block">
+          <Link href={`/pros/${entry.player_slug}`} className="font-semibold text-text hover:text-primary truncate block">
             {entry.ign}
           </Link>
           <p className="text-xs text-text-muted truncate">

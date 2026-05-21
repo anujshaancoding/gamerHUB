@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
   UserPlus,
@@ -14,9 +13,6 @@ import {
   Clock,
   Check,
   Loader2,
-  FileText,
-  Filter,
-  Calendar,
 } from "lucide-react";
 import { Button, Input, Card, Avatar, Badge } from "@/components/ui";
 import { useFriends, useFriendRequests, useSocialCounts } from "@/lib/hooks/useFriends";
@@ -24,55 +20,29 @@ import { useFollowing, useFollowers } from "@/lib/hooks/useFollowing";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { FriendCard } from "@/components/friends/friend-card";
 import { FollowCard } from "@/components/friends/follow-card";
-import { FriendPostCard } from "@/components/friends/friend-post-card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { createClient } from "@/lib/db/client-browser";
-import { STALE_TIMES } from "@/lib/query/provider";
-import { friendPostKeys, useLikeFriendPost } from "@/lib/hooks/useFriendPosts";
 
-type TabType = "friends" | "requests" | "following" | "followers" | "posts";
-
-interface FriendPost {
-  id: string;
-  content: string;
-  image_url?: string;
-  user_id: string;
-  created_at: string;
-  likes_count: number;
-  comments_count: number;
-  user?: {
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
-}
+type TabType = "friends" | "requests" | "following" | "followers";
 
 const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
   { id: "friends", label: "Friends", icon: UserCheck },
   { id: "requests", label: "Requests", icon: UserPlus },
   { id: "following", label: "Following", icon: Users },
   { id: "followers", label: "Followers", icon: Users },
-  { id: "posts", label: "Posts", icon: FileText },
 ];
+
+const validTabs = new Set<TabType>(tabs.map((t) => t.id));
 
 function FriendsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const db = createClient();
-  const queryClient = useQueryClient();
-  const { toggleLike: toggleFriendPostLike } = useLikeFriendPost();
 
-  const initialTab = (searchParams.get("tab") as TabType) || "friends";
+  const tabParam = searchParams.get("tab") as TabType | null;
+  const initialTab: TabType = tabParam && validTabs.has(tabParam) ? tabParam : "friends";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Posts tab state
-  const [postSearchQuery, setPostSearchQuery] = useState("");
-  const [postFilterBy, setPostFilterBy] = useState<"all" | "friends" | "following">("all");
-  const [postDateFilter, setPostDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch data
   const { counts, refetch: refetchCounts } = useSocialCounts(user?.id);
@@ -97,71 +67,6 @@ function FriendsContent() {
   const { followers, loading: followersLoading } = useFollowers({ userId: user?.id });
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  // Fetch posts with React Query — cached across navigations
-  const { data: posts = [], isLoading: postsLoading } = useQuery({
-    queryKey: friendPostKeys.list(false),
-    queryFn: async () => {
-      const res = await fetch(`/api/friend-posts?limit=50`);
-      if (!res.ok) throw new Error("Failed to load posts");
-      const { posts } = await res.json();
-      return (posts || []) as FriendPost[];
-    },
-    staleTime: STALE_TIMES.FRIEND_POSTS,
-    enabled: activeTab === "posts" && !!user,
-  });
-
-  // Get friend and following user IDs for filtering
-  const friendUserIds = useMemo(() => {
-    return new Set(friends.map((f: { friend_id: string }) => f.friend_id));
-  }, [friends]);
-
-  const followingUserIds = useMemo(() => {
-    return new Set(following.map((f: { id: string }) => f.id));
-  }, [following]);
-
-  // Filter posts based on search, person filter, and date filter
-  const filteredPosts = useMemo(() => {
-    let result = posts;
-
-    // Filter by person type
-    if (postFilterBy === "friends") {
-      result = result.filter((post) => friendUserIds.has(post.user_id));
-    } else if (postFilterBy === "following") {
-      result = result.filter((post) => followingUserIds.has(post.user_id));
-    }
-
-    // Filter by date
-    if (postDateFilter !== "all") {
-      const now = new Date();
-      let cutoff: Date;
-      switch (postDateFilter) {
-        case "today":
-          cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case "week":
-          cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case "month":
-          cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-      }
-      result = result.filter((post) => new Date(post.created_at) >= cutoff);
-    }
-
-    // Filter by search query (matches content, username, or display name)
-    if (postSearchQuery.trim()) {
-      const query = postSearchQuery.toLowerCase();
-      result = result.filter(
-        (post) =>
-          post.content.toLowerCase().includes(query) ||
-          post.user?.username?.toLowerCase().includes(query) ||
-          post.user?.display_name?.toLowerCase().includes(query)
-      );
-    }
-
-    return result;
-  }, [posts, postFilterBy, postDateFilter, postSearchQuery, friendUserIds, followingUserIds]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -279,146 +184,6 @@ function FriendsContent() {
               )
             }
           />
-        </div>
-      )}
-
-      {/* Search & Filters (for posts tab) */}
-      {activeTab === "posts" && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search posts by keyword, friend name..."
-                value={postSearchQuery}
-                onChange={(e) => setPostSearchQuery(e.target.value)}
-                leftIcon={<Search className="h-4 w-4" />}
-                rightIcon={
-                  postSearchQuery && (
-                    <button onClick={() => setPostSearchQuery("")}>
-                      <X className="h-4 w-4 hover:text-primary" />
-                    </button>
-                  )
-                }
-              />
-            </div>
-            <Button
-              variant={showFilters ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              leftIcon={<Filter className="h-4 w-4" />}
-              className="flex-shrink-0"
-            >
-              Filters
-            </Button>
-          </div>
-
-          {/* Filter options */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <Card className="p-4 space-y-4">
-                  {/* Filter by person */}
-                  <div>
-                    <label className="text-sm font-medium text-text-secondary mb-2 block">
-                      Show posts from
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { id: "all" as const, label: "Everyone" },
-                        { id: "friends" as const, label: "Friends Only" },
-                        { id: "following" as const, label: "Following Only" },
-                      ].map((option) => (
-                        <button
-                          key={option.id}
-                          onClick={() => setPostFilterBy(option.id)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                            postFilterBy === option.id
-                              ? "bg-primary/10 text-primary border border-primary/30"
-                              : "bg-surface-light text-text-secondary hover:text-text border border-transparent"
-                          )}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Filter by date */}
-                  <div>
-                    <label className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Time period
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { id: "all" as const, label: "All time" },
-                        { id: "today" as const, label: "Today" },
-                        { id: "week" as const, label: "This week" },
-                        { id: "month" as const, label: "This month" },
-                      ].map((option) => (
-                        <button
-                          key={option.id}
-                          onClick={() => setPostDateFilter(option.id)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                            postDateFilter === option.id
-                              ? "bg-primary/10 text-primary border border-primary/30"
-                              : "bg-surface-light text-text-secondary hover:text-text border border-transparent"
-                          )}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Clear filters */}
-                  {(postFilterBy !== "all" || postDateFilter !== "all" || postSearchQuery) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setPostFilterBy("all");
-                        setPostDateFilter("all");
-                        setPostSearchQuery("");
-                      }}
-                      leftIcon={<X className="h-3.5 w-3.5" />}
-                    >
-                      Clear all filters
-                    </Button>
-                  )}
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Active filter badges */}
-          {(postFilterBy !== "all" || postDateFilter !== "all") && !showFilters && (
-            <div className="flex flex-wrap gap-2">
-              {postFilterBy !== "all" && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                  {postFilterBy === "friends" ? "Friends only" : "Following only"}
-                  <button onClick={() => setPostFilterBy("all")}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
-              {postDateFilter !== "all" && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                  {postDateFilter === "today" ? "Today" : postDateFilter === "week" ? "This week" : "This month"}
-                  <button onClick={() => setPostDateFilter("all")}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -639,85 +404,6 @@ function FriendsContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {followers.map((profile) => (
                   <FollowCard key={profile.id} profile={profile} type="follower" />
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "posts" && (
-          <motion.div
-            key="posts"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            {postsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredPosts.length === 0 ? (
-              <Card className="text-center py-12">
-                <FileText className="h-16 w-16 text-text-muted mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-text mb-2">
-                  {posts.length === 0 ? "No posts yet" : "No posts match your filters"}
-                </h3>
-                <p className="text-text-muted max-w-md mx-auto mb-4">
-                  {posts.length === 0
-                    ? "Head over to the Community page to create your first post!"
-                    : "Try adjusting your search or filter criteria"
-                  }
-                </p>
-                {posts.length === 0 ? (
-                  <Link href="/community">
-                    <Button variant="primary">Go to Community</Button>
-                  </Link>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setPostSearchQuery("");
-                      setPostFilterBy("all");
-                      setPostDateFilter("all");
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="max-w-2xl mx-auto space-y-4">
-                <p className="text-sm text-text-muted">
-                  {filteredPosts.length} {filteredPosts.length === 1 ? "post" : "posts"} found
-                </p>
-                {filteredPosts.map((post, index) => (
-                  <FriendPostCard
-                    key={post.id}
-                    post={post}
-                    index={index}
-                    onLike={async () => {
-                      await toggleFriendPostLike(post.id);
-                    }}
-                    onShare={async () => {
-                      const url = `${window.location.origin}/community?tab=friends`;
-                      if (navigator.share) {
-                        await navigator.share({
-                          title: `Post by ${post.user?.display_name || post.user?.username}`,
-                          text: post.content.slice(0, 100),
-                          url,
-                        });
-                      } else {
-                        await navigator.clipboard.writeText(url);
-                      }
-                    }}
-                    onDelete={async () => {
-                      const res = await fetch(`/api/friend-posts/${post.id}`, {
-                        method: "DELETE",
-                      });
-                      if (!res.ok) throw new Error("Failed to delete post");
-                      queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
-                    }}
-                  />
                 ))}
               </div>
             )}

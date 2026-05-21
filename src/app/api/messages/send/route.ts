@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { isConversationMember } from "@/lib/auth/conversation-access";
 import { emitToUser } from "@/lib/realtime/socket-server";
 import { logger } from "@/lib/logger";
 
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
         { error: "conversationId and content are required" },
         { status: 400 }
       );
+    }
+
+    // IDOR guard: only participants may post into a conversation.
+    if (!(await isConversationMember(db, conversationId, user.id))) {
+      return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
 
     // Insert message

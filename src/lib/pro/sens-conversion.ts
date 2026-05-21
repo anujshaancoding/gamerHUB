@@ -30,16 +30,16 @@ export interface PcGame {
 }
 
 export interface MobileGame {
-  id: "bgmi" | "codm" | "freefire" | "pubgnewstate";
+  id: "codm" | "pubgnewstate";
   label: string;
   /** Maximum value of the in-game sens slider */
   scaleMax: number;
   /**
-   * Approximate equivalence multiplier to BGMI's 100% "Camera (Free Look)" sens.
-   * If you find any number on BGMI's scale produces feel X, multiply by this
-   * to land on the equivalent number on the target game's scale.
+   * Approximate equivalence multiplier to a shared mobile reference sens.
+   * If you find any number on the reference scale produces feel X, multiply
+   * by this to land on the equivalent number on the target game's scale.
    */
-  bgmiMultiplier: number;
+  refMultiplier: number;
   family: "mobile";
   notes?: string;
 }
@@ -58,10 +58,8 @@ export const PC_GAMES: PcGame[] = [
 ];
 
 export const MOBILE_GAMES: MobileGame[] = [
-  { id: "bgmi",         label: "BGMI",                scaleMax: 200, bgmiMultiplier: 1.0,   family: "mobile" },
-  { id: "codm",         label: "COD: Mobile",         scaleMax: 200, bgmiMultiplier: 1.0,   family: "mobile", notes: "Same 0–200 slider as BGMI; multiplier is approximate" },
-  { id: "pubgnewstate", label: "PUBG: New State",     scaleMax: 200, bgmiMultiplier: 0.95,  family: "mobile" },
-  { id: "freefire",     label: "Free Fire",           scaleMax: 100, bgmiMultiplier: 0.55,  family: "mobile", notes: "Free Fire uses a 0–100 scale — math is a feel-based approximation" },
+  { id: "codm",         label: "COD: Mobile",         scaleMax: 200, refMultiplier: 1.0,   family: "mobile", notes: "0–200 slider; multiplier is approximate" },
+  { id: "pubgnewstate", label: "PUBG: New State",     scaleMax: 200, refMultiplier: 0.95,  family: "mobile" },
 ];
 
 export function findGame(id: string): AnyGame | undefined {
@@ -83,17 +81,17 @@ export function convertPcSens(
 
 /**
  * Convert a mobile sens value from one game to another (approximation).
- * Maps via the BGMI scale and clamps to the target game's scale max.
+ * Maps via a shared reference scale and clamps to the target game's scale max.
  */
 export function convertMobileSens(
   sens: number,
   from: MobileGame,
   to: MobileGame
 ): number {
-  // Normalise the input to "BGMI-equivalent"
-  const asBgmi = (sens / from.scaleMax) * 200 / from.bgmiMultiplier;
+  // Normalise the input to the shared reference scale
+  const asRef = (sens / from.scaleMax) * 200 / from.refMultiplier;
   // Then project onto the target game
-  const projected = (asBgmi * to.bgmiMultiplier * to.scaleMax) / 200;
+  const projected = (asRef * to.refMultiplier * to.scaleMax) / 200;
   return Math.min(projected, to.scaleMax);
 }
 

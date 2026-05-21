@@ -14,15 +14,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const viewer = await getUser();
+    const viewerId = viewer?.id ?? null;
+
     const sql = getPool();
     const posts = await sql`
       SELECT
         wp.*,
         p.avatar_url   AS author_avatar_url,
         p.username      AS author_username,
-        p.display_name  AS author_display_name
+        p.display_name  AS author_display_name,
+        COALESCE(lc.like_count, 0)::int AS like_count,
+        ${viewerId}::uuid IS NOT NULL AND ml.user_id IS NOT NULL AS liked_by_me
       FROM profile_wall_posts wp
       LEFT JOIN profiles p ON p.id = wp.author_id
+      LEFT JOIN (
+        SELECT post_id, COUNT(*) AS like_count
+        FROM profile_wall_post_likes
+        GROUP BY post_id
+      ) lc ON lc.post_id = wp.id
+      LEFT JOIN profile_wall_post_likes ml
+        ON ml.post_id = wp.id AND ml.user_id = ${viewerId}
       WHERE wp.profile_id = ${profileId}
       ORDER BY wp.is_pinned DESC, wp.created_at DESC
       LIMIT 20
@@ -100,6 +112,8 @@ export async function POST(request: NextRequest) {
       author_avatar_url: author?.avatar_url ?? null,
       author_username: author?.username ?? null,
       author_display_name: author?.display_name ?? null,
+      like_count: 0,
+      liked_by_me: false,
     };
 
     return NextResponse.json({ post: enrichedPost }, { status: 201 });

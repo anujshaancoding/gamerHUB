@@ -165,11 +165,11 @@ function WritePage() {
           updates: buildInput(status),
         });
         toast.success("Post published!");
-        router.push("/community");
+        router.push("/blog");
       } else {
         await createPost(buildInput(status));
         toast.success("Post published!");
-        router.push("/community");
+        router.push("/blog");
       }
     } catch (err) {
       toast.error(

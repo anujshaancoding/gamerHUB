@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 const VALID_TYPES = ["community_post", "comment", "lfg_post", "news_discussion"];
 const VALID_CATEGORIES = ["hot_take", "question", "discussion", "daily", "reaction", "lfg", "hype", "tip", "general"];
 const VALID_MOODS = ["neutral", "excited", "frustrated", "chill", "curious", "hyped"];
-const VALID_GAMES = ["valorant", "bgmi", "freefire"];
+const VALID_GAMES = ["valorant"];
 const MAX_CONTENT_LENGTH = 500;
 
 // POST - Create a new template

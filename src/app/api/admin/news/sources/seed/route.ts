@@ -4,7 +4,7 @@ import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";
 
 // Default RSS sources for Indian esports gaming news
-// These are reliable, free RSS feeds that cover Valorant, BGMI, and Free Fire
+// These are reliable, free RSS feeds focused on Valorant
 const DEFAULT_SOURCES = [
   // ── Indian Esports (multi-game, India-focused) ──────────────────
   {
@@ -46,57 +46,11 @@ const DEFAULT_SOURCES = [
     region: "global",
   },
 
-  // ── BGMI-specific ──────────────────────────────────────────────
-  {
-    name: "Sportskeeda BGMI",
-    url: "https://www.sportskeeda.com/feed/bgmi",
-    slug: "sportskeeda-bgmi",
-    region: "india",
-  },
-  {
-    name: "BGMI Reddit",
-    url: "https://www.reddit.com/r/bgmi/new/.rss",
-    slug: "reddit-bgmi",
-    region: "india",
-  },
-  {
-    name: "PUBG Mobile Reddit",
-    url: "https://www.reddit.com/r/PUBGMobile/new/.rss",
-    slug: "reddit-pubgmobile",
-    region: "global",
-  },
-
-  // ── Free Fire-specific ─────────────────────────────────────────
-  {
-    name: "Sportskeeda Free Fire",
-    url: "https://www.sportskeeda.com/feed/free-fire",
-    slug: "sportskeeda-freefire",
-    region: "india",
-  },
-  {
-    name: "Free Fire Reddit",
-    url: "https://www.reddit.com/r/freefire/new/.rss",
-    slug: "reddit-freefire",
-    region: "global",
-  },
-
   // ── Google News (India esports) ────────────────────────────────
   {
     name: "Google News - Valorant India",
     url: "https://news.google.com/rss/search?q=valorant+esports+india&hl=en-IN&gl=IN&ceid=IN:en",
     slug: "google-valorant-india",
-    region: "india",
-  },
-  {
-    name: "Google News - BGMI",
-    url: "https://news.google.com/rss/search?q=BGMI+battlegrounds+mobile+india&hl=en-IN&gl=IN&ceid=IN:en",
-    slug: "google-bgmi",
-    region: "india",
-  },
-  {
-    name: "Google News - Free Fire India",
-    url: "https://news.google.com/rss/search?q=free+fire+garena+india&hl=en-IN&gl=IN&ceid=IN:en",
-    slug: "google-freefire-india",
     region: "india",
   },
 
@@ -134,7 +88,7 @@ export async function POST() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Fix any existing broken Sportskeeda sources (wrong URLs like /bgmi instead of /feed/bgmi)
+    // Fix any existing broken Sportskeeda sources (page URLs instead of /feed/ RSS URLs)
     const { data: allExisting } = await admin
       .from("news_sources")
       .select("id, name, url, slug");

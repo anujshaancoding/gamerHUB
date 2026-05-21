@@ -79,83 +79,6 @@ const valorantTheme: GameTheme = {
   },
 };
 
-// ─── BGMI ────────────────────────────────────────────────────
-const bgmiTheme: GameTheme = {
-  slug: "bgmi",
-  name: "BGMI",
-  colors: {
-    primary: "#F2A900",
-    secondary: "#4A5D23",
-    accent: "#8B6914",
-    background: "#1C2410",
-    cardBorder: "#F2A90040",
-    textAccent: "#F2A900",
-    glow: "rgba(242, 169, 0, 0.4)",
-  },
-  gradient: {
-    background: "linear-gradient(135deg, #1C2410 0%, #2d3a18 50%, #1C2410 100%)",
-    card: "linear-gradient(135deg, #F2A90015 0%, transparent 60%)",
-    accent: "linear-gradient(90deg, #F2A900, #4A5D23, #F2A900)",
-  },
-  particles: {
-    colors: ["#F2A900", "#8B6914", "#4A5D23", "#F2A90080"],
-    count: 12,
-  },
-  watermark: {
-    iconPath: "/images/games/bgmi.svg",
-    opacity: 0.05,
-    position: "bottom-right",
-  },
-  rankVisuals: {
-    bronze: { color: "#CD7F32", glowColor: "rgba(205,127,50,0.3)", borderColor: "#CD7F3260", animation: "none" },
-    silver: { color: "#C0C0C0", glowColor: "rgba(192,192,192,0.3)", borderColor: "#C0C0C060", animation: "none" },
-    gold: { color: "#FFD700", glowColor: "rgba(255,215,0,0.3)", borderColor: "#FFD70060", animation: "glow" },
-    platinum: { color: "#40E0D0", glowColor: "rgba(64,224,208,0.3)", borderColor: "#40E0D060", animation: "glow" },
-    diamond: { color: "#B9F2FF", glowColor: "rgba(185,242,255,0.4)", borderColor: "#B9F2FF60", animation: "glow" },
-    crown: { color: "#FF4500", glowColor: "rgba(255,69,0,0.4)", borderColor: "#FF450060", animation: "pulse" },
-    ace: { color: "#FFD700", glowColor: "rgba(255,215,0,0.5)", borderColor: "#FFD70080", animation: "pulse" },
-    conqueror: { color: "#FF1493", glowColor: "rgba(255,20,147,0.6)", borderColor: "#FF149380", animation: "shimmer" },
-  },
-};
-
-// ─── Free Fire ───────────────────────────────────────────────
-const freefireTheme: GameTheme = {
-  slug: "freefire",
-  name: "Free Fire",
-  colors: {
-    primary: "#FF6600",
-    secondary: "#1A1A2E",
-    accent: "#FFD700",
-    background: "#1A1A2E",
-    cardBorder: "#FF660040",
-    textAccent: "#FF6600",
-    glow: "rgba(255, 102, 0, 0.4)",
-  },
-  gradient: {
-    background: "linear-gradient(135deg, #1A1A2E 0%, #2E1A1A 50%, #1A1A2E 100%)",
-    card: "linear-gradient(135deg, #FF660015 0%, transparent 60%)",
-    accent: "linear-gradient(90deg, #FF6600, #FFD700, #FF6600)",
-  },
-  particles: {
-    colors: ["#FF6600", "#FFD700", "#FF8C00", "#FF660080"],
-    count: 16,
-  },
-  watermark: {
-    iconPath: "/images/games/freefire.svg",
-    opacity: 0.05,
-    position: "bottom-right",
-  },
-  rankVisuals: {
-    bronze: { color: "#CD7F32", glowColor: "rgba(205,127,50,0.3)", borderColor: "#CD7F3260", animation: "none" },
-    silver: { color: "#C0C0C0", glowColor: "rgba(192,192,192,0.3)", borderColor: "#C0C0C060", animation: "none" },
-    gold: { color: "#FFD700", glowColor: "rgba(255,215,0,0.3)", borderColor: "#FFD70060", animation: "glow" },
-    platinum: { color: "#00CED1", glowColor: "rgba(0,206,209,0.3)", borderColor: "#00CED160", animation: "glow" },
-    diamond: { color: "#4169E1", glowColor: "rgba(65,105,225,0.4)", borderColor: "#4169E160", animation: "glow" },
-    heroic: { color: "#FF4500", glowColor: "rgba(255,69,0,0.5)", borderColor: "#FF450080", animation: "pulse" },
-    grandmaster: { color: "#FFD700", glowColor: "rgba(255,215,0,0.6)", borderColor: "#FFD70080", animation: "shimmer" },
-  },
-};
-
 // ─── Default (GamerHub) ─────────────────────────────────────
 const defaultTheme: GameTheme = {
   slug: "default",
@@ -199,8 +122,6 @@ const defaultTheme: GameTheme = {
 
 export const GAME_THEMES: Record<string, GameTheme> = {
   valorant: valorantTheme,
-  bgmi: bgmiTheme,
-  freefire: freefireTheme,
   default: defaultTheme,
   other: defaultTheme,
 };

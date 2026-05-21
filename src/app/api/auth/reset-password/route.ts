@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import crypto from "crypto";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
+import { sendEmail } from "@/lib/email/send-email";
 
 // 5 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
@@ -57,10 +58,28 @@ export async function POST(request: NextRequest) {
       { onConflict: "user_id" }
     );
 
-    // TODO: Send email with reset link
-    // For now, log the link (in production, use an email service like Resend/SendGrid)
     const resetUrl = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL}/update-password?token=${token}`;
-    logger.info("Password reset link generated", { email, resetUrl });
+
+    // Send the email. NEVER log the token/URL. If sending fails (e.g. provider
+    // not configured) we still return success to prevent email enumeration —
+    // the failure is surfaced server-side for ops, not to the client.
+    try {
+      await sendEmail({
+        to: user.email as string,
+        subject: "Reset your ggLobby password",
+        html: `
+          <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto">
+            <h2>Reset your password</h2>
+            <p>We received a request to reset your ggLobby password. This link expires in 1 hour.</p>
+            <p><a href="${resetUrl}" style="display:inline-block;padding:12px 20px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none">Reset password</a></p>
+            <p style="color:#888;font-size:13px">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+        text: `Reset your ggLobby password (expires in 1 hour): ${resetUrl}`,
+      });
+    } catch (mailError) {
+      logger.error("Failed to send password reset email", mailError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

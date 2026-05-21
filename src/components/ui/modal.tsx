@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useCallback } from "react";
+import { Fragment, useEffect, useCallback, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -32,6 +32,10 @@ export function Modal({
   closeOnEscape = true,
   className,
 }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descId = useId();
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape" && closeOnEscape) {
@@ -52,6 +56,42 @@ export function Modal({
       document.body.style.overflow = "unset";
     };
   }, [isOpen, handleEscape]);
+
+  // Focus trap: focus the dialog on open and keep Tab focus within it.
+  useEffect(() => {
+    if (!isOpen) return;
+    const node = dialogRef.current;
+    if (!node) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    node.focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusable = node.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleTab);
+    return () => {
+      document.removeEventListener("keydown", handleTab);
+      previouslyFocused?.focus?.();
+    };
+  }, [isOpen]);
 
   const sizes = {
     sm: "max-w-sm",
@@ -80,12 +120,18 @@ export function Modal({
           {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? titleId : undefined}
+              aria-describedby={description ? descId : undefined}
+              tabIndex={-1}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               className={cn(
-                "relative w-full max-h-[90vh] flex flex-col rounded-xl bg-surface border border-border shadow-2xl",
+                "relative w-full max-h-[90vh] flex flex-col rounded-xl bg-surface border border-border shadow-2xl outline-none",
                 sizes[size],
                 className
               )}
@@ -96,10 +142,10 @@ export function Modal({
                 <div className="flex items-start justify-between p-4 border-b border-border shrink-0">
                   <div>
                     {title && (
-                      <h2 className="text-lg font-semibold text-text">{title}</h2>
+                      <h2 id={titleId} className="text-lg font-semibold text-text">{title}</h2>
                     )}
                     {description && (
-                      <p className="mt-1 text-sm text-text-muted">{description}</p>
+                      <p id={descId} className="mt-1 text-sm text-text-muted">{description}</p>
                     )}
                   </div>
                   {showCloseButton && (

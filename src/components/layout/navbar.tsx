@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 // Removed framer-motion — using CSS animations for simple dropdown reveals
 // to avoid pulling ~50KB into the always-loaded Navbar bundle.
 import {
-  Gamepad2,
   Search,
   Bell,
   Menu,
@@ -22,9 +21,9 @@ import {
   MessageCircle,
   Radio,
   Megaphone,
-  UserCheck,
-  Shield,
-  BookOpen,
+  Map,
+  Wrench,
+  MessagesSquare,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -65,15 +64,20 @@ const getNotificationIcon = (type: NotificationType) => {
   }
 };
 
-// Mobile menu navigation items - same as sidebar
+// Mobile menu navigation items — mirrors the sidebar IA. Phase-3 social
+// features (community/friends/messages/clans/find-gamers) are frozen and
+// intentionally not surfaced (see V2-PLAN.md).
 const mobileNavItems = [
+  { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
+  { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
+  { href: "/patch", label: "Patch & Meta", icon: Swords, requiresAuth: false },
+  { href: "/tier-list", label: "Tier List", icon: Swords, requiresAuth: false },
+  { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false },
+  { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false },
+  { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false },
+  { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
-  { href: "/friends", label: "Friends", icon: UserCheck, requiresAuth: true, showBadge: true },
-  { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
-  { href: "/community", label: "Community", icon: Users, requiresAuth: false },
-  { href: "/blog", label: "Blog", icon: BookOpen, requiresAuth: false },
-  { href: "/find-gamers", label: "Discover Gamers", icon: Gamepad2, requiresAuth: false },
-  { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
 
@@ -84,7 +88,7 @@ export function Navbar() {
   const isAuthenticated = !!user;
   const { myStatus } = usePresence();
 
-  const { hideNews } = useSiteSettings();
+  useSiteSettings();
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -169,7 +173,7 @@ export function Navbar() {
               <form onSubmit={handleSearch} role="search">
                 <Input
                   aria-label="Search content"
-                  placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
+                  placeholder="Search agents, maps, pros…"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -216,14 +220,14 @@ export function Navbar() {
             {!user ? (
               /* Guest User - Show nav links + Login/Sign Up */
               <div className="flex items-center gap-1 sm:gap-2">
-                <Link href="/blog" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
-                  Blog
+                <Link href="/agents" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Agents
                 </Link>
-                <Link href="/find-gamers" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
-                  Find Gamers
+                <Link href="/maps" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Maps & Lineups
                 </Link>
-                <Link href="/community" className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
-                  Community
+                <Link href="/giveaway" className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Giveaway
                 </Link>
                 <div className="hidden md:block w-px h-6 bg-border mx-1" />
                 <Button variant="ghost" size="sm" asChild>
@@ -233,25 +237,13 @@ export function Navbar() {
                 </Button>
                 <Button variant="primary" size="sm" asChild>
                   <Link href="/register">
-                    Sign Up
+                    Create Profile
                   </Link>
                 </Button>
               </div>
             ) : (
               /* Logged In User - Show Notifications and User Menu */
               <>
-                {/* Messages */}
-                <Link href="/messages" className="relative">
-                  <Button variant="ghost" size="icon" className="relative" aria-label="Messages">
-                    <MessageCircle className="h-5 w-5" />
-                    {unreadMessages > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 bg-error text-white text-xs rounded-full flex items-center justify-center">
-                        {unreadMessages > 9 ? "9+" : unreadMessages}
-                      </span>
-                    )}
-                  </Button>
-                </Link>
-
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                   <Button
@@ -465,7 +457,7 @@ export function Navbar() {
               <form onSubmit={handleSearch} role="search">
                 <Input
                   aria-label="Search content"
-                  placeholder={hideNews ? "Search blogs" : "Search news and blogs"}
+                  placeholder="Search agents, maps, pros…"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -527,16 +519,6 @@ export function Navbar() {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="flex-1">{item.label}</span>
-                  {item.showBadge && counts.pending_requests > 0 && (
-                    <Badge variant="primary" size="sm">
-                      {counts.pending_requests}
-                    </Badge>
-                  )}
-                  {item.showMessageBadge && unreadMessages > 0 && (
-                    <Badge variant="error" size="sm">
-                      {unreadMessages > 99 ? "99+" : unreadMessages}
-                    </Badge>
-                  )}
                 </Link>
               );
             })}
@@ -545,6 +527,7 @@ export function Navbar() {
             <div className="pt-3 mt-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-dim px-3">
               <Link href="/privacy" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Privacy</Link>
               <Link href="/terms" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Terms</Link>
+              <Link href="/disclaimer" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Disclaimer</Link>
               <Link href="/guidelines" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Guidelines</Link>
               <span className="basis-full text-text-dim/60 mt-1">&copy; {new Date().getFullYear()} ggLobby</span>
             </div>
