@@ -1,9 +1,9 @@
 -- 009: Forum — categories, threads, replies, votes
 --
--- Powers /forum: section-first discussion board (Valorant, BGMI, Free Fire,
--- General, Tech, Off-topic). Threads have nested 1-level replies + upvote /
--- downvote, mirroring the existing /api/forums/* routes which were already
--- shipped against this schema.
+-- Powers /forum: section-first discussion board. V2 is Valorant-only, so the
+-- seed ships a single Valorant section + pinned Announcements. Threads have
+-- nested 1-level replies + upvote / downvote, mirroring the existing
+-- /api/forums/* routes which were already shipped against this schema.
 --
 -- Apply via:
 --   sudo -u postgres psql -d gamerhub -f /path/to/01_forum_schema.sql

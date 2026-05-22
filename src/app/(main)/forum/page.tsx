@@ -5,9 +5,9 @@ import { ForumLanding } from "@/components/forum/forum-landing";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Forum — Indian gamer discussions · ggLobby",
+  title: "Forum — Indian Valorant discussions · ggLobby",
   description:
-    "Discussion board for Indian Valorant players. Sections for Valorant, hardware, LFG and more.",
+    "Discussion board for Indian Valorant players — agents, comps, ranked rants and LFG.",
   alternates: { canonical: "/forum" },
   openGraph: {
     title: "ggLobby Forum",

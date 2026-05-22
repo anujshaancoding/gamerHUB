@@ -15,7 +15,7 @@ client-side or read from existing tables — they need **no** database changes.
 | # | File | What it does |
 |---|------|--------------|
 | 1 | `01_forum_schema.sql`     | `forum_categories`, `forum_posts`, `forum_replies`, `forum_votes` + `create_forum_post` / `create_forum_reply` / `toggle_forum_vote` RPCs. |
-| 2 | `02_forum_seed.sql`       | 8 default sections (Valorant, BGMI, Free Fire, Hardware, LFG, Off-topic, Feedback, Announcements). Idempotent. |
+| 2 | `02_forum_seed.sql`       | 2 default sections (Valorant + pinned Announcements). Idempotent. V2 is Valorant-only; `scripts/migrations/009_forum_valorant_only.sql` removes pre-V2 multi-game sections from existing deployments. |
 | 3 | `03_sens_share_schema.sql`| `sens_shares` + `sens_share_votes` + `toggle_sens_share_vote`. |
 | 4 | `04_pickem_schema.sql`    | `pickem_matches` + `pickem_predictions` + `pickem_leaderboard` view. |
 
