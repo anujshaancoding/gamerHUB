@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-22T11:09:00",
+    version: "1.28.0",
+    type: "improvement",
+    title: "Forum is now fully Valorant-only",
+    description:
+      "The forum's leftover multi-game sections have been retired, so the board now focuses entirely on the Indian Valorant scene.",
+    highlights: [
+      "Removed the old BGMI, Free Fire, Hardware, LFG, Off-topic and Site Feedback sections",
+      "Discussions now centre on a single Valorant section, alongside official Announcements",
+    ],
+  },
+  {
     date: "2026-05-21T20:00:00",
     version: "1.27.0",
     type: "improvement",
