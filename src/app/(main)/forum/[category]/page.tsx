@@ -7,6 +7,7 @@ import { RelativeTime } from "@/components/ui/RelativeTime";
 import { ForumCategoryIcon } from "@/components/forum/forum-icon";
 import {
   getForumCategoryBySlug,
+  listForumCategories,
   listForumThreadsByCategory,
 } from "@/lib/pro/forum-queries";
 
@@ -36,13 +37,23 @@ export default async function ForumCategoryPage({
   if (!cat) notFound();
 
   const sortMode: "latest" | "popular" = sort === "popular" ? "popular" : "latest";
-  const threads = await listForumThreadsByCategory(cat.id, sortMode, 50);
+  const [threads, allCats] = await Promise.all([
+    listForumThreadsByCategory(cat.id, sortMode, 50),
+    listForumCategories(),
+  ]);
+
+  // /forum redirects straight here when there's only one section, so the
+  // "All sections" link would just loop back — only show it when it leads
+  // somewhere meaningful.
+  const sectionCount = allCats.filter((c) => c.slug !== "announcements").length;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 lg:py-10 space-y-5">
-      <Link href="/forum" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text">
-        <ChevronLeft className="h-3 w-3" /> All sections
-      </Link>
+      {sectionCount > 1 && (
+        <Link href="/forum" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text">
+          <ChevronLeft className="h-3 w-3" /> All sections
+        </Link>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">

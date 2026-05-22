@@ -158,7 +158,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] 2xl:right-[calc(var(--app-inset)_+_18rem)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
+    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
       <div className="px-4 lg:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo - pinned left on all screen sizes */}
