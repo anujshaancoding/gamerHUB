@@ -75,11 +75,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Pre-existing lint issues exist project-wide; don't block the build on them.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Optimize tree-shaking for barrel-exported packages
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "framer-motion", "@radix-ui/react-icons"],

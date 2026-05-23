@@ -51,6 +51,7 @@ const updates: UpdateEntry[] = [
       "15 pinned beginner Q&A threads in the Valorant forum — sens, crosshair, ranked, economy, aim, callouts, lineups, smurfs, toxicity, FPS settings, free skins, game modes and more",
       "Each Q&A is its own indexable /forum/valorant/<slug> page targeting a long-tail beginner search",
       "Fixed: Find Gamers and LFG links from the sidebar/nav no longer get bounced to the Agents page — a leftover redirect from when the routes were frozen was removed",
+      "Fixed: forum category pages (e.g. /forum/valorant) were stuck on 'No threads yet' because the thread query was erroring server-side — the embed syntax with a space before the join now parses correctly",
     ],
   },
   {
