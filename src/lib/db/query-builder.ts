@@ -209,7 +209,12 @@ function tryParseJoinRef(token: string): JoinRef | null {
   const parenStart = token.indexOf("(");
   if (parenStart === -1 || !token.endsWith(")")) return null;
 
-  const prefix = token.substring(0, parenStart);
+  // Trim — PostgREST syntax allows whitespace before "(", e.g.
+  //   "author:profiles!author_id (id, username)"
+  // Without trimming, the validator rejects the trailing space and the
+  // token falls through into the main column list, producing
+  //   `column "author:profiles!author_id (id" does not exist`.
+  const prefix = token.substring(0, parenStart).trim();
   const cols = token.substring(parenStart + 1, token.length - 1);
 
   // Validate prefix is a valid join reference (not arbitrary SQL)
