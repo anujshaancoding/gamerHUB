@@ -58,8 +58,10 @@ Hundreds of indexable, high-intent pages = the distribution engine.
 - All BGMI / Free Fire / "Other" game references, icons, rank tables, role sets.
 
 **Freeze (keep code, remove from nav, no maintenance — Phase 3):**
-- clans, friends, messages, find-gamers/LFG, community feed, friend-posts,
-  battle-pass, cosmetics economy (frames/themes/titles/music/easter eggs), quests.
+- clans, friends, messages, friend-posts, battle-pass, cosmetics economy
+  (frames/themes/titles/music/easter eggs), quests.
+- NOTE: community feed and find-gamers/LFG were later re-surfaced in nav
+  (under "You") — they are no longer frozen.
 
 **Keep + rebuild with content depth:**
 - Blog (Valorant-only + patch loop), Pro Scene → pros/crosshairs/gear DB,

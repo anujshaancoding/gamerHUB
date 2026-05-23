@@ -44,14 +44,16 @@ type NavItem = {
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   // NOTE: The /community page is surfaced under "You" — it carries Valorant
-  // blogs, tournaments/giveaways, and the friend feed. Other Phase-3 social
-  // features (standalone friends/messages pages, clans, find-gamers/LFG)
-  // remain frozen per V2-PLAN.md — routes exist but are not surfaced yet.
+  // blogs, tournaments/giveaways, and the friend feed. /find-gamers is also
+  // surfaced here (Find Friends + LFG). Other Phase-3 social features
+  // (standalone friends/messages pages, clans) remain frozen per V2-PLAN.md —
+  // routes exist but are not surfaced yet.
   {
     label: "You",
     items: [
       { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
       { href: "/community", label: "Community", icon: Users, requiresAuth: false },
+      { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
     ],
   },
   {

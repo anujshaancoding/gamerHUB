@@ -35,15 +35,34 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-23T17:30:00",
+    version: "1.29.0",
+    type: "feature",
+    title: "India Scene ladder, Tier-1 roster refresh & beginner forum Q&A",
+    description:
+      "Launched the India Scene ladder — semi-pros, amateurs and creators below the main pros — refreshed the Tier-1 /pros list against the verified VCSA 2026 Split 1 rosters (including SkRossi's move to S8UL), and seeded 15 pinned beginner Q&A threads in the Valorant forum.",
+    highlights: [
+      "New /scene page with Semi-Pro, Amateur and Creator tiers and individual profile pages",
+      "'Next to go pro' community vote leaderboard — one vote per name",
+      "/pros now reflects VCSA 2026 Split 1: S8UL Esports (Split 1 champions) and Revenant XSpark featured",
+      "SkRossi moved to S8UL — joined by RvK and Yuvi; venka, Hoax and Techno listed on Revenant XSpark",
+      "Removed outdated GE/VLT/TR/RE/RVT roster placeholders that no longer reflect the live scene",
+      "Creator tier seeded with Payal Gaming (S8UL), MortaL (S8UL) and SkRossi's stream",
+      "15 pinned beginner Q&A threads in the Valorant forum — sens, crosshair, ranked, economy, aim, callouts, lineups, smurfs, toxicity, FPS settings, free skins, game modes and more",
+      "Each Q&A is its own indexable /forum/valorant/<slug> page targeting a long-tail beginner search",
+    ],
+  },
+  {
     date: "2026-05-22T11:09:00",
     version: "1.28.0",
     type: "improvement",
-    title: "Forum is now fully Valorant-only",
+    title: "Valorant-only forum and an updated map pool",
     description:
-      "The forum's leftover multi-game sections have been retired, so the board now focuses entirely on the Indian Valorant scene.",
+      "The forum now focuses entirely on the Indian Valorant scene, and the Maps page reflects the current V26 Act 3 competitive rotation.",
     highlights: [
-      "Removed the old BGMI, Free Fire, Hardware, LFG, Off-topic and Site Feedback sections",
+      "Removed the old BGMI, Free Fire, Hardware, LFG, Off-topic and Site Feedback forum sections",
       "Discussions now centre on a single Valorant section, alongside official Announcements",
+      "Maps page updated to the live V26 Act 3 pool — Breeze, Fracture and Pearl are back in; Bind, Sunset and Abyss have rotated out",
     ],
   },
   {

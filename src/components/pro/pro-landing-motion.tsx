@@ -12,6 +12,7 @@ import {
   Crosshair,
   Wrench,
   MessagesSquare,
+  Sparkles,
 } from "lucide-react";
 
 const tools = [
@@ -63,6 +64,7 @@ const findHere = [
   "Tournament calendar — never miss a VCT Challengers SA fixture",
   "Compare tool — settle debates with stats and gear side-by-side",
   "Verified socials so you can follow your favourite pros",
+  "India Scene ladder — semi-pros, amateurs and creators below Tier-1",
 ];
 
 export function ProLandingMotion() {
@@ -174,6 +176,45 @@ export function ProLandingMotion() {
               </div>
               <span className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-5 py-3 text-sm font-bold text-primary transition-transform group-hover:translate-x-1">
                 View rankings <ArrowRight className="h-4 w-4" />
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* India Scene — semi-pro, amateur, creators */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+        >
+          <Link
+            href="/scene"
+            className="group relative block overflow-hidden rounded-3xl border border-border bg-surface p-8 transition-all hover:-translate-y-1 hover:border-accent sm:p-10"
+          >
+            <div
+              className="pointer-events-none absolute inset-0 opacity-40 transition-opacity duration-300 group-hover:opacity-70"
+              style={{
+                background:
+                  "radial-gradient(60% 90% at 15% 20%, rgba(0,212,255,0.16) 0%, transparent 70%), radial-gradient(50% 80% at 85% 90%, rgba(0,255,136,0.14) 0%, transparent 70%)",
+              }}
+            />
+            <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-widest text-accent">
+                  <Sparkles className="h-3 w-3" />
+                  New — Tier-2 &amp; creators
+                </span>
+                <h2 className="mt-4 text-3xl font-black uppercase tracking-tight text-text sm:text-4xl">
+                  India Scene
+                </h2>
+                <p className="mt-2 max-w-md text-sm text-text-secondary sm:text-base">
+                  Academy duelists, amateur grinders and the creators driving
+                  the scene — vote for who goes pro next.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-bold text-accent transition-transform group-hover:translate-x-1">
+                Explore the ladder <ArrowRight className="h-4 w-4" />
               </span>
             </div>
           </Link>

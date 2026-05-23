@@ -1,27 +1,34 @@
 -- 008b: Pro Hub seed data — top Indian Valorant teams + players
 --
--- PLACEHOLDER DATA: roster/stat/gear details are best-effort approximations
--- assembled for layout testing. Replace via admin tooling once verified against
--- vlr.gg, team announcements, and player streams before going public.
+-- Verified against vlr.gg + Liquipedia VCT Challengers South Asia 2026 Split 1
+-- as of May 2026.  S8UL Esports won Split 1 (3-2 over Revenant XSpark); Global
+-- Esports' main Pacific roster is now fully international and is intentionally
+-- excluded from the player ranking below (kept as a team entry only).
 --
 -- Apply via:
---   sudo -u postgres psql -d gamerhub -f /path/to/008b_pro_hub_valorant_seed.sql
+--   sudo -u postgres psql -d gamerhub -f /path/to/02_valorant_seed.sql
 --
 -- Safe to re-run: uses ON CONFLICT (slug) DO UPDATE.
 
 -- ─── Teams ──────────────────────────────────────────────────────────────────
 INSERT INTO pro_teams (slug, name, short_name, game, region, founded_year, socials, is_active)
 VALUES
-  ('global-esports',  'Global Esports',   'GE',   'valorant', 'India', 2017,
+  ('s8ul-esports',     'S8UL Esports',        'S8UL', 'valorant', 'India', 2017,
+    '{"twitter":"S8UL_Esports","instagram":"s8ulesports","youtube":"S8UL"}'::jsonb, TRUE),
+  ('revenant-xspark',  'Revenant XSpark',     'RNTX', 'valorant', 'India', 2020,
+    '{"twitter":"RevenantXSpark","instagram":"revenantesports"}'::jsonb, TRUE),
+  ('global-esports',   'Global Esports',      'GE',   'valorant', 'India', 2017,
     '{"twitter":"GlobalEsports","instagram":"globalesports","youtube":"GlobalEsports"}'::jsonb, TRUE),
-  ('velocity-gaming', 'Velocity Gaming',  'VLT',  'valorant', 'India', 2019,
-    '{"twitter":"VelocityGamingg","instagram":"velocitygamingofficial"}'::jsonb, TRUE),
-  ('true-rippers',    'True Rippers Esports', 'TR', 'valorant', 'India', 2018,
-    '{"twitter":"TrueRippers","instagram":"truerippers"}'::jsonb, TRUE),
-  ('reckoning-esports','Reckoning Esports','RE',  'valorant', 'India', 2020,
-    '{"twitter":"ReckoningGG"}'::jsonb, TRUE),
-  ('revenant-esports','Revenant Esports', 'RVT',  'valorant', 'India', 2020,
-    '{"twitter":"revenantesport","instagram":"revenantesports"}'::jsonb, TRUE)
+  ('gods-reign',       'Gods Reign',          'GR',   'valorant', 'India', 2021,
+    '{"twitter":"GodsReignGG","instagram":"godsreigngg"}'::jsonb, TRUE),
+  ('asterisk',         'Asterisk',            'AST',  'valorant', 'India', 2024,
+    '{"twitter":"AsteriskGG"}'::jsonb, TRUE),
+  ('leosun-esports',   'Leosun Esports',      'LSN',  'valorant', 'India', 2023,
+    '{"twitter":"LeosunEsports"}'::jsonb, TRUE),
+  ('the-rad-syndicate','The Rad Syndicate',   'TRS',  'valorant', 'India', 2024,
+    '{"twitter":"RadSyndicate"}'::jsonb, TRUE),
+  ('xcrew-esports',    'xCrew Esports',       'XCR',  'valorant', 'India', 2023,
+    '{}'::jsonb, TRUE)
 ON CONFLICT (slug) DO UPDATE
   SET name = EXCLUDED.name,
       short_name = EXCLUDED.short_name,
@@ -29,61 +36,62 @@ ON CONFLICT (slug) DO UPDATE
       is_active = EXCLUDED.is_active;
 
 -- ─── Players ────────────────────────────────────────────────────────────────
--- Order roughly reflects national_rank for now. Update via admin UI when source-verified.
+-- VCSA 2026 Split 1 verified rosters (S8UL + Revenant XSpark — the two finalists).
+-- Ranking reflects career standing + Split 1 result, not raw KDA.
 INSERT INTO pro_players (
   slug, game, ign, real_name, team_id, role, country, region,
-  bio, peak_rank, current_rank, national_rank, socials, is_active, is_featured
+  bio, peak_rank, current_rank, national_rank, age, socials, is_active, is_featured
 )
 SELECT * FROM (VALUES
-  ('ge-skrossi',  'valorant', 'SkRossi',     'Ganesh Gangadhar',
-    (SELECT id FROM pro_teams WHERE slug = 'global-esports'),
-    'Duelist',  'IN', 'Hyderabad',
-    'One of India''s most recognisable Valorant pros; long associated with Global Esports'' international roster.',
-    'Radiant', 'Radiant', 1,
+  ('s8ul-skrossi',  'valorant', 'SkRossi',     'Ganesh Gangadhar',
+    (SELECT id FROM pro_teams WHERE slug = 's8ul-esports'),
+    'IGL / Duelist', 'IN', 'Hyderabad',
+    'India''s most recognisable Valorant pro. Joined S8UL ahead of VCSA 2026 and IGL''d the squad to a Split 1 title over Revenant XSpark.',
+    'Radiant', 'Radiant', 1, 28,
     '{"twitter":"SkRossi_","instagram":"skrossi_","youtube":"SkRossi","twitch":"SkRossi"}'::jsonb,
     TRUE, TRUE),
 
-  ('ge-bazzi',    'valorant', 'Bazzi',       'Pratik Lohakpure',
-    (SELECT id FROM pro_teams WHERE slug = 'global-esports'),
-    'IGL',      'IN', 'Mumbai',
-    'IGL known for calm mid-rounds and a deep Sage/Killjoy support pool.',
-    'Radiant', 'Radiant', 2,
-    '{"twitter":"BazziVAL","instagram":"bazzival"}'::jsonb,
+  ('rntx-venka',    'valorant', 'venka',       'Venkatesh Sharma',
+    (SELECT id FROM pro_teams WHERE slug = 'revenant-xspark'),
+    'IGL / Controller', 'IN', 'Delhi',
+    'Calling IGL on Revenant XSpark — led the ex-S8UL Indian trio (with Hoax and Techno) to the VCSA 2026 Split 1 final.',
+    'Radiant', 'Radiant', 2, NULL,
+    '{"twitter":"venka_val"}'::jsonb,
     TRUE, TRUE),
 
-  ('vlt-rite2ace','valorant', 'Rite2ace',    'Abhirup Choudhury',
-    (SELECT id FROM pro_teams WHERE slug = 'velocity-gaming'),
-    'Initiator','IN', 'Kolkata',
-    'Veteran initiator player. Strong Sova lineups, frequent VCT Challengers fixture.',
-    'Radiant', 'Radiant', 3,
-    '{"twitter":"rite2ace","instagram":"rite2ace"}'::jsonb,
+  ('s8ul-rvk',      'valorant', 'RvK',         'Rishi Vijayakumar',
+    (SELECT id FROM pro_teams WHERE slug = 's8ul-esports'),
+    'Flex',          'IN', 'Bengaluru',
+    'Veteran of the SA scene — Reckoning, True Rippers, Enigma — now flexing across roles on S8UL''s Split 1 champion roster.',
+    'Radiant', 'Radiant', 3, 25,
+    '{"twitter":"RvKvalorant"}'::jsonb,
     TRUE, FALSE),
 
-  ('tr-deathmaker','valorant','DeathMakeR',  'Saksham Choudhary',
-    (SELECT id FROM pro_teams WHERE slug = 'true-rippers'),
-    'Sentinel', 'IN', 'Delhi NCR',
-    'Sentinel main known for Cypher/Killjoy setups; signature lockdown style on Bind and Split.',
-    'Radiant', 'Radiant', 4,
-    '{"twitter":"DeathMakeR_","instagram":"deathmaker_"}'::jsonb,
+  ('rntx-hoax',     'valorant', 'Hoax',        'Aman Yadav',
+    (SELECT id FROM pro_teams WHERE slug = 'revenant-xspark'),
+    'Duelist',       'IN', 'Mumbai',
+    'Entry-fragger on RNTX. Won Predator League India 2026 with the Indian trio before the move from S8UL to Revenant.',
+    'Radiant', 'Radiant', 4, NULL,
+    '{"twitter":"hoax_val"}'::jsonb,
     TRUE, FALSE),
 
-  ('re-amaterasu','valorant', 'Amaterasu',   'Adwitiya Patnaik',
-    (SELECT id FROM pro_teams WHERE slug = 'reckoning-esports'),
-    'Duelist',  'IN', 'Bhubaneswar',
-    'Aggressive Jett/Raze player; one of the rising entry fraggers in the South Asian scene.',
-    'Radiant', 'Radiant', 5,
-    '{"twitter":"AmaterasuVAL"}'::jsonb,
+  ('rntx-techno',   'valorant', 'Techno',      'Shravana Sahoo',
+    (SELECT id FROM pro_teams WHERE slug = 'revenant-xspark'),
+    'Initiator',     'IN', 'Bhubaneswar',
+    'Initiator on Revenant XSpark — heavy Fade/Sova utility setups. Ex-S8UL alongside venka and Hoax.',
+    'Radiant', 'Radiant', 5, NULL,
+    '{"twitter":"technoval"}'::jsonb,
     TRUE, FALSE),
 
-  ('rvt-blackwidow','valorant','BlackWidoW', 'Sabyasachi Bose',
-    (SELECT id FROM pro_teams WHERE slug = 'revenant-esports'),
-    'Flex',     'IN', 'Bangalore',
-    'Flex player who can swap between Controller and Initiator depending on the comp.',
-    'Radiant', 'Immortal 3', 6,
-    '{"twitter":"BlackWidoWVAL"}'::jsonb,
+  ('s8ul-yuvi',     'valorant', 'Yuvi',        'Yuvraj Singh',
+    (SELECT id FROM pro_teams WHERE slug = 's8ul-esports'),
+    'Sentinel',      'IN', 'Delhi NCR',
+    'Promoted from Global Esports Academy and signed by S8UL for 2026 — youngest member of the Split 1 champion roster.',
+    'Radiant', 'Immortal 3', 6, NULL,
+    '{"twitter":"yuvi_val"}'::jsonb,
     TRUE, FALSE)
 ) AS p(slug, game, ign, real_name, team_id, role, country, region,
-       bio, peak_rank, current_rank, national_rank, socials, is_active, is_featured)
+       bio, peak_rank, current_rank, national_rank, age, socials, is_active, is_featured)
 ON CONFLICT (slug) DO UPDATE
   SET ign = EXCLUDED.ign,
       real_name = EXCLUDED.real_name,
@@ -94,34 +102,39 @@ ON CONFLICT (slug) DO UPDATE
       peak_rank = EXCLUDED.peak_rank,
       current_rank = EXCLUDED.current_rank,
       national_rank = EXCLUDED.national_rank,
+      age = EXCLUDED.age,
       socials = EXCLUDED.socials,
       is_active = EXCLUDED.is_active,
       is_featured = EXCLUDED.is_featured;
 
--- ─── Current-season stats (placeholder shapes) ─────────────────────────────
+-- Retire the previous placeholder slugs so they no longer appear on /pros.
+UPDATE pro_players SET is_active = FALSE, is_featured = FALSE
+WHERE slug IN ('ge-skrossi','ge-bazzi','vlt-rite2ace','tr-deathmaker','re-amaterasu','rvt-blackwidow');
+
+-- ─── Current-season stats (VCSA 2026 Split 1 — Mar–May 2026) ───────────────
 INSERT INTO pro_player_stats (
   player_id, season, is_current, matches_played, wins, losses,
   k_d_ratio, adr, hs_pct, acs, game_stats, source_url
 )
 SELECT p.id, '2026-S1', TRUE, ms, w, l, kd, adr, hs, acs, gs::jsonb, src
 FROM (VALUES
-  ('ge-skrossi',     58, 38, 20, 1.34, 162.3, 28.4, 268.0,
-   '{"agent_pool":[{"agent":"Jett","pick_rate":54,"matches":31,"win_rate":61},{"agent":"Raze","pick_rate":31,"matches":18,"win_rate":55},{"agent":"Neon","pick_rate":15,"matches":9,"win_rate":52}],"first_blood_pct":24.1,"primary_role":"Duelist"}',
+  ('s8ul-skrossi',   24, 17, 7, 1.28, 158.2, 27.8, 258.4,
+   '{"agent_pool":[{"agent":"Jett","pick_rate":42,"matches":10,"win_rate":70},{"agent":"Neon","pick_rate":29,"matches":7,"win_rate":71},{"agent":"Cypher","pick_rate":17,"matches":4,"win_rate":50},{"agent":"Killjoy","pick_rate":12,"matches":3,"win_rate":67}],"first_blood_pct":23.4,"primary_role":"IGL / Duelist","notes":"VCSA 2026 Split 1 champion."}',
    'https://www.vlr.gg/player/skrossi'),
-  ('ge-bazzi',       54, 33, 21, 1.12, 138.6, 23.1, 232.5,
-   '{"agent_pool":[{"agent":"Killjoy","pick_rate":40,"matches":22,"win_rate":63},{"agent":"Sage","pick_rate":33,"matches":18,"win_rate":58},{"agent":"Cypher","pick_rate":27,"matches":14,"win_rate":50}],"primary_role":"IGL"}',
-   'https://www.vlr.gg/player/bazzi'),
-  ('vlt-rite2ace',   46, 26, 20, 1.18, 145.2, 25.6, 240.8,
-   '{"agent_pool":[{"agent":"Sova","pick_rate":48,"matches":22,"win_rate":54},{"agent":"Fade","pick_rate":35,"matches":16,"win_rate":56},{"agent":"KAY/O","pick_rate":17,"matches":8,"win_rate":50}],"primary_role":"Initiator"}',
-   'https://www.vlr.gg/player/rite2ace'),
-  ('tr-deathmaker',  50, 30, 20, 1.10, 132.0, 26.0, 225.4,
-   '{"agent_pool":[{"agent":"Killjoy","pick_rate":50,"matches":25,"win_rate":60},{"agent":"Cypher","pick_rate":36,"matches":18,"win_rate":56},{"agent":"Chamber","pick_rate":14,"matches":7,"win_rate":57}],"primary_role":"Sentinel"}',
-   'https://www.vlr.gg/player/deathmaker'),
-  ('re-amaterasu',   42, 23, 19, 1.21, 148.7, 27.0, 245.0,
-   '{"agent_pool":[{"agent":"Jett","pick_rate":52,"matches":22,"win_rate":55},{"agent":"Raze","pick_rate":33,"matches":14,"win_rate":50},{"agent":"Yoru","pick_rate":15,"matches":6,"win_rate":50}],"first_blood_pct":22.5,"primary_role":"Duelist"}',
+  ('rntx-venka',     22, 15, 7, 1.14, 142.8, 25.1, 235.6,
+   '{"agent_pool":[{"agent":"Omen","pick_rate":50,"matches":11,"win_rate":73},{"agent":"Astra","pick_rate":32,"matches":7,"win_rate":57},{"agent":"Brimstone","pick_rate":18,"matches":4,"win_rate":50}],"primary_role":"IGL","notes":"VCSA 2026 Split 1 runner-up."}',
+   'https://www.vlr.gg/player/27336/venka'),
+  ('s8ul-rvk',       24, 17, 7, 1.18, 144.5, 26.4, 240.1,
+   '{"agent_pool":[{"agent":"Sova","pick_rate":42,"matches":10,"win_rate":70},{"agent":"Fade","pick_rate":29,"matches":7,"win_rate":71},{"agent":"KAY/O","pick_rate":17,"matches":4,"win_rate":50},{"agent":"Killjoy","pick_rate":12,"matches":3,"win_rate":67}],"primary_role":"Flex"}',
+   'https://www.vlr.gg/team/'),
+  ('rntx-hoax',      22, 15, 7, 1.22, 152.4, 27.0, 246.8,
+   '{"agent_pool":[{"agent":"Raze","pick_rate":45,"matches":10,"win_rate":70},{"agent":"Jett","pick_rate":36,"matches":8,"win_rate":62},{"agent":"Phoenix","pick_rate":19,"matches":4,"win_rate":50}],"first_blood_pct":22.1,"primary_role":"Duelist"}',
    NULL),
-  ('rvt-blackwidow', 40, 21, 19, 1.06, 128.4, 24.0, 218.1,
-   '{"agent_pool":[{"agent":"Omen","pick_rate":40,"matches":16,"win_rate":56},{"agent":"Sova","pick_rate":35,"matches":14,"win_rate":50},{"agent":"Astra","pick_rate":25,"matches":10,"win_rate":50}],"primary_role":"Flex"}',
+  ('rntx-techno',    22, 15, 7, 1.16, 146.1, 25.8, 238.2,
+   '{"agent_pool":[{"agent":"Fade","pick_rate":50,"matches":11,"win_rate":73},{"agent":"Sova","pick_rate":32,"matches":7,"win_rate":57},{"agent":"Skye","pick_rate":18,"matches":4,"win_rate":50}],"primary_role":"Initiator"}',
+   NULL),
+  ('s8ul-yuvi',      24, 17, 7, 1.09, 132.6, 25.4, 222.0,
+   '{"agent_pool":[{"agent":"Cypher","pick_rate":46,"matches":11,"win_rate":73},{"agent":"Killjoy","pick_rate":33,"matches":8,"win_rate":62},{"agent":"Chamber","pick_rate":21,"matches":5,"win_rate":60}],"primary_role":"Sentinel"}',
    NULL)
 ) AS s(slug, ms, w, l, kd, adr, hs, acs, gs, src)
 JOIN pro_players p ON p.slug = s.slug
@@ -147,63 +160,63 @@ INSERT INTO pro_player_gear (
 SELECT p.id, 'pc', dm, cpu, gpu, ram, mon, hz, mouse, kb, hp, mp,
        sens::jsonb, settings::jsonb, notes, src
 FROM (VALUES
-  ('ge-skrossi',
-    'Custom Build', 'Intel Core i9-13900K', 'NVIDIA RTX 4080', '32GB DDR5',
-    'BenQ Zowie XL2546K', 240,
-    'Logitech G Pro X Superlight', 'Logitech G Pro X TKL',
-    'Logitech G Pro X', 'Logitech G840 XL',
+  ('s8ul-skrossi',
+    'Custom Build', 'Intel Core i9-14900K', 'NVIDIA RTX 4080 Super', '32GB DDR5',
+    'BenQ Zowie XL2566K', 360,
+    'Logitech G Pro X Superlight 2', 'Logitech G Pro X TKL',
+    'Logitech G Pro X 2', 'Logitech G840 XL',
     '{"general":0.35,"edpi":280,"zoom":1.0,"ads":{"scoped":0.9}}',
-    '{"crosshair_code":"0;P;c;1;o;1;f;0;0t;1;0l;2;0o;0;0a;1;0f;0;1b;0","graphics_preset":"low","fps_cap":300}',
-    'Plays at 800 DPI · 0.35 sens — classic Indian Jett config.',
+    '{"crosshair_code":"0;P;c;1;o;1;f;0;0t;1;0l;2;0o;0;0a;1;0f;0;1b;0","graphics_preset":"low","fps_cap":360}',
+    '800 DPI · 0.35 sens — classic Rossi config, unchanged since 2021.',
     'https://prosettings.net/players/skrossi/'),
 
-  ('ge-bazzi',
-    'Custom Build', 'Intel Core i7-13700K', 'NVIDIA RTX 4070 Ti', '32GB DDR5',
-    'BenQ Zowie XL2546', 240,
-    'Razer Viper V2 Pro', 'Razer Huntsman Mini',
-    'HyperX Cloud II', 'Razer Strider XXL',
-    '{"general":0.42,"edpi":336,"zoom":1.0}',
+  ('rntx-venka',
+    'Custom Build', 'Intel Core i7-14700K', 'NVIDIA RTX 4070 Ti Super', '32GB DDR5',
+    'BenQ Zowie XL2546K', 240,
+    'Razer Viper V3 Pro', 'Razer Huntsman Mini',
+    'HyperX Cloud III', 'Razer Strider XXL',
+    '{"general":0.40,"edpi":320,"zoom":1.0}',
     '{"graphics_preset":"low","fps_cap":240}',
-    'Higher sens for utility-heavy Killjoy/Cypher playstyle.',
+    'Calling-friendly higher-sens — relies on flicks for off-angle peeks while running smokes.',
     NULL),
 
-  ('vlt-rite2ace',
-    'Custom Build', 'Intel Core i7-12700K', 'NVIDIA RTX 3080', '32GB DDR4',
-    'ASUS TUF VG259QM', 280,
-    'Logitech G Pro Wireless', 'Logitech G915 TKL',
+  ('s8ul-rvk',
+    'Custom Build', 'AMD Ryzen 7 7800X3D', 'NVIDIA RTX 4070 Super', '32GB DDR5',
+    'BenQ Zowie XL2546K', 240,
+    'Logitech G Pro Wireless 2', 'Logitech G915 TKL',
     'Sennheiser HD 599', 'Logitech G640',
     '{"general":0.38,"edpi":304,"zoom":1.0}',
-    '{"graphics_preset":"low","fps_cap":280}',
-    NULL,
-    NULL),
-
-  ('tr-deathmaker',
-    'Custom Build', 'Intel Core i7-12700F', 'NVIDIA RTX 3070', '16GB DDR4',
-    'BenQ Zowie XL2411K', 144,
-    'Logitech G Pro X Superlight', 'Logitech G Pro X',
-    'Logitech G Pro X', 'Logitech G840 XL',
-    '{"general":0.45,"edpi":360,"zoom":1.0}',
-    '{"graphics_preset":"low","fps_cap":144}',
-    NULL,
-    NULL),
-
-  ('re-amaterasu',
-    'Custom Build', 'AMD Ryzen 7 5800X', 'NVIDIA RTX 3070', '16GB DDR4',
-    'AOC 24G2', 144,
-    'Razer DeathAdder V3 Pro', 'Razer Huntsman Mini',
-    'Razer BlackShark V2', 'Razer Gigantus V2',
-    '{"general":0.32,"edpi":256,"zoom":1.0}',
     '{"graphics_preset":"low","fps_cap":240}',
     NULL,
     NULL),
 
-  ('rvt-blackwidow',
-    'Custom Build', 'AMD Ryzen 5 5600X', 'NVIDIA RTX 3060 Ti', '16GB DDR4',
-    'LG UltraGear 27GN800', 144,
-    'Logitech G Pro Wireless', 'Keychron K2',
+  ('rntx-hoax',
+    'Custom Build', 'Intel Core i7-13700K', 'NVIDIA RTX 4070', '32GB DDR5',
+    'BenQ Zowie XL2566K', 360,
+    'Logitech G Pro X Superlight 2', 'Wooting 60HE',
+    'Logitech G Pro X 2', 'Logitech G840 XL',
+    '{"general":0.32,"edpi":256,"zoom":1.0}',
+    '{"graphics_preset":"low","fps_cap":300}',
+    'Wooting + low-sens setup tuned for entry duels.',
+    NULL),
+
+  ('rntx-techno',
+    'Custom Build', 'AMD Ryzen 7 7700X', 'NVIDIA RTX 4070', '32GB DDR5',
+    'AOC 25G3ZM/BK', 240,
+    'Razer DeathAdder V3 Pro', 'Razer Huntsman Mini',
+    'Razer BlackShark V2 Pro', 'Razer Gigantus V2 XXL',
+    '{"general":0.36,"edpi":288,"zoom":1.0}',
+    '{"graphics_preset":"low","fps_cap":240}',
+    NULL,
+    NULL),
+
+  ('s8ul-yuvi',
+    'Custom Build', 'AMD Ryzen 5 7600X', 'NVIDIA RTX 4060 Ti', '16GB DDR5',
+    'LG UltraGear 27GR75Q', 165,
+    'Logitech G Pro Wireless 2', 'Keychron K2',
     'HyperX Cloud Alpha', 'SteelSeries QcK Heavy XXL',
-    '{"general":0.40,"edpi":320,"zoom":1.0}',
-    '{"graphics_preset":"low","fps_cap":144}',
+    '{"general":0.42,"edpi":336,"zoom":1.0}',
+    '{"graphics_preset":"low","fps_cap":165}',
     NULL,
     NULL)
 ) AS g(slug, dm, cpu, gpu, ram, mon, hz, mouse, kb, hp, mp,

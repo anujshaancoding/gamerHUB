@@ -62,7 +62,7 @@ export interface PatchChange {
   /** What changed — agent/map/weapon/system name. */
   subject: string;
   category: "agent" | "map" | "weapon" | "system";
-  /** Agent or map slug, when the subject is one (drives links/icons). */
+  /** Agent, map or weapon slug, when the subject is one (drives links/art). */
   slug?: string;
   kind: ChangeKind;
   /** Concrete bullet notes, lifted/condensed from the official notes. */
@@ -99,6 +99,110 @@ export interface ValorantPatch {
 // ─── Patches (newest first) ─────────────────────────────────────────────────
 
 export const PATCHES: ValorantPatch[] = [
+  {
+    version: "12.09",
+    slug: "12-09",
+    title: "Patch 12.09",
+    date: "2026-05-12",
+    summary:
+      "A balance-pass patch ahead of the next ranked stretch: Neon loses her airborne speed and bunny-hop entry, and every shotgun becomes far less reliable on the move. AMD Anti-Lag 2 support and a round of agent bug fixes round it out.",
+    headline: [
+      "Neon's High Gear no longer grants air speed — the bunny-hop entry is gone.",
+      "All shotguns are far less accurate while moving; Bucky, Judge and Shorty take direct nerfs.",
+      "Bucky's close-range pellet damage cut across the board.",
+      "AMD Anti-Lag 2 support added to reduce input latency on supported hardware.",
+    ],
+    changes: [
+      {
+        subject: "Neon",
+        category: "agent",
+        slug: "neon",
+        kind: "nerf",
+        notes: [
+          "High Gear no longer grants a speed bonus while airborne — sprint air speed now matches melee speed, removing the bunny-hop entry.",
+          "High Gear fuel only regenerates on kills while Overdrive is active; passive regeneration is unchanged.",
+          "Slide VFX updated so its direction and origin read more clearly.",
+        ],
+      },
+      {
+        subject: "Bucky",
+        category: "weapon",
+        slug: "bucky",
+        kind: "nerf",
+        notes: [
+          "Close-range pellet damage (0–8 m) cut — head 40 → 34, body 20 → 17, legs 17 → 14.",
+          "Moving spread sharply increased: walking 0.075 → 1.0, running 0.1 → 2.0, jumping 1.25 → 4.0.",
+          "Minimum spread increased 2.6 → 3.0.",
+        ],
+      },
+      {
+        subject: "Judge",
+        category: "weapon",
+        slug: "judge",
+        kind: "nerf",
+        notes: [
+          "Moving spread sharply increased: walking 0.075 → 1.0, running 0.75 → 2.0, jumping 2.25 → 4.0.",
+          "Minimum spread increased 2.25 → 2.5 (PC only until Patch 12.11).",
+        ],
+      },
+      {
+        subject: "Shorty",
+        category: "weapon",
+        slug: "shorty",
+        kind: "nerf",
+        notes: [
+          "Fire rate reduced 3.33 → 3.0 rounds per second.",
+          "Moving spread sharply increased: walking 0.075 → 1.0, running 0.1 → 2.0, jumping 1.25 → 4.0.",
+        ],
+      },
+      {
+        subject: "AMD Anti-Lag 2",
+        category: "system",
+        kind: "new",
+        notes: [
+          "Added support for AMD Anti-Lag 2 to cut input latency in GPU-bound scenarios.",
+          "Requires compatible AMD hardware and graphics drivers from March 9, 2026 or later.",
+        ],
+      },
+      {
+        subject: "Matchmaking",
+        category: "system",
+        kind: "neutral",
+        notes: [
+          "Riot is testing MMR tuning for modes beyond Competitive, Unrated and Swiftplay for more consistent games.",
+          "Agent bug fixes this patch: Chamber, Jett, Sage, Viper and a Neon Fast Lane exploit.",
+        ],
+      },
+    ],
+    tierList: {
+      agents: {
+        S: ["jett", "sova", "omen", "killjoy"],
+        A: ["raze", "skye", "kayo", "viper", "cypher", "fade"],
+        B: [
+          "breach",
+          "gekko",
+          "brimstone",
+          "astra",
+          "clove",
+          "chamber",
+          "sage",
+          "vyse",
+          "neon",
+        ],
+        C: ["phoenix", "reyna", "iso", "harbor", "deadlock"],
+        D: ["yoru", "miks"],
+      },
+      maps: {
+        S: ["ascent", "lotus"],
+        A: ["haven", "pearl"],
+        B: ["split", "fracture"],
+        C: ["breeze"],
+        D: [],
+      },
+    },
+    source:
+      "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-12-09/",
+  },
   {
     version: "11.00",
     slug: "11-00",
@@ -162,6 +266,7 @@ export const PATCHES: ValorantPatch[] = [
       {
         subject: "Outlaw",
         category: "weapon",
+        slug: "outlaw",
         kind: "buff",
         notes: ["Price reduced 2400 → 2200 to make the double-Op buy more viable."],
       },

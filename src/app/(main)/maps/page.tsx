@@ -6,7 +6,7 @@ import { MAPS, mapSplash } from "@/lib/data/valorant-maps";
 export const metadata: Metadata = {
   title: "Valorant Maps — Callouts & Lineups | ggLobby",
   description:
-    "Every Valorant map with callouts and agent lineups. Ascent, Bind, Haven, Split, Lotus, Sunset, Abyss and more — learn the lineups that win rounds.",
+    "Every Valorant map with callouts and agent lineups. Ascent, Breeze, Fracture, Haven, Lotus, Pearl, Split and more — learn the lineups that win rounds.",
   keywords: [
     "valorant maps",
     "valorant callouts",

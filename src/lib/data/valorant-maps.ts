@@ -69,16 +69,22 @@ export const MAPS: ValorantMap[] = [
             "One of the four maps available at global launch. Open mid and two mechanical site doors.",
         },
         {
-          date: "Since launch",
-          title: "Never rotated out of the pool",
+          date: "2020–2025",
+          title: "A five-year fixture in the pool",
           detail:
-            "The only map continuously in competitive rotation — the game's fundamentals benchmark.",
+            "Stayed in competitive rotation for over five years — the game's fundamentals benchmark — with only minor spawn and sightline tuning.",
         },
         {
-          date: "Ongoing",
-          title: "Minor tuning only",
+          date: "Oct 2025",
+          title: "Rotated out for the first time",
           detail:
-            "Small spawn and sightline passes over the years, but never a full rework.",
+            "Removed in patch 11.08, ending a record uninterrupted run in the competitive pool.",
+        },
+        {
+          date: "Apr 2026",
+          title: "Returned in V26 Act 3",
+          detail:
+            "Re-added to the competitive pool as Bind rotated out.",
         },
       ],
     },
@@ -90,7 +96,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "No mid, two teleporters. Tight chokes reward Brimstone, Viper and Raze utility and aggressive fakes.",
-    inPool: true,
+    inPool: false,
     history: {
       released: "April 2020 — Closed Beta",
       setting: "Rabat, Morocco",
@@ -113,6 +119,12 @@ export const MAPS: ValorantMap[] = [
           title: "Reworked and returned",
           detail:
             "Audio and sightline tweaks around Hookah and Showers; re-added to active duty.",
+        },
+        {
+          date: "Apr 2026",
+          title: "Rotated out in V26 Act 3",
+          detail:
+            "Vaulted from competitive and Premier queues to make room for Ascent's return.",
         },
       ],
     },
@@ -219,7 +231,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "Compact LA map with a strong mid. Tight angles reward disciplined smokes and flashes.",
-    inPool: true,
+    inPool: false,
     history: {
       released: "August 2023 — Episode 7 Act 2",
       setting: "Los Angeles, USA",
@@ -236,6 +248,10 @@ export const MAPS: ValorantMap[] = [
           detail:
             "Strong contestable mid, no mechanical tricks; adopted quickly as a balanced map.",
         },
+        {
+          date: "2025",
+          title: "Rotated out of active duty",
+        },
       ],
     },
   },
@@ -246,7 +262,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "No map boundaries — fall off and you die. Spacing and movement utility are everything.",
-    inPool: true,
+    inPool: false,
     history: {
       released: "June 2024 — Episode 9 Act 1",
       setting: "An ancient fortress suspended over a void",
@@ -261,6 +277,10 @@ export const MAPS: ValorantMap[] = [
           title: "New death hazard",
           detail:
             "Step off an edge in the open areas and you fall to your death — spacing is lethal.",
+        },
+        {
+          date: "2025",
+          title: "Rotated out of the competitive pool",
         },
       ],
     },
@@ -302,7 +322,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "Huge open spaces and long sightlines. Operators and wide smokes shape every round.",
-    inPool: false,
+    inPool: true,
     history: {
       released: "April 2021 — Episode 2 Act 3",
       setting: "A tropical island in the Caribbean",
@@ -321,6 +341,11 @@ export const MAPS: ValorantMap[] = [
           date: "2024",
           title: "Rotated out of the competitive pool",
         },
+        {
+          date: "Apr 2026",
+          title: "Returned to active duty",
+          detail: "Back in the competitive pool for the V26 Act 3 rotation.",
+        },
       ],
     },
   },
@@ -331,7 +356,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "H-shaped — attackers spawn on both sides. Defenders get pinched; flank-aware utility wins.",
-    inPool: false,
+    inPool: true,
     history: {
       released: "September 2021 — Episode 3 Act 2",
       setting: "A radianite research facility in the New Mexico desert",
@@ -347,6 +372,11 @@ export const MAPS: ValorantMap[] = [
           title: "Rotated in and out of the pool",
           detail: "A polarising layout that cycled through active duty.",
         },
+        {
+          date: "Apr 2026",
+          title: "Back in the competitive pool",
+          detail: "Reinstated for the V26 Act 3 rotation.",
+        },
       ],
     },
   },
@@ -357,7 +387,7 @@ export const MAPS: ValorantMap[] = [
     sites: ["A", "B"],
     blurb:
       "Grounded, no abilities-defying verticality. Pure mid battle and disciplined executes.",
-    inPool: false,
+    inPool: true,
     history: {
       released: "June 2022 — Episode 5 Act 1",
       setting: "An underwater domed city beneath Lisbon, Portugal",
@@ -376,6 +406,11 @@ export const MAPS: ValorantMap[] = [
         {
           date: "2023–2024",
           title: "Rotated through the competitive pool",
+        },
+        {
+          date: "Apr 2026",
+          title: "Returned to active duty",
+          detail: "Re-added to the competitive pool in the V26 Act 3 rotation.",
         },
       ],
     },

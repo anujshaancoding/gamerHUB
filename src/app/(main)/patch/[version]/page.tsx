@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import {
@@ -8,6 +9,8 @@ import {
   CHANGE_META,
   type PatchChange,
 } from "@/lib/data/valorant-patches";
+import { getAgent, agentIcon } from "@/lib/data/valorant-agents";
+import { getMap, mapListIcon } from "@/lib/data/valorant-maps";
 import { PatchTierList } from "@/components/patch/patch-tier-list";
 
 export function generateStaticParams() {
@@ -52,6 +55,41 @@ const CATEGORY_ORDER: PatchChange["category"][] = [
   "system",
 ];
 
+// Verified canonical weapon UUIDs (valorant-api.com). NOTE: do not source
+// weapon UUIDs from src/lib/tracker/valorant-assets.ts — several are wrong
+// there and resolve to a blank fallback image.
+const WEAPON_UUID: Record<string, string> = {
+  outlaw: "5f0aaf7a-4289-3998-d5ff-eb9a5cf7ef5c",
+  bucky: "910be174-449b-c412-ab22-d0873436b21b",
+  judge: "ec845bf4-4f79-ddda-a3da-0db3774b2794",
+  shorty: "42da8ccc-40d5-affc-beec-15aa47b42eda",
+};
+
+/** Resolve the thumbnail art for a change card from its category + slug. */
+function changeArt(
+  change: PatchChange,
+): { src: string; fit: "cover" | "contain" } | null {
+  if (!change.slug) return null;
+  if (change.category === "agent") {
+    const a = getAgent(change.slug);
+    return a ? { src: agentIcon(a.uuid), fit: "cover" } : null;
+  }
+  if (change.category === "map") {
+    const m = getMap(change.slug);
+    return m ? { src: mapListIcon(m.uuid), fit: "cover" } : null;
+  }
+  if (change.category === "weapon") {
+    const uuid = WEAPON_UUID[change.slug];
+    return uuid
+      ? {
+          src: `https://media.valorant-api.com/weapons/${uuid}/displayicon.png`,
+          fit: "contain",
+        }
+      : null;
+  }
+  return null;
+}
+
 function ChangeCard({ change }: { change: PatchChange }) {
   const meta = CHANGE_META[change.kind];
   const href =
@@ -60,37 +98,64 @@ function ChangeCard({ change }: { change: PatchChange }) {
       : change.category === "map" && change.slug
         ? `/maps/${change.slug}`
         : null;
+  const art = changeArt(change);
+
+  const thumb = art && (
+    <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-background">
+      <Image
+        src={art.src}
+        alt={change.subject}
+        width={56}
+        height={56}
+        className={`h-full w-full ${
+          art.fit === "cover" ? "object-cover" : "object-contain p-1.5"
+        }`}
+      />
+    </span>
+  );
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="flex items-center justify-between gap-3">
-        {href ? (
-          <Link
-            href={href}
-            className="font-semibold text-text hover:text-primary transition-colors"
-          >
-            {change.subject}
-          </Link>
-        ) : (
-          <span className="font-semibold text-text">{change.subject}</span>
-        )}
-        <span
-          className={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.className}`}
-        >
-          {meta.label}
-        </span>
+      <div className="flex items-start gap-3">
+        {thumb &&
+          (href ? (
+            <Link href={href} className="shrink-0">
+              {thumb}
+            </Link>
+          ) : (
+            thumb
+          ))}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            {href ? (
+              <Link
+                href={href}
+                className="font-semibold text-text hover:text-primary transition-colors"
+              >
+                {change.subject}
+              </Link>
+            ) : (
+              <span className="font-semibold text-text">{change.subject}</span>
+            )}
+            <span
+              className={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-semibold ${meta.className}`}
+            >
+              {meta.label}
+            </span>
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {change.notes.map((n, i) => (
+              <li
+                key={i}
+                className="flex gap-2 text-sm text-text-secondary leading-relaxed"
+              >
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-text-muted" />
+                <span>{n}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-      <ul className="mt-3 space-y-1.5">
-        {change.notes.map((n, i) => (
-          <li
-            key={i}
-            className="flex gap-2 text-sm text-text-secondary leading-relaxed"
-          >
-            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-text-muted" />
-            <span>{n}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

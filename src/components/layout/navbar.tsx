@@ -24,6 +24,7 @@ import {
   Map,
   Wrench,
   MessagesSquare,
+  Gamepad2,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -65,8 +66,8 @@ const getNotificationIcon = (type: NotificationType) => {
 };
 
 // Mobile menu navigation items — mirrors the sidebar IA. Remaining Phase-3
-// social features (standalone friends/messages pages, clans, find-gamers)
-// stay frozen and intentionally not surfaced (see V2-PLAN.md).
+// social features (standalone friends/messages pages, clans) stay frozen and
+// intentionally not surfaced (see V2-PLAN.md).
 const mobileNavItems = [
   { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
   { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
@@ -79,6 +80,7 @@ const mobileNavItems = [
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
+  { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
 ];
 
