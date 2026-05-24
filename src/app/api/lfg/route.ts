@@ -88,10 +88,9 @@ export async function GET(request: NextRequest) {
       query = query.eq("language", language);
     }
 
-    // Filter by available slots
-    if (hasSlots) {
-      query = query.lt("current_players", db.rpc("get_max_players"));
-    }
+    // hasSlots filter is applied in-memory after fetch — the query builder
+    // doesn't support column-to-column comparisons (current_players < max_players),
+    // and the previous attempt passed a Promise as the value, breaking the query.
 
     const { data, error, count } = await query;
 
@@ -115,10 +114,17 @@ export async function GET(request: NextRequest) {
         : 0,
     }));
 
-    // Apply rating filters in-memory (complex SQL avoided)
+    // Apply rating + hasSlots filters in-memory (column-to-column SQL avoided)
     let filteredPosts = posts;
+    if (hasSlots) {
+      filteredPosts = filteredPosts.filter((post: Record<string, unknown>) => {
+        const current = (post.current_players as number) ?? 0;
+        const max = (post.max_players as number) ?? 0;
+        return current < max;
+      });
+    }
     if (minRating || maxRating) {
-      filteredPosts = posts.filter((post: Record<string, unknown>) => {
+      filteredPosts = filteredPosts.filter((post: Record<string, unknown>) => {
         const postMin = post.min_rating as number | null;
         const postMax = post.max_rating as number | null;
         const acceptUnranked = post.accept_unranked as boolean;

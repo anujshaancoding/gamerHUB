@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/get-user";
 import { getProPlayersByGames, getPopularProPlayers } from "@/lib/db/rpc-types";
 import type { Profile, UserGame, Game } from "@/types/database";
 

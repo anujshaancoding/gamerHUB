@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-24T14:35:00",
+    version: "1.29.1",
+    type: "fix",
+    title: "Find Gamers / LFG tab no longer shows 'Failed to load posts'",
+    description:
+      "The Looking-For-Group tab was throwing a server error on every load because the 'has open slots' filter was sending an unresolved Promise to the database instead of a number. Now the filter runs correctly and the tab shows real posts (or a friendly empty state).",
+    highlights: [
+      "Fixed: LFG browse tab loaded with 'Failed to load posts' for everyone — the hasSlots filter is now applied correctly",
+      "Fixed: /api/pro-players and /api/suggestions were crashing with 'getUser is not defined' — missing import added back",
+    ],
+  },
+  {
     date: "2026-05-23T17:30:00",
     version: "1.29.0",
     type: "feature",
