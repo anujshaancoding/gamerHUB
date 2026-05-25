@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
-import type { ReportType } from "@/types/verification";
 import { getUser } from "@/lib/auth/get-user";
+import { validateBody } from "@/lib/security/validate-body";
+
+const ReportSchema = z.object({
+  reported_user_id: z.string().uuid("must be a valid UUID"),
+  report_type: z.enum([
+    "bot",
+    "fake_account",
+    "harassment",
+    "spam",
+    "toxic",
+    "cheating",
+    "impersonation",
+    "other",
+  ]),
+  report_category: z.string().max(64).nullish(),
+  description: z.string().trim().max(2000).nullish(),
+  evidence_urls: z.array(z.string().url().max(2048)).max(10).optional(),
+  context_type: z.string().max(64).nullish(),
+  context_id: z.string().max(128).nullish(),
+});
 
 // GET /api/reports - Get user's submitted reports
 export async function GET(request: NextRequest) {
@@ -82,7 +102,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const parsed = await validateBody(request, ReportSchema);
+    if (!parsed.ok) return parsed.response;
     const {
       reported_user_id,
       report_type,
@@ -91,40 +112,7 @@ export async function POST(request: NextRequest) {
       evidence_urls,
       context_type,
       context_id,
-    } = body;
-
-    // Validation
-    if (!reported_user_id) {
-      return NextResponse.json(
-        { error: "Reported user ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!report_type) {
-      return NextResponse.json(
-        { error: "Report type is required" },
-        { status: 400 }
-      );
-    }
-
-    const validReportTypes: ReportType[] = [
-      "bot",
-      "fake_account",
-      "harassment",
-      "spam",
-      "toxic",
-      "cheating",
-      "impersonation",
-      "other",
-    ];
-
-    if (!validReportTypes.includes(report_type)) {
-      return NextResponse.json(
-        { error: "Invalid report type" },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     // Can't report yourself
     if (reported_user_id === user.id) {

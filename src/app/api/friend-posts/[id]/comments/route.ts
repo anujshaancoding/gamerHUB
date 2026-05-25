@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { validateBody } from "@/lib/security/validate-body";
+
+const CommentSchema = z.object({
+  content: z.string().trim().min(1, "comment is required").max(500, "max 500 chars"),
+});
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -73,15 +79,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const content = body.content?.trim();
-
-    if (!content || content.length > 500) {
-      return NextResponse.json(
-        { error: "Comment must be between 1 and 500 characters" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, CommentSchema);
+    if (!parsed.ok) return parsed.response;
+    const { content } = parsed.data;
 
     const { data, error } = await db.rpc("add_friend_post_comment", {
       p_post_id: postId,

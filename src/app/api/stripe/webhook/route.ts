@@ -7,6 +7,12 @@ import type Stripe from "stripe";
 // Create admin client for webhook (bypasses RLS)
 const adminDb = createAdminClient();
 
+// Max age (seconds) we accept for a webhook delivery's `t=` timestamp.
+// Stripe's SDK default is 300s; we drop to 180s so a replay/captured
+// payload becomes useless quickly. Stripe retries with a fresh signature
+// on failure, so this doesn't lose events.
+const WEBHOOK_TOLERANCE_SECONDS = 180;
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const headersList = await headers();
@@ -22,17 +28,42 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
+    // constructEvent enforces a `t` (timestamp) tolerance: if t is older
+    // than `tolerance` seconds OR in the future, signature verification
+    // throws — which is exactly the replay protection we want.
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
+      WEBHOOK_TOLERANCE_SECONDS
     );
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    console.error("Webhook signature/timestamp verification failed:", err);
     return NextResponse.json(
-      { error: "Invalid signature" },
+      { error: "Invalid signature or stale timestamp" },
       { status: 400 }
     );
+  }
+
+  // Belt-and-suspenders: even though constructEvent already rejected stale
+  // requests above, also reject events whose `event.created` claims a
+  // future time — protects against clock-skew abuse.
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (event.created > nowSec + 60) {
+    console.error("Webhook event.created is in the future:", event.id, event.created);
+    return NextResponse.json({ error: "Event timestamp in future" }, { status: 400 });
+  }
+
+  // Idempotency: if we've already processed this event, ack and return.
+  // Combined with the signed-timestamp window above, this means a replayed
+  // body (even within the tolerance) is a harmless no-op.
+  const existing = await adminDb
+    .from("stripe_webhook_events")
+    .select("processed")
+    .eq("stripe_event_id", event.id)
+    .single();
+  if (existing.data?.processed) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   // Log the webhook event

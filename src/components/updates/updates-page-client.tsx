@@ -35,6 +35,44 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-25T22:00:00",
+    version: "1.31.1",
+    type: "improvement",
+    title: "ggLobby is in public beta — tell us what to fix",
+    description:
+      "A small BETA badge now sits next to the ggLobby wordmark in the navbar. The site is live but still under active development — use the feedback widget (bottom-right) to flag bugs, rough edges or feature requests; everything routes straight to the team.",
+  },
+  {
+    date: "2026-05-25T21:00:00",
+    version: "1.31.0",
+    type: "feature",
+    title: "Player Lookup — search any Valorant player by Riot ID",
+    description:
+      "Find Gamers has a new Player Lookup tab. Type any Riot ID (Name#TAG) to see a quick preview card with rank, main agent, recent matches and win rate — click through to a full tracker.gg-style profile with aim, game-sense, role, map, utility and economy insights.",
+    highlights: [
+      "New 'Player Lookup' tab inside /find-gamers — searches any public Valorant profile, not just ggLobby users",
+      "Preview card shows rank, level, main agent, win rate and a one-line takeaway",
+      "Clicking the card opens a shareable full profile at /tracker/valorant/<name>/<tag> with detailed insights across all six categories",
+      "Reuses live Henrik-3 data with built-in caching — no stale numbers, no separate sign-in",
+      "Friendly error states for invalid IDs, private profiles, rate limits and not-found accounts",
+    ],
+  },
+  {
+    date: "2026-05-25T19:00:00",
+    version: "1.30.0",
+    type: "security",
+    title: "Hardened auth, real-time chat, payments and signups",
+    description:
+      "A round of platform-wide security work: real-time messages can no longer be spoofed onto another user's socket, sign-ups now require email verification, the database is moving back behind row-level security, and Stripe webhooks reject stale/replayed deliveries.",
+    highlights: [
+      "Socket.IO now refuses any connection without a short-lived signed handshake token — the previous setup trusted whatever userId the browser sent, which could leak another user's private messages",
+      "Re-enabled Postgres row-level security with role-based policies (app_readonly / app_writer / app_admin) and per-request user context, replacing the broad allow_all that was left over from the Supabase migration",
+      "Real email-verification flow: new sign-ups receive a one-time link, the token is stored hashed in the database, and unverified accounts can no longer log in",
+      "Added zod input validation to the highest-traffic POST routes — messaging, wall posts, friend posts, comments, reactions, LFG, friends, reports, feedback, password reset and registration",
+      "Stripe webhook deliveries now reject anything older than 3 minutes or claiming a future timestamp, and replays of already-processed events are short-circuited",
+    ],
+  },
+  {
     date: "2026-05-24T14:35:00",
     version: "1.29.1",
     type: "fix",

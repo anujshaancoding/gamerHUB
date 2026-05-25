@@ -16,6 +16,7 @@ import {
   EyeOff,
   Eye,
   Loader2,
+  Instagram,
 } from "lucide-react";
 
 interface AdminStats {
@@ -294,6 +295,13 @@ export default function AdminDashboard() {
           >
             <Users className="h-5 w-5 text-blue-400" />
             <span className="text-xs font-medium text-white/50">Manage Users</span>
+          </Link>
+          <Link
+            href="/admin/carousel"
+            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 transition-colors"
+          >
+            <Instagram className="h-5 w-5 text-pink-400" />
+            <span className="text-xs font-medium text-white/50">IG Carousel</span>
           </Link>
           {!hideNews && (
             <>

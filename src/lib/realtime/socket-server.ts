@@ -13,6 +13,7 @@
 
 import type { Server, Socket } from "socket.io";
 import { getPool } from "@/lib/db/index";
+import { verifySocketToken } from "@/lib/security/socket-token";
 
 // Track online users: userId → Set of socket IDs
 const onlineUsers = new Map<string, Set<string>>();
@@ -25,8 +26,25 @@ const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const DISCONNECT_GRACE_MS = 5000; // 5 seconds
 
 export function setupSocketHandlers(io: Server) {
+  // Reject any handshake without a valid signed token. The userId is taken
+  // from the verified token, NOT from whatever the client claims — this
+  // prevents user A from listening on user B's private room.
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    const claimedUserId = socket.handshake.auth?.userId;
+    const result = verifySocketToken(token);
+    if (!result.ok) {
+      return next(new Error("unauthorized"));
+    }
+    if (typeof claimedUserId === "string" && claimedUserId !== result.userId) {
+      return next(new Error("unauthorized"));
+    }
+    (socket.data as { userId?: string }).userId = result.userId;
+    next();
+  });
+
   io.on("connection", async (socket: Socket) => {
-    const userId = socket.handshake.auth?.userId as string | undefined;
+    const userId = (socket.data as { userId?: string }).userId;
 
     if (!userId) {
       socket.disconnect();

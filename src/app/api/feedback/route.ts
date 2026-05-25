@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+import { validateBody } from "@/lib/security/validate-body";
+
+const httpUrl = z
+  .string()
+  .url()
+  .refine((u) => /^https?:\/\//i.test(u), { message: "must be http(s)" })
+  .max(2048);
+
+const FeedbackSchema = z.object({
+  message: z.string().trim().min(1, "message is required").max(2000),
+  category: z.enum(["bug", "feature", "general", "design"]).default("general"),
+  image_url: httpUrl.nullish(),
+  page_url: httpUrl.nullish(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,41 +24,18 @@ export async function POST(request: NextRequest) {
     // Auth is optional — allow anonymous feedback too
     const user = await getUser();
 
-    const body = await request.json();
-    const { message, category, image_url, page_url } = body;
-
-    if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Feedback message is required" },
-        { status: 400 }
-      );
-    }
-
-    if (message.length > 2000) {
-      return NextResponse.json(
-        { error: "Feedback must be under 2000 characters" },
-        { status: 400 }
-      );
-    }
-
-    const validCategories = ["bug", "feature", "general", "design"];
-    const safeCategory = validCategories.includes(category) ? category : "general";
-
-    // Validate URLs if provided — reject non-http(s) schemes to prevent stored XSS / SSRF
-    const isValidUrl = (url: string) => {
-      try { return /^https?:\/\//i.test(new URL(url).href); } catch { return false; }
-    };
-    const safeImageUrl = image_url && typeof image_url === "string" && isValidUrl(image_url) ? image_url : null;
-    const safePageUrl = page_url && typeof page_url === "string" && isValidUrl(page_url) ? page_url : null;
+    const parsed = await validateBody(request, FeedbackSchema);
+    if (!parsed.ok) return parsed.response;
+    const { message, category, image_url, page_url } = parsed.data;
 
     const { error: insertError } = await db
       .from("beta_feedback")
       .insert({
         user_id: user?.id ?? null,
-        message: message.trim(),
-        category: safeCategory,
-        image_url: safeImageUrl,
-        page_url: safePageUrl,
+        message,
+        category,
+        image_url: image_url ?? null,
+        page_url: page_url ?? null,
         user_agent: request.headers.get("user-agent") || null,
       });
 

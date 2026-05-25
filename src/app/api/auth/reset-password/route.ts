@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import crypto from "crypto";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/send-email";
+import { validateBody } from "@/lib/security/validate-body";
 
 // 5 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
+
+const ResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("invalid email").max(254),
+});
 
 // POST - Send password reset email
 export async function POST(request: NextRequest) {
@@ -21,14 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = await request.json();
-
-    if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, ResetSchema);
+    if (!parsed.ok) return parsed.response;
+    const { email } = parsed.data;
 
     const db = createClient();
 
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const { data: user } = await db
       .from("users")
       .select("id, email")
-      .eq("email", email.toLowerCase())
+      .eq("email", email)
       .single();
 
     // Always return success to prevent email enumeration

@@ -18,10 +18,12 @@ import {
   MapPin,
   Gamepad2,
   MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Card, Badge, Modal } from "@/components/ui";
 import { GamerCard } from "@/components/gamers/gamer-card";
 import { OnlineGamersSection } from "@/components/gamers/online-gamers-section";
+import { PlayerLookupTab } from "@/components/gamers/player-lookup-tab";
 import { SuggestedFriendsSection, ProPlayersSection } from "@/components/suggestions";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -47,11 +49,12 @@ interface GamerWithGames extends Profile {
 const INITIAL_PROFILES_TO_SHOW = 3;
 const PROFILES_PER_LOAD = 3;
 
-type TabId = "find-friends" | "lfg";
+type TabId = "find-friends" | "lfg" | "player-lookup";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "find-friends", label: "Find Friends", icon: Users },
   { id: "lfg", label: "Looking For Group", icon: Gamepad2 },
+  { id: "player-lookup", label: "Player Lookup", icon: BarChart3 },
 ];
 
 // ─── LFG Post Card ──────────────────────────────────────────
@@ -1121,6 +1124,7 @@ function FindGamersContent() {
       {/* Tab Content */}
       {activeTab === "find-friends" && <FindFriendsTab />}
       {activeTab === "lfg" && <LFGTab />}
+      {activeTab === "player-lookup" && <PlayerLookupTab />}
     </div>
   );
 }

@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 import { isConversationMember } from "@/lib/auth/conversation-access";
 import { emitToUser } from "@/lib/realtime/socket-server";
 import { logger } from "@/lib/logger";
+import { validateBody } from "@/lib/security/validate-body";
+
+const SendMessageSchema = z.object({
+  conversationId: z.string().uuid(),
+  content: z.string().trim().min(1, "content is required").max(4000, "max 4000 chars"),
+  type: z.enum(["text", "image", "video", "file", "system"]).default("text"),
+});
 
 // POST - Send a message
 export async function POST(request: Request) {
@@ -15,14 +23,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { conversationId, content, type = "text" } = await request.json();
-
-    if (!conversationId || !content) {
-      return NextResponse.json(
-        { error: "conversationId and content are required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, SendMessageSchema);
+    if (!parsed.ok) return parsed.response;
+    const { conversationId, content, type } = parsed.data;
 
     // IDOR guard: only participants may post into a conversation.
     if (!(await isConversationMember(db, conversationId, user.id))) {
@@ -35,7 +38,7 @@ export async function POST(request: Request) {
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: content.trim(),
+        content,
         type,
       } as never)
       .select()

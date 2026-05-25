@@ -19,9 +19,9 @@ export function Logo({ className, showText = true, size = "md", href = "/" }: Lo
   };
 
   const sizes = {
-    sm: { icon: "h-7 w-7", text: "text-lg" },
-    md: { icon: "h-8 w-8", text: "text-xl" },
-    lg: { icon: "h-12 w-12", text: "text-3xl" },
+    sm: { icon: "h-7 w-7", text: "text-lg", badge: "text-[8px] px-1 py-px" },
+    md: { icon: "h-8 w-8", text: "text-xl", badge: "text-[9px] px-1.5 py-0.5" },
+    lg: { icon: "h-12 w-12", text: "text-3xl", badge: "text-xs px-2 py-0.5" },
   };
 
   const logo = (
@@ -36,10 +36,20 @@ export function Logo({ className, showText = true, size = "md", href = "/" }: Lo
       />
 
       {showText && (
-        <span className={cn(sizes[size].text, "font-bold tracking-tight leading-none")}>
-          <span className="text-primary text-glow-primary">gg</span>
-          <span className="text-text">Lobby</span>
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={cn(sizes[size].text, "font-bold tracking-tight leading-none")}>
+            <span className="text-primary text-glow-primary">gg</span>
+            <span className="text-text">Lobby</span>
+          </span>
+          <span
+            className={cn(
+              sizes[size].badge,
+              "rounded-md border border-primary/40 bg-primary/10 text-primary font-bold uppercase tracking-wider leading-none",
+            )}
+          >
+            Beta
+          </span>
+        </div>
       )}
     </div>
   );

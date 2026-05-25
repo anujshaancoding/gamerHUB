@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getFriends, sendFriendRequest } from "@/lib/db/rpc-types";
 import type { FriendWithProfile, Profile } from "@/types/database";
@@ -6,9 +7,15 @@ import { getUser } from "@/lib/auth/get-user";
 import { emitToUser, getIO } from "@/lib/realtime/socket-server";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
+import { validateBody } from "@/lib/security/validate-body";
 
 // 30 requests per minute for friend request submissions
 const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 30 });
+
+const FriendRequestSchema = z.object({
+  recipientId: z.string().uuid("must be a valid UUID"),
+  message: z.string().trim().max(500).nullish(),
+});
 
 // GET - List friends
 export async function GET(request: NextRequest) {
@@ -124,15 +131,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { recipientId, message } = body;
-
-    if (!recipientId) {
-      return NextResponse.json(
-        { error: "Recipient ID is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, FriendRequestSchema);
+    if (!parsed.ok) return parsed.response;
+    const { recipientId, message } = parsed.data;
 
     if (recipientId === user.id) {
       return NextResponse.json(
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
       db,
       user.id,
       recipientId,
-      message
+      message ?? null
     );
 
     if (error) {

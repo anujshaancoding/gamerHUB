@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 import { parsePagination } from "@/lib/security/pagination";
+import { validateBody } from "@/lib/security/validate-body";
+
+const LfgCreateSchema = z.object({
+  game_id: z.string().min(1, "game_id is required").max(64),
+  title: z.string().trim().min(1, "title is required").max(100, "max 100 chars"),
+  description: z.string().trim().max(1000).nullish(),
+  creator_role: z.string().max(64).nullish(),
+  creator_rating: z.string().max(32).nullish(),
+  creator_is_unranked: z.boolean().optional(),
+  looking_for_roles: z.array(z.string().max(64)).max(10).optional(),
+  min_rating: z.string().max(32).nullish(),
+  max_rating: z.string().max(32).nullish(),
+  accept_unranked: z.boolean().optional(),
+  game_mode: z.string().max(64).nullish(),
+  region: z.string().max(16).nullish(),
+  language: z.string().max(8).optional(),
+  voice_required: z.boolean().optional(),
+  max_players: z.number().int().min(2).max(10).optional(),
+  duration_type: z.enum(["1hr", "2hr", "4hr", "8hr", "until_full"]).optional(),
+});
 
 // GET - List LFG posts with filters
 export async function GET(request: NextRequest) {
@@ -160,7 +181,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const parsed = await validateBody(request, LfgCreateSchema);
+    if (!parsed.ok) return parsed.response;
     const {
       game_id,
       title,
@@ -178,22 +200,7 @@ export async function POST(request: NextRequest) {
       voice_required,
       max_players,
       duration_type,
-    } = body;
-
-    // Validation
-    if (!game_id || !title) {
-      return NextResponse.json(
-        { error: "Game and title are required" },
-        { status: 400 }
-      );
-    }
-
-    if (title.length > 100) {
-      return NextResponse.json(
-        { error: "Title must be 100 characters or less" },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     // Resolve game_id — accept either UUID or slug
     let resolvedGameId = game_id;
@@ -212,7 +219,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      resolvedGameId = game.id;
+      resolvedGameId = game.id as string;
     }
 
     // Check for existing active post
@@ -248,8 +255,8 @@ export async function POST(request: NextRequest) {
       .insert({
         creator_id: user.id,
         game_id: resolvedGameId,
-        title: title.trim(),
-        description: description?.trim() || null,
+        title,
+        description: description ?? null,
         creator_role: creator_role || null,
         creator_rating: creator_rating || null,
         creator_is_unranked: creator_is_unranked || false,

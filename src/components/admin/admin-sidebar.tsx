@@ -17,6 +17,7 @@ import {
   Trophy,
   Mail,
   Crosshair,
+  Instagram,
   Menu,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const allNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/blog", label: "Blog Posts", icon: BookOpen },
+  { href: "/admin/carousel", label: "IG Carousel", icon: Instagram },
   { href: "/admin/news", label: "News", icon: Newspaper, newsOnly: true },
   { href: "/admin/pro", label: "Pro Hub", icon: Trophy },
   { href: "/admin/lineups", label: "Lineups", icon: Crosshair },

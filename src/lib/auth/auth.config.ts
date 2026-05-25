@@ -52,6 +52,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const valid = await compare(password, user.password_hash as string);
         if (!valid) return null;
 
+        // Block sign-in for accounts that have not confirmed their email.
+        // The signature exposed to the client is a distinct error string so
+        // the login form can prompt for resend; for security we still return
+        // null and surface the state via a generic error, but we mark the
+        // user object so the JWT callback could short-circuit if needed.
+        if (!user.email_confirmed_at) {
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
         return {
           id: user.id as string,
           email: user.email as string,

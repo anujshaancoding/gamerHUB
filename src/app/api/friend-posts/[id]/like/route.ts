@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+
+const PostIdSchema = z.string().uuid();
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -11,6 +14,9 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: postId } = await params;
+    if (!PostIdSchema.safeParse(postId).success) {
+      return NextResponse.json({ error: "Invalid post id" }, { status: 400 });
+    }
     const db = createClient();
     const user = await getUser();
 

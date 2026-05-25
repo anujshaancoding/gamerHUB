@@ -4,13 +4,34 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { hash } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
+import { validateBody } from "@/lib/security/validate-body";
+import { issueEmailVerificationToken } from "@/lib/auth/email-verification";
+import { sendEmail, EmailNotConfiguredError } from "@/lib/email/send-email";
 
 // 10 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
+
+const RegisterSchema = z.object({
+  email: z.string().trim().toLowerCase().email("invalid email").max(254),
+  password: z
+    .string()
+    .min(8, "password must be at least 8 characters")
+    .max(200, "password too long")
+    .refine((p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p), {
+      message: "password must contain at least one letter and one number",
+    }),
+  username: z
+    .string()
+    .trim()
+    .min(3, "username must be at least 3 characters")
+    .max(24, "username too long")
+    .regex(/^[a-zA-Z0-9_]+$/, "username may only contain letters, numbers and underscores"),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,28 +45,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, username } = await request.json();
-
-    if (!email || !password || !username) {
-      return NextResponse.json(
-        { error: "Email, password, and username are required" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one letter and one number" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, RegisterSchema);
+    if (!parsed.ok) return parsed.response;
+    const { email, password, username } = parsed.data;
 
     const sql = getPool();
 
@@ -74,13 +76,14 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hash(password, 12);
 
-    // Create user + profile in a transaction
+    // Create user + profile in a transaction. email_confirmed_at is NULL —
+    // the user must click the verification link before being marked active.
     const userId = crypto.randomUUID();
 
     await sql.begin(async (tx) => {
       await tx`
         INSERT INTO users (id, email, password_hash, email_confirmed_at, provider)
-        VALUES (${userId}, ${email}, ${passwordHash}, NOW(), 'email')
+        VALUES (${userId}, ${email}, ${passwordHash}, NULL, 'email')
       `;
 
       await tx`
@@ -89,8 +92,39 @@ export async function POST(request: NextRequest) {
       `;
     });
 
+    // Issue + send the verification email. Failure to email is logged but
+    // does NOT roll back registration — the user can request a resend.
+    try {
+      const { rawToken } = await issueEmailVerificationToken(sql, userId, email);
+      const base = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://gglobby.in";
+      const verifyUrl = `${base}/verify-email?token=${rawToken}`;
+      await sendEmail({
+        to: email,
+        subject: "Verify your ggLobby email",
+        html: `
+          <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto">
+            <h2>Welcome to ggLobby</h2>
+            <p>Confirm your email to finish setting up your account. This link expires in 24 hours.</p>
+            <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 20px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none">Verify email</a></p>
+            <p style="color:#888;font-size:13px">If you didn't sign up, you can safely ignore this email.</p>
+          </div>
+        `,
+        text: `Verify your ggLobby email (expires in 24 hours): ${verifyUrl}`,
+      });
+    } catch (mailErr) {
+      if (mailErr instanceof EmailNotConfiguredError) {
+        logger.error("Email provider not configured — user created but verification email not sent");
+      } else {
+        logger.error("Failed to send verification email", mailErr);
+      }
+    }
+
     return NextResponse.json(
-      { message: "Account created successfully", userId },
+      {
+        message: "Account created. Please check your email to verify your address.",
+        userId,
+        emailVerificationRequired: true,
+      },
       { status: 201 }
     );
   } catch (error) {

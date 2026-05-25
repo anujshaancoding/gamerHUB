@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";
+import { validateBody } from "@/lib/security/validate-body";
+
+const CreateConvSchema = z.object({
+  otherUserId: z.string().uuid("must be a valid UUID"),
+});
 
 // GET - List all conversations for the current user
 export async function GET() {
@@ -177,14 +183,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { otherUserId } = await request.json();
-
-    if (!otherUserId) {
-      return NextResponse.json(
-        { error: "otherUserId is required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await validateBody(request, CreateConvSchema);
+    if (!parsed.ok) return parsed.response;
+    const { otherUserId } = parsed.data;
 
     if (otherUserId === user.id) {
       return NextResponse.json(

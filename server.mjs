@@ -15,6 +15,42 @@ import { createServer } from "http";
 import next from "next";
 import { Server as SocketServer } from "socket.io";
 import postgres from "postgres";
+import { createHmac, timingSafeEqual } from "crypto";
+
+// ── Socket handshake token verification ────────────────────────────────
+// Mirror of src/lib/security/socket-token.ts — must stay in sync.
+// AUTH_SECRET is shared with NextAuth so the same JWT secret is used.
+function b64urlDecode(str) {
+  const pad = str.length % 4 === 0 ? "" : "=".repeat(4 - (str.length % 4));
+  return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64");
+}
+function b64urlEncode(buf) {
+  return buf.toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+function verifySocketToken(token) {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) return { ok: false, reason: "no_secret" };
+  if (typeof token !== "string" || !token.includes(".")) return { ok: false, reason: "malformed" };
+  const [payloadStr, sigStr] = token.split(".");
+  if (!payloadStr || !sigStr) return { ok: false, reason: "malformed" };
+
+  const expected = createHmac("sha256", secret).update(payloadStr).digest();
+  let received;
+  try { received = b64urlDecode(sigStr); } catch { return { ok: false, reason: "malformed" }; }
+  if (received.length !== expected.length || !timingSafeEqual(received, expected)) {
+    return { ok: false, reason: "bad_signature" };
+  }
+  let payload;
+  try { payload = JSON.parse(b64urlDecode(payloadStr).toString("utf8")); }
+  catch { return { ok: false, reason: "malformed" }; }
+  if (!payload?.uid || typeof payload.uid !== "string") return { ok: false, reason: "malformed" };
+  if (typeof payload.exp !== "number" || payload.exp * 1000 <= Date.now()) {
+    return { ok: false, reason: "expired" };
+  }
+  return { ok: true, userId: payload.uid };
+}
+// Silence "unused" linter without breaking — keep encode for future use.
+void b64urlEncode;
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "0.0.0.0";
@@ -64,8 +100,31 @@ app.prepare().then(() => {
     io.emit("presence:sync", presenceData);
   }
 
+  // Middleware: reject any connection that doesn't present a valid signed
+  // handshake token. The browser fetches this token from
+  // /api/realtime/socket-token after authenticating with NextAuth.
+  io.use((socket, nextFn) => {
+    const token = socket.handshake.auth?.token;
+    const claimedUserId = socket.handshake.auth?.userId;
+    const result = verifySocketToken(token);
+    if (!result.ok) {
+      console.warn(`[SOCKET] Rejected connection: ${result.reason} (claimed userId: ${typeof claimedUserId === "string" ? claimedUserId.slice(0, 8) : "n/a"})`);
+      return nextFn(new Error("unauthorized"));
+    }
+    // If the client also sent a userId, it MUST match the signed one.
+    // This blocks the trivial "spoof in handshake.auth.userId" attack that
+    // was letting any logged-in user receive another user's private events.
+    if (typeof claimedUserId === "string" && claimedUserId !== result.userId) {
+      console.warn(`[SOCKET] userId mismatch: claimed=${claimedUserId.slice(0, 8)} verified=${result.userId.slice(0, 8)}`);
+      return nextFn(new Error("unauthorized"));
+    }
+    socket.data.userId = result.userId;
+    nextFn();
+  });
+
   io.on("connection", (socket) => {
-    const userId = socket.handshake.auth?.userId;
+    // Trust ONLY the verified userId from the token, never the client-sent one.
+    const userId = socket.data.userId;
     if (userId) {
       console.log(`[SOCKET] User connected: ${userId.slice(0, 8)}... (socket: ${socket.id})`);
 

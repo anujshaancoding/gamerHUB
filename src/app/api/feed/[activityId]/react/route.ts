@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
+
+const ReactSchema = z.object({
+  reactionType: z.enum(["like", "love", "laugh", "wow", "sad", "angry", "fire", "gg"]).default("like"),
+});
 
 // POST - Toggle reaction on activity
 export async function POST(
@@ -16,8 +21,15 @@ export async function POST(
     }
 
     const { activityId } = await params;
-    const body = await request.json().catch(() => ({}));
-    const reactionType = body.reactionType || "like";
+    if (!/^[0-9a-f-]{32,36}$/i.test(activityId)) {
+      return NextResponse.json({ error: "Invalid activityId" }, { status: 400 });
+    }
+    const raw = await request.json().catch(() => ({}));
+    const parsed = ReactSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid reactionType" }, { status: 400 });
+    }
+    const { reactionType } = parsed.data;
 
     // Toggle reaction using RPC — untyped RPC function
     const { data, error } = await db.rpc("toggle_activity_reaction", {

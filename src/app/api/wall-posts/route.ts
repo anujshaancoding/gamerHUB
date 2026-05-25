@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getPool } from "@/lib/db/index";
 import { getUser } from "@/lib/auth/get-user";
+import { validateBody } from "@/lib/security/validate-body";
 
 const VALID_REACTIONS = ["gg", "respect", "carry", "legend", "wholesome"] as const;
+
+const WallPostSchema = z.object({
+  profileId: z.string().uuid("must be a valid UUID"),
+  content: z.string().trim().min(1, "content is required").max(500, "max 500 chars"),
+  reaction: z.enum(VALID_REACTIONS).nullish(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,43 +65,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { profileId, content, reaction } = body;
-
-    if (!profileId || typeof profileId !== "string") {
-      return NextResponse.json(
-        { error: "profileId is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!content || typeof content !== "string" || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Content is required" },
-        { status: 400 }
-      );
-    }
-
-    if (content.trim().length > 500) {
-      return NextResponse.json(
-        { error: "Content must be 500 characters or less" },
-        { status: 400 }
-      );
-    }
-
-    if (reaction !== undefined && reaction !== null) {
-      if (!VALID_REACTIONS.includes(reaction)) {
-        return NextResponse.json(
-          { error: `Invalid reaction. Must be one of: ${VALID_REACTIONS.join(", ")}` },
-          { status: 400 }
-        );
-      }
-    }
+    const parsed = await validateBody(request, WallPostSchema);
+    if (!parsed.ok) return parsed.response;
+    const { profileId, content, reaction } = parsed.data;
 
     const sql = getPool();
     const rows = await sql`
       INSERT INTO profile_wall_posts (profile_id, author_id, content, reaction)
-      VALUES (${profileId}, ${user.id}, ${content.trim()}, ${reaction || null})
+      VALUES (${profileId}, ${user.id}, ${content}, ${reaction ?? null})
       RETURNING *
     `;
 
