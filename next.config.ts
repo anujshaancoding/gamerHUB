@@ -66,8 +66,13 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Allow local network devices (phone, tablet) to access dev server
-  allowedDevOrigins: ["192.168.0.126"],
+  // Allow local network devices (phone, tablet) to access dev server.
+  // Only honored in dev; production deploys leave this empty so a LAN attacker
+  // on the same subnet as the VPS can't satisfy Next's dev-origin check.
+  allowedDevOrigins:
+    process.env.NODE_ENV === "development"
+      ? (process.env.ALLOWED_DEV_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean)
+      : [],
 
   // 485 pre-existing type errors need fixing before this can be removed.
   // Run `tsc --noEmit` separately for type checking until then.

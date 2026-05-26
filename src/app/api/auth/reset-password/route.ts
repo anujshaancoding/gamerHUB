@@ -7,8 +7,13 @@ import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/send-email";
 import { validateBody } from "@/lib/security/validate-body";
 
-// 5 requests per 15 minutes
-const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
+// 5 requests per 15 minutes per IP (botnets can rotate IPs — keeps single
+// attacker honest but doesn't block distributed enumeration on its own).
+const ipRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 5 });
+
+// 2 resets per 24h per email address. This is the real defense against
+// mail-bombing a single inbox even if the attacker rotates IPs.
+const emailRateLimiter = createRateLimiter({ windowMs: 24 * 60 * 60 * 1000, maxRequests: 2 });
 
 const ResetSchema = z.object({
   email: z.string().trim().toLowerCase().email("invalid email").max(254),
@@ -17,12 +22,12 @@ const ResetSchema = z.object({
 // POST - Send password reset email
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit check
+    // Rate limit check (IP)
     const ip = getClientIdentifier(request);
-    const { allowed, retryAfterSeconds } = rateLimiter(ip);
-    if (!allowed) {
+    const ipCheck = ipRateLimiter(ip);
+    if (!ipCheck.allowed) {
       return NextResponse.json(
-        { error: `Too many requests. Try again in ${Math.ceil(retryAfterSeconds / 60)} minutes.` },
+        { error: `Too many requests. Try again in ${Math.ceil(ipCheck.retryAfterSeconds / 60)} minutes.` },
         { status: 429 }
       );
     }
@@ -30,6 +35,15 @@ export async function POST(request: NextRequest) {
     const parsed = await validateBody(request, ResetSchema);
     if (!parsed.ok) return parsed.response;
     const { email } = parsed.data;
+
+    // Per-email rate limit (mail-bomb defense). Check BEFORE the DB lookup so
+    // we don't leak existence by varying response time. Still always return
+    // { success: true } regardless to prevent enumeration.
+    const emailCheck = emailRateLimiter(`email:${email}`);
+    if (!emailCheck.allowed) {
+      logger.warn("Password reset rate-limited by email", { email, ip });
+      return NextResponse.json({ success: true });
+    }
 
     const db = createClient();
 
