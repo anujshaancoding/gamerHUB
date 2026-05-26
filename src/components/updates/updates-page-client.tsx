@@ -35,6 +35,50 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-27T18:00:00",
+    version: "1.32.1",
+    type: "security",
+    title: "Hardened password resets + safer rich-text rendering",
+    description:
+      "Three quiet-but-important security fixes across auth, content rendering and the dev server. Nothing user-visible changes, but the platform is meaningfully harder to abuse.",
+    highlights: [
+      "Password reset endpoint now rate-limits per email address (2/day) in addition to per-IP — stops mail-bombing a single inbox even when the attacker rotates IPs",
+      "Sanitizer blocks javascript:, vbscript:, file: and data:text/html URLs in href/src attributes — closes a stored-XSS vector in user-authored rich text",
+      "Outbound links now force rel=\"noopener noreferrer nofollow\" and image data: URIs are restricted to actual image MIME types",
+      "Dev-only LAN allowlist no longer applies in production builds — removes a same-subnet bypass on the VPS",
+    ],
+  },
+  {
+    date: "2026-05-25T23:30:00",
+    version: "1.32.0",
+    type: "improvement",
+    title: "Player Lookup gets a tracker.gg-style profile",
+    description:
+      "The Valorant Player Lookup now shows what tracker.gg shows — real Riot player-card avatar, peak rank, region, raw K/D / ACS / KAST / ADR tiles, a per-agent performance table, a recent-matches list and a shot-placement breakdown. Stats also default to the player's current Act with a dropdown to switch.",
+    highlights: [
+      "Avatar now uses the player's actual Riot card art (the one shown in-game), not the agent portrait",
+      "Header shows region, peak rank, total playtime and live win-loss split alongside the current rank",
+      "Four big tiles up top — K/D, ACS, KAST, ADR — colour-coded against rank baselines",
+      "New Top Agents table: matches, win %, K/D, ADR, ACS and best map per agent",
+      "Recent matches list with map, agent, score, K/D/A and ACS per match (last 10)",
+      "Shot-placement bars (head / body / legs %) and a role-performance card (Duelist / Controller / Sentinel / Initiator)",
+      "Stats default to the current Act with an Act dropdown to scope older windows",
+    ],
+  },
+  {
+    date: "2026-05-25T23:00:00",
+    version: "1.31.2",
+    type: "feature",
+    title: "Chats are back — now in the left sidebar",
+    description:
+      "Direct messages have a permanent home in the main navigation. A new 'Chats' link under the 'You' group opens your conversation list at /messages and shows a live unread badge so you never miss a reply.",
+    highlights: [
+      "Left sidebar (desktop) and mobile menu both surface the new 'Chats' entry",
+      "Red unread-message badge appears beside the link when you have unseen DMs",
+      "Existing conversations, message threads and new-conversation modal all work as before — only the entry point changed",
+    ],
+  },
+  {
     date: "2026-05-25T22:00:00",
     version: "1.31.1",
     type: "improvement",
