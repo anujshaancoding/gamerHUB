@@ -26,7 +26,7 @@ function parseRiotId(riotId: string): { name: string; tag: string } | null {
   return { name: riotId.slice(0, idx).trim(), tag: riotId.slice(idx + 1).trim() };
 }
 
-async function fetchLive(riotId: string): Promise<FetchResult> {
+async function fetchLive(riotId: string, actFilter?: string): Promise<FetchResult> {
   const parsed = parseRiotId(riotId);
   if (!parsed) {
     return { kind: "error", code: "INVALID_FORMAT", message: "Invalid Riot ID format." };
@@ -52,6 +52,7 @@ async function fetchLive(riotId: string): Promise<FetchResult> {
     account: account.data,
     mmr: mmrRes.ok ? mmrRes.data : null,
     matches: matchesRes.data,
+    actFilter,
   });
 
   if (stats.matchesPlayed === 0) {
@@ -66,10 +67,10 @@ async function fetchLive(riotId: string): Promise<FetchResult> {
   return { kind: "ok", stats, fromMock: false };
 }
 
-export async function fetchValorantStats(riotId: string): Promise<FetchResult> {
+export async function fetchValorantStats(riotId: string, actFilter?: string): Promise<FetchResult> {
   if (isLiveTrackerEnabled()) {
     try {
-      const result = await fetchLive(riotId);
+      const result = await fetchLive(riotId, actFilter);
       // Hard error codes propagate to the UI as-is; transient errors silently
       // fall back to mock so the experience never breaks.
       if (result.kind === "ok") return result;

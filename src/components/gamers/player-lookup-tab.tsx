@@ -168,7 +168,11 @@ function PreviewCard({
 }) {
   const [imgError, setImgError] = useState(false);
   const [name, tag] = insights.riotId.split("#");
-  const avatarSrc = proxyAssetUrl("agent", insights.mainAgentId);
+
+  // Prefer the player's Riot card art; fall back to main agent portrait.
+  const avatarSrc = insights.playerCard?.small && !imgError
+    ? insights.playerCard.small
+    : proxyAssetUrl("agent", insights.mainAgentId);
 
   return (
     <button
@@ -179,9 +183,9 @@ function PreviewCard({
     >
       <Card className="p-4 sm:p-5 transition-all hover:border-primary/50 hover:shadow-lg">
         <div className="flex items-start gap-4">
-          {/* Agent avatar */}
+          {/* Player card avatar */}
           <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-light">
-            {imgError ? (
+            {imgError && !insights.playerCard?.small ? (
               <div className="flex h-full w-full items-center justify-center text-text-muted">
                 <User className="h-7 w-7" />
               </div>
@@ -189,7 +193,7 @@ function PreviewCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatarSrc}
-                alt={`${insights.mainAgentName} portrait`}
+                alt={`${name} player card`}
                 className="h-full w-full object-cover"
                 onError={() => setImgError(true)}
               />
@@ -210,6 +214,12 @@ function PreviewCard({
 
             <p className="text-xs text-text-muted mt-0.5">
               Mains <span className="font-semibold text-primary">{insights.mainAgentName}</span>
+              {insights.region && (
+                <span> · {insights.region.toUpperCase()}</span>
+              )}
+              {insights.currentAct && (
+                <span> · {insights.currentAct}</span>
+              )}
             </p>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-text-secondary">
@@ -223,6 +233,14 @@ function PreviewCard({
                 <TrendingUp className="h-3.5 w-3.5 text-success" />
                 {insights.winRate}% WR
               </span>
+            </div>
+
+            {/* Raw stat row */}
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <MiniStat label="K/D" value={insights.kd.toFixed(2)} />
+              <MiniStat label="ACS" value={insights.acs.toString()} />
+              <MiniStat label="ADR" value={insights.adr.toString()} />
+              <MiniStat label="HS%" value={`${insights.headshotPct.toFixed(1)}%`} />
             </div>
 
             <p className="mt-3 text-sm text-text line-clamp-2">
@@ -254,5 +272,14 @@ function PreviewCard({
         </div>
       </Card>
     </button>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1 rounded-md border border-border bg-surface-light/40 px-2 py-1">
+      <span className="font-bold text-text tabular-nums">{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-text-muted">{label}</span>
+    </span>
   );
 }

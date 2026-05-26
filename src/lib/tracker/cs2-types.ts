@@ -28,7 +28,14 @@ export interface RawCs2Stats {
   topMaps: Array<{ map: string; winRate: number; matches: number }>;
 }
 
-export interface Cs2Insights extends Omit<PlayerInsights, "rank" | "level" | "mainAgentId" | "mainAgentName" | "game"> {
+export interface Cs2Insights extends Omit<
+  PlayerInsights,
+  | "rank" | "level" | "mainAgentId" | "mainAgentName" | "game"
+  | "region" | "peakRank" | "playerCard" | "kd" | "acs" | "adr" | "kast"
+  | "headshotPct" | "accuracy" | "playtimeMinutes" | "perAgent"
+  | "recentMatches" | "rolePerformance" | "availableActs" | "currentAct"
+  | "wins" | "losses"
+> {
   game: "cs2";
   /** CS2 doesn't expose Premier rating to public API — left empty unless user supplies */
   rank: string;

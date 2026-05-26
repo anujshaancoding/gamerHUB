@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest): Promise<NextResponse<TrackerLookupResponse>> {
   const riotId = req.nextUrl.searchParams.get("riotId")?.trim() ?? "";
+  const act = req.nextUrl.searchParams.get("act")?.trim() || undefined;
 
   if (!riotId) {
     return NextResponse.json(
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<TrackerLookupR
   }
 
   try {
-    const result = await fetchValorantStats(riotId);
+    const result = await fetchValorantStats(riotId, act);
     if (result.kind === "error") {
       const status = result.code === "NOT_FOUND" ? 404 : result.code === "PRIVATE_PROFILE" ? 403 : 502;
       return NextResponse.json(
