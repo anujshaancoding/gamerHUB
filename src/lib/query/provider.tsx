@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
 
+// Re-export from ./keys so the existing `@/lib/query` consumers keep working.
+export { queryKeys, blogKeys, friendPostKeys } from "./keys";
+
 // Default stale times for different data types
 export const STALE_TIMES = {
   // Static data that rarely changes
@@ -54,127 +57,6 @@ export const CACHE_TIMES = {
   DEFAULT: 1000 * 60 * 30, // 30 minutes
   STATIC: 1000 * 60 * 60 * 24, // 24 hours
   SHORT: 1000 * 60 * 5, // 5 minutes
-} as const;
-
-// Query keys for consistent cache management
-export const queryKeys = {
-  // Games
-  games: ["games"] as const,
-  game: (id: string) => ["games", id] as const,
-
-  // User & Auth
-  user: ["user"] as const,
-  profile: (username: string) => ["profile", username] as const,
-
-  // Progression
-  progression: (userId?: string) => userId ? ["progression", userId] as const : ["progression"] as const,
-  badges: (userId?: string) => userId ? ["badges", userId] as const : ["badges"] as const,
-  badgeDefinitions: ["badge-definitions"] as const,
-  titles: ["titles"] as const,
-  frames: ["frames"] as const,
-  themes: ["themes"] as const,
-
-  // Quests
-  activeQuests: ["quests", "active"] as const,
-  questDefinitions: ["quests", "definitions"] as const,
-
-  // Leaderboards
-  leaderboard: (params: { type?: string; gameId?: string; region?: string; limit?: number }) =>
-    ["leaderboard", params] as const,
-  seasonLeaderboard: (params: { seasonId?: string; gameId?: string; region?: string; limit?: number; offset?: number }) =>
-    ["season-leaderboard", params] as const,
-  myRanking: (params: { seasonId?: string; gameId?: string }) =>
-    ["my-ranking", params] as const,
-
-  // Seasons
-  currentSeason: ["season", "current"] as const,
-  season: (id: string) => ["season", id] as const,
-  seasonRewards: (seasonId: string) => ["season-rewards", seasonId] as const,
-
-  // Tournaments
-  tournaments: (params: { status?: string; gameId?: string; search?: string; limit?: number; offset?: number }) =>
-    ["tournaments", params] as const,
-  tournament: (id: string) => ["tournament", id] as const,
-  tournamentBracket: (id: string) => ["tournament-bracket", id] as const,
-  tournamentMatches: (id: string) => ["tournament-matches", id] as const,
-
-  // Clans
-  clans: (params: { search?: string; game?: string; region?: string; recruiting?: boolean; limit?: number; offset?: number }) =>
-    ["clans", params] as const,
-  clan: (id: string) => ["clan", id] as const,
-  clanMembers: (id: string) => ["clan-members", id] as const,
-  clanInvites: (clanId: string) => ["clan-invites", clanId] as const,
-  userClanMembership: ["user-clan-membership"] as const,
-  clanChallenges: (clanId?: string) => clanId ? ["clan-challenges", clanId] as const : ["clan-challenges"] as const,
-
-  // Community / Blog / Friends — keys now live in:
-  //   blogKeys (src/lib/hooks/useBlog.ts)
-  //   friendPostKeys (src/lib/hooks/useFriendPosts.ts)
-
-  // Community Challenges
-  communityChallenges: (params?: { status?: string; gameId?: string }) =>
-    ["community-challenges", params || {}] as const,
-  communityChallenge: (id: string) => ["community-challenge", id] as const,
-
-  // Dashboard
-  dashboard: ["dashboard"] as const,
-  dashboardMatches: ["dashboard", "matches"] as const,
-  dashboardChallenges: ["dashboard", "challenges"] as const,
-  dashboardStats: ["dashboard", "stats"] as const,
-
-  // Matches
-  matches: (params?: { status?: string; userId?: string }) =>
-    ["matches", params || {}] as const,
-  match: (id: string) => ["match", id] as const,
-
-  // User Games
-  userGames: (userId?: string) => userId ? ["user-games", userId] as const : ["user-games"] as const,
-
-  // Search
-  search: (query: string) => ["search", query] as const,
-  searchUsers: (query: string) => ["search", "users", query] as const,
-  searchBlogs: (query: string) => ["search", "blogs", query] as const,
-  searchListings: (query: string) => ["search", "listings", query] as const,
-  searchClans: (query: string) => ["search", "clans", query] as const,
-
-  // Find Gamers
-  findGamers: (params: { game?: string; rank?: string; region?: string; language?: string; style?: string }) =>
-    ["find-gamers", params] as const,
-
-  // Clan Activity
-  clanActivity: (clanId: string) => ["clan-activity", clanId] as const,
-
-  // Activity
-  activity: (userId: string) => ["activity", userId] as const,
-  sidebarActivity: ["sidebar-activity"] as const,
-
-  // Messages
-  conversations: ["conversations"] as const,
-  conversation: (id: string) => ["conversation", id] as const,
-  conversationMessages: (id: string) => ["conversation-messages", id] as const,
-  unreadMessages: ["unread-message-count"] as const,
-
-  // Battle Pass
-  battlePass: ["battle-pass"] as const,
-  battlePassProgress: ["battle-pass-progress"] as const,
-
-  // Wallet & Shop
-  wallet: ["wallet"] as const,
-  currencyPacks: ["currency-packs"] as const,
-  walletTransactions: (params?: { limit?: number; currency?: string }) =>
-    ["wallet-transactions", params || {}] as const,
-  shopItems: (params?: { category?: string; type?: string; rarity?: string }) =>
-    ["shop-items", params || {}] as const,
-
-  // Notifications
-  notifications: (options?: { limit?: number; unreadOnly?: boolean }) =>
-    ["notifications", options || {}] as const,
-  notificationPreferences: ["notification-preferences"] as const,
-  discordConnection: ["discord-connection"] as const,
-
-  // Subscriptions
-  subscriptionPlans: ["subscription-plans"] as const,
-  userSubscription: ["user-subscription"] as const,
 } as const;
 
 function makeQueryClient() {
@@ -264,8 +146,12 @@ export function getInvalidationHelpers(queryClient: QueryClient) {
     invalidateUserGames: () => {
       queryClient.invalidateQueries({ queryKey: ["user-games"] });
     },
-    // Blog/FriendPost invalidation now handled by blogKeys.all and friendPostKeys.all
-    // in their respective hook files (useBlog.ts, useFriendPosts.ts)
+    invalidateBlog: () => {
+      queryClient.invalidateQueries({ queryKey: ["blog"] });
+    },
+    invalidateFriendPosts: () => {
+      queryClient.invalidateQueries({ queryKey: ["friend-posts"] });
+    },
     invalidateBattlePass: () => {
       queryClient.invalidateQueries({ queryKey: ["battle-pass"] });
       queryClient.invalidateQueries({ queryKey: ["battle-pass-progress"] });

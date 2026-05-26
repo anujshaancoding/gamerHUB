@@ -2,15 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-// Query keys for friend posts — single source of truth
-export const friendPostKeys = {
-  all: ["friend-posts"] as const,
-  list: (isGuest: boolean) => ["friend-posts", "list", { isGuest }] as const,
-  detail: (postId: string) => ["friend-posts", "detail", postId] as const,
-  liked: (postId: string) => ["friend-posts", "liked", postId] as const,
-  bookmarked: (postId: string) => ["friend-posts", "bookmarked", postId] as const,
-  comments: (postId: string) => ["friend-posts", "comments", postId] as const,
-};
+// Re-exported so existing imports `import { friendPostKeys } from "@/lib/hooks/useFriendPosts"`
+// keep working. New code should import from `@/lib/query` instead.
+export { friendPostKeys } from "@/lib/query/keys";
+import { friendPostKeys } from "@/lib/query/keys";
 
 // Hook: Check if user has liked a friend post
 export function useFriendPostLiked(postId: string, userId?: string) {
@@ -118,6 +113,28 @@ export function useAddFriendPostComment() {
       if (!response.ok) throw new Error(data.error || "Failed to add comment");
       return data as { comment_id: string; comments_count: number };
     },
+    // Optimistic insert: prepend a placeholder so the comment appears instantly.
+    // The temp id is replaced by the server's real id on invalidate/refetch.
+    onMutate: async ({ postId, content }) => {
+      const key = friendPostKeys.comments(postId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<FriendPostComment[]>(key);
+      const optimistic: FriendPostComment = {
+        id: `temp-${Date.now()}`,
+        content,
+        created_at: new Date().toISOString(),
+        user_id: "self",
+      };
+      queryClient.setQueryData<FriendPostComment[]>(key, (old) =>
+        old ? [optimistic, ...old] : [optimistic]
+      );
+      return { previous };
+    },
+    onError: (_err, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(friendPostKeys.comments(variables.postId), context.previous);
+      }
+    },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: friendPostKeys.comments(variables.postId) });
       queryClient.invalidateQueries({ queryKey: friendPostKeys.all });
@@ -142,6 +159,20 @@ export function useDeleteFriendPostComment() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to delete comment");
       return data as { deleted: boolean; comments_count: number };
+    },
+    onMutate: async ({ postId, commentId }) => {
+      const key = friendPostKeys.comments(postId);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<FriendPostComment[]>(key);
+      queryClient.setQueryData<FriendPostComment[]>(key, (old) =>
+        old ? old.filter((c) => c.id !== commentId) : old
+      );
+      return { previous };
+    },
+    onError: (_err, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(friendPostKeys.comments(variables.postId), context.previous);
+      }
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: friendPostKeys.comments(variables.postId) });

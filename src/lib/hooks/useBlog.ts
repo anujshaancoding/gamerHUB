@@ -16,19 +16,10 @@ import type {
   CreateBlogCommentInput,
 } from "@/types/blog";
 
-// Query keys
-export const blogKeys = {
-  all: ["blog"] as const,
-  posts: (filters?: BlogFilters) => ["blog", "posts", filters || {}] as const,
-  post: (slug: string) => ["blog", "post", slug] as const,
-  postById: (id: string) => ["blog", "post-by-id", id] as const,
-  postLiked: (id: string) => ["blog", "post-liked", id] as const,
-  myPosts: (status?: string) => ["blog", "my-posts", status || "all"] as const,
-  comments: (postSlug: string) => ["blog", "comments", postSlug] as const,
-  commentsById: (postId: string) => ["blog", "comments-by-id", postId] as const,
-  authors: (verified?: boolean) => ["blog", "authors", verified] as const,
-  myAuthor: ["blog", "my-author"] as const,
-};
+// Re-exported so existing imports `import { blogKeys } from "@/lib/hooks/useBlog"`
+// keep working. New code should import from `@/lib/query` instead.
+export { blogKeys } from "@/lib/query/keys";
+import { blogKeys } from "@/lib/query/keys";
 
 // Stale times
 const STALE_TIMES = {
@@ -332,6 +323,18 @@ export function useBlogComments(postSlug: string) {
 export function useLikeBlogComment(postSlug: string) {
   const queryClient = useQueryClient();
 
+  type CommentsCache = { comments: BlogComment[]; allowComments: boolean };
+
+  const toggleLikeOn = (comment: BlogComment): BlogComment => {
+    const liked = !comment.user_has_liked;
+    return {
+      ...comment,
+      user_has_liked: liked,
+      likes_count: liked ? comment.likes_count + 1 : Math.max(0, comment.likes_count - 1),
+      replies: comment.replies?.map((r) => (r.id === comment.id ? { ...r } : r)),
+    };
+  };
+
   const mutation = useMutation({
     mutationFn: async (commentId: string) => {
       const response = await fetch(`/api/blog/${postSlug}/comments/like`, {
@@ -343,8 +346,33 @@ export function useLikeBlogComment(postSlug: string) {
       if (!response.ok) throw new Error(data.error || "Failed to toggle comment like");
       return data.liked as boolean;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: blogKeys.all });
+    onMutate: async (commentId: string) => {
+      const key = blogKeys.comments(postSlug);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<CommentsCache>(key);
+      if (previous) {
+        const walk = (list: BlogComment[]): BlogComment[] =>
+          list.map((c) =>
+            c.id === commentId
+              ? toggleLikeOn(c)
+              : c.replies?.length
+                ? { ...c, replies: walk(c.replies) }
+                : c
+          );
+        queryClient.setQueryData<CommentsCache>(key, {
+          ...previous,
+          comments: walk(previous.comments),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _commentId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(blogKeys.comments(postSlug), context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: blogKeys.comments(postSlug) });
     },
   });
 
@@ -386,6 +414,8 @@ export function useAddBlogComment() {
 export function useDeleteBlogComment(postSlug: string) {
   const queryClient = useQueryClient();
 
+  type CommentsCache = { comments: BlogComment[]; allowComments: boolean };
+
   const mutation = useMutation({
     mutationFn: async (commentId: string) => {
       const response = await fetch(
@@ -397,7 +427,28 @@ export function useDeleteBlogComment(postSlug: string) {
         throw new Error(data.error || "Failed to delete comment");
       }
     },
-    onSuccess: () => {
+    onMutate: async (commentId: string) => {
+      const key = blogKeys.comments(postSlug);
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<CommentsCache>(key);
+      if (previous) {
+        const walk = (list: BlogComment[]): BlogComment[] =>
+          list
+            .filter((c) => c.id !== commentId)
+            .map((c) => (c.replies?.length ? { ...c, replies: walk(c.replies) } : c));
+        queryClient.setQueryData<CommentsCache>(key, {
+          ...previous,
+          comments: walk(previous.comments),
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _commentId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(blogKeys.comments(postSlug), context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
   });
