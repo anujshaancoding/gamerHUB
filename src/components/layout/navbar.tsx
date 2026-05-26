@@ -65,9 +65,9 @@ const getNotificationIcon = (type: NotificationType) => {
   }
 };
 
-// Mobile menu navigation items — mirrors the sidebar IA. Remaining Phase-3
-// social features (standalone friends/messages pages, clans) stay frozen and
-// intentionally not surfaced (see V2-PLAN.md).
+// Mobile menu navigation items — mirrors the sidebar IA. /messages is
+// surfaced as "Chats". Remaining Phase-3 social (standalone friends pages,
+// clans, right-rail mini chat) stay frozen and not surfaced (see V2-PLAN.md).
 const mobileNavItems = [
   { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
   { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
@@ -79,6 +79,7 @@ const mobileNavItems = [
   { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
+  { href: "/messages", label: "Chats", icon: MessageCircle, requiresAuth: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
