@@ -104,9 +104,9 @@ const nextConfig: NextConfig = {
       // render half-broken for users who hit a direct/legacy URL. Temporary
       // (307) — these are paused for V2, not gone forever (Phase 3 revives
       // them), so we do NOT signal a permanent move to crawlers.
-      // NOTE: /find-gamers and /lfg were re-surfaced in nav under "You" and
-      // are NOT frozen — they must stay routable.
-      ...["/clans", "/friends", "/messages"].flatMap((base) => [
+      // NOTE: /find-gamers, /lfg and /messages were re-surfaced in nav under
+      // "You" and are NOT frozen — they must stay routable.
+      ...["/clans", "/friends"].flatMap((base) => [
         { source: base, destination: "/", permanent: false },
         { source: `${base}/:path*`, destination: "/", permanent: false },
       ]),
