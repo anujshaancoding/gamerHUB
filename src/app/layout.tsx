@@ -9,7 +9,6 @@ import { AuthGateProvider } from "@/components/auth/auth-gate-provider";
 import { PWAProvider } from "@/components/pwa/PWAProvider";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
-// import { PageLoadTimer } from "@/components/dev/PageLoadTimer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { GoogleAnalytics, PageViewTracker } from "@/components/analytics";
 import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/seo";
@@ -138,7 +137,6 @@ export default function RootLayout({
                     Skip to main content
                   </a>
                   <AppShell>{children}</AppShell>
-                  {/* <PageLoadTimer /> */}
                   <FeedbackWidget />
                   <Toaster theme="dark" position="bottom-right" richColors />
                   <PWAInstallPrompt />
