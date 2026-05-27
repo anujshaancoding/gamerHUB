@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     // Serve modern formats when supported
     formats: ["image/avif", "image/webp"],
+    // Keep optimized image responses on the server for 30 days. Riot/Valorant
+    // asset UUIDs are stable, so a repeat visitor never re-downloads.
+    minimumCacheTTL: 2592000,
     remotePatterns: [
       {
         protocol: "https",

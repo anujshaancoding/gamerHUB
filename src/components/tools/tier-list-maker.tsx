@@ -12,6 +12,12 @@ import {
 
 type ItemPlacement = Record<string, string>; // itemId -> rowId | 'pool'
 
+// Route remote artwork through Next's image optimizer: resizes to the chip
+// size, serves AVIF/WebP, and caches at the edge. Chips render at h-14 (~56px)
+// so 128w covers 2x retina; 256w covers 3x phones.
+const optimized = (url: string, w = 128) =>
+  `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=70`;
+
 export function TierListMaker() {
   const [presetId, setPresetId] = useState(TIER_PRESETS[0].id);
   const preset = useMemo(() => TIER_PRESETS.find((p) => p.id === presetId)!, [presetId]);
@@ -89,8 +95,16 @@ export function TierListMaker() {
           <span className="text-xs uppercase tracking-wider text-text-muted">Drag from here onto a row</span>
         </div>
         <div className="flex flex-wrap gap-1">
-          {itemsByRow("pool").map((it) => (
-            <TierChip key={it.id} item={it} onDragStart={() => setDragging(it.id)} active={dragging === it.id} />
+          {itemsByRow("pool").map((it, idx) => (
+            <TierChip
+              key={it.id}
+              item={it}
+              onDragStart={() => setDragging(it.id)}
+              active={dragging === it.id}
+              // First row of chips is always above the fold — fetch eagerly,
+              // give the browser a hint that these are the priority images.
+              eager={idx < 14}
+            />
           ))}
           {itemsByRow("pool").length === 0 && (
             <p className="text-xs text-text-muted py-2">Pool is empty — every item is placed.</p>
@@ -101,7 +115,17 @@ export function TierListMaker() {
   );
 }
 
-function TierChip({ item, onDragStart, active }: { item: TierItem; onDragStart: () => void; active: boolean }) {
+function TierChip({
+  item,
+  onDragStart,
+  active,
+  eager = false,
+}: {
+  item: TierItem;
+  onDragStart: () => void;
+  active: boolean;
+  eager?: boolean;
+}) {
   return (
     <div
       draggable
@@ -117,10 +141,14 @@ function TierChip({ item, onDragStart, active }: { item: TierItem; onDragStart: 
       {item.image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={item.image}
+          src={optimized(item.image)}
           alt={item.label}
           draggable={false}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={eager ? "high" : "auto"}
+          width={128}
+          height={56}
           className="h-14 w-auto max-w-[150px] object-contain pointer-events-none"
         />
       )}
