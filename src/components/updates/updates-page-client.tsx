@@ -35,6 +35,32 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-27T20:30:00",
+    version: "1.32.3",
+    type: "performance",
+    title: "Faster Tier List chips, longer image cache",
+    description:
+      "Tier List Maker chip images now go through the same image optimizer the rest of the site uses, and optimized images stay cached for 30 days instead of expiring quickly.",
+    highlights: [
+      "Chip images served as AVIF/WebP at the size they actually render, instead of the full-resolution source",
+      "First row of chips loads eagerly with high fetch priority so the tier list paints faster",
+      "Optimized image responses cached for 30 days — return visits skip the re-encode entirely",
+    ],
+  },
+  {
+    date: "2026-05-27T20:00:00",
+    version: "1.32.2",
+    type: "fix",
+    title: "Forum threads now actually show up",
+    description:
+      "The Valorant section was showing 'No threads yet' even though 15 threads existed — the database query was silently failing on every page load. Threads, replies and category counts now render correctly.",
+    highlights: [
+      "Root cause: the query layer was misreading PostgREST-style FK hints (e.g. profiles!last_reply_by) as constraint names instead of column names",
+      "Forum landing, category pages and individual threads all benefit — any page that joins related rows is more reliable",
+      "Defensive fallback added so the resolver keeps working even if the schema cache loads incomplete data",
+    ],
+  },
+  {
     date: "2026-05-27T18:00:00",
     version: "1.32.1",
     type: "security",

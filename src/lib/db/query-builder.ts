@@ -1148,8 +1148,9 @@ function resolveFKForTable(
   join: JoinRef,
   mainTable: string
 ): { direction: "many-to-one" | "one-to-many"; localCol: string; foreignCol: string; foreignTable: string } | null {
-  // 1. Explicit constraint name
+  // 1. Explicit hint (PostgREST syntax: !<constraint_name> OR !<column_name>)
   if (join.constraintName) {
+    // 1a. Exact constraint-name match
     const fk = fks.find((f) => f.constraintName === join.constraintName);
     if (fk) {
       if (fk.fromTable === mainTable) {
@@ -1159,6 +1160,23 @@ function resolveFKForTable(
       }
     }
 
+    // 1b. Column-name match (forward FK: column on main table → join table)
+    const fkByCol = fks.find((f) =>
+      f.fromTable === mainTable && f.fromColumn === join.constraintName && f.toTable === join.table
+    );
+    if (fkByCol) {
+      return { direction: "many-to-one", localCol: fkByCol.fromColumn, foreignCol: fkByCol.toColumn, foreignTable: join.table };
+    }
+
+    // 1c. Column-name match (reverse FK: column on join table → main table)
+    const fkByColRev = fks.find((f) =>
+      f.fromTable === join.table && f.fromColumn === join.constraintName && f.toTable === mainTable
+    );
+    if (fkByColRev) {
+      return { direction: "one-to-many", localCol: fkByColRev.fromColumn, foreignCol: fkByColRev.toColumn, foreignTable: join.table };
+    }
+
+    // 1d. <main_table>_<col>_fkey shorthand
     const prefix = mainTable + "_";
     if (join.constraintName.startsWith(prefix) && join.constraintName.endsWith("_fkey")) {
       const col = join.constraintName.slice(prefix.length, -"_fkey".length);
@@ -1166,12 +1184,22 @@ function resolveFKForTable(
         return { direction: "many-to-one", localCol: col, foreignCol: "id", foreignTable: join.table };
       }
     }
+    // 1e. <join_table>_<col>_fkey shorthand
     const joinPrefix = join.table + "_";
     if (join.constraintName.startsWith(joinPrefix) && join.constraintName.endsWith("_fkey")) {
       const col = join.constraintName.slice(joinPrefix.length, -"_fkey".length);
       if (col) {
         return { direction: "one-to-many", localCol: col, foreignCol: "id", foreignTable: join.table };
       }
+    }
+
+    // 1f. Defensive: hint doesn't look like a constraint name → trust it as a
+    // column name on the main table. Covers the case where the FK cache is
+    // incomplete (e.g. loaded before a migration applied) but the column does
+    // exist. Keeps things working without invoking the misleading alias_id
+    // convention fallback.
+    if (!join.constraintName.endsWith("_fkey")) {
+      return { direction: "many-to-one", localCol: join.constraintName, foreignCol: "id", foreignTable: join.table };
     }
   }
 
