@@ -158,7 +158,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      // The body couldn't be parsed — almost always because it was truncated
+      // for exceeding a body-size limit (middleware / proxy). Surface a clear,
+      // actionable message instead of a generic 500.
+      return NextResponse.json(
+        { error: "File too large to upload (max 200MB)." },
+        { status: 413 }
+      );
+    }
     const file = formData.get("file") as File | null;
     const storagePath = formData.get("path") as string | null;
     const oldPath = formData.get("oldPath") as string | null;

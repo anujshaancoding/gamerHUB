@@ -86,6 +86,12 @@ const nextConfig: NextConfig = {
   // Optimize tree-shaking for barrel-exported packages
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "framer-motion", "@radix-ui/react-icons"],
+    // Every request passes through middleware.ts (rate limiting, auth), and
+    // Next buffers the request body to make it available there — capped at 10MB
+    // by default. Showcase clip uploads are larger, so raise the cap to just
+    // above /api/upload's 200MB limit (extra headroom covers multipart overhead).
+    // Keep in sync with MAX_FILE_SIZE in src/app/api/upload/route.ts and Nginx.
+    middlewareClientMaxBodySize: "210mb",
   },
 
   // Permanent redirects for V2 route moves to top-level SEO-canonical paths.
