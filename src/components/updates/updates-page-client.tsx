@@ -35,6 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-05-30T16:00:00",
+    version: "1.32.4",
+    type: "fix",
+    title: "Profile Showcase uploads fixed",
+    description:
+      "Adding a screenshot or clip to your profile Showcase no longer fails with a cryptic 'Unexpected token' error, and larger clips now upload properly.",
+    highlights: [
+      "Screenshots are now compressed and converted to WebP before upload, just like avatars and banners — much smaller, much faster",
+      "Clips up to 50MB are now accepted instead of being rejected by the server",
+      "When a file really is too big, you get a clear message telling you the limit instead of a confusing JSON error",
+    ],
+  },
+  {
     date: "2026-05-27T20:30:00",
     version: "1.32.3",
     type: "performance",

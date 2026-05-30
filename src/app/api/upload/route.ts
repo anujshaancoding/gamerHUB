@@ -20,7 +20,10 @@ import { getUser } from "@/lib/auth/get-user";
 const UPLOAD_DIR = resolve(
   process.env.UPLOAD_DIR || "./uploads"
 );
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+// Matches Nginx's client_max_body_size on the VPS. Images are compressed
+// client-side to ~1MB; videos (clips) need the headroom. Keep this value, the
+// MAX_VIDEO_MB guard in profile-media-gallery.tsx, and Nginx in sync.
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 // Allowed file extensions and MIME types
 const ALLOWED_TYPES: Record<string, string[]> = {
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large (max 10MB)" },
+        { error: "File too large (max 50MB)" },
         { status: 400 }
       );
     }

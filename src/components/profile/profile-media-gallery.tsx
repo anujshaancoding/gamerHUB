@@ -10,6 +10,34 @@ import {
   Loader2,
   Images,
 } from "lucide-react";
+import { optimizedUpload } from "@/lib/upload";
+
+// Videos can't be re-encoded cheaply in the browser, so we guard their size
+// up front. Keep this in sync with MAX_FILE_SIZE in /api/upload and Nginx's
+// client_max_body_size.
+const MAX_VIDEO_MB = 50;
+const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
+
+/**
+ * Read an error message from a failed upload response. The body may not be
+ * JSON — a 413 from Nginx (request larger than client_max_body_size) returns
+ * an HTML error page, so blindly calling res.json() throws "Unexpected token
+ * '<'". Handle that gracefully and surface a human-readable message instead.
+ */
+async function parseUploadError(res: Response): Promise<string> {
+  if (res.status === 413) {
+    return `That file is too large to upload (max ${MAX_VIDEO_MB}MB). Try trimming the clip or lowering its recording quality.`;
+  }
+  const text = await res.text().catch(() => "");
+  try {
+    const json = JSON.parse(text);
+    return json.error || "Upload failed";
+  } catch {
+    return res.status >= 500
+      ? "Server error during upload. Please try again."
+      : "Upload failed. Please try a different file.";
+  }
+}
 
 interface MediaItem {
   id: string;
@@ -57,19 +85,36 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
     try {
       const ext = (file.name.split(".").pop() || "png").toLowerCase();
       const isVideo = ["mp4", "webm"].includes(ext);
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("path", `media/${userId}/${Date.now()}.${ext}`);
-      const up = await fetch("/api/upload", { method: "POST", body: fd });
-      const upData = await up.json();
-      if (!up.ok) throw new Error(upData.error || "Upload failed");
+
+      let publicUrl: string;
+      if (isVideo) {
+        // Guard size before uploading so we don't waste a round-trip on a clip
+        // the proxy will reject with a 413.
+        if (file.size > MAX_VIDEO_BYTES) {
+          throw new Error(
+            `Clip is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). ` +
+              `Max is ${MAX_VIDEO_MB}MB — try trimming it or lowering the recording quality.`,
+          );
+        }
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("path", `media/${userId}/${Date.now()}.${ext}`);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!up.ok) throw new Error(await parseUploadError(up));
+        publicUrl = (await up.json()).publicUrl;
+      } else {
+        // Images: compress + convert to WebP before upload (large size win,
+        // and keeps screenshots well under the proxy body limit).
+        const result = await optimizedUpload(file, "media", userId);
+        publicUrl = result.publicUrl;
+      }
 
       const res = await fetch("/api/profile/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: isVideo ? "video" : "image",
-          url: upData.publicUrl,
+          url: publicUrl,
           title: file.name.replace(/\.[^.]+$/, "").slice(0, 60),
         }),
       });
