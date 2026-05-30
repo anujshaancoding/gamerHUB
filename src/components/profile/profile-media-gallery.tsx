@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import { optimizedUpload } from "@/lib/upload";
 
-// Videos can't be re-encoded cheaply in the browser, so we guard their size
-// up front. Keep this in sync with MAX_FILE_SIZE in /api/upload and Nginx's
-// client_max_body_size.
-const MAX_VIDEO_MB = 50;
+// Raw clips are accepted as-is and compressed server-side (ffmpeg), so this
+// guard only blocks genuinely huge files. Keep in sync with MAX_FILE_SIZE in
+// /api/upload and Nginx's client_max_body_size.
+const MAX_VIDEO_MB = 200;
 const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
 
 /**
@@ -87,13 +87,14 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
       const isVideo = ["mp4", "webm"].includes(ext);
 
       let publicUrl: string;
+      let thumbnailUrl: string | null = null;
       if (isVideo) {
-        // Guard size before uploading so we don't waste a round-trip on a clip
-        // the proxy will reject with a 413.
+        // Sanity guard only — the clip is compressed server-side, so we accept
+        // big raw uploads. This just blocks absurdly large files up front.
         if (file.size > MAX_VIDEO_BYTES) {
           throw new Error(
             `Clip is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). ` +
-              `Max is ${MAX_VIDEO_MB}MB — try trimming it or lowering the recording quality.`,
+              `Max is ${MAX_VIDEO_MB}MB.`,
           );
         }
         const fd = new FormData();
@@ -101,7 +102,10 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
         fd.append("path", `media/${userId}/${Date.now()}.${ext}`);
         const up = await fetch("/api/upload", { method: "POST", body: fd });
         if (!up.ok) throw new Error(await parseUploadError(up));
-        publicUrl = (await up.json()).publicUrl;
+        const upData = await up.json();
+        // Server transcodes to .mp4 and returns the compressed URL + a poster.
+        publicUrl = upData.publicUrl;
+        thumbnailUrl = upData.thumbnailUrl ?? null;
       } else {
         // Images: compress + convert to WebP before upload (large size win,
         // and keeps screenshots well under the proxy body limit).
@@ -115,6 +119,7 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
         body: JSON.stringify({
           type: isVideo ? "video" : "image",
           url: publicUrl,
+          thumbnail_url: thumbnailUrl,
           title: file.name.replace(/\.[^.]+$/, "").slice(0, 60),
         }),
       });

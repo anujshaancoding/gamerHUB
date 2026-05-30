@@ -35,16 +35,17 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
-    date: "2026-05-30T16:00:00",
-    version: "1.32.4",
-    type: "fix",
-    title: "Profile Showcase uploads fixed",
+    date: "2026-05-31T13:00:00",
+    version: "1.33.0",
+    type: "improvement",
+    title: "Showcase clips now upload automatically — no resizing needed",
     description:
-      "Adding a screenshot or clip to your profile Showcase no longer fails with a cryptic 'Unexpected token' error, and larger clips now upload properly.",
+      "Just drop your clip from ShadowPlay, OBS, Medal or the Xbox Game Bar into your profile Showcase. We now compress it for you on upload, so big raw clips work without you touching a thing.",
     highlights: [
-      "Screenshots are now compressed and converted to WebP before upload, just like avatars and banners — much smaller, much faster",
-      "Clips up to 50MB are now accepted instead of being rejected by the server",
-      "When a file really is too big, you get a clear message telling you the limit instead of a confusing JSON error",
+      "Clips are automatically re-encoded to a web-friendly size on our servers — uploads that used to fail now just work",
+      "A thumbnail is generated for every clip, so your Showcase grid looks clean",
+      "Screenshots are compressed and converted to WebP automatically too — much smaller, much faster",
+      "Clear, friendly error messages instead of the old cryptic upload failure",
     ],
   },
   {

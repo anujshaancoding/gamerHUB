@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { resolve, dirname, extname } from "path";
+import { spawn } from "child_process";
 import { getUser } from "@/lib/auth/get-user";
 
 // Store uploads outside public/ — served by the catch-all route at /uploads/[...path].
@@ -20,10 +21,85 @@ import { getUser } from "@/lib/auth/get-user";
 const UPLOAD_DIR = resolve(
   process.env.UPLOAD_DIR || "./uploads"
 );
-// Matches Nginx's client_max_body_size on the VPS. Images are compressed
-// client-side to ~1MB; videos (clips) need the headroom. Keep this value, the
-// MAX_VIDEO_MB guard in profile-media-gallery.tsx, and Nginx in sync.
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+// Max size of the RAW upload we accept. Users upload clips straight from
+// ShadowPlay/OBS/Medal/Game Bar, which are large — we accept them and then
+// compress server-side (see transcodeVideo). Keep this value, the MAX_VIDEO_MB
+// guard in profile-media-gallery.tsx, and Nginx's client_max_body_size in sync.
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+
+// Video transcoding runs through ffmpeg on the VPS (override path via env).
+const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
+const VIDEO_EXTENSIONS = new Set([".mp4", ".webm"]);
+
+/** Run ffmpeg with the given args, rejecting on a non-zero exit. */
+function runFfmpeg(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(FFMPEG, args, { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    proc.stderr.on("data", (d) => {
+      // Keep only the tail — ffmpeg is very chatty.
+      stderr = (stderr + d.toString()).slice(-2000);
+    });
+    proc.on("error", reject); // e.g. ENOENT when ffmpeg isn't installed
+    proc.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exited ${code}: ${stderr.slice(-400)}`));
+    });
+  });
+}
+
+interface TranscodeResult {
+  /** storage-relative path of the compressed .mp4 */
+  videoRel: string;
+  /** storage-relative path of the .jpg poster/thumbnail */
+  thumbRel: string;
+}
+
+/**
+ * Compress an uploaded clip to a web-friendly H.264 MP4 and extract a poster
+ * frame. The raw upload (`inputFull`) is left in place for the caller to clean
+ * up. Output is always .mp4 regardless of input container for broad playback.
+ */
+async function transcodeVideo(
+  inputFull: string,
+  normalizedPath: string,
+): Promise<TranscodeResult> {
+  const videoRel = normalizedPath.replace(/\.[^.]+$/, ".mp4");
+  const thumbRel = normalizedPath.replace(/\.[^.]+$/, "_thumb.jpg");
+  const videoFull = resolve(UPLOAD_DIR, videoRel);
+  const thumbFull = resolve(UPLOAD_DIR, thumbRel);
+
+  // Downscale to <=1080p, re-encode H.264/AAC, faststart for instant playback.
+  // CRF 26 + veryfast is a good size/quality/CPU balance for short clips.
+  await runFfmpeg([
+    "-y",
+    "-i", inputFull,
+    "-vf", "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    "-crf", "26",
+    "-c:a", "aac",
+    "-b:a", "128k",
+    "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
+    videoFull,
+  ]);
+
+  // Poster frame ~1s in; fall back to the very first frame for sub-second clips.
+  try {
+    await runFfmpeg([
+      "-y", "-ss", "1", "-i", inputFull,
+      "-vframes", "1", "-vf", "scale='min(1280,iw)':-2", thumbFull,
+    ]);
+  } catch {
+    await runFfmpeg([
+      "-y", "-i", inputFull,
+      "-vframes", "1", "-vf", "scale='min(1280,iw)':-2", thumbFull,
+    ]);
+  }
+
+  return { videoRel, thumbRel };
+}
 
 // Allowed file extensions and MIME types
 const ALLOWED_TYPES: Record<string, string[]> = {
@@ -96,7 +172,7 @@ export async function POST(request: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large (max 50MB)" },
+        { error: "File too large (max 200MB)" },
         { status: 400 }
       );
     }
@@ -140,9 +216,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ensure directory exists
-    await mkdir(dirname(fullPath), { recursive: true });
-
     // Read file into buffer and validate content matches claimed type
     const buffer = Buffer.from(await file.arrayBuffer());
     const ext = extname(file.name).toLowerCase();
@@ -153,7 +226,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Write file
+    await mkdir(dirname(fullPath), { recursive: true });
+
+    // Videos: write the raw upload to a temp file, compress it with ffmpeg, and
+    // return the small .mp4 plus an auto-generated poster. The user uploads a
+    // big raw clip; we never make them shrink it themselves.
+    if (VIDEO_EXTENSIONS.has(ext)) {
+      const tmpInput = `${fullPath}.upload`;
+      await writeFile(tmpInput, buffer);
+      try {
+        const { videoRel, thumbRel } = await transcodeVideo(tmpInput, normalizedPath);
+        const v = Date.now();
+        return NextResponse.json({
+          publicUrl: `/uploads/${videoRel}?v=${v}`,
+          thumbnailUrl: `/uploads/${thumbRel}?v=${v}`,
+          fileSize: file.size,
+        });
+      } catch (e) {
+        console.error("Video transcode failed:", e);
+        return NextResponse.json(
+          { error: "We couldn't process that video. Please try a different clip." },
+          { status: 422 }
+        );
+      } finally {
+        await unlink(tmpInput).catch(() => {});
+      }
+    }
+
+    // Images and other files: write as-is.
     await writeFile(fullPath, buffer);
 
     // Delete old file if provided and different
