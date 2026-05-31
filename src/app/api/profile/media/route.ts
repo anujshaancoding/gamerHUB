@@ -14,6 +14,10 @@ import { deleteUploadedFileByUrl } from "@/lib/uploads/delete-file";
 
 const ALLOWED_TYPES = ["image", "video"] as const;
 
+// Max showcase items per user — prevents one account from filling the disk.
+// Keep in sync with MEDIA_LIMIT in profile-media-gallery.tsx.
+const MEDIA_LIMIT = 100;
+
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId");
@@ -50,7 +54,14 @@ export async function GET(request: NextRequest) {
       LIMIT 60
     `;
 
-    return NextResponse.json({ media: rows });
+    // Owner needs the true total (rows are capped at 60) to enforce the limit.
+    let total = rows.length;
+    if (isOwner) {
+      const totalRows = await sql`SELECT COUNT(*)::int AS n FROM media WHERE user_id = ${userId}`;
+      total = totalRows[0]?.n ?? rows.length;
+    }
+
+    return NextResponse.json({ media: rows, total, limit: MEDIA_LIMIT });
   } catch (error) {
     console.error("Media fetch error:", error);
     return NextResponse.json({ media: [] });
@@ -70,14 +81,27 @@ export async function POST(request: NextRequest) {
     if (!url) {
       return NextResponse.json({ error: "url is required" }, { status: 400 });
     }
+
+    const sqlPool = getPool();
+
+    // Enforce the per-user showcase cap (disk-fill protection).
+    const countRows = await sqlPool`
+      SELECT COUNT(*)::int AS n FROM media WHERE user_id = ${user.id}`;
+    if ((countRows[0]?.n ?? 0) >= MEDIA_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `You've reached the ${MEDIA_LIMIT}-item showcase limit. Delete something to add more.`,
+        },
+        { status: 403 }
+      );
+    }
     const title = (body.title ?? "").toString().slice(0, 120) || null;
     const description = (body.description ?? "").toString().slice(0, 500) || null;
     const thumbnail_url =
       typeof body.thumbnail_url === "string" ? body.thumbnail_url : null;
     const is_public = body.is_public !== false;
 
-    const sql = getPool();
-    const rows = await sql`
+    const rows = await sqlPool`
       INSERT INTO media (user_id, type, url, thumbnail_url, title, description, is_public)
       VALUES (${user.id}, ${type}, ${url}, ${thumbnail_url}, ${title}, ${description}, ${is_public})
       RETURNING *`;

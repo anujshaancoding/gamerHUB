@@ -7,6 +7,10 @@ import { verifyAdminTokenLight } from "@/lib/security/admin-token-edge";
 // Global rate limiter for public API mutations: 60 requests per minute
 const apiRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60 });
 
+// Tighter limiter for uploads — each one can trigger a CPU-heavy ffmpeg
+// transcode, so cap them well below the general API rate.
+const uploadRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 10 });
+
 export async function middleware(request: NextRequest) {
   // Redirect www → non-www (canonical domain is gglobby.in)
   const host = request.headers.get("host") || "";
@@ -34,6 +38,21 @@ export async function middleware(request: NextRequest) {
   // Rate limit all state-changing API requests (POST/PATCH/PUT/DELETE)
   if (path.startsWith("/api/") && ["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
     const clientId = getClientIdentifier(request);
+
+    // Uploads get a stricter, dedicated budget (transcoding is expensive).
+    if (path.startsWith("/api/upload") && method === "POST") {
+      const uploadResult = uploadRateLimiter(clientId);
+      if (!uploadResult.allowed) {
+        return NextResponse.json(
+          { error: "Too many uploads in a short time. Please wait a moment and try again." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(uploadResult.retryAfterSeconds) },
+          }
+        );
+      }
+    }
+
     const result = apiRateLimiter(clientId);
     if (!result.allowed) {
       return NextResponse.json(

@@ -13,6 +13,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { optimizedUpload } from "@/lib/upload";
+import { storagePathFromUrl } from "@/lib/storage";
 import { MediaLightbox, type MediaItem } from "./media-lightbox";
 
 // Raw clips are accepted as-is and compressed server-side (ffmpeg), so this
@@ -20,6 +21,22 @@ import { MediaLightbox, type MediaItem } from "./media-lightbox";
 // /api/upload and Nginx's client_max_body_size.
 const MAX_VIDEO_MB = 200;
 const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
+
+// Per-user showcase cap — must match MEDIA_LIMIT in /api/profile/media.
+const MEDIA_LIMIT = 100;
+
+/** Best-effort delete of an already-uploaded file when the DB save fails. */
+async function cleanupOrphan(...urls: (string | null | undefined)[]) {
+  for (const url of urls) {
+    const path = url ? storagePathFromUrl(url) : null;
+    if (!path) continue;
+    await fetch("/api/upload", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    }).catch(() => {});
+  }
+}
 
 interface UploadResponse {
   publicUrl: string;
@@ -94,6 +111,7 @@ interface Pending {
 
 export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
@@ -109,7 +127,9 @@ export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
     try {
       const r = await fetch(`/api/profile/media?userId=${userId}`);
       const d = await r.json();
-      setItems(Array.isArray(d.media) ? d.media : []);
+      const media = Array.isArray(d.media) ? d.media : [];
+      setItems(media);
+      setTotal(typeof d.total === "number" ? d.total : media.length);
     } catch {
       setItems([]);
     } finally {
@@ -123,6 +143,13 @@ export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
 
   function pickFile(file: File) {
     setErr(null);
+    if (total >= MEDIA_LIMIT) {
+      setErr(
+        `You've reached the ${MEDIA_LIMIT}-item showcase limit. Delete something to add more.`,
+      );
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     const ext = (file.name.split(".").pop() || "png").toLowerCase();
     const isVideo = ["mp4", "webm"].includes(ext);
     if (isVideo && file.size > MAX_VIDEO_BYTES) {
@@ -190,13 +217,19 @@ export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
+      if (!res.ok) {
+        // The file is already on disk but the DB record failed — remove it so
+        // it doesn't orphan.
+        await cleanupOrphan(publicUrl, thumbnailUrl);
+        throw new Error(data.error || "Save failed");
+      }
 
       // New items start with zero social counts.
       setItems((prev) => [
         { ...data.media, like_count: 0, comment_count: 0, liked_by_me: false },
         ...prev,
       ]);
+      setTotal((t) => t + 1);
       cancelUpload();
     } catch (e) {
       setErr((e as Error).message);
@@ -210,6 +243,7 @@ export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
     const r = await fetch(`/api/profile/media?id=${id}`, { method: "DELETE" });
     if (r.ok) {
       setItems((prev) => prev.filter((m) => m.id !== id));
+      setTotal((t) => Math.max(0, t - 1));
       if (lightboxId === id) setLightboxId(null);
     }
   }
