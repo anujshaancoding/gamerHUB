@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPool } from "@/lib/db/index";
 import { getUser } from "@/lib/auth/get-user";
+import { deleteUploadedFileByUrl } from "@/lib/uploads/delete-file";
 
 const ALLOWED_TYPES = ["image", "video"] as const;
 
@@ -148,10 +149,16 @@ export async function DELETE(request: NextRequest) {
     const sql = getPool();
     const rows = await sql`
       DELETE FROM media WHERE id = ${id} AND user_id = ${user.id}
-      RETURNING id`;
+      RETURNING url, thumbnail_url`;
     if (rows.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    // Remove the underlying files so they don't orphan on disk. Likes and
+    // comments are cleaned up automatically by ON DELETE CASCADE.
+    await deleteUploadedFileByUrl(rows[0].url);
+    await deleteUploadedFileByUrl(rows[0].thumbnail_url);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Media delete error:", error);
