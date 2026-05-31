@@ -474,6 +474,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 userId={profile.id}
                 username={profile.username}
                 isOwner={isOwnProfile}
+                viewerId={user?.id ?? null}
               />
             ),
             overview: (

@@ -35,17 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
-    date: "2026-05-31T13:00:00",
-    version: "1.33.0",
-    type: "improvement",
-    title: "Showcase clips now upload automatically — no resizing needed",
+    date: "2026-05-31T17:00:00",
+    version: "1.34.0",
+    type: "feature",
+    title: "Showcase glow-up: likes, comments, titles & smart uploads",
     description:
-      "Just drop your clip from ShadowPlay, OBS, Medal or the Xbox Game Bar into your profile Showcase. We now compress it for you on upload, so big raw clips work without you touching a thing.",
+      "Your profile Showcase is now social. Like and comment on anyone's clips and screenshots, give your own uploads a title, and drop in big clips without worrying about file size — we compress them for you.",
     highlights: [
-      "Clips are automatically re-encoded to a web-friendly size on our servers — uploads that used to fail now just work",
-      "A thumbnail is generated for every clip, so your Showcase grid looks clean",
-      "Screenshots are compressed and converted to WebP automatically too — much smaller, much faster",
-      "Clear, friendly error messages instead of the old cryptic upload failure",
+      "❤️ Like and 💬 comment on any clip or screenshot — counts show right on the grid",
+      "Give your uploads a title and edit it anytime",
+      "Clip owners (and admins) can remove comments on their own media",
+      "A real upload progress bar, with a 'compressing' step while big clips are processed",
+      "Clips from ShadowPlay/OBS/Medal/Game Bar are auto-compressed server-side — big raw uploads just work, with a thumbnail generated for each",
+      "Screenshots are compressed to WebP automatically; friendly error messages throughout",
     ],
   },
   {

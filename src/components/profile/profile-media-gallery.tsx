@@ -9,8 +9,11 @@ import {
   X,
   Loader2,
   Images,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 import { optimizedUpload } from "@/lib/upload";
+import { MediaLightbox, type MediaItem } from "./media-lightbox";
 
 // Raw clips are accepted as-is and compressed server-side (ffmpeg), so this
 // guard only blocks genuinely huge files. Keep in sync with MAX_FILE_SIZE in
@@ -18,50 +21,89 @@ import { optimizedUpload } from "@/lib/upload";
 const MAX_VIDEO_MB = 200;
 const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
 
-/**
- * Read an error message from a failed upload response. The body may not be
- * JSON — a 413 from Nginx (request larger than client_max_body_size) returns
- * an HTML error page, so blindly calling res.json() throws "Unexpected token
- * '<'". Handle that gracefully and surface a human-readable message instead.
- */
-async function parseUploadError(res: Response): Promise<string> {
-  if (res.status === 413) {
-    return `That file is too large to upload (max ${MAX_VIDEO_MB}MB). Try trimming the clip or lowering its recording quality.`;
-  }
-  const text = await res.text().catch(() => "");
-  try {
-    const json = JSON.parse(text);
-    return json.error || "Upload failed";
-  } catch {
-    return res.status >= 500
-      ? "Server error during upload. Please try again."
-      : "Upload failed. Please try a different file.";
-  }
+interface UploadResponse {
+  publicUrl: string;
+  thumbnailUrl?: string | null;
 }
 
-interface MediaItem {
-  id: string;
-  type: "image" | "video";
-  url: string;
-  thumbnail_url: string | null;
-  title: string | null;
-  description: string | null;
-  is_public: boolean;
+/**
+ * Upload a file to /api/upload with real progress reporting. fetch() can't
+ * report upload progress, so we use XMLHttpRequest. The promise resolves once
+ * the server responds — for videos that's *after* server-side transcoding, so
+ * the caller switches to a "processing" state when bytes hit 100%.
+ */
+function uploadWithProgress(
+  file: File,
+  path: string,
+  onProgress: (pct: number) => void,
+): Promise<UploadResponse> {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("path", path);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error("Upload succeeded but the response was invalid."));
+        }
+        return;
+      }
+      // Non-2xx: try to extract a JSON error, else map common statuses.
+      let message = "Upload failed. Please try a different file.";
+      if (xhr.status === 413) {
+        message = `That file is too large to upload (max ${MAX_VIDEO_MB}MB).`;
+      } else {
+        try {
+          message = JSON.parse(xhr.responseText).error || message;
+        } catch {
+          if (xhr.status >= 500) message = "Server error during upload. Please try again.";
+        }
+      }
+      reject(new Error(message));
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload."));
+    xhr.send(fd);
+  });
 }
 
 interface Props {
   userId: string;
   username: string;
   isOwner: boolean;
+  /** The currently signed-in viewer (null if logged out) — enables like/comment. */
+  viewerId: string | null;
 }
 
-export function ProfileMediaGallery({ userId, isOwner }: Props) {
+interface Pending {
+  file: File;
+  previewUrl: string;
+  isVideo: boolean;
+  title: string;
+}
+
+export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<MediaItem | null>(null);
+  const [lightboxId, setLightboxId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Upload composer state
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<"uploading" | "processing" | "saving">("uploading");
 
   const load = useCallback(async () => {
     try {
@@ -79,40 +121,64 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
     load();
   }, [load]);
 
-  async function onPick(file: File) {
+  function pickFile(file: File) {
+    setErr(null);
+    const ext = (file.name.split(".").pop() || "png").toLowerCase();
+    const isVideo = ["mp4", "webm"].includes(ext);
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      setErr(
+        `Clip is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max is ${MAX_VIDEO_MB}MB.`,
+      );
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setPending({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      isVideo,
+      title: file.name.replace(/\.[^.]+$/, "").slice(0, 60),
+    });
+  }
+
+  function cancelUpload() {
+    if (pending) URL.revokeObjectURL(pending.previewUrl);
+    setPending(null);
+    setProgress(0);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function confirmUpload() {
+    if (!pending) return;
+    const { file, isVideo, title } = pending;
     setUploading(true);
     setErr(null);
+    setProgress(0);
+    setPhase("uploading");
     try {
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const isVideo = ["mp4", "webm"].includes(ext);
-
       let publicUrl: string;
       let thumbnailUrl: string | null = null;
+
       if (isVideo) {
-        // Sanity guard only — the clip is compressed server-side, so we accept
-        // big raw uploads. This just blocks absurdly large files up front.
-        if (file.size > MAX_VIDEO_BYTES) {
-          throw new Error(
-            `Clip is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). ` +
-              `Max is ${MAX_VIDEO_MB}MB.`,
-          );
-        }
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("path", `media/${userId}/${Date.now()}.${ext}`);
-        const up = await fetch("/api/upload", { method: "POST", body: fd });
-        if (!up.ok) throw new Error(await parseUploadError(up));
-        const upData = await up.json();
-        // Server transcodes to .mp4 and returns the compressed URL + a poster.
-        publicUrl = upData.publicUrl;
-        thumbnailUrl = upData.thumbnailUrl ?? null;
+        const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+        const res = await uploadWithProgress(
+          file,
+          `media/${userId}/${Date.now()}.${ext}`,
+          (pct) => {
+            setProgress(pct);
+            // Bytes are up — the server is now transcoding before it responds.
+            if (pct >= 100) setPhase("processing");
+          },
+        );
+        publicUrl = res.publicUrl;
+        thumbnailUrl = res.thumbnailUrl ?? null;
       } else {
-        // Images: compress + convert to WebP before upload (large size win,
-        // and keeps screenshots well under the proxy body limit).
+        // Images compress to ~1MB and upload fast; show an indeterminate state.
+        setPhase("processing");
         const result = await optimizedUpload(file, "media", userId);
         publicUrl = result.publicUrl;
       }
 
+      setPhase("saving");
       const res = await fetch("/api/profile/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,25 +186,48 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
           type: isVideo ? "video" : "image",
           url: publicUrl,
           thumbnail_url: thumbnailUrl,
-          title: file.name.replace(/\.[^.]+$/, "").slice(0, 60),
+          title: title.trim() || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
-      setItems((prev) => [data.media, ...prev]);
+
+      // New items start with zero social counts.
+      setItems((prev) => [
+        { ...data.media, like_count: 0, comment_count: 0, liked_by_me: false },
+        ...prev,
+      ]);
+      cancelUpload();
     } catch (e) {
       setErr((e as Error).message);
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Remove this from your showcase?")) return;
     const r = await fetch(`/api/profile/media?id=${id}`, { method: "DELETE" });
-    if (r.ok) setItems((prev) => prev.filter((m) => m.id !== id));
+    if (r.ok) {
+      setItems((prev) => prev.filter((m) => m.id !== id));
+      if (lightboxId === id) setLightboxId(null);
+    }
   }
+
+  const updateItem = useCallback((id: string, patch: Partial<MediaItem>) => {
+    setItems((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }, []);
+
+  const lightboxItem = items.find((m) => m.id === lightboxId) || null;
+
+  const uploadLabel =
+    phase === "uploading"
+      ? `Uploading… ${progress}%`
+      : phase === "processing"
+        ? pending?.isVideo
+          ? "Compressing video…"
+          : "Processing…"
+        : "Saving…";
 
   return (
     <div className="rounded-2xl border border-border bg-surface/60 p-5 sm:p-6">
@@ -157,26 +246,22 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) onPick(f);
+                if (f) pickFile(f);
               }}
             />
             <button
               onClick={() => fileRef.current?.click()}
-              disabled={uploading}
+              disabled={uploading || !!pending}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-background transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ImagePlus className="h-4 w-4" />
-              )}
+              <ImagePlus className="h-4 w-4" />
               Add screenshot / clip
             </button>
           </>
         )}
       </div>
 
-      {err && (
+      {err && !pending && (
         <p className="mb-4 rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
           {err}
         </p>
@@ -212,7 +297,7 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: Math.min(i * 0.03, 0.3) }}
               className="group relative aspect-video cursor-pointer overflow-hidden rounded-xl border border-border bg-surface"
-              onClick={() => setLightbox(m)}
+              onClick={() => setLightboxId(m.id)}
             >
               {m.type === "video" ? (
                 <>
@@ -234,13 +319,26 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               )}
-              {m.title && (
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                  <p className="truncate text-xs font-medium text-white">
-                    {m.title}
-                  </p>
+
+              {/* Bottom gradient: title + like/comment counts */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                {m.title && (
+                  <p className="truncate text-xs font-medium text-white">{m.title}</p>
+                )}
+                <div className="mt-0.5 flex items-center gap-3 text-[11px] font-medium text-white/90">
+                  <span className="inline-flex items-center gap-1">
+                    <Heart
+                      className={`h-3.5 w-3.5 ${m.liked_by_me ? "fill-error text-error" : ""}`}
+                    />
+                    {m.like_count}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    {m.comment_count}
+                  </span>
                 </div>
-              )}
+              </div>
+
               {isOwner && (
                 <button
                   onClick={(e) => {
@@ -258,49 +356,128 @@ export function ProfileMediaGallery({ userId, isOwner }: Props) {
         </div>
       )}
 
-      {/* Lightbox */}
+      {/* Upload composer */}
       <AnimatePresence>
-        {lightbox && (
+        {pending && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => !uploading && cancelUpload()}
           >
-            <button
-              className="absolute right-5 top-5 text-white/70 hover:text-white"
-              onClick={() => setLightbox(null)}
-              aria-label="Close"
-            >
-              <X className="h-7 w-7" />
-            </button>
-            <div
-              className="max-h-[88vh] max-w-5xl"
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl border border-border bg-surface p-5"
               onClick={(e) => e.stopPropagation()}
             >
-              {lightbox.type === "video" ? (
-                <video
-                  src={lightbox.url}
-                  controls
-                  autoPlay
-                  className="max-h-[88vh] rounded-lg"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={lightbox.url}
-                  alt={lightbox.title || "media"}
-                  className="max-h-[88vh] rounded-lg object-contain"
-                />
-              )}
-              {lightbox.title && (
-                <p className="mt-3 text-center text-sm text-white/80">
-                  {lightbox.title}
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-bold text-text">Add to showcase</h3>
+                {!uploading && (
+                  <button
+                    onClick={cancelUpload}
+                    className="text-text-dim hover:text-text"
+                    aria-label="Cancel"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="mb-4 overflow-hidden rounded-xl border border-border bg-black">
+                {pending.isVideo ? (
+                  <video
+                    src={pending.previewUrl}
+                    controls
+                    className="max-h-56 w-full object-contain"
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={pending.previewUrl}
+                    alt="preview"
+                    className="max-h-56 w-full object-contain"
+                  />
+                )}
+              </div>
+
+              <label className="mb-1.5 block text-sm font-medium text-text-muted">
+                Title
+              </label>
+              <input
+                value={pending.title}
+                onChange={(e) =>
+                  setPending((p) => (p ? { ...p, title: e.target.value } : p))
+                }
+                maxLength={120}
+                disabled={uploading}
+                placeholder="Give it a title…"
+                className="mb-4 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text focus:border-primary focus:outline-none disabled:opacity-60"
+              />
+
+              {err && (
+                <p className="mb-3 rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+                  {err}
                 </p>
               )}
-            </div>
+
+              {uploading ? (
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm text-text-muted">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {uploadLabel}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-border">
+                    <div
+                      className={`h-full rounded-full bg-primary transition-all duration-200 ${
+                        phase !== "uploading" ? "animate-pulse" : ""
+                      }`}
+                      style={{
+                        width: phase === "uploading" ? `${progress}%` : "100%",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={cancelUpload}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text-muted hover:bg-surface"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmUpload}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Upload
+                  </button>
+                </div>
+              )}
+            </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox with likes + comments */}
+      <AnimatePresence>
+        {lightboxItem && (
+          <MediaLightbox
+            item={lightboxItem}
+            viewerId={viewerId}
+            isOwner={isOwner}
+            onClose={() => setLightboxId(null)}
+            onLikeChange={(id, liked, likeCount) =>
+              updateItem(id, { liked_by_me: liked, like_count: likeCount })
+            }
+            onCommentCountChange={(id, count) => updateItem(id, { comment_count: count })}
+            onTitleChange={(id, title) => updateItem(id, { title })}
+          />
         )}
       </AnimatePresence>
     </div>
