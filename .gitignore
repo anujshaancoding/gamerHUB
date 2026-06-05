@@ -68,3 +68,9 @@ scripts/setup-automation-personas.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code / autonomous-company internals — local only, never in the product repo
+.claude/agents/
+.claude/commands/
+.claude/company/
+.claude/skills/
