@@ -18,6 +18,21 @@ const PUBLIC_READ_TABLES = new Set([
   "clan_recruitment_posts",
 ]);
 
+// Public, non-sensitive columns for `profiles`. ANY read of `profiles` through
+// the proxy that is not the owner reading their own row is forced down to this
+// projection, so internal columns (is_admin, privacy_settings, …) can never be
+// enumerated by third parties or unauthenticated callers. Mirrors the allowlist
+// enforced by the dedicated /api/profile route. Owners needing their full row
+// should use /api/profile (or an own-id-scoped query, honored below).
+const PUBLIC_PROFILE_FIELDS = [
+  "id", "username", "display_name", "avatar_url", "banner_url", "bio",
+  "gaming_style", "region", "preferred_language", "status", "status_until",
+  "social_links", "favorite_games", "looking_for", "availability",
+  "custom_theme", "profile_effect", "profile_background", "profile_music_url",
+  "widget_layout", "profile_skin", "easter_egg_config", "hover_card_config",
+  "custom_css", "is_online", "last_seen", "created_at",
+];
+
 // Tables that allow read access for ANY authenticated user (social / non-private
 // data). DEFAULT-DENY: a table that is on neither PUBLIC_READ_TABLES nor this set
 // cannot be read through the proxy at all — sensitive data (auth tokens,
@@ -121,6 +136,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // `profiles`: force the public-field projection for every read except an
+    // owner reading their own row (filtered eq id === their user id). This
+    // closes the vector where `{table:"profiles", columns:"*"}` leaked
+    // is_admin / privacy_settings / etc. for every user. See PUBLIC_PROFILE_FIELDS.
+    let selectColumns = columns;
+    if (operation === "select" && table === "profiles") {
+      const ownerScoped =
+        !!user &&
+        Array.isArray(filters) &&
+        filters.some(
+          (f: { method: string; args: unknown[] }) =>
+            f.method === "eq" && f.args?.[0] === "id" && f.args?.[1] === user.id
+        );
+      if (!ownerScoped) {
+        selectColumns = PUBLIC_PROFILE_FIELDS.join(",");
+      }
+    }
+
     // For write operations, require authentication
     if (operation && operation !== "select" && !user) {
       return NextResponse.json(
@@ -198,7 +231,7 @@ export async function POST(request: NextRequest) {
 
     switch (operation) {
       case "select": {
-        query = db.from(table).select(columns || "*", options || {});
+        query = db.from(table).select(selectColumns || "*", options || {});
         break;
       }
       case "insert": {
