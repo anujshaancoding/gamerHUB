@@ -70,6 +70,20 @@ function GiveawayInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, authed, loading]);
 
+  // Returning from the Riot OAuth flow — the account is now linked, so claim
+  // the points and clean the URL so a refresh doesn't re-trigger this.
+  useEffect(() => {
+    if (params.get("success") === "riot_connected" && authed && !loading) {
+      fetch("/api/loyalty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "link_valorant" }),
+      }).then(() => load());
+      window.history.replaceState(null, "", "/giveaway");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, loading]);
+
   async function act(action: string) {
     setBusy(action);
     await fetch("/api/loyalty", {
@@ -79,6 +93,26 @@ function GiveawayInner() {
     });
     await load();
     setBusy(null);
+  }
+
+  // Linking is special: we never self-report it. Ask the server whether a real
+  // Riot connection exists — if so it awards the points; if not, kick off the
+  // actual Riot OAuth flow and return here to claim them.
+  async function linkValorant() {
+    setBusy("link_valorant");
+    const r = await fetch("/api/loyalty", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "link_valorant" }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (d.linked) {
+      await load();
+      setBusy(null);
+      return;
+    }
+    window.location.href =
+      "/api/integrations/riot/connect?returnTo=/giveaway";
   }
 
   const has = (a: string) => rec?.events.some((e) => e.action === a);
@@ -232,9 +266,17 @@ function GiveawayInner() {
                     size="sm"
                     variant="primary"
                     isLoading={busy === t.action}
-                    onClick={() => act(t.action)}
+                    onClick={() =>
+                      t.action === "link_valorant"
+                        ? linkValorant()
+                        : act(t.action)
+                    }
                   >
-                    {t.action === "share_rank_card" ? "Share" : "Do it"}
+                    {t.action === "link_valorant"
+                      ? "Link"
+                      : t.action === "share_rank_card"
+                        ? "Share"
+                        : "Do it"}
                   </Button>
                 )}
               </div>

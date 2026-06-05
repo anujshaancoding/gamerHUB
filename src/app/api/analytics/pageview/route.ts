@@ -5,7 +5,7 @@ import { getUser } from "@/lib/auth/get-user";
 
 export async function POST(request: NextRequest) {
   try {
-    const { path, referrer, sessionId } = await request.json();
+    const { path, referrer, sessionId, ref } = await request.json();
 
     if (!path || typeof path !== "string") {
       return new NextResponse(null, { status: 400 });
@@ -26,12 +26,17 @@ export async function POST(request: NextRequest) {
       // Not authenticated — that's fine
     }
 
+    // First-touch ?ref= referral attribution (bounded length, string only).
+    const refValue =
+      typeof ref === "string" && ref.length > 0 ? ref.slice(0, 128) : null;
+
     const admin = createAdminClient();
     await admin.from("page_views").insert({
       path,
       user_id: userId,
       session_id: sessionId || null,
       referrer: referrer || null,
+      ref: refValue,
     });
 
     return new NextResponse(null, { status: 204 });

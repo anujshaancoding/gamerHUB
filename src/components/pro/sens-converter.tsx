@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowRightLeft, Copy, Check, Info } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRightLeft, Copy, Check, Info, Share2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   PC_GAMES,
@@ -13,6 +13,10 @@ import {
   type PcGame,
   type MobileGame,
 } from "@/lib/pro/sens-conversion";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { useActionGate } from "@/components/auth/auth-gate-provider";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 
 type Family = "pc" | "mobile";
 
@@ -50,6 +54,21 @@ function PcConverter() {
   const [sens, setSens] = useState("0.40");
   const [dpi, setDpi] = useState("800");
 
+  // Hydrate from a shared result URL (?from=valorant&to=cs2&sens=0.4&dpi=800).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const f = sp.get("from");
+    const t = sp.get("to");
+    const s = sp.get("sens");
+    const d = sp.get("dpi");
+    if (f && PC_GAMES.some((g) => g.id === f)) setFromId(f as PcGame["id"]);
+    if (t && PC_GAMES.some((g) => g.id === t)) setToId(t as PcGame["id"]);
+    if (s) setSens(s);
+    if (d) setDpi(d);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const from = PC_GAMES.find((g) => g.id === fromId)!;
   const to = PC_GAMES.find((g) => g.id === toId)!;
 
@@ -65,6 +84,15 @@ function PcConverter() {
     setToId(fromId);
     setSens(convertedSens.toFixed(5).replace(/\.?0+$/, ""));
   };
+
+  const shareParams = useMemo(() => {
+    const sp = new URLSearchParams();
+    sp.set("from", fromId);
+    sp.set("to", toId);
+    sp.set("sens", sens);
+    if (dpiNum > 0) sp.set("dpi", dpi);
+    return sp.toString();
+  }, [fromId, toId, sens, dpi, dpiNum]);
 
   return (
     <div className="space-y-5">
@@ -105,6 +133,8 @@ function PcConverter() {
           </p>
         </div>
       )}
+
+      <SaveShareSetup shareParams={shareParams} />
     </div>
   );
 }
@@ -168,6 +198,74 @@ function MobileConverter() {
             <> {from.notes && <>{from.label}: {from.notes}. </>}{to.notes && <>{to.label}: {to.notes}.</>}</>
           )}
         </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Save & share setup (account gate on save) ───────────────────────────────
+function SaveShareSetup({ shareParams }: { shareParams: string }) {
+  const { user } = useAuth();
+  const { openAuthGate } = useActionGate();
+  const [copied, setCopied] = useState(false);
+
+  function shareUrl(): string {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/pro/sens-converter?${shareParams}`;
+  }
+
+  async function share() {
+    const url = shareUrl();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Valorant sens setup — ggLobby", url });
+      } catch {
+        /* cancelled */
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function saveSetup() {
+    if (!user) {
+      trackCtaClick(CTA_SOURCES.sens_setup_save);
+      openAuthGate({
+        reason: "Create a free profile to save your sens setup and publish it to the community board",
+        source: CTA_SOURCES.sens_setup_save,
+        redirectTo: "/tools/sens-share",
+      });
+      return;
+    }
+    window.location.href = "/tools/sens-share";
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold text-text">Save &amp; share your setup</p>
+      <p className="mt-1 text-xs text-text-muted">
+        Get a link to this exact conversion, or publish your full sens to the community board.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={share}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+        >
+          {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Share this setup"}
+        </button>
+        <button
+          onClick={saveSetup}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-light/40 px-3 py-2 text-xs font-medium text-text transition-colors hover:border-primary/40"
+        >
+          {user ? "Publish to the board" : "Save & publish — free account"}
+        </button>
       </div>
     </div>
   );

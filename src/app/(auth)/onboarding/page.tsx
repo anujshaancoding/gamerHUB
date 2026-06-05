@@ -15,6 +15,8 @@ import {
   X,
   AlertCircle,
   AtSign,
+  Gift,
+  Copy,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Textarea, Avatar, SelectWithOther } from "@/components/ui";
 import {
@@ -34,7 +36,7 @@ import { Logo } from "@/components/layout/logo";
 const steps = [
   { id: 1, title: "Basic Info", icon: User },
   { id: 2, title: "Gaming Preferences", icon: Gamepad2 },
-  { id: 3, title: "Link Your Games", icon: Globe },
+  { id: 3, title: "Link Your Games", icon: Globe, optional: true },
 ];
 
 export default function OnboardingPage() {
@@ -137,6 +139,42 @@ export default function OnboardingPage() {
   const [selectedGames, setSelectedGames] = useState<Record<string, OnboardingGameData>>({});
   const [expandedGame, setExpandedGame] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCopied, setReferralCopied] = useState(false);
+
+  // Fetch the user's referral code so we can surface the invite CTA at the
+  // moment of maximum excitement — right after signup, during onboarding.
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetch("/api/loyalty")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.record?.referralCode) {
+          setReferralCode(d.record.referralCode as string);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const referralUrl =
+    referralCode && typeof window !== "undefined"
+      ? `${window.location.origin}/giveaway?ref=${referralCode}`
+      : "";
+
+  const copyReferral = async () => {
+    if (!referralUrl) return;
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    } catch {
+      // clipboard may be unavailable; ignore
+    }
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -557,11 +595,17 @@ export default function OnboardingPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h2 className="text-lg font-semibold text-text">
-                Set Up Valorant
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-text">
+                  Set Up Valorant
+                </h2>
+                <span className="rounded-full bg-surface-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                  Optional
+                </span>
+              </div>
               <p className="text-text-muted text-sm">
-                Add your Valorant profile. You can add more details later.
+                This step is optional — add your Valorant profile now, or skip and
+                do it later from your profile settings.
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -784,6 +828,53 @@ export default function OnboardingPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Invite-a-teammate CTA — surface the (already built) referral
+                  mechanic at peak post-signup excitement. No backend change. */}
+              {referralCode && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                      <Gift className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-semibold text-text">
+                        Invite a teammate, both earn giveaway points
+                      </h4>
+                      <p className="mt-0.5 text-xs text-text-muted">
+                        Share your link — when a friend joins, you both get points
+                        toward the monthly Valorant drop.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="text"
+                          readOnly
+                          value={referralUrl}
+                          onFocus={(e) => e.currentTarget.select()}
+                          className="min-w-0 flex-1 truncate rounded-md border border-border bg-surface px-3 py-2 text-xs text-text-muted"
+                          aria-label="Your invite link"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={copyReferral}
+                          leftIcon={
+                            referralCopied ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )
+                          }
+                          className="shrink-0"
+                        >
+                          {referralCopied ? "Copied" : "Copy link"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

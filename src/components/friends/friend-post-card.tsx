@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { SharePopup } from "@/components/ui/share-popup";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { AuthGateModal } from "@/components/auth/auth-gate-modal";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { useAuth } from "@/lib/hooks/useAuth";
 import {
   useFriendPostComments,
@@ -104,6 +105,7 @@ export function FriendPostCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [gateReason, setGateReason] = useState<string>("Sign up to join the conversation");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
@@ -158,6 +160,7 @@ export function FriendPostCard({
 
   const handleLike = async () => {
     if (isGuest) {
+      setGateReason("Sign up to react to this post");
       setShowAuthGate(true);
       return;
     }
@@ -181,6 +184,7 @@ export function FriendPostCard({
 
   const handleComment = () => {
     if (isGuest) {
+      setGateReason("Sign up to comment on this post");
       setShowAuthGate(true);
       return;
     }
@@ -217,6 +221,7 @@ export function FriendPostCard({
 
   const handleShare = () => {
     if (isGuest) {
+      setGateReason("Sign up to share this post");
       setShowAuthGate(true);
       return;
     }
@@ -225,6 +230,7 @@ export function FriendPostCard({
 
   const handleBookmark = async () => {
     if (isGuest) {
+      setGateReason("Sign up to save this post");
       setShowAuthGate(true);
       return;
     }
@@ -244,6 +250,7 @@ export function FriendPostCard({
   const handleProfileClick = (e: React.MouseEvent) => {
     if (isGuest) {
       e.preventDefault();
+      setGateReason("Sign up to view gamer profiles");
       setShowAuthGate(true);
     }
   };
@@ -523,7 +530,9 @@ export function FriendPostCard({
       <AuthGateModal
         isOpen={showAuthGate}
         onClose={() => setShowAuthGate(false)}
-        redirectTo={`/profile/${post.user?.username}`}
+        reason={gateReason}
+        source={CTA_SOURCES.community_react}
+        redirectTo="/community"
       />
 
       <ConfirmDeleteDialog

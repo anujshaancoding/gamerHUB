@@ -35,6 +35,47 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-05T19:30:00",
+    version: "1.37.0",
+    type: "feature",
+    title: "Looking For Group now actually finds you a teammate",
+    description:
+      "The LFG loop is live end-to-end: post creators can see who applied and accept them in one tap, and an accepted match instantly opens a real DM in your inbox so you can say hi.",
+    highlights: [
+      "Post owners can now expand 'View applicants' and Accept or Decline each applicant right from the card",
+      "Accepting a teammate auto-connects you as squadmates and drops a fresh DM straight into your main inbox (not the Void), pre-seeded with a friendly greeting",
+      "You now get a notification the moment someone applies to your post, and applicants get notified the instant they're accepted with a one-tap link into the conversation",
+    ],
+  },
+  {
+    date: "2026-06-05T18:00:00",
+    version: "1.36.0",
+    type: "feature",
+    title: "Free Valorant tools you can share: rank card, rank %, agent picks & sens",
+    description:
+      "A batch of free, shareable Valorant tools built for India players. Everything works without an account — only saving or publishing to your profile asks you to sign up.",
+    highlights: [
+      "New Valorant Rank Card maker (/rank-card) — pick your rank and download a clean PNG for Instagram Stories, Discord and WhatsApp, no account needed",
+      "Rank percentile tool now has an India layer — see where you stand in the India 2026 Valorant rank distribution, plus a shareable result",
+      "New 'Best Agents for Your Rank' guide (/agents/rank-guide) — pick your rank and role, get agent picks with a shareable link and a 'find teammates' CTA",
+      "Sensitivity converter now lets you save & share your exact setup with one link (CS2 → Valorant and more)",
+    ],
+  },
+  {
+    date: "2026-06-01T15:00:00",
+    version: "1.35.0",
+    type: "improvement",
+    title: "Giveaway: 'Link your Valorant account' now really links it",
+    description:
+      "The giveaway task now starts the real Riot sign-in flow instead of just ticking a box. The 25 points are only awarded once your Valorant account is genuinely connected.",
+    highlights: [
+      "Clicking 'Link' on the giveaway page launches the official Riot account connection right there",
+      "Points are verified server-side against a real connection — no more free claims",
+      "Already linked via Settings → Connections? Clicking 'Link' grants your points instantly",
+      "After connecting, you're brought straight back to the giveaway with points applied",
+    ],
+  },
+  {
     date: "2026-05-31T17:00:00",
     version: "1.34.0",
     type: "feature",

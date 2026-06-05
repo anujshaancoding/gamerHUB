@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
         <h1 className="text-3xl font-bold text-text mb-2">Terms of Service</h1>
-        <p className="text-text-muted mb-8">Last updated: February 20, 2026</p>
+        <p className="text-text-muted mb-8">Last updated: June 5, 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-8 text-text-secondary">
           <section>
@@ -28,8 +28,10 @@ export default function TermsOfServicePage() {
             <p>
               You must be at least <strong>13 years of age</strong> to create an account and use ggLobby.
               By registering, you represent and warrant that you meet this age requirement. If you are
-              between 13 and 18 years old (or the age of majority in your jurisdiction), you must have
-              your parent or legal guardian&apos;s consent to use the Service.
+              between 13 and 18 years old (or the age of majority in your jurisdiction), you may only
+              use the Service with the consent and involvement of your parent or legal guardian, and
+              by registering you represent that you have obtained that consent. ggLobby does not
+              independently verify age or parental consent.
             </p>
             <p>
               We reserve the right to terminate accounts that we reasonably believe belong to users
@@ -115,7 +117,7 @@ export default function TermsOfServicePage() {
             </p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Subscriptions are billed monthly or annually through Stripe.</li>
-              <li>You can cancel your subscription at any time from your Settings page.</li>
+              <li>You can cancel your subscription at any time by contacting us at <a href="mailto:support@gglobby.in" className="text-primary hover:underline">support@gglobby.in</a>.</li>
               <li>Upon cancellation, you retain access until the end of your current billing period.</li>
               <li>Refunds are handled on a case-by-case basis. Contact us within 7 days of purchase.</li>
               <li>We reserve the right to change pricing with 30 days&apos; notice to active subscribers.</li>
@@ -192,10 +194,11 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-xl font-semibold text-text">13. Termination</h2>
             <p>
-              You may delete your account at any time from your Settings page. We may suspend or
-              terminate your account if you violate these Terms. Upon termination, your right to
-              use the Service ceases immediately, and we may delete your data in accordance with
-              our Privacy Policy.
+              You may request deletion of your account at any time by emailing{" "}
+              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>{" "}
+              from your account email address. We may suspend or terminate your account if you
+              violate these Terms. Upon termination, your right to use the Service ceases
+              immediately, and we may delete your data in accordance with our Privacy Policy.
             </p>
           </section>
 

@@ -12,8 +12,8 @@ describe('Button Component', () => {
     it('renders with default primary variant', () => {
       render(<Button>Primary Button</Button>);
       const button = screen.getByRole('button');
-      // Default variant uses bg-purple-600 (the actual primary color)
-      expect(button).toHaveClass('bg-purple-600');
+      // Default variant uses the theme token bg-primary (see buttonVariants).
+      expect(button).toHaveClass('bg-primary');
     });
 
     it('renders with different variants', () => {

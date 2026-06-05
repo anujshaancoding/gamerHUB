@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -25,6 +26,8 @@ import { toast } from "sonner";
 import { formatRelativeTime } from "@/lib/utils";
 import { PremiumBadge } from "@/components/premium";
 import { usePresence } from "@/lib/presence/PresenceProvider";
+import { useActionGate } from "@/components/auth/auth-gate-provider";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 import type { Profile, UserGame, Game } from "@/types/database";
 
 interface GamerWithGames extends Profile {
@@ -37,7 +40,9 @@ interface GamerCardProps {
 
 export function GamerCard({ gamer }: GamerCardProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const { getUserStatus } = usePresence();
+  const { openAuthGate } = useActionGate();
   const db = createClient();
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,11 +52,24 @@ export function GamerCard({ gamer }: GamerCardProps) {
     user?.id !== gamer.id ? gamer.id : null
   );
 
+  // Just-in-time signup gate for high-intent guest actions.
+  const gateGuestAction = (reason: string): boolean => {
+    if (user) return false;
+    openAuthGate({
+      reason,
+      source: CTA_SOURCES.add_friend,
+      redirectTo: "/find-gamers",
+    });
+    return true;
+  };
+
   const handleMessage = () => {
-    window.location.href = `/messages?user=${gamer.id}`;
+    if (gateGuestAction(`Sign up to message ${gamer.display_name || gamer.username}`)) return;
+    router.push(`/messages?user=${gamer.id}`);
   };
 
   const handleAddFriend = async () => {
+    if (gateGuestAction("Sign up to add this gamer as a friend")) return;
     if (!user) return;
     setLoading(true);
     try {
@@ -76,6 +94,7 @@ export function GamerCard({ gamer }: GamerCardProps) {
   };
 
   const handleFollow = async () => {
+    if (gateGuestAction(`Sign up to follow ${gamer.display_name || gamer.username}`)) return;
     if (!user) return;
     setLoading(true);
     try {
@@ -106,7 +125,23 @@ export function GamerCard({ gamer }: GamerCardProps) {
   };
 
   const getActionButton = () => {
-    if (!user || user.id === gamer.id) return null;
+    // Own card: no relationship actions.
+    if (user && user.id === gamer.id) return null;
+
+    // Guests see an Add-friend affordance that opens the signup gate.
+    if (!user) {
+      return (
+        <Button
+          variant="primary"
+          size="icon"
+          onClick={handleAddFriend}
+          title="Add friend"
+          aria-label={`Add ${gamer.display_name || gamer.username} as a friend`}
+        >
+          <UserPlus className="h-4 w-4" />
+        </Button>
+      );
+    }
 
     // Already friends
     if (relationship?.is_friend) {

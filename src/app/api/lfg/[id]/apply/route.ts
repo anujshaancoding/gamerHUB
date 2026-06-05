@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
+import { emitToUser } from "@/lib/realtime/socket-server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -108,6 +110,37 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { error: "Failed to submit application" },
         { status: 500 }
       );
+    }
+
+    // ── Fix 3: notify the post owner that someone applied ──
+    // Fire-and-forget; never fail the apply on notification error.
+    try {
+      const admin = createAdminClient();
+      const applicantName =
+        (application as { applicant?: { display_name?: string | null; username?: string | null } } | null)
+          ?.applicant?.display_name ||
+        (application as { applicant?: { display_name?: string | null; username?: string | null } } | null)
+          ?.applicant?.username ||
+        "Someone";
+      const actionUrl = `/find-gamers?tab=lfg&post=${postId}`;
+      await admin.from("notifications").insert({
+        user_id: post.creator_id,
+        type: "lfg_application",
+        title: `${applicantName} applied to your LFG post`,
+        icon: "🎮",
+        action_url: actionUrl,
+        action_label: "View applicant",
+        metadata: { post_id: postId, applicant_id: user.id },
+        is_read: false,
+        is_archived: false,
+      });
+      emitToUser(post.creator_id, "notification:new", {
+        type: "lfg_application",
+        title: `${applicantName} applied to your LFG post`,
+        action_url: actionUrl,
+      });
+    } catch (notifError) {
+      console.error("Failed to create LFG application notification:", notifError);
     }
 
     return NextResponse.json({ application }, { status: 201 });

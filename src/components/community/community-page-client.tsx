@@ -772,7 +772,7 @@ export function CommunityPageClient({
                       ? "Try a different search term."
                       : user
                         ? "Be the first to share something with the community!"
-                        : "Sign up to see posts from the community and share your own!"}
+                        : "No posts to show yet. Sign up to share the first one with the community!"}
                   </p>
                   {friendSearch && (
                     <Button

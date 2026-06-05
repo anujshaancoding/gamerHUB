@@ -89,9 +89,10 @@ describe('ClanCard Component', () => {
       expect(screen.getByText('NA')).toBeInTheDocument();
     });
 
-    it('renders language when provided', () => {
+    it('renders language label when provided', () => {
+      // Component renders getLanguageLabel('en') => "English", not the raw code.
       render(<ClanCard clan={mockClan as any} />);
-      expect(screen.getByText('EN')).toBeInTheDocument();
+      expect(screen.getByText('English')).toBeInTheDocument();
     });
 
     it('renders primary game badge', () => {

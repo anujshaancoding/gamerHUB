@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     const storedState = cookieStore.get("riot_oauth_state")?.value;
     const userId = cookieStore.get("riot_oauth_user")?.value;
+    // Where to send the user after a successful link (set by the connect route).
+    const rawReturn = cookieStore.get("riot_oauth_return")?.value;
+    const returnTo =
+      rawReturn && rawReturn.startsWith("/") && !rawReturn.startsWith("//")
+        ? rawReturn
+        : "/settings/connections";
 
     if (!storedState || storedState !== state) {
       return NextResponse.redirect(
@@ -86,12 +92,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Clear OAuth cookies
+    // Clear OAuth cookies and send the user back where they started.
+    const separator = returnTo.includes("?") ? "&" : "?";
     const response = NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/settings/connections?success=riot_connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}${returnTo}${separator}success=riot_connected`
     );
     response.cookies.delete("riot_oauth_state");
     response.cookies.delete("riot_oauth_user");
+    response.cookies.delete("riot_oauth_return");
 
     return response;
   } catch (error) {

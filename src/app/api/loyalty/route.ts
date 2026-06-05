@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth/get-user";
+import { createClient } from "@/lib/db/client";
 import {
   syncUser,
   awardAction,
@@ -53,7 +54,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ applied: ok, record });
   }
 
-  if (action === "link_valorant" || action === "share_rank_card") {
+  if (action === "link_valorant") {
+    // Only award once a REAL Riot account is actually linked. We never trust
+    // the client here — we check for an active game_connections row server-side.
+    const db = createClient();
+    const { data: conn } = await db
+      .from("game_connections")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("provider", "riot")
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!conn) {
+      // Not linked yet — tell the client to start the Riot OAuth flow.
+      return NextResponse.json({
+        awarded: false,
+        linked: false,
+        record: await getRecord(user.id),
+      });
+    }
+
+    const { awarded, record } = await awardAction(user.id, action);
+    return NextResponse.json({ awarded, linked: true, record });
+  }
+
+  if (action === "share_rank_card") {
     const { awarded, record } = await awardAction(user.id, action);
     return NextResponse.json({ awarded, record });
   }

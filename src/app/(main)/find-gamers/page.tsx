@@ -19,8 +19,14 @@ import {
   Gamepad2,
   MessageSquare,
   BarChart3,
+  Check,
+  UserX,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Star,
 } from "lucide-react";
-import { Button, Input, LegacySelect as Select, Card, Badge, Modal } from "@/components/ui";
+import { Button, Input, LegacySelect as Select, Card, Badge, Modal, Avatar } from "@/components/ui";
 import { GamerCard } from "@/components/gamers/gamer-card";
 import { OnlineGamersSection } from "@/components/gamers/online-gamers-section";
 import { PlayerLookupTab } from "@/components/gamers/player-lookup-tab";
@@ -31,16 +37,20 @@ import { useFriends } from "@/lib/hooks/useFriends";
 import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import {
   useLFGPosts,
+  useLFGPost,
   useCreateLFGPost,
   useDeleteLFGPost,
   useApplyToLFG,
   useMyLFGPosts,
+  useRespondToApplication,
 } from "@/lib/hooks/useLFG";
+import { useActionGate } from "@/components/auth/auth-gate-provider";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { DURATION_OPTIONS } from "@/types/lfg";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import type { Profile, UserGame, Game } from "@/types/database";
-import type { LFGPost, LFGFilters, CreateLFGPostInput } from "@/types/lfg";
+import type { LFGPost, LFGApplication, LFGFilters, CreateLFGPostInput } from "@/types/lfg";
 
 interface GamerWithGames extends Profile {
   user_games: (UserGame & { game: Game })[];
@@ -57,19 +67,147 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "player-lookup", label: "Player Lookup", icon: BarChart3 },
 ];
 
+// ─── Applicants Panel (owner-only) ──────────────────────────
+function ApplicantsPanel({ postId, isFull }: { postId: string; isFull: boolean }) {
+  const { post, loading } = useLFGPost(postId);
+  const { respond, isResponding } = useRespondToApplication();
+
+  // The GET /api/lfg/[id] join returns applicants under `lfg_applications`.
+  const applications = ((post as unknown as {
+    lfg_applications?: LFGApplication[];
+  } | undefined)?.lfg_applications ??
+    post?.applications ??
+    []) as LFGApplication[];
+
+  const pending = applications.filter((a) => a.status === "pending");
+  const accepted = applications.filter((a) => a.status === "accepted");
+
+  const handleRespond = async (
+    applicationId: string,
+    status: "accepted" | "declined"
+  ) => {
+    try {
+      // On accept, the server auto-creates the squadmate follow + match DM and
+      // notifies the applicant with a deep-link to it. The hook invalidates the
+      // post query so this panel refreshes the row in place.
+      await respond({ postId, applicationId, status });
+    } catch {
+      // Error surfaced by hook; row stays put.
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (applications.length === 0) {
+    return (
+      <p className="text-sm text-text-muted py-3 text-center">
+        No applicants yet.
+      </p>
+    );
+  }
+
+  const renderRow = (app: LFGApplication, canAct: boolean) => (
+    <div
+      key={app.id}
+      className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border bg-surface-light/50 p-3"
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Avatar
+          src={app.applicant?.avatar_url}
+          alt={app.applicant?.display_name || app.applicant?.username || "Applicant"}
+          size="sm"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-text truncate">
+              {app.applicant?.display_name || app.applicant?.username || "Unknown"}
+            </span>
+            {app.applicant_role && (
+              <Badge variant="secondary" size="sm">
+                {app.applicant_role}
+              </Badge>
+            )}
+            {typeof app.applicant_rating === "number" && (
+              <span className="text-xs text-text-muted flex items-center gap-0.5">
+                <Star className="h-3 w-3 text-warning" />
+                {app.applicant_rating}
+              </span>
+            )}
+            {app.status === "accepted" && (
+              <Badge variant="success" size="sm">
+                Accepted
+              </Badge>
+            )}
+          </div>
+          {app.message && (
+            <p className="text-xs text-text-secondary mt-0.5 line-clamp-2">
+              {app.message}
+            </p>
+          )}
+        </div>
+      </div>
+      {canAct && (
+        <div className="flex gap-2 shrink-0 self-end sm:self-auto">
+          <Button
+            variant="primary"
+            size="sm"
+            className="min-h-[44px] sm:min-h-0 flex-1 sm:flex-none"
+            disabled={isResponding || isFull}
+            onClick={() => handleRespond(app.id, "accepted")}
+            leftIcon={<Check className="h-4 w-4" />}
+          >
+            Accept
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-[44px] sm:min-h-0 text-red-500 hover:text-red-600"
+            disabled={isResponding}
+            onClick={() => handleRespond(app.id, "declined")}
+            leftIcon={<UserX className="h-4 w-4" />}
+          >
+            Decline
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-2 pt-2">
+      {pending.map((app) => renderRow(app, !isFull))}
+      {accepted.map((app) => renderRow(app, false))}
+      {isFull && pending.length > 0 && (
+        <p className="text-xs text-text-muted text-center pt-1">
+          This post is full — no more slots available.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── LFG Post Card ──────────────────────────────────────────
 function LFGPostCard({
   post,
   currentUserId,
+  isGuest = false,
   onApply,
   onDelete,
 }: {
   post: LFGPost;
   currentUserId?: string;
+  isGuest?: boolean;
   onApply: (postId: string) => void;
   onDelete: (postId: string) => void;
 }) {
   const isOwner = currentUserId === post.creator_id;
+  const [showApplicants, setShowApplicants] = useState(false);
   const isFull = post.current_players >= post.max_players;
   const expiresAt = new Date(post.expires_at);
   const isExpired = expiresAt < new Date();
@@ -171,18 +309,39 @@ function LFGPostCard({
           {/* Actions */}
           <div className="flex gap-2">
             {isOwner ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(post.id)}
-                className="text-red-500 hover:text-red-600"
-              >
-                Cancel Post
-              </Button>
+              <>
+                {(post.applications_count ?? 0) > 0 && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-[44px] sm:min-h-0"
+                    onClick={() => setShowApplicants((v) => !v)}
+                    leftIcon={
+                      showApplicants ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )
+                    }
+                  >
+                    {showApplicants
+                      ? "Hide"
+                      : `View applicants (${post.applications_count})`}
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(post.id)}
+                  className="text-red-500 hover:text-red-600 min-h-[44px] sm:min-h-0"
+                >
+                  Cancel Post
+                </Button>
+              </>
             ) : (
               !isFull &&
               !isExpired &&
-              currentUserId && (
+              (currentUserId || isGuest) && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -195,6 +354,13 @@ function LFGPostCard({
             )}
           </div>
         </div>
+
+        {/* Applicants panel (owner only) */}
+        {isOwner && showApplicants && (
+          <div className="border-t border-border pt-2">
+            <ApplicantsPanel postId={post.id} isFull={isFull} />
+          </div>
+        )}
 
         {/* Looking for roles */}
         {post.looking_for_roles && post.looking_for_roles.length > 0 && (
@@ -785,6 +951,7 @@ function FindFriendsTab() {
 // ─── LFG Tab Content ─────────────────────────────────────────
 function LFGTab() {
   const { user } = useAuth();
+  const { openAuthGate } = useActionGate();
 
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1004,7 +1171,18 @@ function LFGTab() {
                     <LFGPostCard
                       post={post}
                       currentUserId={user?.id}
-                      onApply={(id) => setApplyPostId(id)}
+                      isGuest={!user}
+                      onApply={(id) => {
+                        if (!user) {
+                          openAuthGate({
+                            reason: "Sign up to apply to this lobby",
+                            source: CTA_SOURCES.lfg_apply,
+                            redirectTo: "/find-gamers",
+                          });
+                          return;
+                        }
+                        setApplyPostId(id);
+                      }}
                       onDelete={handleDelete}
                     />
                   </motion.div>
@@ -1051,7 +1229,18 @@ function LFGTab() {
                   key={post.id}
                   post={post}
                   currentUserId={user?.id}
-                  onApply={(id) => setApplyPostId(id)}
+                  isGuest={!user}
+                  onApply={(id) => {
+                    if (!user) {
+                      openAuthGate({
+                        reason: "Sign up to apply to this lobby",
+                        source: CTA_SOURCES.lfg_apply,
+                        redirectTo: "/find-gamers",
+                      });
+                      return;
+                    }
+                    setApplyPostId(id);
+                  }}
                   onDelete={handleDelete}
                 />
               ))}

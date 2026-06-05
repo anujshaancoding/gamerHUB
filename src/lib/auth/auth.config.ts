@@ -14,6 +14,8 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
+import { trackEvent } from "@/lib/analytics/track-event";
+import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -124,6 +126,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             // Override the user.id so JWT gets the correct ID
             user.id = finalUserId;
+
+            // Funnel event: signup (google). Fire-and-forget — errors must be
+            // fully swallowed (we are inside NextAuth's signIn callback).
+            // TODO(attribution): session_id + ref are lost across the OAuth
+            // redirect (sessionStorage is destroyed). To recover them, write a
+            // short-lived (~30 min) cookie in auth-form.tsx before signInWithOAuth
+            // and read it from cookies() here. Accepted MVP gap: google signups
+            // carry null session_id and are excluded from Metric 3.
+            void trackEvent(finalUserId, FUNNEL_EVENTS.signup, SIGNUP_SOURCES.google, {
+              session_id: null,
+              ref: null,
+            });
           } else {
             // Existing user — update avatar/name if needed
             user.id = existing[0].id as string;

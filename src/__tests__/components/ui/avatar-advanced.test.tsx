@@ -2,7 +2,9 @@
  * Avatar Component Advanced Tests
  *
  * Tests rendering, fallback behavior, frame styles, status indicators,
- * and image error handling.
+ * and image error handling — asserting the CURRENT component behavior:
+ *  - status colors are hardcoded inline hex (theme-independent)
+ *  - with no src and no `fallback` prop, the default avatar SVG renders
  */
 
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -10,11 +12,12 @@ import { Avatar } from '@/components/ui/avatar';
 
 // Mock next/image
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt, onError, fill, ...props }: {
+  return function MockImage({ src, alt, onError, fill, unoptimized, ...props }: {
     src: string;
     alt: string;
     onError?: () => void;
     fill?: boolean;
+    unoptimized?: boolean;
     className?: string;
   }) {
     return (
@@ -30,27 +33,54 @@ jest.mock('next/image', () => {
   };
 });
 
+jest.mock('@/lib/storage', () => ({
+  normalizeImageUrl: (src: string | null) => src ?? null,
+}));
+
+const DEFAULT_SVG = '/images/defaults/avatar.svg';
+// jsdom serializes inline hex colors to rgb(); match on computed backgroundColor.
+const STATUS_RGB = {
+  online: 'rgb(0, 255, 136)', // #00ff88
+  away: 'rgb(255, 170, 0)',   // #ffaa00
+  dnd: 'rgb(255, 68, 68)',    // #ff4444
+  offline: 'rgb(90, 90, 106)',// #5a5a6a
+};
+
+function getStatusDot(container: HTMLElement, rgb: string) {
+  return Array.from(container.querySelectorAll('span')).find(
+    (el) => (el as HTMLElement).style.backgroundColor === rgb
+  );
+}
+
+/** The user-provided src image (i.e. not the default avatar SVG). */
+function getUserImage() {
+  return screen
+    .queryAllByTestId('avatar-image')
+    .find((img) => img.getAttribute('src') !== DEFAULT_SVG);
+}
+
 describe('Avatar Component', () => {
   describe('Rendering', () => {
     it('renders with image when src is provided', () => {
       render(<Avatar src="https://example.com/avatar.jpg" alt="User" />);
-      expect(screen.getByTestId('avatar-image')).toBeInTheDocument();
+      expect(getUserImage()).toBeTruthy();
     });
 
-    it('renders fallback when no src is provided', () => {
+    it('renders default avatar SVG when no src is provided', () => {
       render(<Avatar alt="John Doe" />);
-      // Should show initials as fallback
-      expect(screen.queryByTestId('avatar-image')).not.toBeInTheDocument();
+      expect(getUserImage()).toBeUndefined();
+      expect(screen.getByTestId('avatar-image')).toHaveAttribute('src', DEFAULT_SVG);
     });
 
-    it('renders fallback when src is null', () => {
+    it('renders default avatar SVG when src is null', () => {
       render(<Avatar src={null} alt="Test User" />);
-      expect(screen.queryByTestId('avatar-image')).not.toBeInTheDocument();
+      expect(getUserImage()).toBeUndefined();
+      expect(screen.getByTestId('avatar-image')).toHaveAttribute('src', DEFAULT_SVG);
     });
 
     it('renders with custom alt text', () => {
       render(<Avatar src="https://example.com/avatar.jpg" alt="Custom Alt" />);
-      expect(screen.getByTestId('avatar-image')).toHaveAttribute('alt', 'Custom Alt');
+      expect(getUserImage()).toHaveAttribute('alt', 'Custom Alt');
     });
   });
 
@@ -70,14 +100,15 @@ describe('Avatar Component', () => {
   });
 
   describe('Image Error Handling', () => {
-    it('shows fallback on image load error', () => {
+    it('falls back to default avatar SVG on image load error (no fallback prop)', () => {
       render(<Avatar src="https://example.com/broken.jpg" alt="Test User" />);
 
-      const img = screen.getByTestId('avatar-image');
+      const img = getUserImage()!;
       fireEvent.error(img);
 
-      // After error, image should be replaced with fallback text
-      expect(screen.queryByTestId('avatar-image')).not.toBeInTheDocument();
+      // After error, the user image is gone and the default SVG is shown.
+      expect(getUserImage()).toBeUndefined();
+      expect(screen.getByTestId('avatar-image')).toHaveAttribute('src', DEFAULT_SVG);
     });
   });
 
@@ -86,48 +117,43 @@ describe('Avatar Component', () => {
       const { container } = render(
         <Avatar alt="Test" showStatus status="online" />
       );
-      const statusDot = container.querySelector('.bg-success');
-      expect(statusDot).toBeInTheDocument();
+      expect(getStatusDot(container, STATUS_RGB.online)).toBeTruthy();
     });
 
     it('shows offline status', () => {
       const { container } = render(
         <Avatar alt="Test" showStatus status="offline" />
       );
-      const statusDot = container.querySelector('.bg-text-dim');
-      expect(statusDot).toBeInTheDocument();
+      expect(getStatusDot(container, STATUS_RGB.offline)).toBeTruthy();
     });
 
     it('shows away status', () => {
       const { container } = render(
         <Avatar alt="Test" showStatus status="away" />
       );
-      const statusDot = container.querySelector('.bg-warning');
-      expect(statusDot).toBeInTheDocument();
+      expect(getStatusDot(container, STATUS_RGB.away)).toBeTruthy();
     });
 
     it('shows dnd status', () => {
       const { container } = render(
         <Avatar alt="Test" showStatus status="dnd" />
       );
-      const statusDot = container.querySelector('.bg-error');
-      expect(statusDot).toBeInTheDocument();
+      expect(getStatusDot(container, STATUS_RGB.dnd)).toBeTruthy();
     });
 
     it('does not show status when showStatus is false', () => {
       const { container } = render(
         <Avatar alt="Test" status="online" showStatus={false} />
       );
-      const statusDot = container.querySelector('.bg-success');
-      expect(statusDot).not.toBeInTheDocument();
+      expect(getStatusDot(container, STATUS_RGB.online)).toBeFalsy();
     });
 
     it('does not show status when status is undefined', () => {
-      const { container } = render(
-        <Avatar alt="Test" showStatus />
+      const { container } = render(<Avatar alt="Test" showStatus />);
+      const anyStatus = Object.values(STATUS_RGB).some((hex) =>
+        getStatusDot(container, hex)
       );
-      const statusDots = container.querySelectorAll('.bg-success, .bg-text-dim, .bg-warning, .bg-error');
-      expect(statusDots).toHaveLength(0);
+      expect(anyStatus).toBe(false);
     });
   });
 
@@ -166,7 +192,7 @@ describe('Avatar Component', () => {
   describe('Glow Effect', () => {
     it('applies glow color when provided', () => {
       const { container } = render(<Avatar alt="Test" glowColor="#ff00ff" />);
-      const inner = container.querySelector('[style]');
+      const inner = container.querySelector('.overflow-hidden');
       expect(inner).toBeInTheDocument();
       expect(inner?.getAttribute('style')).toContain('box-shadow');
     });
@@ -179,11 +205,9 @@ describe('Avatar Component', () => {
   });
 
   describe('Fallback Text', () => {
-    it('generates initials from alt text', () => {
+    it('renders default SVG (not initials) from alt text when no fallback prop', () => {
       render(<Avatar alt="John Doe" />);
-      // The generateAvatarFallback utility should produce initials
-      const fallback = screen.queryByTestId('avatar-image');
-      expect(fallback).not.toBeInTheDocument();
+      expect(screen.getByTestId('avatar-image')).toHaveAttribute('src', DEFAULT_SVG);
     });
 
     it('uses custom fallback when provided', () => {
@@ -193,10 +217,9 @@ describe('Avatar Component', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have correct role and alt text for image', () => {
+    it('should have correct alt text for the user image', () => {
       render(<Avatar src="https://example.com/avatar.jpg" alt="User Avatar" />);
-      const img = screen.getByTestId('avatar-image');
-      expect(img).toHaveAttribute('alt', 'User Avatar');
+      expect(getUserImage()).toHaveAttribute('alt', 'User Avatar');
     });
 
     it('should be keyboard focusable when clickable', () => {

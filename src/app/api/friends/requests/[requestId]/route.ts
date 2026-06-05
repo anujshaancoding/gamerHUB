@@ -8,6 +8,8 @@ import {
 } from "@/lib/db/rpc-types";
 import { emitToUser } from "@/lib/realtime/socket-server";
 import { logger } from "@/lib/logger";
+import { trackEvent } from "@/lib/analytics/track-event";
+import { FUNNEL_EVENTS, ACTIVATION_SOURCES } from "@/lib/analytics/sources";
 
 interface RouteParams {
   params: Promise<{ requestId: string }>;
@@ -105,6 +107,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         emitToUser(requestData.sender_id, "friend-request:accepted", {
           requestId,
           acceptedBy: user.id,
+        });
+
+        // Activation event ("found a teammate") — for BOTH users.
+        // Fire-and-forget; analytics must never break the request.
+        // For the accepter (recipient of the request):
+        void trackEvent(user.id, FUNNEL_EVENTS.activation, ACTIVATION_SOURCES.friend_accept, {
+          with_user_id: requestData.sender_id,
+          request_id: requestId,
+        });
+        // For the sender (their request was accepted):
+        void trackEvent(requestData.sender_id, FUNNEL_EVENTS.activation, ACTIVATION_SOURCES.friend_accept, {
+          with_user_id: user.id,
+          request_id: requestId,
         });
       }
 

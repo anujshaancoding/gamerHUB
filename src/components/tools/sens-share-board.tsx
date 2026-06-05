@@ -6,6 +6,9 @@ import { Plus, ArrowUp, ArrowDown, Copy, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, Badge, Button, Modal } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useActionGate } from "@/components/auth/auth-gate-provider";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { SENS_GAMES, SENS_KEYS, type SensShare, type SensShareGame } from "@/lib/tools/sens-share-types";
 
 type Sort = "top" | "recent";
@@ -16,6 +19,7 @@ export function SensShareBoard() {
   const [shares, setShares] = useState<SensShare[] | null>(null);
   const [openCreate, setOpenCreate] = useState(false);
   const { user } = useAuth();
+  const { openAuthGate } = useActionGate();
 
   const load = useCallback(async () => {
     const q = new URLSearchParams();
@@ -60,7 +64,13 @@ export function SensShareBoard() {
             size="sm"
             onClick={() => {
               if (!user) {
-                window.location.href = "/login";
+                trackCtaClick(CTA_SOURCES.sens_setup_save);
+                openAuthGate({
+                  reason:
+                    "Create a free profile to publish your sens setup and share it with teammates",
+                  source: CTA_SOURCES.sens_setup_save,
+                  redirectTo: "/tools/sens-share",
+                });
                 return;
               }
               setOpenCreate(true);

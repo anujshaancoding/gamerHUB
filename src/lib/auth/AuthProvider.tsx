@@ -159,11 +159,22 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const signUpWithEmail = useCallback(
     async (email: string, password: string, username: string) => {
       try {
+        // Attribution: thread visitor session id + first-touch ?ref= into the
+        // signup so funnel_events can join visitor pageviews to completions.
+        let sessionId: string | null = null;
+        let ref: string | null = null;
+        try {
+          sessionId = window.sessionStorage.getItem("pv_sid");
+          ref = window.sessionStorage.getItem("gg_ref");
+        } catch {
+          // sessionStorage may be unavailable; proceed without attribution.
+        }
+
         // Create account via our registration API
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, username }),
+          body: JSON.stringify({ email, password, username, sessionId, ref }),
         });
 
         const data = await res.json();

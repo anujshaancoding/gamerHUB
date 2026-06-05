@@ -12,6 +12,8 @@ import { logger } from "@/lib/logger";
 import { validateBody } from "@/lib/security/validate-body";
 import { issueEmailVerificationToken } from "@/lib/auth/email-verification";
 import { sendEmail, EmailNotConfiguredError } from "@/lib/email/send-email";
+import { trackEvent } from "@/lib/analytics/track-event";
+import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
 
 // 10 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
@@ -31,6 +33,11 @@ const RegisterSchema = z.object({
     .min(3, "username must be at least 3 characters")
     .max(24, "username too long")
     .regex(/^[a-zA-Z0-9_]+$/, "username may only contain letters, numbers and underscores"),
+  // Attribution fields (optional) — captured by the client for funnel analytics.
+  // sessionId ties this signup to the visitor's pageview session (Metric 3).
+  // ref carries first-touch ?ref= share-link attribution.
+  sessionId: z.string().max(128).optional(),
+  ref: z.string().max(128).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -47,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = await validateBody(request, RegisterSchema);
     if (!parsed.ok) return parsed.response;
-    const { email, password, username } = parsed.data;
+    const { email, password, username, sessionId, ref } = parsed.data;
 
     const sql = getPool();
 
@@ -90,6 +97,16 @@ export async function POST(request: NextRequest) {
         INSERT INTO profiles (id, username, display_name)
         VALUES (${userId}, ${username}, ${username})
       `;
+    });
+
+    // Funnel event: signup (email). Fire-and-forget — never block/break the
+    // request. session_id closes visitor→signup attribution (Metric 3); ref is
+    // first-touch share-link attribution.
+    void trackEvent(userId, FUNNEL_EVENTS.signup, SIGNUP_SOURCES.email, {
+      referrer: request.headers.get("referer") ?? null,
+      username,
+      session_id: sessionId ?? null,
+      ref: ref ?? null,
     });
 
     // Issue + send the verification email. Failure to email is logged but

@@ -37,6 +37,8 @@ import { Logo } from "@/components/layout/logo";
 import { SearchDropdown } from "@/components/search";
 import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
 import { cn } from "@/lib/utils";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 
 const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
@@ -240,7 +242,7 @@ export function Navbar() {
                   </Link>
                 </Button>
                 <Button variant="primary" size="sm" asChild>
-                  <Link href="/register">
+                  <Link href="/register" onClick={() => trackCtaClick(CTA_SOURCES.navbar)}>
                     Create Profile
                   </Link>
                 </Button>

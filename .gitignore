@@ -59,6 +59,9 @@ scripts/setup-automation-personas.sql
 /src/app/(main)/aim
 /src/components/aim
 
+# project blueprint (HLD, LLD, roadmap — internal planning docs)
+/project-blueprint
+
 # vercel
 .vercel
 

@@ -23,6 +23,27 @@ jest.mock('@/lib/hooks/useAuth', () => ({
   }),
 }));
 
+// Online status is derived from the presence context (NOT gamer.is_online).
+// Use a mutable status so individual tests can exercise online/offline branches.
+let mockPresenceStatus = 'online';
+jest.mock('@/lib/presence/PresenceProvider', () => ({
+  usePresence: () => ({
+    getUserStatus: () => mockPresenceStatus,
+    isUserOnline: () => mockPresenceStatus !== 'offline',
+    onlineUserIds: new Set(mockPresenceStatus !== 'offline' ? ['gamer-123'] : []),
+  }),
+}));
+
+// Relationship is fetched from the API; mock to a stable non-friend state.
+jest.mock('@/lib/hooks/useFriends', () => ({
+  useRelationship: () => ({
+    relationship: null,
+    loading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
 jest.mock('@/lib/utils', () => ({
   cn: (...classes: string[]) => classes.filter(Boolean).join(' '),
   formatRelativeTime: (date: string) => '2 hours ago',
@@ -83,6 +104,10 @@ const mockGamer = {
 };
 
 describe('GamerCard Component', () => {
+  beforeEach(() => {
+    mockPresenceStatus = 'online';
+  });
+
   describe('Rendering', () => {
     it('renders gamer display name', () => {
       render(<GamerCard gamer={mockGamer as any} />);
@@ -105,6 +130,7 @@ describe('GamerCard Component', () => {
     });
 
     it('renders offline status with last seen', () => {
+      mockPresenceStatus = 'offline';
       const offlineGamer = { ...mockGamer, is_online: false };
       render(<GamerCard gamer={offlineGamer as any} />);
       expect(screen.getByText(/Active/)).toBeInTheDocument();
@@ -115,9 +141,10 @@ describe('GamerCard Component', () => {
       expect(screen.getByText('NA')).toBeInTheDocument();
     });
 
-    it('renders language when provided', () => {
+    it('renders language label when provided', () => {
+      // Component renders getLanguageLabel('en') => "English".
       render(<GamerCard gamer={mockGamer as any} />);
-      expect(screen.getByText('EN')).toBeInTheDocument();
+      expect(screen.getByText('English')).toBeInTheDocument();
     });
   });
 

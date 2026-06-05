@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   Zap,
@@ -12,7 +13,11 @@ import {
   Palette,
   Crosshair,
   Flame,
+  Menu,
+  X,
 } from "lucide-react";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { VALORANT as V } from "@/lib/theme/valorant-theme";
 import {
   AGENTS,
@@ -47,6 +52,7 @@ const FEATURES = [
 ];
 
 export default function HomePage() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   return (
     <div style={{ background: V.bg, color: V.cream }} className="overflow-hidden">
       {/* ticker */}
@@ -69,7 +75,7 @@ export default function HomePage() {
       </div>
 
       {/* nav */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
+      <header className="relative mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
         <span className="text-2xl font-black italic tracking-tight">
           gg<span style={{ color: V.red }}>Lobby</span>
         </span>
@@ -79,13 +85,60 @@ export default function HomePage() {
           <Link href="/giveaway" style={{ color: V.textMuted }}>Giveaway</Link>
           <Link href="/login" style={{ color: V.textMuted }}>Log in</Link>
         </nav>
-        <Link
-          href="/register"
-          className="-skew-x-12 px-5 py-2 text-sm font-black uppercase italic tracking-wider"
-          style={{ background: V.red, color: V.cream }}
-        >
-          <span className="inline-block skew-x-12">Create profile</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/register"
+            onClick={() => trackCtaClick(CTA_SOURCES.navbar)}
+            className="-skew-x-12 px-5 py-2 text-sm font-black uppercase italic tracking-wider"
+            style={{ background: V.red, color: V.cream }}
+          >
+            <span className="inline-block skew-x-12">Create profile</span>
+          </Link>
+          {/* Mobile hamburger — reveals the same discovery links as desktop */}
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen((o) => !o)}
+            aria-label="Open navigation menu"
+            aria-expanded={mobileNavOpen}
+            aria-controls="overview-mobile-nav"
+            className="flex h-11 w-11 items-center justify-center md:hidden"
+            style={{ color: V.cream }}
+          >
+            {mobileNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+
+        {/* Mobile drawer */}
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.nav
+              id="overview-mobile-nav"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="absolute left-0 right-0 top-full z-40 mx-5 mt-1 flex flex-col overflow-hidden rounded-xl border md:hidden"
+              style={{ background: V.surface, borderColor: V.border }}
+            >
+              {[
+                { href: "/agents", label: "Agents" },
+                { href: "/maps", label: "Maps" },
+                { href: "/giveaway", label: "Giveaway" },
+                { href: "/login", label: "Log in" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  className="flex min-h-[44px] items-center border-b px-5 text-sm font-bold uppercase tracking-wider last:border-b-0"
+                  style={{ color: V.textMuted, borderColor: V.border }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* HERO — profile-first */}
@@ -119,6 +172,7 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/register"
+              onClick={() => trackCtaClick(CTA_SOURCES.inline_banner)}
               className="group flex -skew-x-12 items-center gap-2 px-7 py-3.5 text-sm font-black uppercase tracking-wider"
               style={{ background: V.red, color: V.cream }}
             >
@@ -352,6 +406,7 @@ export default function HomePage() {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="/register"
+              onClick={() => trackCtaClick(CTA_SOURCES.inline_banner)}
               className="-skew-x-12 px-9 py-4 text-sm font-black uppercase tracking-widest"
               style={{ background: V.red, color: V.cream }}
             >

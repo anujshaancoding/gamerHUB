@@ -6,14 +6,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Gamepad2, Users, Trophy, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES, type CtaSource } from "@/lib/analytics/sources";
 
 interface AuthGateModalProps {
   isOpen: boolean;
   onClose?: () => void;
   redirectTo?: string;
+  /** Discovery surface that opened this gate — drives cta_click attribution. */
+  source?: CtaSource;
+  /**
+   * Contextual, action-specific copy shown as the modal heading, e.g.
+   * "Sign up to apply to this lobby". When omitted, falls back to the
+   * generic "Join the Gaming Community" headline.
+   */
+  reason?: string;
 }
 
-export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProps) {
+export function AuthGateModal({
+  isOpen,
+  onClose,
+  redirectTo,
+  source = CTA_SOURCES.gate_modal,
+  reason,
+}: AuthGateModalProps) {
   const router = useRouter();
 
   const handleEscape = useCallback(
@@ -38,6 +54,8 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
   }, [isOpen, handleEscape]);
 
   const handleSignUp = () => {
+    // Funnel: record deliberate signup intent + the surface that drove it.
+    trackCtaClick(source);
     const params = new URLSearchParams();
     if (redirectTo) {
       params.set("redirect", redirectTo);
@@ -70,11 +88,15 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
+            onClick={onClose}
           />
 
           {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={reason || "Join the Gaming Community"}
               initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -97,12 +119,14 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
                   </div>
                 </div>
 
-                {/* Title */}
+                {/* Title — contextual when a reason is passed */}
                 <h2 className="text-2xl font-bold text-center text-text mb-2">
-                  Join the Gaming Community
+                  {reason || "Join the Gaming Community"}
                 </h2>
                 <p className="text-center text-text-muted mb-6">
-                  Sign up to unlock all features and connect with gamers worldwide
+                  {reason
+                    ? "Create your free ggLobby account — it only takes a few seconds."
+                    : "Sign up to unlock all features and connect with gamers worldwide"}
                 </p>
 
                 {/* Features */}
@@ -145,7 +169,7 @@ export function AuthGateModal({ isOpen, onClose, redirectTo }: AuthGateModalProp
                 {/* Community link */}
                 <div className="mt-6 text-center">
                   <button
-                    onClick={handleGoToCommunity}
+                    onClick={onClose || handleGoToCommunity}
                     className="text-sm text-text-muted hover:text-primary transition-colors"
                   >
                     Continue browsing as guest

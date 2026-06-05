@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
         <h1 className="text-3xl font-bold text-text mb-2">Privacy Policy</h1>
-        <p className="text-text-muted mb-8">Last updated: February 20, 2026</p>
+        <p className="text-text-muted mb-8">Last updated: June 5, 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-8 text-text-secondary">
           <section>
@@ -93,8 +93,9 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-text">5. Data Retention</h2>
             <p>
               We retain your personal information for as long as your account is active or as needed
-              to provide the Service. If you delete your account, we will delete your personal data
-              within 30 days, except where we are required to retain it by law (e.g., transaction records).
+              to provide the Service. If you request deletion of your account (see Section 6), we will
+              delete your personal data within a reasonable period, except where we are required to
+              retain it by law (e.g., transaction records).
             </p>
             <p>
               Messages in conversations may remain visible to other participants even after account deletion.
@@ -114,8 +115,10 @@ export default function PrivacyPolicyPage() {
               <li><strong>Withdraw Consent:</strong> Where processing is based on consent, withdraw it at any time.</li>
             </ul>
             <p className="mt-2">
-              To exercise these rights, visit your <strong>Settings</strong> page or contact us at{" "}
-              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>.
+              To exercise these rights, email us at{" "}
+              <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>{" "}
+              from the address associated with your account. We will verify your identity before
+              acting on the request.
             </p>
           </section>
 
@@ -125,17 +128,24 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc pl-6 space-y-1">
               <li><strong>Essential Cookies:</strong> Required for authentication, session management, and security. The Service cannot function without these.</li>
               <li><strong>Preference Cookies:</strong> Remember your settings such as theme and language.</li>
-              <li><strong>Analytics Cookies:</strong> Help us understand how the Service is used (aggregated data only). You can opt out of these in your settings.</li>
+              <li><strong>Preference and Functional Cookies:</strong> Remember your settings and help the Service function. We do not currently use third-party advertising or cross-site tracking cookies.</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-text">8. Children&apos;s Privacy</h2>
             <p>
-              ggLobby is not intended for users under the age of 13. We do not knowingly collect
-              personal information from children under 13. If we learn that we have collected data
-              from a child under 13, we will delete it promptly. If you believe a child under 13
-              has provided us with personal information, please contact us at{" "}
+              ggLobby is intended for users aged 13 and over and is not intended for children under
+              13. We do not knowingly collect personal information from children under 13, and if we
+              learn we have done so, we will delete it promptly.
+            </p>
+            <p>
+              Users between 13 and 18 are minors under India&apos;s Digital Personal Data Protection
+              Act and other applicable laws, and should only use ggLobby with the involvement and
+              consent of a parent or legal guardian. ggLobby does not currently operate a system to
+              independently verify a user&apos;s age or obtain verifiable parental consent. If you are
+              a parent or guardian and believe your child has provided us with personal information,
+              or you wish to review or request deletion of that information, please contact us at{" "}
               <a href="mailto:privacy@gglobby.in" className="text-primary hover:underline">privacy@gglobby.in</a>.
             </p>
           </section>
