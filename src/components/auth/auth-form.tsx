@@ -10,13 +10,18 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { VALORANT as V } from "@/lib/theme/valorant-theme";
 import { AGENTS, agentPortrait } from "@/lib/data/valorant-agents";
 
+const EMAIL_NOT_VERIFIED_SENTINEL = "EMAIL_NOT_VERIFIED";
+
 function getUserFriendlyAuthError(message: string): string {
+  if (message === EMAIL_NOT_VERIFIED_SENTINEL) {
+    return "Your email isn't verified yet. Check your inbox for the confirmation link — or resend it below.";
+  }
   const lower = message.toLowerCase();
-  if (lower.includes("invalid login credentials")) {
+  if (lower.includes("invalid login credentials") || lower.includes("invalid email or password")) {
     return "Incorrect email or password. Please try again.";
   }
-  if (lower.includes("email not confirmed")) {
-    return "Your email is not verified. Please check your inbox for a confirmation link.";
+  if (lower.includes("email not confirmed") || lower.includes("not verified")) {
+    return "Your email isn't verified yet. Check your inbox for the confirmation link — or resend it below.";
   }
   if (lower.includes("user already registered") || lower.includes("already been registered")) {
     return "An account with this email already exists. Try signing in instead.";
@@ -70,6 +75,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showResend, setShowResend] = useState(false);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   const isLogin = mode === "login";
   const strength = scorePassword(password);
@@ -78,6 +85,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
+    setShowResend(false);
+    setResendState("idle");
     setLoading(true);
     try {
       if (isLogin) {
@@ -101,9 +110,26 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      setShowResend(message === EMAIL_NOT_VERIFIED_SENTINEL);
       setError(getUserFriendlyAuthError(message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) return;
+    setResendState("sending");
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      // Endpoint is anti-enumeration (always succeeds); show a neutral confirmation.
+      setResendState("sent");
+    } catch {
+      setResendState("idle");
     }
   };
 
@@ -363,7 +389,22 @@ export function AuthForm({ mode }: AuthFormProps) {
                   className="rounded-lg px-3 py-2 text-sm"
                   style={{ background: `${V.red}1a`, border: `1px solid ${V.red}55`, color: V.red }}
                 >
-                  {error}
+                  <p>{error}</p>
+                  {showResend && (
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendState !== "idle"}
+                      className="mt-2 text-xs font-black uppercase tracking-wider underline disabled:opacity-60"
+                      style={{ color: V.red }}
+                    >
+                      {resendState === "sent"
+                        ? "Verification email sent — check your inbox"
+                        : resendState === "sending"
+                        ? "Sending…"
+                        : "Resend verification email"}
+                    </button>
+                  )}
                 </div>
               )}
               {successMessage && (

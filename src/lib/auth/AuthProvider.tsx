@@ -140,11 +140,25 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         });
 
         if (result?.error) {
+          // In Auth.js v5, every CredentialsSignin subclass reports
+          // error: "CredentialsSignin"; the specific reason is carried in
+          // `code`. Map known codes to friendly text and fail safe (a generic
+          // message) for anything unknown, so we never surface an internal
+          // code like "Configuration" to users again.
+          const code = (result as { code?: string }).code;
+
+          if (code === "email_not_verified") {
+            return { data: null, error: new Error("EMAIL_NOT_VERIFIED") };
+          }
+
+          if (result.error === "CredentialsSignin") {
+            return { data: null, error: new Error("Invalid email or password") };
+          }
+
+          // Unknown / unexpected NextAuth error code — do not leak it.
           return {
             data: null,
-            error: new Error(result.error === "CredentialsSignin"
-              ? "Invalid email or password"
-              : result.error),
+            error: new Error("Something went wrong while signing in. Please try again."),
           };
         }
 

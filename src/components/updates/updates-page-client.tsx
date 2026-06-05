@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-05T20:00:00",
+    version: "1.37.1",
+    type: "fix",
+    title: "Clearer sign-in errors for unverified emails",
+    description:
+      "Signing in with an unverified email now shows a clear message and a one-tap option to resend your verification link, instead of a confusing error.",
+    highlights: [
+      "Unverified accounts get an actionable 'verify your email' message with a 'Resend verification email' button right on the sign-in form",
+      "Sign-in errors are now always shown in plain language — no more cryptic internal error codes",
+    ],
+  },
+  {
     date: "2026-06-05T19:30:00",
     version: "1.37.0",
     type: "feature",

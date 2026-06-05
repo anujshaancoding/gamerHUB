@@ -9,13 +9,24 @@
  * User IDs: preserves existing UUIDs for migrated users.
  */
 
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
+
+/**
+ * Client-safe credentials error for an unverified email. Because it extends
+ * CredentialsSignin, Auth.js treats it as client-safe and forwards a stable
+ * `code` ("email_not_verified") to the client instead of wrapping a plain
+ * Error as CallbackRouteError and leaking the generic "Configuration" code.
+ * The `code` carries no sensitive information.
+ */
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -55,12 +66,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!valid) return null;
 
         // Block sign-in for accounts that have not confirmed their email.
-        // The signature exposed to the client is a distinct error string so
-        // the login form can prompt for resend; for security we still return
-        // null and surface the state via a generic error, but we mark the
-        // user object so the JWT callback could short-circuit if needed.
+        // Throw a CredentialsSignin subclass so Auth.js surfaces a stable,
+        // client-safe `code` ("email_not_verified") to the login form — which
+        // prompts the user to verify / resend — instead of wrapping a plain
+        // Error as CallbackRouteError and leaking the generic "Configuration".
         if (!user.email_confirmed_at) {
-          throw new Error("EMAIL_NOT_VERIFIED");
+          throw new EmailNotVerifiedError();
         }
 
         return {
