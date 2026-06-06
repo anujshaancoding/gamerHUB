@@ -10,7 +10,7 @@ import { PWAProvider } from "@/components/pwa/PWAProvider";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { AppShell } from "@/components/layout/AppShell";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
-import { GoogleAnalytics, PageViewTracker } from "@/components/analytics";
+import { PageViewTracker } from "@/components/analytics";
 import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -82,14 +82,16 @@ export default function RootLayout({
         {/* Preconnect to external origins for faster resource loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
         <link rel="dns-prefetch" href="https://cdn.discordapp.com" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <GoogleAnalytics />
+        {/* Google Analytics intentionally removed (2026-06-06): we rely on
+            first-party analytics only, so the Privacy Policy's "no cross-site
+            tracking cookies" statement stays true. Do not re-add without a
+            matching policy update + consent gate. */}
         <PageViewTracker />
         <JsonLd
           data={[

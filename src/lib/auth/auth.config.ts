@@ -16,6 +16,7 @@ import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
+import { recordConsent } from "@/lib/legal/record-consent";
 
 /**
  * Client-safe credentials error for an unverified email. Because it extends
@@ -149,6 +150,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               session_id: null,
               ref: null,
             });
+
+            // DPDP consent audit trail. The signup form shows a "by continuing
+            // with Google you agree to our Terms & Privacy Policy" affirmation,
+            // so reaching this new-user branch means consent was given. Defensive
+            // helper — never blocks the OAuth sign-in callback.
+            void recordConsent(finalUserId, "google_oauth");
           } else {
             // Existing user — update avatar/name if needed
             user.id = existing[0].id as string;

@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-06T18:00:00",
+    version: "1.38.0",
+    type: "improvement",
+    title: "Clearer consent at sign-up & a cleaner privacy posture",
+    description:
+      "Creating an account now asks you to agree to the Terms of Service and Privacy Policy up front, and we've removed third-party analytics in favour of our own first-party metrics.",
+    highlights: [
+      "Sign-up now has a clear checkbox to agree to the Terms of Service and Privacy Policy, with links to both — your agreement and the policy version are recorded",
+      "Removed Google Analytics: we now rely only on privacy-friendly first-party analytics, so no third-party cross-site tracking cookies are set",
+    ],
+  },
+  {
     date: "2026-06-05T20:00:00",
     version: "1.37.1",
     type: "fix",
@@ -50,23 +62,21 @@ const updates: UpdateEntry[] = [
     date: "2026-06-05T19:30:00",
     version: "1.37.0",
     type: "feature",
-    title: "Looking For Group now actually finds you a teammate",
+    title: "LFG closes the loop, browse-before-signup & free Valorant tools",
     description:
-      "The LFG loop is live end-to-end: post creators can see who applied and accept them in one tap, and an accepted match instantly opens a real DM in your inbox so you can say hi.",
+      "Our biggest update yet: LFG posts now turn into a real conversation and squadmate connection, you can explore the whole site before signing up, a security fix locks down profile data, and a suite of free shareable Valorant tools lands for India players.",
     highlights: [
+      // LFG teammate loop
       "Post owners can now expand 'View applicants' and Accept or Decline each applicant right from the card",
       "Accepting a teammate auto-connects you as squadmates and drops a fresh DM straight into your main inbox (not the Void), pre-seeded with a friendly greeting",
       "You now get a notification the moment someone applies to your post, and applicants get notified the instant they're accepted with a one-tap link into the conversation",
-    ],
-  },
-  {
-    date: "2026-06-05T18:00:00",
-    version: "1.36.0",
-    type: "feature",
-    title: "Free Valorant tools you can share: rank card, rank %, agent picks & sens",
-    description:
-      "A batch of free, shareable Valorant tools built for India players. Everything works without an account — only saving or publishing to your profile asks you to sign up.",
-    highlights: [
+      // Security
+      "Security: fixed an issue where some private profile fields could be returned to non-owners through the API — only public fields are now exposed to anyone but the profile owner",
+      // Browse-before-signup / activation
+      "You can now browse profiles, LFG posts, clans and the forum without an account — sign-up is only prompted when you take an action (Apply, Add Friend, react, save)",
+      "Sign-up is now just a few fields and you're in; linking your game is optional and can be done later from your profile",
+      "Added a referral CTA to onboarding so you can invite friends",
+      // Free Valorant tools
       "New Valorant Rank Card maker (/rank-card) — pick your rank and download a clean PNG for Instagram Stories, Discord and WhatsApp, no account needed",
       "Rank percentile tool now has an India layer — see where you stand in the India 2026 Valorant rank distribution, plus a shareable result",
       "New 'Best Agents for Your Rank' guide (/agents/rank-guide) — pick your rank and role, get agent picks with a shareable link and a 'find teammates' CTA",

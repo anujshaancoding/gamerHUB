@@ -13,6 +13,7 @@ import {
 import { useSession, signIn, signOut as nextAuthSignOut, SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
 import type { Profile } from "@/types/database";
+import { POLICY_VERSION } from "@/lib/legal/policy-version";
 
 // ─── Context Types ──────────────────────────────────────────────────────────
 
@@ -184,11 +185,21 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
           // sessionStorage may be unavailable; proceed without attribution.
         }
 
-        // Create account via our registration API
+        // Create account via our registration API. agreedToTerms is always true
+        // here: the signup form hard-blocks this call until the user ticks the
+        // Terms/Privacy checkbox, so reaching this point means consent was given.
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, username, sessionId, ref }),
+          body: JSON.stringify({
+            email,
+            password,
+            username,
+            sessionId,
+            ref,
+            agreedToTerms: true,
+            policyVersion: POLICY_VERSION,
+          }),
         });
 
         const data = await res.json();

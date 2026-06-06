@@ -14,6 +14,8 @@ import { issueEmailVerificationToken } from "@/lib/auth/email-verification";
 import { sendEmail, EmailNotConfiguredError } from "@/lib/email/send-email";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
+import { recordConsent } from "@/lib/legal/record-consent";
+import { POLICY_VERSION } from "@/lib/legal/policy-version";
 
 // 10 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
@@ -38,6 +40,11 @@ const RegisterSchema = z.object({
   // ref carries first-touch ?ref= share-link attribution.
   sessionId: z.string().max(128).optional(),
   ref: z.string().max(128).optional(),
+  // DPDP consent — the signup form requires an affirmative checkbox before it
+  // calls this endpoint. Optional here for backward-compat; when true we record
+  // the consent (policy version + timestamp) against the new account.
+  agreedToTerms: z.boolean().optional(),
+  policyVersion: z.string().max(32).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -54,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = await validateBody(request, RegisterSchema);
     if (!parsed.ok) return parsed.response;
-    const { email, password, username, sessionId, ref } = parsed.data;
+    const { email, password, username, sessionId, ref, agreedToTerms, policyVersion } = parsed.data;
 
     const sql = getPool();
 
@@ -108,6 +115,12 @@ export async function POST(request: NextRequest) {
       session_id: sessionId ?? null,
       ref: ref ?? null,
     });
+
+    // DPDP consent audit trail. Only when the client affirmed the Terms/Privacy
+    // checkbox. recordConsent is defensive — it never blocks/breaks signup.
+    if (agreedToTerms) {
+      void recordConsent(userId, "email_signup", policyVersion ?? POLICY_VERSION);
+    }
 
     // Issue + send the verification email. Failure to email is logged but
     // does NOT roll back registration — the user can request a resend.

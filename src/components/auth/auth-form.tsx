@@ -77,6 +77,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showResend, setShowResend] = useState(false);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
+  // DPDP consent — unticked by default; required before an email signup can proceed.
+  const [agreed, setAgreed] = useState(false);
 
   const isLogin = mode === "login";
   const strength = scorePassword(password);
@@ -98,6 +100,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (password.length < 8) throw new Error("Password must be at least 8 characters");
         if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
           throw new Error("Password must contain at least one letter and one number");
+        }
+        if (!agreed) {
+          throw new Error(
+            "Please agree to the Terms of Service and Privacy Policy to create your account."
+          );
         }
         const { data, error } = await signUpWithEmail(email, password, username);
         if (error) throw error;
@@ -261,6 +268,33 @@ export function AuthForm({ mode }: AuthFormProps) {
               </svg>
               Continue with Google
             </button>
+
+            {!isLogin && (
+              <p
+                className="mt-2.5 text-center text-[11px] leading-relaxed"
+                style={{ color: V.textDim }}
+              >
+                By continuing with Google you agree to our{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="underline"
+                  style={{ color: V.textMuted }}
+                >
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="underline"
+                  style={{ color: V.textMuted }}
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            )}
 
             <div className="my-6 flex items-center gap-3">
               <div className="h-px flex-1" style={{ background: V.border }} />
@@ -428,9 +462,46 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </div>
               )}
 
+              {/* DPDP consent — register only. Unticked by default; submit is
+                  blocked above until this is checked. */}
+              {!isLogin && (
+                <label className="flex cursor-pointer select-none items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    required
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+                    style={{ accentColor: V.red }}
+                    aria-label="I agree to the Terms of Service and Privacy Policy"
+                  />
+                  <span className="text-xs leading-relaxed" style={{ color: V.textMuted }}>
+                    I agree to the{" "}
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      className="font-bold underline"
+                      style={{ color: V.red }}
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      className="font-bold underline"
+                      style={{ color: V.red }}
+                    >
+                      Privacy Policy
+                    </Link>
+                    .
+                  </span>
+                </label>
+              )}
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (!isLogin && !agreed)}
                 className="group flex w-full -skew-x-12 items-center justify-center gap-2 py-3.5 text-sm font-black uppercase tracking-wider transition-opacity disabled:opacity-60"
                 style={{ background: V.red, color: V.cream }}
               >
