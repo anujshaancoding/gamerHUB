@@ -43,11 +43,8 @@ yarn-error.log*
 /public/uploads
 /uploads
 
-# blog content
-/Blog Content
-
-# content creation strategy
-/content-creation
+# content (blog articles + strategy — local only)
+/content
 
 # local-only docs (not for git)
 *.local.md
@@ -59,8 +56,8 @@ scripts/setup-automation-personas.sql
 /src/app/(main)/aim
 /src/components/aim
 
-# project blueprint (HLD, LLD, roadmap — internal planning docs)
-/project-blueprint
+# internal planning docs (blueprint lives inside _docs)
+/_docs/blueprint
 
 # vercel
 .vercel
