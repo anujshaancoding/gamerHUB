@@ -8,11 +8,13 @@ import {
   ChevronDown,
   Copy,
   Download,
+  ImagePlus,
   Loader2,
   Search,
   Share2,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAuth, useAuthProfile } from "@/lib/hooks/useAuth";
@@ -25,7 +27,7 @@ import { VALORANT_TIERS } from "@/lib/features/tools/valorant-ranks";
 import type { TrackerLookupResponse } from "@/lib/tracker/types";
 
 type RankCardSource = "manual" | "career";
-type RankCardTemplate = "ember" | "frost" | "aurum";
+type RankCardTemplate = "ember" | "frost" | "aurum" | "clean";
 
 const ROLE_OPTIONS: AgentRole[] = ["Duelist", "Controller", "Initiator", "Sentinel"];
 
@@ -38,13 +40,31 @@ const TEMPLATE_OPTIONS: Array<{ value: RankCardTemplate; label: string; accent: 
   { value: "ember", label: "Ember", accent: "#ff4655" },
   { value: "frost", label: "Frost", accent: "#4db4ff" },
   { value: "aurum", label: "Aurum", accent: "#ffc658" },
+  { value: "clean", label: "Clean", accent: "#9aa7b4" },
 ];
 
-/** Accept new template names; map the legacy template names onto them. */
+/** Accept current template names; map retired ones onto them. */
 function parseTemplate(value?: string): RankCardTemplate {
-  if (value === "ember" || value === "frost" || value === "aurum") return value;
+  if (value === "ember" || value === "frost" || value === "aurum" || value === "clean") return value;
   if (value === "neon") return "frost";
-  return "ember"; // clean / aggressive / unknown
+  return "ember"; // aggressive / unknown
+}
+
+/**
+ * Downscale the uploaded photo client-side (max 1000px) and return a PNG data
+ * URL — PNG keeps the transparency of background-removed photos.
+ */
+async function photoToDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1000 / bitmap.width, 1000 / bitmap.height);
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  return canvas.toDataURL("image/png");
 }
 
 function agentRole(agentName: string): AgentRole {
@@ -106,6 +126,8 @@ export function ValorantRankCardClient({
     (initialWeapon && findWeapon(initialWeapon)?.name) || "Vandal",
   );
   const [name, setName] = useState<string>(initialName?.slice(0, 32) || "");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [riotId, setRiotId] = useState<string>("");
   const [careerLoaded, setCareerLoaded] = useState(initialSource === "career");
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -131,6 +153,37 @@ export function ValorantRankCardClient({
     if (username) params.set("username", username);
     return `/api/og/rank-card?${params.toString()}`;
   }, [agent, displayName, peakRank, role, source, template, tier, username, weapon]);
+
+  // POST body used whenever a photo is uploaded (a photo can't fit in a URL).
+  const cardBody = useMemo(
+    () => ({
+      rank: tier,
+      peak: peakRank,
+      agent,
+      weapon,
+      role,
+      source,
+      template,
+      name: displayName.trim(),
+      ...(photo ? { photo } : {}),
+    }),
+    [agent, displayName, peakRank, photo, role, source, template, tier, weapon],
+  );
+
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setPhotoError(null);
+    try {
+      if (file.size > 8 * 1024 * 1024) throw new Error("Image is too large (max 8 MB).");
+      const dataUrl = await photoToDataUrl(file);
+      if (dataUrl.length > 8_000_000) throw new Error("Image is too large after processing.");
+      setPhoto(dataUrl);
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : "Could not read that image.");
+    }
+  }
 
   async function lookupCareerRecord() {
     const trimmed = riotId.trim();
@@ -167,7 +220,13 @@ export function ValorantRankCardClient({
     trackCtaClick(CTA_SOURCES.rank_card);
     setDownloading(true);
     try {
-      const res = await fetch(ogUrl);
+      const res = photo
+        ? await fetch("/api/og/rank-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cardBody),
+          })
+        : await fetch(ogUrl);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -240,7 +299,7 @@ export function ValorantRankCardClient({
   return (
     <div className="space-y-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <RankCardPreview ogUrl={ogUrl} />
+        <RankCardPreview ogUrl={ogUrl} photo={photo} body={cardBody} />
 
         <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-5">
           <div>
@@ -280,7 +339,7 @@ export function ValorantRankCardClient({
             <span className="mb-2 block text-[11px] font-black uppercase tracking-wider text-text-muted">
               Template
             </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {TEMPLATE_OPTIONS.map((item) => {
                 const active = template === item.value;
                 return (
@@ -303,6 +362,53 @@ export function ValorantRankCardClient({
                 );
               })}
             </div>
+          </div>
+
+          <div>
+            <span className="mb-2 block text-[11px] font-black uppercase tracking-wider text-text-muted">
+              Your photo (optional)
+            </span>
+            {photo ? (
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-background/40 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo}
+                  alt="Your uploaded player photo"
+                  className="h-14 w-14 shrink-0 rounded-lg bg-black/25 object-contain"
+                />
+                <p className="min-w-0 flex-1 text-xs leading-relaxed text-text-muted">
+                  Photo on the card — your main agent now sits behind it as the
+                  backdrop.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPhoto(null)}
+                  className="shrink-0 rounded-lg p-2 text-text-dim transition-colors hover:bg-white/[0.06] hover:text-text"
+                  aria-label="Remove photo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-background/40 p-3 transition-colors hover:border-primary/50">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="sr-only"
+                  onChange={handlePhotoUpload}
+                />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ImagePlus className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-text">Upload your photo</span>
+                  <span className="block text-xs text-text-muted">
+                    PNG with background removed looks best
+                  </span>
+                </span>
+              </label>
+            )}
+            {photoError && <p className="mt-2 text-xs text-error">{photoError}</p>}
           </div>
 
           {source === "career" && (
@@ -448,33 +554,74 @@ export function ValorantRankCardClient({
  * Live preview of the rendered card. Shows the exact PNG the server generates
  * (same endpoint as the download), so the preview can never drift from the
  * downloaded card. New renders are preloaded off-screen and swapped in, with
- * the previous card staying visible underneath a small spinner.
+ * the previous card staying visible underneath a small spinner. With an
+ * uploaded photo the render is POSTed (a photo can't fit in a URL) and shown
+ * via an object URL.
  */
-function RankCardPreview({ ogUrl }: { ogUrl: string }) {
+function RankCardPreview({
+  ogUrl,
+  photo,
+  body,
+}: {
+  ogUrl: string;
+  photo: string | null;
+  body: Record<string, unknown>;
+}) {
   const [displayed, setDisplayed] = useState(ogUrl);
   const [loading, setLoading] = useState(false);
-  const latest = useRef(ogUrl);
+  const requestKey = photo ? JSON.stringify(body) : ogUrl;
+  const latest = useRef(requestKey);
+  const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    latest.current = ogUrl;
-    if (ogUrl === displayed) return;
+    latest.current = requestKey;
+    if (!photo && ogUrl === displayed) return;
     // Debounce so rapid form edits trigger one render, not one per keystroke.
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       setLoading(true);
+      if (photo) {
+        try {
+          const res = await fetch("/api/og/rank-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error("render failed");
+          const blob = await res.blob();
+          if (latest.current !== requestKey) return;
+          const url = URL.createObjectURL(blob);
+          if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = url;
+          setDisplayed(url);
+        } catch {
+          /* keep the previous card visible */
+        } finally {
+          if (latest.current === requestKey) setLoading(false);
+        }
+        return;
+      }
       const img = new window.Image();
       img.onload = () => {
-        if (latest.current === ogUrl) {
+        if (latest.current === requestKey) {
           setDisplayed(ogUrl);
           setLoading(false);
         }
       };
       img.onerror = () => {
-        if (latest.current === ogUrl) setLoading(false);
+        if (latest.current === requestKey) setLoading(false);
       };
       img.src = ogUrl;
     }, 450);
     return () => clearTimeout(timer);
-  }, [ogUrl, displayed]);
+  }, [requestKey, ogUrl, photo, body, displayed]);
+
+  // Release the last object URL on unmount.
+  useEffect(
+    () => () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    },
+    [],
+  );
 
   return (
     <div className="mx-auto w-full max-w-[520px]">

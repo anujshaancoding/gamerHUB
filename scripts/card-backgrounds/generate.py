@@ -37,6 +37,15 @@ THEMES = {
         "ribbon": (212, 152, 40),
         "ribbon_hi": (255, 226, 150),
     },
+    # Light theme modeled on the classic white trading card.
+    "clean": {
+        "light": True,
+        "stops": [(244, 246, 248), (231, 234, 238), (247, 248, 249)],
+        "accent": (148, 158, 170),
+        "accent_deep": (108, 122, 138),
+        "ribbon": (84, 108, 142),
+        "ribbon_hi": (236, 240, 245),
+    },
 }
 
 
@@ -54,6 +63,7 @@ def band(u, center, width, soft):
 
 def generate(theme):
     t = THEMES[theme]
+    light = t.get("light", False)
     y, x = np.mgrid[0:H, 0:W].astype(np.float32)
     xn, yn = x / W, y / H
 
@@ -71,17 +81,21 @@ def generate(theme):
 
     # --- hero glow behind the player art -------------------------------------
     d = np.sqrt(((xn - 0.5) * 1.0) ** 2 + ((yn - 0.34) * (H / W)) ** 2)
-    glow = np.clip(1 - d / 0.62, 0, 1) ** 2.2
-    img += glow[..., None] * accent * 0.30
-    # tight hot core
-    core = np.clip(1 - d / 0.30, 0, 1) ** 2.5
-    img += core[..., None] * np.array([255, 255, 255], np.float32) * 0.05
+    if light:
+        # Light theme: lift toward white instead of pushing accent color.
+        glow = np.clip(1 - d / 0.62, 0, 1) ** 2.2
+        img += glow[..., None] * np.array([255, 255, 255], np.float32) * 0.05
+    else:
+        glow = np.clip(1 - d / 0.62, 0, 1) ** 2.2
+        img += glow[..., None] * accent * 0.30
+        core = np.clip(1 - d / 0.30, 0, 1) ** 2.5
+        img += core[..., None] * np.array([255, 255, 255], np.float32) * 0.05
 
-    # --- secondary corner glows ----------------------------------------------
-    d2 = np.sqrt((xn - 0.05) ** 2 + ((yn - 0.95) * (H / W)) ** 2)
-    img += (np.clip(1 - d2 / 0.55, 0, 1) ** 2)[..., None] * deep * 0.45
-    d3 = np.sqrt((xn - 1.0) ** 2 + ((yn - 0.1) * (H / W)) ** 2)
-    img += (np.clip(1 - d3 / 0.5, 0, 1) ** 2)[..., None] * deep * 0.35
+        # --- secondary corner glows (dark themes only) -----------------------
+        d2 = np.sqrt((xn - 0.05) ** 2 + ((yn - 0.95) * (H / W)) ** 2)
+        img += (np.clip(1 - d2 / 0.55, 0, 1) ** 2)[..., None] * deep * 0.45
+        d3 = np.sqrt((xn - 1.0) ** 2 + ((yn - 0.1) * (H / W)) ** 2)
+        img += (np.clip(1 - d3 / 0.5, 0, 1) ** 2)[..., None] * deep * 0.35
 
     # --- diagonal light beams (28deg, matching the brand slash angle) --------
     ang = np.deg2rad(28)
@@ -92,7 +106,10 @@ def generate(theme):
         + band(u, 0.78, 0.050, 0.045) * 0.06
         + band(u, 0.95, 0.014, 0.02) * 0.11
     )
-    img += beams[..., None] * accent
+    if light:
+        img -= (beams * 0.45)[..., None] * (255 - accent)  # darken subtly
+    else:
+        img += beams[..., None] * accent
 
     # --- accent ribbon sweeping behind the lower-left (flag slot) ------------
     angr = np.deg2rad(-34)
@@ -108,20 +125,27 @@ def generate(theme):
         (ribbon_hi * 0.7)[..., None] * np.array(t["ribbon_hi"], np.float32)
     )
 
-    # --- readability zones: darken top strip and bottom panel ----------------
-    img *= (1 - 0.38 * smoothstep(0.70, 1.0, yn))[..., None]
-    img *= (1 - 0.25 * (1 - smoothstep(0.0, 0.10, yn)))[..., None]
+    # --- readability zones ------------------------------------------------------
+    if light:
+        # Lift the bottom panel toward clean white for the dark text block.
+        m = (0.55 * smoothstep(0.68, 0.95, yn))[..., None]
+        img = img * (1 - m) + np.array([251, 251, 252], np.float32) * m
+        m2 = (0.30 * (1 - smoothstep(0.0, 0.10, yn)))[..., None]
+        img = img * (1 - m2) + np.array([250, 250, 251], np.float32) * m2
+    else:
+        img *= (1 - 0.38 * smoothstep(0.70, 1.0, yn))[..., None]
+        img *= (1 - 0.25 * (1 - smoothstep(0.0, 0.10, yn)))[..., None]
 
     # --- vignette --------------------------------------------------------------
     dv = np.sqrt((xn - 0.5) ** 2 + ((yn - 0.5) * (H / W)) ** 2)
-    img *= (1 - 0.45 * smoothstep(0.45, 0.85, dv))[..., None]
+    img *= (1 - (0.08 if light else 0.45) * smoothstep(0.45, 0.85, dv))[..., None]
 
     # --- film grain (after the soften pass so it stays crisp) -----------------
     soft = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
     soft = soft.filter(ImageFilter.GaussianBlur(0.5))
     img = np.asarray(soft, dtype=np.float32)
     rng = np.random.default_rng(7)
-    img += rng.normal(0, 2.6, (H, W, 1)).astype(np.float32)
+    img += rng.normal(0, 1.6 if light else 2.6, (H, W, 1)).astype(np.float32)
 
     out = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
     OUT.mkdir(parents=True, exist_ok=True)

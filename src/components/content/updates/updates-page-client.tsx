@@ -42,8 +42,10 @@ const updates: UpdateEntry[] = [
     description:
       "The Valorant Rank Card got a complete visual overhaul — trading-card style layout with rich background art instead of flat colors.",
     highlights: [
-      "Three new card templates — Ember, Frost and Aurum — each with full-bleed background art and matching accents",
-      "New trading-card layout: overall rating badge, hero agent art with ghosted backdrop, peak rank and weapon chips, and a bold name block",
+      "Four card templates — Ember, Frost, Aurum and a white Clean style — each with full-bleed background art and matching accents",
+      "Upload your own photo onto the card; your main agent moves into the backdrop behind it, classic trading-card style",
+      "New trading-card layout: overall rating badge, hero art with ghosted backdrop, peak rank and weapon chips, and a bold name block",
+      "Your name appears exactly as you type it, set in a new condensed display typeface",
       "Template picker now shows live art thumbnails so you can see each style before choosing",
       "The on-page preview is now the exact PNG you download — what you see is precisely what you share",
     ],
