@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { exchangeRiotCode, getRiotAccount } from "@/lib/integrations/riot";
+import { exchangeRiotCode, getRiotAccount } from "@/lib/services/integrations/riot";
 import { cookies } from "next/headers";
 import { encryptToken } from "@/lib/security/encryption";
 import { logger } from "@/lib/logger";
@@ -58,6 +58,33 @@ export async function GET(request: NextRequest) {
 
     // Store connection in database
     const db = createClient();
+
+    // Enforce one Riot account ↔ one ggLobby account. Refuse if this puuid is
+    // already linked (active) to a DIFFERENT user. (A DB partial-unique index is
+    // the hard backstop; this gives the user a clean error instead of a 500.)
+    const { data: existingLinks } = await db
+      .from("game_connections")
+      .select("user_id")
+      .eq("provider", "riot")
+      .eq("provider_user_id", account.puuid)
+      .eq("is_active", true);
+
+    const linkedToAnother = (existingLinks ?? []).some(
+      (row: { user_id: string }) => row.user_id !== userId
+    );
+    if (linkedToAnother) {
+      logger.warn("Riot account already linked to another ggLobby account", {
+        attemptedBy: userId,
+      });
+      const sep = returnTo.includes("?") ? "&" : "?";
+      const res = NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}${returnTo}${sep}error=riot_already_linked`
+      );
+      res.cookies.delete("riot_oauth_state");
+      res.cookies.delete("riot_oauth_user");
+      res.cookies.delete("riot_oauth_return");
+      return res;
+    }
 
     const { error: upsertError } = await db
       .from("game_connections")

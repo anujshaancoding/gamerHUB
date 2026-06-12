@@ -149,6 +149,49 @@ export function ValorantRankCardClient({
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Riot account the signed-in user has linked (Name#TAG), if any.
+  const [linkedRiot, setLinkedRiot] = useState<string | null>(null);
+  const [linkNotice, setLinkNotice] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Load the user's linked Riot account (if signed in) so they can one-tap their
+  // own career record instead of typing a Riot ID.
+  useEffect(() => {
+    if (!user) {
+      setLinkedRiot(null);
+      return;
+    }
+    let active = true;
+    fetch("/api/integrations")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!active || !d?.connections) return;
+        const riot = d.connections.find(
+          (c: { provider: string; is_active: boolean; provider_username?: string }) =>
+            c.provider === "riot" && c.is_active,
+        );
+        if (riot?.provider_username) setLinkedRiot(riot.provider_username as string);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // Surface the outcome when the user returns from the Riot link flow.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "riot_connected") {
+      setLinkNotice({ type: "success", msg: "Valorant account linked — fetch your career record below." });
+      setSource("career");
+    } else if (params.get("error") === "riot_already_linked") {
+      setLinkNotice({
+        type: "error",
+        msg: "That Valorant account is already linked to a different ggLobby account.",
+      });
+    } else if (params.get("error")?.startsWith("riot_") || params.get("error") === "callback_failed") {
+      setLinkNotice({ type: "error", msg: "Couldn't link your Valorant account. Please try again." });
+    }
+  }, []);
 
   const username = profile?.username;
   const displayName = name.trim() || profile?.display_name || username || "Your name";
@@ -212,8 +255,18 @@ export function ValorantRankCardClient({
     }
   }
 
-  async function lookupCareerRecord() {
-    const trimmed = riotId.trim();
+  // Kick off the real RSO link flow, returning to the rank-card career tab.
+  function linkValorantAccount() {
+    if (!user) {
+      openAuthGate();
+      return;
+    }
+    window.location.href =
+      "/api/integrations/riot/connect?returnTo=" + encodeURIComponent("/rank-card?source=career");
+  }
+
+  async function lookupCareerRecord(idOverride?: string) {
+    const trimmed = (idOverride ?? riotId).trim();
     if (!trimmed || !trimmed.includes("#")) {
       setLookupError("Enter Riot ID as Name#TAG.");
       return;
@@ -455,6 +508,42 @@ export function ValorantRankCardClient({
 
           {source === "career" && (
             <div className="rounded-xl border border-border bg-background/40 p-3">
+              {/* Link-your-account path — verified, one Riot account per ggLobby account */}
+              <div className="mb-3">
+                {linkedRiot ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRiotId(linkedRiot);
+                      lookupCareerRecord(linkedRiot);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Use my linked account · {linkedRiot}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={linkValorantAccount}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Link your Valorant account
+                  </button>
+                )}
+                <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
+                  Linking proves the card is really yours. A Valorant account can be linked to only one ggLobby account.
+                </p>
+              </div>
+              {linkNotice && (
+                <p className={`mb-3 text-xs ${linkNotice.type === "success" ? "text-success" : "text-error"}`}>
+                  {linkNotice.msg}
+                </p>
+              )}
+              <div className="mb-2 text-[11px] font-black uppercase tracking-wider text-text-muted">
+                or enter a Riot ID manually
+              </div>
               <label className="block">
                 <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-text-muted">
                   Riot ID for career record

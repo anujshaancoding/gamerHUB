@@ -9,6 +9,7 @@ import {
   Globe,
   Clock,
   Edit,
+  CreditCard,
   MessageSquare,
   UserPlus,
   UserMinus,
@@ -32,13 +33,13 @@ import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelationship, useSocialCounts } from "@/lib/hooks/useFriends";
 import { LevelBadge, BadgeShowcase } from "@/components/gamification";
-import { TrustBadges } from "@/components/ratings/trust-badges";
-import { PremiumBadge } from "@/components/premium";
+import { TrustBadges } from "@/components/gaming/ratings/trust-badges";
+import { PremiumBadge } from "@/components/monetization/premium";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePresence } from "@/lib/presence/PresenceProvider";
-import { SocialListModal } from "@/components/social-lists";
+import { SocialListModal } from "@/components/social/social-lists";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
-import { normalizeImageUrl } from "@/lib/storage";
+import { normalizeImageUrl } from "@/lib/services/storage";
 import type { Profile, UserProgressionWithDetails, UserBadgeWithDetails, TrustBadges as TrustBadgesType } from "@/types/database";
 
 interface RecentViewer {
@@ -744,15 +745,26 @@ export function ProfileHeader({
               className="flex gap-2 flex-wrap md:justify-end md:min-w-[240px] xl:min-w-[280px] shrink-0"
             >
                 {isOwnProfile ? (
-                  <Link href={`/profile/${profile.username}/edit`}>
-                    <Button
-                      variant="primary"
-                      leftIcon={<Edit className="h-4 w-4" />}
-                      className="shadow-lg shadow-primary/25 hover:shadow-primary/50 transition-shadow"
-                    >
-                      Edit Profile
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href={`/profile/${profile.username}/edit`}>
+                      <Button
+                        variant="primary"
+                        leftIcon={<Edit className="h-4 w-4" />}
+                        className="shadow-lg shadow-primary/25 hover:shadow-primary/50 transition-shadow"
+                      >
+                        Edit Profile
+                      </Button>
+                    </Link>
+                    <Link href="/rank-card">
+                      <Button
+                        variant="secondary"
+                        leftIcon={<CreditCard className="h-4 w-4" />}
+                        title="Create your Valorant rank card"
+                      >
+                        Rank Card
+                      </Button>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     {relationship?.is_friend ? (
