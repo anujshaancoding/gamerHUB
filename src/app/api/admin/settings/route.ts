@@ -7,6 +7,7 @@ import {
   type SiteSettings,
 } from "@/lib/db/site-settings";
 import { logger } from "@/lib/logger";
+import { logAdminAction, getRequestIp } from "@/lib/admin/audit";
 
 async function requireAdmin() {
   const user = await getUser();
@@ -67,6 +68,26 @@ export async function PATCH(request: NextRequest) {
     }
 
     await setSiteSetting(key as keyof SiteSettings, value as never);
+
+    // Audit: automation start/stop is the high-signal one; log other setting
+    // changes generically too.
+    const auditAction =
+      key === "automation_enabled"
+        ? value
+          ? "automation.start"
+          : "automation.stop"
+        : "setting.update";
+    await logAdminAction(
+      { id: admin.id, email: admin.email },
+      {
+        action: auditAction,
+        targetType: "setting",
+        targetId: key,
+        metadata: { key, value },
+        ip: getRequestIp(request),
+      }
+    );
+
     const settings = await getSiteSettings();
     return NextResponse.json({ settings });
   } catch (error) {

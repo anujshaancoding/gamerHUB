@@ -18,11 +18,13 @@ import {
   Mail,
   Crosshair,
   Instagram,
+  ScrollText,
+  MessagesSquare,
   Menu,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/layout/logo";
+import { Logo } from "@/components/shared/layout/logo";
 
 const allNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -33,11 +35,13 @@ const allNavItems = [
   { href: "/admin/pro", label: "Pro Hub", icon: Trophy },
   { href: "/admin/lineups", label: "Lineups", icon: Crosshair },
   { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/forum", label: "Forum", icon: MessagesSquare },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/emails", label: "Emails", icon: Mail },
   { href: "/admin/authors", label: "Blog Authors", icon: PenTool },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquarePlus },
   { href: "/admin/automation", label: "Automation", icon: Bot },
+  { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 
 export function AdminSidebar() {

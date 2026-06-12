@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 import { logger } from "@/lib/logger";
+import { logAdminAction, getRequestIp } from "@/lib/admin/audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -293,6 +294,22 @@ export async function PATCH(request: NextRequest) {
           { status: 400 }
         );
     }
+
+    // Audit every user-management action (flag/restrict/make_admin/delete_user/…).
+    await logAdminAction(
+      { id: user.id, email: user.email },
+      {
+        action: `user.${action}`,
+        targetType: "user",
+        targetId: user_id,
+        metadata: {
+          ...(body.reason ? { reason: body.reason } : {}),
+          ...(body.admin_role ? { admin_role: body.admin_role } : {}),
+          ...(body.expires_at ? { expires_at: body.expires_at } : {}),
+        },
+        ip: getRequestIp(request),
+      }
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
