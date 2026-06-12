@@ -273,7 +273,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                 height: 1278,
                 display: "flex",
                 overflow: "hidden",
-                opacity: isLight ? 0.4 : 0.34,
+                opacity: isLight ? 0.6 : 0.34,
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -282,7 +282,12 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                 src={mapSplash(favMap.uuid)}
                 width={468}
                 height={1278}
-                style={{ objectFit: "cover", ...(isLight ? { filter: "grayscale(0.35)" } : {}) }}
+                style={{
+                  objectFit: "cover",
+                  // Splash art is bright/foggy in places; over the white card it
+                  // dissolves unless darkened, so the light theme deepens it.
+                  ...(isLight ? { filter: "brightness(0.82) contrast(1.15)" } : {}),
+                }}
               />
             </div>
           )}
