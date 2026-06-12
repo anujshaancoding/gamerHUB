@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
 import { normaliseTier, rankIconUrl, rankTierNumber, VALORANT_TIERS } from "@/lib/features/tools/valorant-ranks";
 import { agentPortrait, findAgent } from "@/lib/data/valorant-agents";
+import { MAPS, mapSplash, type ValorantMap } from "@/lib/data/valorant-maps";
 import { findWeapon, weaponDisplayIconUrl } from "@/lib/tracker/valorant-assets";
 
 export const runtime = "nodejs";
@@ -135,12 +136,30 @@ function sourceTone(source: CardSource, light: boolean) {
     : { border: "#ffb84d", text: "#ffb84d", bg: "rgba(38,26,5,0.72)", label: "SELF REPORTED" };
 }
 
-/** FIFA-style 55–99 overall from the rank ladder; null when unranked. */
-function rankRating(rank: string): number | null {
+/** 55–99 score for a single tier on the rank ladder; null when unranked. */
+function tierScore(rank: string): number | null {
   const n = rankTierNumber(rank);
   if (n == null) return null;
   const idx = n === 27 ? VALORANT_TIERS.length - 1 : n - 3; // 0 = Iron 1
   return Math.round(55 + (idx / (VALORANT_TIERS.length - 1)) * 44);
+}
+
+/**
+ * FIFA-style overall: 70% current rank + 30% peak rank, so the badge rewards
+ * proven ceiling without letting an old peak carry the number. Iron 1 floor
+ * is 55, Radiant current+peak is 99.
+ */
+function rankRating(rank: string, peak: string): number | null {
+  const current = tierScore(rank);
+  if (current == null) return null;
+  const peakScore = tierScore(peak);
+  return Math.round(current * 0.7 + Math.max(current, peakScore ?? current) * 0.3);
+}
+
+function findMapByNameOrSlug(value: string | null): ValorantMap | null {
+  if (!value) return null;
+  const needle = value.trim().toLowerCase();
+  return MAPS.find((m) => m.slug === needle || m.name.toLowerCase() === needle) ?? null;
 }
 
 function cleanParam(value: string | null | undefined, fallback: string) {
@@ -160,6 +179,8 @@ type CardOptions = {
   blank: boolean;
   /** uploaded player photo (validated data URI); agent art ghosts behind it */
   photoUri: string | null;
+  /** favourite map; its splash art fills the top-right at low opacity */
+  map: string | null;
 };
 
 async function renderCard(opts: CardOptions): Promise<ImageResponse> {
@@ -171,7 +192,8 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
   const { accent, accentSoft, text, dim, panelBg, panelBorder } = palette;
   const isLight = template === "clean";
   const tone = sourceTone(source, isLight);
-  const rating = rankRating(rankLabel);
+  const rating = rankRating(rankLabel, peak);
+  const favMap = findMapByNameOrSlug(opts.map);
   const rankEmblem = rankIconUrl(rankLabel); // official tier art, null if Unranked
   const peakEmblem = rankIconUrl(peak); // official art for the peak chip, null if not a tier
   const agentMatch = findAgent(agent);
@@ -232,6 +254,32 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
             />
           )}
 
+          {/* Favourite map splash, faded into the open top-right corner */}
+          {!blank && favMap && (
+            <div
+              style={{
+                position: "absolute",
+                top: 96,
+                left: 552,
+                width: 420,
+                height: 300,
+                display: "flex",
+                borderRadius: 26,
+                overflow: "hidden",
+                opacity: isLight ? 0.2 : 0.14,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt=""
+                src={mapSplash(favMap.uuid)}
+                width={420}
+                height={300}
+                style={{ objectFit: "cover", ...(isLight ? { filter: "grayscale(0.4)" } : {}) }}
+              />
+            </div>
+          )}
+
           {/* Ghosted oversize agent. Subtle watermark normally; when the
               player uploads their own photo the agent steps back here at
               ~45% opacity, reference-card style. */}
@@ -258,9 +306,9 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
             <img
               alt=""
               src={photoUri}
-              width={720}
-              height={830}
-              style={{ position: "absolute", top: 226, left: 180, objectFit: "contain" }}
+              width={820}
+              height={1010}
+              style={{ position: "absolute", top: 126, left: 252, objectFit: "contain" }}
             />
           ) : !blank && agentPortraitUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -610,6 +658,7 @@ export async function GET(request: NextRequest) {
       template: parseTemplate(request.nextUrl.searchParams.get("template")),
       blank: request.nextUrl.searchParams.get("blank") === "1",
       photoUri: null,
+      map: request.nextUrl.searchParams.get("map"),
     });
   } catch (error) {
     console.error("[og/rank-card] Error:", error);
@@ -647,6 +696,7 @@ export async function POST(request: NextRequest) {
       template: parseTemplate(str("template")),
       blank: false,
       photoUri,
+      map: str("map"),
     });
   } catch (error) {
     console.error("[og/rank-card] POST error:", error);

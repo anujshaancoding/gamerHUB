@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { ValorantRankCardClient } from "@/components/tools/valorant-rank-card-client";
-import { LoyaltyRankCard } from "@/components/loyalty/loyalty-rank-card-client";
+import { ValorantRankCardClient } from "@/components/gaming/tools/valorant-rank-card-client";
+import { LoyaltyRankCard } from "@/components/gamification/loyalty/loyalty-rank-card-client";
 
 export const metadata: Metadata = {
   title: "Valorant Rank Card Maker — Free Shareable PNG · ggLobby",
   description:
-    "Make a free Valorant rank card and download it as a PNG for Instagram Stories, Discord and WhatsApp. Pick your rank, share your card — no account needed.",
+    "Make a free Valorant rank card and download it as a PNG. Build manually or from a career lookup, with role, main agent, peak rank and source label.",
   alternates: { canonical: "/rank-card" },
   keywords: [
     "valorant rank card",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Valorant Rank Card Maker — ggLobby",
     description:
-      "Make a free Valorant rank card and download it as a PNG. No account needed.",
+      "Create a shareable Valorant rank card with rank, peak, main agent, role and source label.",
     type: "website",
   },
 };
@@ -25,25 +25,44 @@ export const metadata: Metadata = {
 export default async function RankCardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ rank?: string }>;
+  searchParams?: Promise<{
+    rank?: string;
+    peak?: string;
+    agent?: string;
+    role?: string;
+    source?: string;
+    template?: string;
+    name?: string;
+    weapon?: string;
+    map?: string;
+  }>;
 }) {
   const params = (await searchParams) ?? {};
-  const initialRank = params.rank;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 lg:py-10 space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 lg:py-10 space-y-8">
       <header>
         <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-text">
           Valorant rank card
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-muted leading-relaxed">
-          Pick your rank, get a clean shareable card, and download it as a PNG for your
-          Instagram Story, Discord or WhatsApp. Free for everyone — saving it to your ggLobby
-          profile is the only step that needs a free account.
+          Build it manually or generate it from a career lookup. Every card shows
+          whether it is self reported or career-record based, so players know what
+          they are sharing.
         </p>
       </header>
 
-      <ValorantRankCardClient initialRank={initialRank} />
+      <ValorantRankCardClient
+        initialRank={params.rank}
+        initialPeak={params.peak}
+        initialAgent={params.agent}
+        initialRole={params.role}
+        initialSource={params.source}
+        initialTemplate={params.template}
+        initialName={params.name}
+        initialWeapon={params.weapon}
+        initialMap={params.map}
+      />
 
       {/* Loyalty rank card (renders only for signed-in users). */}
       <LoyaltyRankCard />

@@ -22,6 +22,7 @@ import { useActionGate } from "@/components/shared/auth/auth-gate-provider";
 import { trackCtaClick } from "@/lib/analytics/cta-click";
 import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { AGENTS, type AgentRole } from "@/lib/data/valorant-agents";
+import { MAPS } from "@/lib/data/valorant-maps";
 import { findWeapon, weaponNames } from "@/lib/tracker/valorant-assets";
 import { VALORANT_TIERS } from "@/lib/features/tools/valorant-ranks";
 import type { TrackerLookupResponse } from "@/lib/tracker/types";
@@ -89,6 +90,7 @@ export function ValorantRankCardClient({
   initialTemplate,
   initialName,
   initialWeapon,
+  initialMap,
 }: {
   initialRank?: string;
   initialPeak?: string;
@@ -98,6 +100,7 @@ export function ValorantRankCardClient({
   initialTemplate?: string;
   initialName?: string;
   initialWeapon?: string;
+  initialMap?: string;
 }) {
   const { user } = useAuth();
   const { profile } = useAuthProfile();
@@ -125,6 +128,9 @@ export function ValorantRankCardClient({
   const [weapon, setWeapon] = useState<string>(
     (initialWeapon && findWeapon(initialWeapon)?.name) || "Vandal",
   );
+  const [favMap, setFavMap] = useState<string>(
+    MAPS.find((m) => m.name.toLowerCase() === initialMap?.trim().toLowerCase())?.name ?? "Ascent",
+  );
   const [name, setName] = useState<string>(initialName?.slice(0, 32) || "");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -139,6 +145,7 @@ export function ValorantRankCardClient({
   const displayName = name.trim() || profile?.display_name || username || "Your name";
   const agents = useMemo(agentNames, []);
   const weapons = useMemo(weaponNames, []);
+  const mapNames = useMemo(() => MAPS.map((m) => m.name), []);
 
   const ogUrl = useMemo(() => {
     const params = new URLSearchParams();
@@ -149,10 +156,11 @@ export function ValorantRankCardClient({
     params.set("role", role);
     params.set("source", source);
     params.set("template", template);
+    params.set("map", favMap);
     if (displayName.trim()) params.set("name", displayName.trim());
     if (username) params.set("username", username);
     return `/api/og/rank-card?${params.toString()}`;
-  }, [agent, displayName, peakRank, role, source, template, tier, username, weapon]);
+  }, [agent, displayName, favMap, peakRank, role, source, template, tier, username, weapon]);
 
   // POST body used whenever a photo is uploaded (a photo can't fit in a URL).
   const cardBody = useMemo(
@@ -164,10 +172,11 @@ export function ValorantRankCardClient({
       role,
       source,
       template,
+      map: favMap,
       name: displayName.trim(),
       ...(photo ? { photo } : {}),
     }),
-    [agent, displayName, peakRank, photo, role, source, template, tier, weapon],
+    [agent, displayName, favMap, peakRank, photo, role, source, template, tier, weapon],
   );
 
   async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -255,6 +264,7 @@ export function ValorantRankCardClient({
     params.set("role", role);
     params.set("source", source);
     params.set("template", template);
+    params.set("map", favMap);
     if (name.trim()) params.set("name", name.trim());
     return `${window.location.origin}/rank-card?${params.toString()}`;
   }
@@ -410,6 +420,13 @@ export function ValorantRankCardClient({
             )}
             {photoError && <p className="mt-2 text-xs text-error">{photoError}</p>}
           </div>
+
+          <SelectField
+            label="Favourite map"
+            value={favMap}
+            onChange={setFavMap}
+            options={mapNames}
+          />
 
           {source === "career" && (
             <div className="rounded-xl border border-border bg-background/40 p-3">
@@ -571,11 +588,14 @@ function RankCardPreview({
   const [loading, setLoading] = useState(false);
   const requestKey = photo ? JSON.stringify(body) : ogUrl;
   const latest = useRef(requestKey);
+  // Key of the render currently on screen. Guards the effect so a finished
+  // render doesn't re-trigger it (that caused an endless "Updating…" loop).
+  const renderedKey = useRef(ogUrl);
   const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     latest.current = requestKey;
-    if (!photo && ogUrl === displayed) return;
+    if (renderedKey.current === requestKey) return;
     // Debounce so rapid form edits trigger one render, not one per keystroke.
     const timer = setTimeout(async () => {
       setLoading(true);
@@ -592,6 +612,7 @@ function RankCardPreview({
           const url = URL.createObjectURL(blob);
           if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
           objectUrlRef.current = url;
+          renderedKey.current = requestKey;
           setDisplayed(url);
         } catch {
           /* keep the previous card visible */
@@ -603,6 +624,7 @@ function RankCardPreview({
       const img = new window.Image();
       img.onload = () => {
         if (latest.current === requestKey) {
+          renderedKey.current = requestKey;
           setDisplayed(ogUrl);
           setLoading(false);
         }
@@ -613,7 +635,7 @@ function RankCardPreview({
       img.src = ogUrl;
     }, 450);
     return () => clearTimeout(timer);
-  }, [requestKey, ogUrl, photo, body, displayed]);
+  }, [requestKey, ogUrl, photo, body]);
 
   // Release the last object URL on unmount.
   useEffect(

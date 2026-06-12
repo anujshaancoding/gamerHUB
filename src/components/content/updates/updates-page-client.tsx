@@ -44,6 +44,8 @@ const updates: UpdateEntry[] = [
     highlights: [
       "Four card templates — Ember, Frost, Aurum and a white Clean style — each with full-bleed background art and matching accents",
       "Upload your own photo onto the card; your main agent moves into the backdrop behind it, classic trading-card style",
+      "Pick a favourite map and its splash art fades into the card's top corner",
+      "The OVR badge now blends your current rank with your peak, so the number rewards proven ceiling",
       "New trading-card layout: overall rating badge, hero art with ghosted backdrop, peak rank and weapon chips, and a bold name block",
       "Your name appears exactly as you type it, set in a new condensed display typeface",
       "Template picker now shows live art thumbnails so you can see each style before choosing",
