@@ -12,11 +12,11 @@ export const runtime = "nodejs";
 
 type SatoriFont = { name: string; data: ArrayBuffer; weight: 400 | 500 | 600 | 700 | 800 | 900; style: "normal" };
 
-// Card fonts for Satori: Outfit for labels/UI, Teko (tall condensed, the
-// classic trading-card display face) for the rating, name and rank. Fetched
-// once per server lifetime and cached. An IE11 user-agent makes Google serve
-// TTF (Satori cannot parse woff2). Fully guarded — any failure falls back to
-// the built-in font, never a 500.
+// Card fonts for Satori: Outfit for labels/UI, Teko (tall condensed) for the
+// rating and rank, Black Ops One (military stencil) for the player name.
+// Fetched once per server lifetime and cached. An IE11 user-agent makes
+// Google serve TTF (Satori cannot parse woff2). Fully guarded — any failure
+// falls back to the built-in font, never a 500.
 let fontsCache: SatoriFont[] | null = null;
 async function loadFonts(): Promise<SatoriFont[]> {
   if (fontsCache) return fontsCache;
@@ -27,12 +27,13 @@ async function loadFonts(): Promise<SatoriFont[]> {
     { family: "Teko", weight: 500 },
     { family: "Teko", weight: 600 },
     { family: "Teko", weight: 700 },
+    { family: "Black Ops One", weight: 400 },
   ];
   const loaded: SatoriFont[] = [];
   for (const { family, weight } of wanted) {
     try {
       const css = await fetch(
-        `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}`,
+        `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`,
         {
           headers: {
             "User-Agent":
@@ -208,12 +209,16 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
   const nameLine2 = nameWords.length > 1 ? nameWords[nameWords.length - 1] : null;
   const nameLine1 = nameLine2 ? nameWords.slice(0, -1).join(" ") : displayName.trim();
   const longest = Math.max(nameLine1.length, nameLine2?.length ?? 0);
-  // Teko is condensed, so it can run larger than a regular face.
-  const nameFontSize = longest > 16 ? 72 : longest > 11 ? 92 : 116;
+  // Black Ops One is a wide stencil face, so the name runs smaller than the
+  // condensed Teko numerals.
+  const nameFontSize = longest > 16 ? 42 : longest > 11 ? 54 : 70;
 
   const fonts = await loadFonts();
   const baseFontFamily = fonts.some((f) => f.name === "Outfit") ? "Outfit" : "Arial";
   const displayFontFamily = fonts.some((f) => f.name === "Teko") ? "Teko" : baseFontFamily;
+  const nameFontFamily = fonts.some((f) => f.name === "Black Ops One")
+    ? "Black Ops One"
+    : displayFontFamily;
 
   return new ImageResponse(
     (
@@ -497,11 +502,11 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                   <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                     <span
                       style={{
-                        fontFamily: displayFontFamily,
+                        fontFamily: nameFontFamily,
                         fontSize: nameFontSize,
-                        fontWeight: 600,
+                        fontWeight: 400,
                         color: text,
-                        lineHeight: 0.9,
+                        lineHeight: 1.05,
                         letterSpacing: 1,
                       }}
                     >
@@ -510,11 +515,11 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                     {nameLine2 && (
                       <span
                         style={{
-                          fontFamily: displayFontFamily,
+                          fontFamily: nameFontFamily,
                           fontSize: nameFontSize,
-                          fontWeight: 600,
+                          fontWeight: 400,
                           color: isLight ? text : accent,
-                          lineHeight: 0.9,
+                          lineHeight: 1.05,
                           letterSpacing: 1,
                         }}
                       >
