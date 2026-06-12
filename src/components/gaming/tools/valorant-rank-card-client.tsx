@@ -10,7 +10,6 @@ import {
   Download,
   ImagePlus,
   Loader2,
-  Search,
   Share2,
   ShieldCheck,
   Sparkles,
@@ -143,7 +142,6 @@ export function ValorantRankCardClient({
     hs: number;
     kast: number;
   } | null>(null);
-  const [riotId, setRiotId] = useState<string>("");
   const [careerLoaded, setCareerLoaded] = useState(initialSource === "career");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -265,10 +263,10 @@ export function ValorantRankCardClient({
       "/api/integrations/riot/connect?returnTo=" + encodeURIComponent("/rank-card?source=career");
   }
 
-  async function lookupCareerRecord(idOverride?: string) {
-    const trimmed = (idOverride ?? riotId).trim();
+  async function lookupCareerRecord(linkedRiotId: string) {
+    const trimmed = (linkedRiotId || "").trim();
     if (!trimmed || !trimmed.includes("#")) {
-      setLookupError("Enter Riot ID as Name#TAG.");
+      setLookupError("Link your Valorant account to generate a career card.");
       return;
     }
 
@@ -508,68 +506,54 @@ export function ValorantRankCardClient({
 
           {source === "career" && (
             <div className="rounded-xl border border-border bg-background/40 p-3">
-              {/* Link-your-account path — verified, one Riot account per ggLobby account */}
-              <div className="mb-3">
-                {linkedRiot ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRiotId(linkedRiot);
-                      lookupCareerRecord(linkedRiot);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    Use my linked account · {linkedRiot}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={linkValorantAccount}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    Link your Valorant account
-                  </button>
-                )}
-                <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
-                  Linking proves the card is really yours. A Valorant account can be linked to only one ggLobby account.
-                </p>
+              <div className="mb-1 text-[11px] font-black uppercase tracking-wider text-text-muted">
+                Career card · verified via your Valorant account
               </div>
+              <p className="mb-3 text-[11px] leading-relaxed text-text-muted">
+                Career stats are pulled only for the Valorant account you link to ggLobby — you can
+                make a verified card for your own account only. One Valorant account links to a single
+                ggLobby account.
+              </p>
+
+              {!user ? (
+                <button
+                  type="button"
+                  onClick={() => openAuthGate()}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Sign in to link your Valorant account
+                </button>
+              ) : linkedRiot ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full gap-2"
+                  isLoading={lookupLoading}
+                  onClick={() => lookupCareerRecord(linkedRiot)}
+                  leftIcon={!lookupLoading ? <ShieldCheck className="h-4 w-4" /> : undefined}
+                >
+                  Generate card for {linkedRiot}
+                </Button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={linkValorantAccount}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Link your Valorant account
+                </button>
+              )}
+
               {linkNotice && (
-                <p className={`mb-3 text-xs ${linkNotice.type === "success" ? "text-success" : "text-error"}`}>
+                <p className={`mt-3 text-xs ${linkNotice.type === "success" ? "text-success" : "text-error"}`}>
                   {linkNotice.msg}
                 </p>
               )}
-              <div className="mb-2 text-[11px] font-black uppercase tracking-wider text-text-muted">
-                or enter a Riot ID manually
-              </div>
-              <label className="block">
-                <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-text-muted">
-                  Riot ID for career record
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    value={riotId}
-                    onChange={(event) => setRiotId(event.target.value)}
-                    placeholder="Name#TAG"
-                    className="min-w-0 flex-1 rounded-lg border border-border bg-surface-light/60 px-3 py-2.5 text-sm text-text transition-colors hover:border-border-light focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={lookupCareerRecord}
-                    isLoading={lookupLoading}
-                    leftIcon={<Search className="h-4 w-4" />}
-                  >
-                    Fetch
-                  </Button>
-                </div>
-              </label>
-              {lookupError && (
-                <p className="mt-2 text-xs text-error">{lookupError}</p>
-              )}
-              {careerLoaded ? (
+              {lookupError && <p className="mt-2 text-xs text-error">{lookupError}</p>}
+
+              {careerLoaded && (
                 <div className="mt-3 grid gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-primary">
                     <BadgeCheck className="h-3.5 w-3.5" />
@@ -582,13 +566,9 @@ export function ValorantRankCardClient({
                     <span>Role: <strong className="text-text">{role}</strong></span>
                   </div>
                   <p className="text-xs leading-relaxed text-text-muted">
-                    Switch to Manual if the player wants to create a self-reported card.
+                    Want a self-reported card instead? Switch to Manual.
                   </p>
                 </div>
-              ) : (
-                <p className="mt-2 text-xs leading-relaxed text-text-muted">
-                  Enter Riot ID and fetch. Career cards use lookup data and are marked as career record.
-                </p>
               )}
             </div>
           )}
