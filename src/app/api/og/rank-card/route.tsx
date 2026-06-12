@@ -14,9 +14,10 @@ type SatoriFont = { name: string; data: ArrayBuffer; weight: 400 | 500 | 600 | 7
 
 // Card fonts for Satori: Outfit for labels/UI, Teko (tall condensed) for the
 // rating and rank, Black Ops One (military stencil) for the player name.
-// Fetched once per server lifetime and cached. An IE11 user-agent makes
-// Google serve TTF (Satori cannot parse woff2). Fully guarded — any failure
-// falls back to the built-in font, never a 500.
+// Fetched once per server lifetime and cached. Sending NO user-agent makes
+// Google's css2 endpoint serve plain TTF (Satori cannot parse woff/woff2);
+// an IE11 UA returns woff for some families and silently drops them. Fully
+// guarded — any failure falls back to the built-in font, never a 500.
 let fontsCache: SatoriFont[] | null = null;
 async function loadFonts(): Promise<SatoriFont[]> {
   if (fontsCache) return fontsCache;
@@ -34,12 +35,6 @@ async function loadFonts(): Promise<SatoriFont[]> {
     try {
       const css = await fetch(
         `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",
-          },
-        },
       ).then((r) => r.text());
       const url = css.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/)?.[1];
       if (!url) continue;
@@ -211,7 +206,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
   const longest = Math.max(nameLine1.length, nameLine2?.length ?? 0);
   // Black Ops One is a wide stencil face, so the name runs smaller than the
   // condensed Teko numerals.
-  const nameFontSize = longest > 16 ? 42 : longest > 11 ? 54 : 70;
+  const nameFontSize = longest > 16 ? 38 : longest > 11 ? 48 : 62;
 
   const fonts = await loadFonts();
   const baseFontFamily = fonts.some((f) => f.name === "Outfit") ? "Outfit" : "Arial";
@@ -334,7 +329,16 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
               src={photoUri}
               width={820}
               height={1010}
-              style={{ position: "absolute", top: 126, left: 252, objectFit: "contain" }}
+              style={{
+                position: "absolute",
+                top: 126,
+                left: 252,
+                objectFit: "contain",
+                // Dissolve the photo's lower edge so the cropped body merges
+                // into the card instead of ending on a hard line.
+                maskImage: "linear-gradient(to bottom, #000 62%, transparent 92%)",
+                WebkitMaskImage: "linear-gradient(to bottom, #000 62%, transparent 92%)",
+              }}
             />
           ) : !blank && agentPortraitUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -546,12 +550,12 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                     </span>
                     {rankEmblem ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img alt="" src={rankEmblem} width={112} height={112} />
+                      <img alt="" src={rankEmblem} width={156} height={156} />
                     ) : (
                       <div
                         style={{
-                          width: 112,
-                          height: 112,
+                          width: 156,
+                          height: 156,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -559,7 +563,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                           border: `3px solid ${accentSoft}`,
                         }}
                       >
-                        <span style={{ fontSize: 44, fontWeight: 900, color: accent }}>?</span>
+                        <span style={{ fontSize: 60, fontWeight: 900, color: accent }}>?</span>
                       </div>
                     )}
                     <span
