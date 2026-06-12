@@ -28,10 +28,10 @@ import {
 } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { REGIONS, LANGUAGES, GAMING_STYLES, SUPPORTED_GAMES } from "@/lib/constants/games";
-import { getGameConfig } from "@/lib/game-configs";
+import { getGameConfig } from "@/lib/features/game-configs";
 import { createClient } from "@/lib/db/client-browser";
-import { optimizedUpload, createPreview } from "@/lib/upload";
-import { Logo } from "@/components/layout/logo";
+import { optimizedUpload, createPreview } from "@/lib/services/upload";
+import { Logo } from "@/components/shared/layout/logo";
 
 const steps = [
   { id: 1, title: "Basic Info", icon: User },

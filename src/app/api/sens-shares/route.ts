@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
-import { SENS_GAMES } from "@/lib/tools/sens-share-types";
+import { SENS_GAMES } from "@/lib/features/tools/sens-share-types";
 
 const ALLOWED_GAMES = SENS_GAMES.map((g) => g.id);
 

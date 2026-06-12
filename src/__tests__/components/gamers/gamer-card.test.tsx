@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GamerCard } from '@/components/gamers/gamer-card';
+import { GamerCard } from '@/components/gaming/gamers/gamer-card';
 
 // Mock dependencies
 jest.mock('@/lib/db/client-browser', () => ({

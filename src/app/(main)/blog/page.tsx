@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/db/client";
-import { BASE_URL } from "@/lib/seo/constants";
+import { BASE_URL } from "@/lib/features/seo/constants";
 import {
   BlogListingPage,
   type BlogListingPost,
-} from "@/components/blog/blog-listing-page";
+} from "@/components/content/blog/blog-listing-page";
 
 export const metadata: Metadata = {
   title: "Gaming Blog — Guides, News & Updates | ggLobby",

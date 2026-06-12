@@ -12,7 +12,7 @@ import {
   getLolMatch,
   calculateLolStats,
   VALORANT_RANKS,
-} from "@/lib/integrations/riot";
+} from "@/lib/services/integrations/riot";
 import {
   getCS2Stats,
   getDota2Profile,
@@ -20,7 +20,7 @@ import {
   calculateCS2DisplayStats,
   calculateDota2Stats,
   DOTA2_RANKS,
-} from "@/lib/integrations/steam";
+} from "@/lib/services/integrations/steam";
 import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";
 import {
@@ -29,7 +29,7 @@ import {
   getCocLeagueName,
   getClanWarLog,
   mapWarLogToMatches,
-} from "@/lib/integrations/coc";
+} from "@/lib/services/integrations/coc";
 
 // POST - Sync stats for a specific game
 export async function POST(

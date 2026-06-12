@@ -8,7 +8,7 @@ import {
   tierGroup,
   tierColor,
   normaliseTier,
-} from "@/lib/tools/valorant-ranks";
+} from "@/lib/features/tools/valorant-ranks";
 
 describe("valorant-ranks", () => {
   it("lists every tier lowest → highest, ending at Radiant", () => {

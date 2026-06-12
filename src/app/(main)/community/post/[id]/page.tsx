@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { permanentRedirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/db/client";
-import { BASE_URL } from "@/lib/seo";
+import { BASE_URL } from "@/lib/features/seo";
 
 interface Props {
   params: Promise<{ id: string }>;

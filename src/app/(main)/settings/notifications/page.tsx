@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell } from "lucide-react";
-import { NotificationPreferences } from "@/components/notifications";
+import { NotificationPreferences } from "@/components/system/notifications";
 
 export default function NotificationSettingsPage() {
   return (

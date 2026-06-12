@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Crosshair, ArrowLeft } from "lucide-react";
 import { listValorantCrosshairs } from "@/lib/pro/queries";
-import { CrosshairGallery } from "@/components/tools/crosshair-gallery";
+import { CrosshairGallery } from "@/components/gaming/tools/crosshair-gallery";
 
 export const revalidate = 300;
 

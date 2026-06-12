@@ -13,7 +13,7 @@ import {
 import { useSession, signIn, signOut as nextAuthSignOut, SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
 import type { Profile } from "@/types/database";
-import { POLICY_VERSION } from "@/lib/legal/policy-version";
+import { POLICY_VERSION } from "@/lib/features/legal/policy-version";
 
 // ─── Context Types ──────────────────────────────────────────────────────────
 

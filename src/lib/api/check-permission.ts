@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import type { UserPermissionContext } from "@/lib/permissions";
-import { isPromoPeriodActive } from "@/lib/promo";
+import { isPromoPeriodActive } from "@/lib/features/promo";
 
 /**
  * Server-side helper for API routes.

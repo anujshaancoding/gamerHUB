@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TierListMaker } from "@/components/tools/tier-list-maker";
+import { TierListMaker } from "@/components/gaming/tools/tier-list-maker";
 
 export const metadata: Metadata = {
   title: "Tier List Maker — Drag-and-drop S/A/B/C/D rankings · ggLobby",

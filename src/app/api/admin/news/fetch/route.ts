@@ -7,7 +7,7 @@ import {
   GAME_KEYWORDS_SCORED,
   OTHER_GAME_KEYWORDS,
   INDIA_ASIA_KEYWORDS,
-} from "@/lib/news/constants";
+} from "@/lib/features/news/constants";
 
 // Custom RSS fields for Reddit and other non-standard feeds
 const parser = new Parser({

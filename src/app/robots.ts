@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { BASE_URL } from "@/lib/seo";
+import { BASE_URL } from "@/lib/features/seo";
 
 export default function robots(): MetadataRoute.Robots {
   // V2 is a Valorant-only content site. Allow the public content pillars
@@ -27,6 +27,8 @@ export default function robots(): MetadataRoute.Robots {
     "/giveaway",
     "/leaderboard",
     "/rank-card",
+    "/passport",
+    "/passport/*",
     "/overview",
     "/updates",
     "/help",

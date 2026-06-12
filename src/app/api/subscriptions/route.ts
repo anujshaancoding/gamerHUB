@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { noCacheResponse } from "@/lib/api/cache-headers";
-import { isPromoPeriodActive, PROMO_END_DATE } from "@/lib/promo";
+import { isPromoPeriodActive, PROMO_END_DATE } from "@/lib/features/promo";
 import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get user's current subscription

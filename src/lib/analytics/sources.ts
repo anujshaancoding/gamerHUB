@@ -44,6 +44,14 @@ export const CTA_SOURCES = {
   rank_card: "rank_card",
   /** "Save/publish my Valorant rank card to profile" action gate. */
   rank_card_save: "rank_card_save",
+  /** "Save my Valorant Passport" action gate. */
+  passport_save: "passport_save",
+  /** "Download my Valorant Passport PNG" action. */
+  passport_download: "passport_download",
+  /** "Share my Valorant Passport" action. */
+  passport_share: "passport_share",
+  /** "Submit my Valorant Passport for weekly feature" action. */
+  passport_feature_submit: "passport_feature_submit",
   /** "Save/publish my rank-distribution result" action gate. */
   rank_percentile_save: "rank_percentile_save",
   /** "Save & share my sens setup" action gate. */

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SCENE_PLAYERS, getScenePlayer, TIER_LABEL } from "@/lib/data/india-scene";
-import { SceneProfile } from "@/components/scene/scene-profile";
+import { SceneProfile } from "@/components/gaming/scene/scene-profile";
 
 interface Props {
   params: Promise<{ slug: string }>;

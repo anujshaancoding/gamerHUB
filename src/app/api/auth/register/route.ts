@@ -11,11 +11,11 @@ import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limi
 import { logger } from "@/lib/logger";
 import { validateBody } from "@/lib/security/validate-body";
 import { issueEmailVerificationToken } from "@/lib/auth/email-verification";
-import { sendEmail, EmailNotConfiguredError } from "@/lib/email/send-email";
+import { sendEmail, EmailNotConfiguredError } from "@/lib/services/email/send-email";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
-import { recordConsent } from "@/lib/legal/record-consent";
-import { POLICY_VERSION } from "@/lib/legal/policy-version";
+import { recordConsent } from "@/lib/features/legal/record-consent";
+import { POLICY_VERSION } from "@/lib/features/legal/policy-version";
 
 // 10 requests per 15 minutes
 const rateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });

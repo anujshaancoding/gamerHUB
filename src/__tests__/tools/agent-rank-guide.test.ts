@@ -9,7 +9,7 @@ import {
   recsFor,
   isRankBand,
   isRoleSlug,
-} from "@/lib/tools/agent-rank-guide";
+} from "@/lib/features/tools/agent-rank-guide";
 import { AGENTS } from "@/lib/data/valorant-agents";
 
 describe("agent-rank-guide", () => {

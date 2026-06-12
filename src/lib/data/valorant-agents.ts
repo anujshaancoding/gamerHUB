@@ -582,6 +582,13 @@ export function getAgent(slug: string): Agent | undefined {
   return AGENTS.find((a) => a.slug === slug);
 }
 
+/** Resolve an agent by slug or display name, ignoring case and punctuation. */
+export function findAgent(value: string | null | undefined): Agent | undefined {
+  if (!value) return undefined;
+  const n = norm(value);
+  return AGENTS.find((a) => norm(a.slug) === n || norm(a.name) === n);
+}
+
 export const ROLES: AgentRole[] = [
   "Duelist",
   "Initiator",

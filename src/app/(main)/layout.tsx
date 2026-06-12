@@ -1,6 +1,6 @@
-import { Navbar } from "@/components/layout/navbar";
-import { Sidebar } from "@/components/layout/sidebar";
-import { LazyCallWrapper } from "@/components/call/lazy-call-wrapper";
+import { Navbar } from "@/components/shared/layout/navbar";
+import { Sidebar } from "@/components/shared/layout/sidebar";
+import { LazyCallWrapper } from "@/components/gaming/call/lazy-call-wrapper";
 
 export default function MainLayout({
   children,

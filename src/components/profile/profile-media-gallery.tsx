@@ -12,8 +12,8 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { optimizedUpload } from "@/lib/upload";
-import { storagePathFromUrl } from "@/lib/storage";
+import { optimizedUpload } from "@/lib/services/upload";
+import { storagePathFromUrl } from "@/lib/services/storage";
 import { MediaLightbox, type MediaItem } from "./media-lightbox";
 
 // Raw clips are accepted as-is and compressed server-side (ffmpeg), so this

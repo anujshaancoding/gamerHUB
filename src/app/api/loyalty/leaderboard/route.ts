@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLeaderboard } from "@/lib/loyalty/loyalty";
+import { getLeaderboard } from "@/lib/features/loyalty/loyalty";
 
 export const dynamic = "force-dynamic";
 

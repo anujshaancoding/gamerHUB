@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getStripe } from "@/lib/stripe-client";
+import { getStripe } from "@/lib/services/stripe-client";
 import { queryKeys } from "@/lib/query";
 
 interface SubscriptionPlan {

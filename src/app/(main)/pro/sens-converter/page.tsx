@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { SensConverter } from "@/components/pro/sens-converter";
+import { SensConverter } from "@/components/monetization/pro/sens-converter";
 
 export function generateMetadata(): Metadata {
   return {

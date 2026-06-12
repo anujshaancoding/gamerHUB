@@ -11,7 +11,7 @@ import {
 } from "@/lib/data/valorant-patches";
 import { getAgent, agentIcon } from "@/lib/data/valorant-agents";
 import { getMap, mapListIcon } from "@/lib/data/valorant-maps";
-import { PatchTierList } from "@/components/patch/patch-tier-list";
+import { PatchTierList } from "@/components/content/patch/patch-tier-list";
 
 export function generateStaticParams() {
   return getAllPatchSlugs().map((version) => ({ version }));

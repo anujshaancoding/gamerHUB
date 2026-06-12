@@ -14,7 +14,7 @@ import {
   Circle,
   ArrowUpRight,
 } from "lucide-react";
-import { VALORANT as V } from "@/lib/theme/valorant-theme";
+import { VALORANT as V } from "@/lib/features/theme/valorant-theme";
 import { AGENTS, agentIcon } from "@/lib/data/valorant-agents";
 import { DemoSwitcher } from "@/components/demo/demo-switcher";
 

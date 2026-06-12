@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, Info } from "lucide-react";
 import { listProEvents } from "@/lib/pro/queries";
-import { EventsList } from "@/components/pro/events-list";
+import { EventsList } from "@/components/monetization/pro/events-list";
 
 export const metadata: Metadata = {
   title: "Indian Valorant Tournament Calendar · ggLobby",

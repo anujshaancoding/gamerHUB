@@ -7,7 +7,7 @@ import {
   getPlayer,
   verifyPlayerToken,
   CocApiError,
-} from "@/lib/integrations/coc";
+} from "@/lib/services/integrations/coc";
 import { logger } from "@/lib/logger";
 
 // POST - Connect a Clash of Clans account via player tag

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getProPlayerDetail } from "@/lib/pro/queries";
-import { PlayerDetail } from "@/components/pro/player-detail";
+import { PlayerDetail } from "@/components/monetization/pro/player-detail";
 
 interface Props {
   params: Promise<{ slug: string }>;

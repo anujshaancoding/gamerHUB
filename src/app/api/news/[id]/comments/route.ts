@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/get-user";
-import { isNewsHidden } from "@/lib/news/visibility";
+import { isNewsHidden } from "@/lib/features/news/visibility";
 
 interface RouteParams {
   params: Promise<{ id: string }>;

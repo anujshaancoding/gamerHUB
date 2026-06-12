@@ -16,15 +16,15 @@ import {
   MessageSquare,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { PremiumFeatureGate } from "@/components/premium/PremiumFeatureGate";
-import { BlogEditorTutorial } from "@/components/blog/blog-editor-tutorial";
+import { PremiumFeatureGate } from "@/components/monetization/premium/PremiumFeatureGate";
+import { BlogEditorTutorial } from "@/components/content/blog/blog-editor-tutorial";
 
 const RichTextEditor = dynamic(
-  () => import("@/components/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
+  () => import("@/components/content/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
   { ssr: false, loading: () => <div className="h-[400px] bg-surface border border-border rounded-xl animate-pulse" /> }
 );
-import { BlogCreationWizard } from "@/components/blog/blog-creation-wizard";
-import { FeaturedImageUpload } from "@/components/blog/featured-image-upload";
+import { BlogCreationWizard } from "@/components/content/blog/blog-creation-wizard";
+import { FeaturedImageUpload } from "@/components/content/blog/featured-image-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

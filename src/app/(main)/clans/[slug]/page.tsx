@@ -24,14 +24,14 @@ import {
   Swords,
 } from "lucide-react";
 import { Card, Button, Badge, Avatar } from "@/components/ui";
-import { ClanHeader } from "@/components/clans/clan-header";
-import { ClanMemberCard } from "@/components/clans/clan-member-card";
-import { ClanJoinModal } from "@/components/clans/clan-join-modal";
-import { ClanInviteModal } from "@/components/clans/clan-invite-modal";
-import { ClanSettingsModal } from "@/components/clans/clan-settings-modal";
-import { ClanWall } from "@/components/clans/clan-wall";
-import { ClanMissions } from "@/components/clans/clan-missions";
-import { ClanScrims } from "@/components/clans/clan-scrims";
+import { ClanHeader } from "@/components/gaming/clans/clan-header";
+import { ClanMemberCard } from "@/components/gaming/clans/clan-member-card";
+import { ClanJoinModal } from "@/components/gaming/clans/clan-join-modal";
+import { ClanInviteModal } from "@/components/gaming/clans/clan-invite-modal";
+import { ClanSettingsModal } from "@/components/gaming/clans/clan-settings-modal";
+import { ClanWall } from "@/components/gaming/clans/clan-wall";
+import { ClanMissions } from "@/components/gaming/clans/clan-missions";
+import { ClanScrims } from "@/components/gaming/clans/clan-scrims";
 import { useClan } from "@/lib/hooks/useClan";
 import { useClanMembers } from "@/lib/hooks/useClanMembers";
 import { useAuth } from "@/lib/hooks/useAuth";

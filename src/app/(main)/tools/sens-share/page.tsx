@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Smartphone } from "lucide-react";
-import { SensShareBoard } from "@/components/tools/sens-share-board";
+import { SensShareBoard } from "@/components/gaming/tools/sens-share-board";
 
 export const metadata: Metadata = {
   title: "Community Sensitivity Share — Valorant configs · ggLobby",

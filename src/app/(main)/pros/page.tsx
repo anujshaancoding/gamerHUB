@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, Info } from "lucide-react";
 import { listProPlayers } from "@/lib/pro/queries";
-import { RankingTable } from "@/components/pro/ranking-table";
+import { RankingTable } from "@/components/monetization/pro/ranking-table";
 
 export const metadata: Metadata = {
   title: "Indian Valorant Pros — Rankings, Stats & Gear · ggLobby",

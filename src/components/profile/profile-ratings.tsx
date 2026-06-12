@@ -12,7 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button } from "@/components/ui";
-import { RatingModal } from "@/components/ratings/rating-modal";
+import { RatingModal } from "@/components/gaming/ratings/rating-modal";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useMyEndorsement } from "@/lib/hooks/useRatings";
 import { useGameTheme } from "@/components/profile/game-theme-provider";

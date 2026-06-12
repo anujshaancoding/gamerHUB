@@ -4,7 +4,7 @@ import { createClient } from "@/lib/db/client";
 import crypto from "crypto";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
-import { sendEmail } from "@/lib/email/send-email";
+import { sendEmail } from "@/lib/services/email/send-email";
 import { validateBody } from "@/lib/security/validate-body";
 
 // 5 requests per 15 minutes per IP (botnets can rotate IPs — keeps single

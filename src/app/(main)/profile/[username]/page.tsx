@@ -18,7 +18,7 @@ import { StatTrackers } from "@/components/profile/stat-trackers";
 import { ClanDisplay } from "@/components/profile/clan-display";
 import { RankHistoryTimeline } from "@/components/profile/rank-history-timeline";
 import { ProfileActivity } from "@/components/profile/profile-activity";
-import { GlobalRatingBreakdown, scoreToStanding } from "@/components/ratings/global-rating-breakdown";
+import { GlobalRatingBreakdown, scoreToStanding } from "@/components/gaming/ratings/global-rating-breakdown";
 import {
   FeatureFlag,
   CustomThemeLayer,

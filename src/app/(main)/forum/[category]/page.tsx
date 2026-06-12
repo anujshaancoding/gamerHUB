@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, PlusCircle, Pin, Lock, CheckCircle2 } from "lucide-react";
 import { Avatar, Badge } from "@/components/ui";
 import { RelativeTime } from "@/components/ui/RelativeTime";
-import { ForumCategoryIcon } from "@/components/forum/forum-icon";
+import { ForumCategoryIcon } from "@/components/content/forum/forum-icon";
 import {
   getForumCategoryBySlug,
   listForumCategories,

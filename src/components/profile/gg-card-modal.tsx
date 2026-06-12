@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import { generateGGCard, downloadGGCard, type GGCardData } from "@/lib/gg-card";
+import { generateGGCard, downloadGGCard, type GGCardData } from "@/lib/features/gg-card";
 
 interface GGCardModalProps {
   isOpen: boolean;

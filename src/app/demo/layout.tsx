@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { VALORANT } from "@/lib/theme/valorant-theme";
+import { VALORANT } from "@/lib/features/theme/valorant-theme";
 
 export const metadata: Metadata = {
   title: "Home Design Demos · ggLobby",

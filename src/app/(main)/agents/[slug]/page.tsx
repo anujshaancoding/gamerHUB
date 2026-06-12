@@ -5,7 +5,7 @@ import {
   getAgent,
   fetchAbilityIcons,
 } from "@/lib/data/valorant-agents";
-import { AgentDetail } from "@/components/agents/agent-detail";
+import { AgentDetail } from "@/components/system/agents/agent-detail";
 
 export function generateStaticParams() {
   return AGENTS.map((a) => ({ slug: a.slug }));

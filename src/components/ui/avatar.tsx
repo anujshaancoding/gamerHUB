@@ -3,7 +3,7 @@
 import { forwardRef, useState } from "react";
 import Image from "next/image";
 import { cn, generateAvatarFallback } from "@/lib/utils";
-import { normalizeImageUrl } from "@/lib/storage";
+import { normalizeImageUrl } from "@/lib/services/storage";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;

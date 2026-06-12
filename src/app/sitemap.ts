@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { BASE_URL } from "@/lib/seo";
+import { BASE_URL } from "@/lib/features/seo";
 import { createClient } from "@/lib/db/client";
 import { AGENTS } from "@/lib/data/valorant-agents";
 import { MAPS } from "@/lib/data/valorant-maps";
@@ -19,6 +19,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/maps`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/pros`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/patch`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE_URL}/passport`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE_URL}/passport/gallery`, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE_URL}/tier-list`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/crosshairs`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/tools`, changeFrequency: "weekly", priority: 0.8 },

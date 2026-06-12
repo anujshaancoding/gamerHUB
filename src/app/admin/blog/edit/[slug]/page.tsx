@@ -19,16 +19,16 @@ import dynamic from "next/dynamic";
 import { useBlogPost, useUpdateBlogPost } from "@/lib/hooks/useBlog";
 
 const RichTextEditor = dynamic(
-  () => import("@/components/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
+  () => import("@/components/content/blog/rich-text-editor").then((mod) => mod.RichTextEditor),
   { ssr: false, loading: () => <div className="h-[400px] bg-white/[0.03] border border-white/10 rounded-xl animate-pulse" /> }
 );
 
 const BlogTemplateRenderer = dynamic(
-  () => import("@/components/blog/blog-template-renderer").then((mod) => mod.BlogTemplateRenderer),
+  () => import("@/components/content/blog/blog-template-renderer").then((mod) => mod.BlogTemplateRenderer),
   { ssr: false }
 );
 
-import { FeaturedImageUpload } from "@/components/blog/featured-image-upload";
+import { FeaturedImageUpload } from "@/components/content/blog/featured-image-upload";
 import {
   BLOG_CATEGORIES,
   BLOG_TEMPLATES,

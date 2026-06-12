@@ -27,10 +27,10 @@ import {
   Star,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Card, Badge, Modal, Avatar } from "@/components/ui";
-import { GamerCard } from "@/components/gamers/gamer-card";
-import { OnlineGamersSection } from "@/components/gamers/online-gamers-section";
-import { PlayerLookupTab } from "@/components/gamers/player-lookup-tab";
-import { SuggestedFriendsSection, ProPlayersSection } from "@/components/suggestions";
+import { GamerCard } from "@/components/gaming/gamers/gamer-card";
+import { OnlineGamersSection } from "@/components/gaming/gamers/online-gamers-section";
+import { PlayerLookupTab } from "@/components/gaming/gamers/player-lookup-tab";
+import { SuggestedFriendsSection, ProPlayersSection } from "@/components/social/suggestions";
 import { SUPPORTED_GAMES, REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useFriends } from "@/lib/hooks/useFriends";
@@ -44,7 +44,7 @@ import {
   useMyLFGPosts,
   useRespondToApplication,
 } from "@/lib/hooks/useLFG";
-import { useActionGate } from "@/components/auth/auth-gate-provider";
+import { useActionGate } from "@/components/shared/auth/auth-gate-provider";
 import { CTA_SOURCES } from "@/lib/analytics/sources";
 import { DURATION_OPTIONS } from "@/types/lfg";
 import { cn } from "@/lib/utils";

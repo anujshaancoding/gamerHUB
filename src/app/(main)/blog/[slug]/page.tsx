@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/db/client";
-import { JsonLd, BASE_URL, SITE_NAME, ORGANIZATION_JSONLD } from "@/lib/seo";
+import { JsonLd, BASE_URL, SITE_NAME, ORGANIZATION_JSONLD } from "@/lib/features/seo";
 import { BLOG_CATEGORIES } from "@/types/blog";
 import { CommunityPostPage } from "@/app/(main)/community/post/[id]/community-post-client";
 

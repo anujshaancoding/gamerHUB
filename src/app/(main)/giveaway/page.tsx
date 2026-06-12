@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { ACTION_POINTS } from "@/lib/loyalty/constants";
+import { ACTION_POINTS } from "@/lib/features/loyalty/constants";
 
 interface Rec {
   userId: string;

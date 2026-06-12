@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getProPlayerDetail, listProPlayers } from "@/lib/pro/queries";
-import { CompareView } from "@/components/pro/compare-view";
+import { CompareView } from "@/components/monetization/pro/compare-view";
 import type { ProGame, ProPlayerWithTeam } from "@/lib/pro/types";
 
 export const metadata: Metadata = {

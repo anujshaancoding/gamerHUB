@@ -8,7 +8,7 @@ import {
   REGION_META,
   rowsFor,
   percentileFor,
-} from "@/lib/tools/rank-distribution";
+} from "@/lib/features/tools/rank-distribution";
 
 describe("rank-distribution", () => {
   const profile = RANK_PROFILES[0];

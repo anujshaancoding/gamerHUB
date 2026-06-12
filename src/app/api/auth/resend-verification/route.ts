@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getPool } from "@/lib/db/index";
 import { issueEmailVerificationToken } from "@/lib/auth/email-verification";
-import { sendEmail } from "@/lib/email/send-email";
+import { sendEmail } from "@/lib/services/email/send-email";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import { validateBody } from "@/lib/security/validate-body";

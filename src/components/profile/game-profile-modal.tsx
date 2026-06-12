@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from "@/components/ui";
 import { SUPPORTED_GAMES } from "@/lib/constants/games";
-import { getGameConfig } from "@/lib/game-configs";
+import { getGameConfig } from "@/lib/features/game-configs";
 import {
   useCreateUserGame,
   useUpdateUserGame,

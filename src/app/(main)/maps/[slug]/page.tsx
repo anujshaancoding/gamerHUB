@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MAPS, getMap } from "@/lib/data/valorant-maps";
 import { getMapCallouts } from "@/lib/data/valorant-callouts";
-import { MapLineups } from "@/components/maps/map-lineups";
+import { MapLineups } from "@/components/gaming/maps/map-lineups";
 
 export function generateStaticParams() {
   return MAPS.map((m) => ({ slug: m.slug }));

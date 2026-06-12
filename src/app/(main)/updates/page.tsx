@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { UpdatesPageClient } from "@/components/updates/updates-page-client";
+import { UpdatesPageClient } from "@/components/content/updates/updates-page-client";
 
 export const metadata: Metadata = {
   title: "Updates - What's New",

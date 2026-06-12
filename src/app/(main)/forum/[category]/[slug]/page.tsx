@@ -5,7 +5,7 @@ import { ChevronLeft, Lock, Pin, CheckCircle2, Eye } from "lucide-react";
 import { Avatar, Badge } from "@/components/ui";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { getForumCategoryBySlug, getForumThread, listForumReplies } from "@/lib/pro/forum-queries";
-import { ForumThreadView } from "@/components/forum/forum-thread-view";
+import { ForumThreadView } from "@/components/content/forum/forum-thread-view";
 
 export const revalidate = 0;
 

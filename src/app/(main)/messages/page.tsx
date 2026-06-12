@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Gamepad2, MessageCircle, Loader2 } from "lucide-react";
-import { ConversationListPanel } from "@/components/messages/conversation-list-panel";
-import { NewConversationModal } from "@/components/messages/new-conversation-modal";
+import { ConversationListPanel } from "@/components/social/messages/conversation-list-panel";
+import { NewConversationModal } from "@/components/social/messages/new-conversation-modal";
 import { useConversations, createConversation } from "@/lib/hooks/useMessages";
 import { useAuth } from "@/lib/hooks/useAuth";
 

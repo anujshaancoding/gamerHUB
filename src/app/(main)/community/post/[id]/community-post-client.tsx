@@ -37,7 +37,7 @@ import {
 } from "@/components/ui";
 import { createClient } from "@/lib/db/client-browser";
 import { cn } from "@/lib/utils";
-import { ShareCardModal } from "@/components/blog/share-card-modal";
+import { ShareCardModal } from "@/components/content/blog/share-card-modal";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/lib/hooks/useAuth";

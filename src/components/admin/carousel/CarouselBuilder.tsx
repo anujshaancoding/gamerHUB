@@ -17,7 +17,7 @@ import { useAdminBlogPosts } from "@/lib/hooks/useAdminBlog";
 import {
   extractSlides,
   type ExtractInput,
-} from "@/lib/carousel/extract-tips";
+} from "@/lib/features/carousel/extract-tips";
 import {
   renderDeck,
   renderSlide,
@@ -25,9 +25,9 @@ import {
   SLIDE_W,
   type CarouselSlide,
   type SlideKind,
-} from "@/lib/carousel/render-carousel";
-import { RANK_THEMES, RANK_TIERS, type RankTier } from "@/lib/carousel/rank-themes";
-import { downloadAll, downloadBlob } from "@/lib/carousel/download";
+} from "@/lib/features/carousel/render-carousel";
+import { RANK_THEMES, RANK_TIERS, type RankTier } from "@/lib/features/carousel/rank-themes";
+import { downloadAll, downloadBlob } from "@/lib/features/carousel/download";
 
 type SourceMode = "blog" | "scratch";
 

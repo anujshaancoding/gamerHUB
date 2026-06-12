@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { Card, Button, Input, Textarea, Badge } from "@/components/ui";
-import { PremiumFeatureGate } from "@/components/premium/PremiumFeatureGate";
+import { PremiumFeatureGate } from "@/components/monetization/premium/PremiumFeatureGate";
 import { useClans } from "@/lib/hooks/useClans";
 import { useGames } from "@/lib/hooks/useGames";
 import { SUPPORTED_GAMES } from "@/lib/constants/games";

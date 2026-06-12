@@ -17,7 +17,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, SelectWithOther } from "@/components/ui";
-import { ThemeSwitcher } from "@/components/settings";
+import { ThemeSwitcher } from "@/components/shared/settings";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
 import {

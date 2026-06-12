@@ -21,10 +21,10 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
-import { DEFAULT_GAME_THUMBNAILS } from "@/lib/news/constants";
+import { DEFAULT_GAME_THUMBNAILS } from "@/lib/features/news/constants";
 import type { NewsArticle, NewsCategory } from "@/types/news";
-import { NewsComments } from "@/components/news/news-comments";
-import { NewsShareCardModal } from "@/components/news/news-share-card-modal";
+import { NewsComments } from "@/components/content/news/news-comments";
+import { NewsShareCardModal } from "@/components/content/news/news-share-card-modal";
 import { InstagramEmbed as ReactInstagramEmbed } from "react-social-media-embed";
 
 const GAME_COLORS: Record<string, string> = {

@@ -77,3 +77,17 @@ export function weaponDisplayIconUrl(uuid: string): string {
 export function proxyAssetUrl(kind: "agent" | "weapon", id: string): string {
   return `/api/tracker/asset/${kind}/${encodeURIComponent(id)}`;
 }
+
+/** Resolve a weapon by id or display name, ignoring case. */
+export function findWeapon(value: string | null | undefined): AssetMeta | undefined {
+  if (!value) return undefined;
+  const n = value.trim().toLowerCase();
+  return Object.values(WEAPONS).find((w) => w.id === n || w.name.toLowerCase() === n);
+}
+
+/** Display names of all guns (excludes the knife), for manual pickers. */
+export function weaponNames(): string[] {
+  return Object.values(WEAPONS)
+    .filter((w) => w.id !== "knife")
+    .map((w) => w.name);
+}

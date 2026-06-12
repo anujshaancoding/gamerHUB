@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ToolsLandingMotion } from "@/components/tools/tools-landing-motion";
+import { ToolsLandingMotion } from "@/components/gaming/tools/tools-landing-motion";
 
 export const metadata: Metadata = {
   title: "Gamer Tools — FOV, sens, crosshair codes, rank percentile · ggLobby",

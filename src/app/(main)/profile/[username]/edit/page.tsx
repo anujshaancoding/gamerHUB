@@ -28,7 +28,7 @@ import {
 import { Button, Input, LegacySelect as Select, Textarea, Card, Avatar, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { REGIONS, LANGUAGES, GAMING_STYLES } from "@/lib/constants/games";
-import { optimizedUpload, createPreview } from "@/lib/upload";
+import { optimizedUpload, createPreview } from "@/lib/services/upload";
 import { useMyGames, useDeleteUserGame, type UserGameWithGame } from "@/lib/hooks/useUserGames";
 import { GameProfileModal } from "@/components/profile/game-profile-modal";
 import Link from "next/link";

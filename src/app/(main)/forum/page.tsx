@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listForumCategories, listLatestForumThreads } from "@/lib/pro/forum-queries";
-import { ForumLanding } from "@/components/forum/forum-landing";
+import { ForumLanding } from "@/components/content/forum/forum-landing";
 
 export const revalidate = 60;
 

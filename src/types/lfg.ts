@@ -128,6 +128,6 @@ export const DURATION_OPTIONS = [
 export { REGIONS } from "@/lib/constants/games";
 
 // Re-export game configs for convenience
-export { getGameConfig, GAME_CONFIGS, usesNumericRating } from "@/lib/game-configs";
-export type { GameConfig, RankOption, GameModeOption, AgentOption, MapOption } from "@/lib/game-configs";
+export { getGameConfig, GAME_CONFIGS, usesNumericRating } from "@/lib/features/game-configs";
+export type { GameConfig, RankOption, GameModeOption, AgentOption, MapOption } from "@/lib/features/game-configs";
 

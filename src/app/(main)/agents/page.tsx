@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AgentsGrid } from "@/components/agents/agents-grid";
+import { AgentsGrid } from "@/components/system/agents/agents-grid";
 
 export const metadata: Metadata = {
   title: "Valorant Agents — Abilities & Guides | ggLobby",

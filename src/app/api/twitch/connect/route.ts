@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { getTwitchAuthUrl } from "@/lib/integrations/twitch";
+import { getTwitchAuthUrl } from "@/lib/services/integrations/twitch";
 import { getUser } from "@/lib/auth/get-user";
 
 // GET - Initiate Twitch OAuth flow

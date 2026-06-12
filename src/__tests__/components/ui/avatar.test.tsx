@@ -26,7 +26,7 @@ jest.mock('@/lib/utils', () => ({
 }));
 
 // Mock storage normalizeImageUrl (passes src through unchanged)
-jest.mock('@/lib/storage', () => ({
+jest.mock('@/lib/services/storage', () => ({
   normalizeImageUrl: (src: string | null) => src ?? null,
 }));
 

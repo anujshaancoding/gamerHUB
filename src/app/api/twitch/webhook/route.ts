@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { verifyTwitchWebhook } from "@/lib/integrations/twitch";
+import { verifyTwitchWebhook } from "@/lib/services/integrations/twitch";
 
 // POST - Handle Twitch EventSub webhooks
 export async function POST(request: NextRequest) {

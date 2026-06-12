@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
-import { isNewsHidden } from "@/lib/news/visibility";
+import { isNewsHidden } from "@/lib/features/news/visibility";
 
 export async function GET(
   request: NextRequest,

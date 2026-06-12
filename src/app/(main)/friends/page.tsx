@@ -18,8 +18,8 @@ import { Button, Input, Card, Avatar, Badge } from "@/components/ui";
 import { useFriends, useFriendRequests, useSocialCounts } from "@/lib/hooks/useFriends";
 import { useFollowing, useFollowers } from "@/lib/hooks/useFollowing";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { FriendCard } from "@/components/friends/friend-card";
-import { FollowCard } from "@/components/friends/follow-card";
+import { FriendCard } from "@/components/social/friends/friend-card";
+import { FollowCard } from "@/components/social/friends/follow-card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 

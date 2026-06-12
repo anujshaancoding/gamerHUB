@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { listForumCategories } from "@/lib/pro/forum-queries";
 import { getUser } from "@/lib/auth/get-user";
-import { NewThreadForm } from "@/components/forum/new-thread-form";
+import { NewThreadForm } from "@/components/content/forum/new-thread-form";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 

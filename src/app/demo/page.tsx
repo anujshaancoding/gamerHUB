@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { VALORANT } from "@/lib/theme/valorant-theme";
+import { VALORANT } from "@/lib/features/theme/valorant-theme";
 
 const DEMOS = [
   {

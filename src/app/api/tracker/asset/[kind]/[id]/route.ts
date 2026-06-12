@@ -16,6 +16,8 @@ import {
   agentDisplayIconUrl,
   weaponDisplayIconUrl,
 } from "@/lib/tracker/valorant-assets";
+import { rankIconUrl } from "@/lib/features/tools/valorant-ranks";
+import { agentPortrait, findAgent } from "@/lib/data/valorant-agents";
 
 // 1x1 transparent PNG, base64
 const TRANSPARENT_PNG = Buffer.from(
@@ -48,6 +50,13 @@ export async function GET(
     upstream = agentDisplayIconUrl(AGENTS[key].uuid);
   } else if (kind === "weapon" && WEAPONS[key]) {
     upstream = weaponDisplayIconUrl(WEAPONS[key].uuid);
+  } else if (kind === "rank") {
+    // id is a tier slug, e.g. "gold-2" → "gold 2"
+    upstream = rankIconUrl(key.replace(/-/g, " "));
+  } else if (kind === "agent-portrait") {
+    // id is an agent slug or name → full body portrait
+    const a = findAgent(key);
+    upstream = a ? agentPortrait(a.uuid) : null;
   }
 
   if (!upstream) return emptyResponse();

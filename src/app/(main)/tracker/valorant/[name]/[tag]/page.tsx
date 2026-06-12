@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { Card, Button } from "@/components/ui";
-import { ProfileHeader } from "@/components/tracker/profile-header";
-import { CategorySection } from "@/components/tracker/category-section";
-import { FavoriteWeapons } from "@/components/tracker/favorite-weapons";
-import { NotFoundCard } from "@/components/tracker/not-found-card";
-import { PerAgentTable } from "@/components/tracker/per-agent-table";
-import { RecentMatchesList } from "@/components/tracker/recent-matches-list";
-import { AccuracyBreakdown } from "@/components/tracker/accuracy-breakdown";
-import { ActFilter } from "@/components/tracker/act-filter";
+import { ProfileHeader } from "@/components/gaming/tracker/profile-header";
+import { CategorySection } from "@/components/gaming/tracker/category-section";
+import { FavoriteWeapons } from "@/components/gaming/tracker/favorite-weapons";
+import { NotFoundCard } from "@/components/gaming/tracker/not-found-card";
+import { PerAgentTable } from "@/components/gaming/tracker/per-agent-table";
+import { RecentMatchesList } from "@/components/gaming/tracker/recent-matches-list";
+import { AccuracyBreakdown } from "@/components/gaming/tracker/accuracy-breakdown";
+import { ActFilter } from "@/components/gaming/tracker/act-filter";
 import type {
   PlayerInsights,
   StatCategory,

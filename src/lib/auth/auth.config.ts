@@ -16,7 +16,7 @@ import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
-import { recordConsent } from "@/lib/legal/record-consent";
+import { recordConsent } from "@/lib/features/legal/record-consent";
 
 /**
  * Client-safe credentials error for an unverified email. Because it extends

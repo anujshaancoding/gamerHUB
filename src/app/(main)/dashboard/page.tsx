@@ -18,10 +18,10 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/db/client-browser";
 import { formatRelativeTime } from "@/lib/utils";
 import { useProgression } from "@/lib/hooks/useProgression";
-import { PremiumBadge } from "@/components/premium";
+import { PremiumBadge } from "@/components/monetization/premium";
 import { useQuests } from "@/lib/hooks/useQuests";
 import { ProgressionOverview, QuestList } from "@/components/gamification";
-import { PlayerOfWeekCard, FollowedProsCard } from "@/components/pro/pro-dashboard-widgets";
+import { PlayerOfWeekCard, FollowedProsCard } from "@/components/monetization/pro/pro-dashboard-widgets";
 import { queryKeys, STALE_TIMES } from "@/lib/query/provider";
 import type { Match, Challenge, Profile, Game, UserGame } from "@/types/database";
 

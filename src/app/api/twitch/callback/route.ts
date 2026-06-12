@@ -5,7 +5,7 @@ import {
   getTwitchUser,
   createEventSubSubscription,
   getAppAccessToken,
-} from "@/lib/integrations/twitch";
+} from "@/lib/services/integrations/twitch";
 import { cookies } from "next/headers";
 import { encryptToken } from "@/lib/security/encryption";
 

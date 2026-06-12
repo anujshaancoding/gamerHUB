@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { SceneLadder } from "@/components/scene/scene-ladder";
+import { SceneLadder } from "@/components/gaming/scene/scene-ladder";
 
 export const metadata: Metadata = {
   title: "India Scene — Semi-Pros, Amateurs & Creators · ggLobby",

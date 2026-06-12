@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/lib/theme";
+import { ThemeProvider } from "@/lib/features/theme";
 import { QueryProvider } from "@/lib/query";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { SocketProvider } from "@/lib/realtime/SocketProvider";
 import { PresenceProvider } from "@/lib/presence/PresenceProvider";
-import { AuthGateProvider } from "@/components/auth/auth-gate-provider";
-import { PWAProvider } from "@/components/pwa/PWAProvider";
-import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
-import { AppShell } from "@/components/layout/AppShell";
-import { FeedbackWidget } from "@/components/feedback/feedback-widget";
-import { PageViewTracker } from "@/components/analytics";
-import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/seo";
+import { AuthGateProvider } from "@/components/shared/auth/auth-gate-provider";
+import { PWAProvider } from "@/components/system/pwa/PWAProvider";
+import { PWAInstallPrompt } from "@/components/system/pwa/PWAInstallPrompt";
+import { AppShell } from "@/components/shared/layout/AppShell";
+import { FeedbackWidget } from "@/components/system/feedback/feedback-widget";
+import { PageViewTracker } from "@/components/system/analytics";
+import { JsonLd, BASE_URL, SITE_NAME, SITE_DESCRIPTION, ORGANIZATION_JSONLD } from "@/lib/features/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
 

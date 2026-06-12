@@ -33,7 +33,7 @@ jest.mock('next/image', () => {
   };
 });
 
-jest.mock('@/lib/storage', () => ({
+jest.mock('@/lib/services/storage', () => ({
   normalizeImageUrl: (src: string | null) => src ?? null,
 }));
 

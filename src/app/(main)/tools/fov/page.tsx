@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FovCalculator } from "@/components/tools/fov-calculator";
+import { FovCalculator } from "@/components/gaming/tools/fov-calculator";
 
 export const metadata: Metadata = {
   title: "FOV Calculator — Convert FOV between Valorant, CS2, Apex, COD · ggLobby",

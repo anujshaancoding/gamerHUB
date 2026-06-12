@@ -10,7 +10,6 @@ import {
   Images,
   CalendarDays,
   Trophy,
-  Palette,
   Crosshair,
   Flame,
   Menu,
@@ -18,13 +17,14 @@ import {
 } from "lucide-react";
 import { trackCtaClick } from "@/lib/analytics/cta-click";
 import { CTA_SOURCES } from "@/lib/analytics/sources";
-import { VALORANT as V } from "@/lib/theme/valorant-theme";
+import { VALORANT as V } from "@/lib/features/theme/valorant-theme";
 import {
   AGENTS,
   agentIcon,
   agentPortrait,
 } from "@/lib/data/valorant-agents";
 import { MAPS, mapSplash } from "@/lib/data/valorant-maps";
+import { PassportProofStrip } from "@/components/gaming/passport/passport-proof-strip";
 
 const AV = AGENTS.find((a) => a.slug === "jett")!;
 const BANNER_MAP = MAPS.find((m) => m.slug === "ascent")!;
@@ -36,19 +36,19 @@ const STRIP = ["jett", "reyna", "sova", "killjoy", "phoenix", "omen", "sage", "n
   .filter(Boolean);
 
 const TICKER = [
-  "BUILD YOUR PROFILE",
+  "CREATE YOUR PASSPORT",
   "SHOW YOUR RANK",
   "FLEX YOUR CLIPS",
-  "TRACK YOUR STREAK",
-  "JOIN THE LObBY",
+  "GET FEATURED",
+  "JOIN EARLY ACCESS",
   "WIN THE MONTHLY DROP",
 ];
 
 const FEATURES = [
-  { icon: Images, t: "Showcase wall", d: "Upload clutch clips, score screens, skin collections & GIFs." },
-  { icon: Trophy, t: "Rank & milestones", d: "Show your peak rank, badges and the road you climbed." },
-  { icon: CalendarDays, t: "Streak calendar", d: "GitHub-style attendance heatmap. Keep the grind visible." },
-  { icon: Palette, t: "Make it yours", d: "Banners, themes, skins, music — a profile that's unmistakably you." },
+  { icon: Trophy, t: "Rank proof", d: "Show current rank, peak rank and the climb you want India to see." },
+  { icon: Crosshair, t: "Agent identity", d: "Lock in your main agent, role, language and state for future squads." },
+  { icon: Images, t: "Clutch ready", d: "Keep clips and cards ready for weekly features and social drops." },
+  { icon: CalendarDays, t: "Squad data", d: "Build the profile data that later powers safer Squad Finder matches." },
 ];
 
 export default function HomePage() {
@@ -80,19 +80,22 @@ export default function HomePage() {
           gg<span style={{ color: V.red }}>Lobby</span>
         </span>
         <nav className="hidden items-center gap-6 text-sm font-bold uppercase tracking-wider md:flex">
+          <Link href="/passport" style={{ color: V.textMuted }}>Passport</Link>
+          <Link href="/passport/gallery" style={{ color: V.textMuted }}>Gallery</Link>
           <Link href="/agents" style={{ color: V.textMuted }}>Agents</Link>
           <Link href="/maps" style={{ color: V.textMuted }}>Maps</Link>
+          <Link href="/rank-card" style={{ color: V.textMuted }}>Rank Card</Link>
           <Link href="/giveaway" style={{ color: V.textMuted }}>Giveaway</Link>
           <Link href="/login" style={{ color: V.textMuted }}>Log in</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Link
-            href="/register"
+            href="/passport"
             onClick={() => trackCtaClick(CTA_SOURCES.navbar)}
             className="-skew-x-12 px-5 py-2 text-sm font-black uppercase italic tracking-wider"
             style={{ background: V.red, color: V.cream }}
           >
-            <span className="inline-block skew-x-12">Create profile</span>
+            <span className="inline-block skew-x-12">Create passport</span>
           </Link>
           {/* Mobile hamburger — reveals the same discovery links as desktop */}
           <button
@@ -123,6 +126,9 @@ export default function HomePage() {
               {[
                 { href: "/agents", label: "Agents" },
                 { href: "/maps", label: "Maps" },
+                { href: "/passport", label: "Passport" },
+                { href: "/passport/gallery", label: "Gallery" },
+                { href: "/rank-card", label: "Rank Card" },
                 { href: "/giveaway", label: "Giveaway" },
                 { href: "/login", label: "Log in" },
               ].map((item) => (
@@ -158,39 +164,39 @@ export default function HomePage() {
             <span
               style={{ WebkitTextStroke: `2px ${V.red}`, color: "transparent" }}
             >
-              identity.
+              passport.
             </span>
           </h1>
           <p
             className="mt-6 max-w-md text-base sm:text-lg"
             style={{ color: V.textMuted }}
           >
-            One profile for everything you are in VALORANT — rank, clutch clips,
-            skins, milestones and your daily grind. Build it. Flex it. Own the
-            lobby.
+            Create a free Valorant Passport for India - rank, peak, main agent,
+            role, language, state and clips in one share-ready identity. Get seen
+            now; Squad Finder opens when enough verified players join.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/register"
+              href="/passport"
               onClick={() => trackCtaClick(CTA_SOURCES.inline_banner)}
               className="group flex -skew-x-12 items-center gap-2 px-7 py-3.5 text-sm font-black uppercase tracking-wider"
               style={{ background: V.red, color: V.cream }}
             >
               <span className="flex skew-x-12 items-center gap-2">
-                Build your profile <ArrowRight className="h-4 w-4" />
+                Create passport <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
             <Link
-              href="/agents"
+              href="/rank-card"
               className="flex items-center gap-2 px-5 py-3.5 text-sm font-black uppercase tracking-wider"
               style={{ color: V.cream }}
             >
-              <Crosshair className="h-4 w-4" style={{ color: V.red }} /> Browse
-              guides
+              <Trophy className="h-4 w-4" style={{ color: V.red }} /> Make rank
+              card
             </Link>
           </div>
           <p className="mt-4 text-xs" style={{ color: V.textDim }}>
-            Free forever. Guides &amp; lineups stay open — no signup to browse.
+            Preview free. Signup only when you save, publish or join early access.
           </p>
         </div>
 
@@ -311,6 +317,8 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      <PassportProofStrip />
+
       {/* what's on your profile */}
       <section
         className="border-y"
@@ -318,7 +326,7 @@ export default function HomePage() {
       >
         <div className="mx-auto max-w-7xl px-5 py-14">
           <h2 className="text-3xl font-black uppercase italic tracking-tight sm:text-4xl">
-            Everything you are, <span style={{ color: V.red }}>on one page</span>
+            Build recognition <span style={{ color: V.red }}>before LFG</span>
           </h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((f, i) => (
@@ -352,7 +360,7 @@ export default function HomePage() {
               Sharpen up while you&apos;re here
             </h2>
             <p className="mt-1 text-sm" style={{ color: V.textMuted }}>
-              Agent guides, map lineups, pro setups — all free.
+              Agent guides, map lineups, pro setups and the Indian scene - all free.
             </p>
           </div>
           <Link
@@ -394,30 +402,30 @@ export default function HomePage() {
             style={{ color: V.red }}
           />
           <h2 className="mt-3 text-4xl font-black uppercase italic tracking-tight sm:text-6xl">
-            Claim your <span style={{ color: V.red }}>profile</span>
+            Claim your <span style={{ color: V.red }}>passport</span>
           </h2>
           <p
             className="mx-auto mt-3 max-w-md text-sm"
             style={{ color: V.textMuted }}
           >
-            Thousands of Indian players. One game. Build the profile that proves
-            it — and win the monthly drop while you grind.
+            Be early in the Indian Valorant scene. Save your identity, share your
+            rank, submit clips soon and join Squad Finder early access.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
-              href="/register"
+              href="/passport"
               onClick={() => trackCtaClick(CTA_SOURCES.inline_banner)}
               className="-skew-x-12 px-9 py-4 text-sm font-black uppercase tracking-widest"
               style={{ background: V.red, color: V.cream }}
             >
-              <span className="inline-block skew-x-12">Create free profile</span>
+              <span className="inline-block skew-x-12">Create passport</span>
             </Link>
             <Link
-              href="/giveaway"
+              href="/scene"
               className="border px-7 py-4 text-sm font-black uppercase tracking-widest"
               style={{ borderColor: V.borderLight, color: V.cream }}
             >
-              Monthly giveaway
+              India scene
             </Link>
           </div>
         </div>
@@ -438,6 +446,9 @@ export default function HomePage() {
           >
             <Link href="/agents">Agents</Link>
             <Link href="/maps">Maps</Link>
+            <Link href="/passport">Passport</Link>
+            <Link href="/passport/gallery">Gallery</Link>
+            <Link href="/rank-card">Rank Card</Link>
             <Link href="/giveaway">Giveaway</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>

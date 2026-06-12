@@ -1,0 +1,545 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+// Removed framer-motion — using CSS animations for simple dropdown reveals
+// to avoid pulling ~50KB into the always-loaded Navbar bundle.
+import {
+  Search,
+  Bell,
+  Menu,
+  X,
+  LogOut,
+  Settings,
+  User,
+  Trophy,
+  Star,
+  Users,
+  Swords,
+  Gift,
+  MessageCircle,
+  Radio,
+  Megaphone,
+  Map,
+  Wrench,
+  MessagesSquare,
+  Gamepad2,
+} from "lucide-react";
+import { Button, Avatar, Input, Badge } from "@/components/ui";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { useNotifications, useMarkAsRead, formatNotificationTime, type NotificationType } from "@/lib/hooks/useNotifications";
+import { useUnreadMessageCount } from "@/lib/hooks/useMessages";
+import { useSocialCounts } from "@/lib/hooks/useFriends";
+import { usePresence } from "@/lib/presence/PresenceProvider";
+import { StatusSelector } from "@/components/system/presence/StatusSelector";
+import { Logo } from "@/components/shared/layout/logo";
+import { SearchDropdown } from "@/components/gaming/search";
+import { useSiteSettings } from "@/lib/hooks/useSiteSettings";
+import { cn } from "@/lib/utils";
+import { trackCtaClick } from "@/lib/analytics/cta-click";
+import { CTA_SOURCES } from "@/lib/analytics/sources";
+
+const getNotificationIcon = (type: NotificationType) => {
+  switch (type) {
+    case "achievement_earned":
+      return <Trophy className="h-4 w-4 text-warning" />;
+    case "level_up":
+      return <Star className="h-4 w-4 text-primary" />;
+    case "friend_request":
+      return <Users className="h-4 w-4 text-accent" />;
+    case "clan_invite":
+      return <Users className="h-4 w-4 text-success" />;
+    case "match_reminder":
+    case "tournament_start":
+      return <Swords className="h-4 w-4 text-error" />;
+    case "battle_pass_reward":
+      return <Gift className="h-4 w-4 text-warning" />;
+    case "direct_message":
+    case "forum_reply":
+      return <MessageCircle className="h-4 w-4 text-primary" />;
+    case "stream_live":
+      return <Radio className="h-4 w-4 text-error" />;
+    case "system_announcement":
+      return <Megaphone className="h-4 w-4 text-accent" />;
+    default:
+      return <Bell className="h-4 w-4 text-text-secondary" />;
+  }
+};
+
+// Mobile menu navigation items — mirrors the sidebar IA. /messages is
+// surfaced as "Chats". Remaining Phase-3 social (standalone friends pages,
+// clans, right-rail mini chat) stay frozen and not surfaced (see V2-PLAN.md).
+const mobileNavItems = [
+  { href: "/agents", label: "Agents", icon: Swords, requiresAuth: false },
+  { href: "/maps", label: "Maps & Lineups", icon: Map, requiresAuth: false },
+  { href: "/patch", label: "Patch & Meta", icon: Swords, requiresAuth: false },
+  { href: "/tier-list", label: "Tier List", icon: Swords, requiresAuth: false },
+  { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false },
+  { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false },
+  { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false },
+  { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
+  { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
+  { href: "/messages", label: "Chats", icon: MessageCircle, requiresAuth: true },
+  { href: "/community", label: "Community", icon: Users, requiresAuth: false },
+  { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
+  { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
+];
+
+export function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, profile, signOut } = useAuth();
+  const isAuthenticated = !!user;
+  const { myStatus } = usePresence();
+
+  useSiteSettings();
+
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // Fetch notifications from backend (only when authenticated)
+  const { data: notificationData, isLoading: notificationsLoading } = useNotifications({
+    limit: 5,
+    enabled: isAuthenticated,
+  });
+
+  const notifications = notificationData?.notifications || [];
+  const unreadCount = notificationData?.unreadCount || 0;
+  const unreadMessages = useUnreadMessageCount(isAuthenticated);
+  const { counts } = useSocialCounts(user?.id);
+  const markAsReadMutation = useMarkAsRead();
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowUserMenu(false);
+      }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearch(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    // Use hard redirect (not router.push) to ensure session cookies are fully
+    // cleared before the next page loads. Client-side navigation can race with
+    // cookie cleanup, causing the middleware to still see the old session.
+    window.location.href = "/login";
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setShowSearch(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  return (
+    <nav className="fixed top-0 left-[var(--app-inset)] right-[var(--app-inset)] z-40 bg-surface/80 backdrop-blur-lg border-b border-border">
+      <div className="px-4 lg:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo - pinned left on all screen sizes */}
+          <div className="flex-shrink-0">
+            <Logo showText={true} size="md" className="hidden sm:flex" />
+            <Logo showText={true} size="sm" className="sm:hidden" />
+          </div>
+
+          {/* Search & Actions */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="hidden lg:block relative" ref={searchRef}>
+              <form onSubmit={handleSearch} role="search">
+                <Input
+                  aria-label="Search content"
+                  placeholder="Search agents, maps, pros…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 3) setShowSearch(true);
+                  }}
+                  onFocus={() => {
+                    setSearchFocused(true);
+                    if (searchQuery.length >= 3) setShowSearch(true);
+                  }}
+                  onBlur={() => setSearchFocused(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowSearch(false);
+                  }}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  rightIcon={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setShowSearch(false);
+                        }}
+                        className="hover:text-text transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : undefined
+                  }
+                  className={cn(
+                    "transition-all duration-300 ease-in-out",
+                    searchFocused ? "w-96" : "w-48"
+                  )}
+                />
+              </form>
+              <SearchDropdown
+                query={searchQuery}
+                isOpen={showSearch && searchQuery.length >= 3}
+                onClose={() => setShowSearch(false)}
+              />
+            </div>
+
+            {/* Show Login/Sign Up for guests, or Notifications/User Menu for logged in users */}
+            {!user ? (
+              /* Guest User - Show nav links + Login/Sign Up */
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link href="/agents" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Agents
+                </Link>
+                <Link href="/maps" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Maps & Lineups
+                </Link>
+                <Link href="/giveaway" className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text hover:bg-surface-light rounded-lg transition-colors">
+                  Giveaway
+                </Link>
+                <div className="hidden md:block w-px h-6 bg-border mx-1" />
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">
+                    Log In
+                  </Link>
+                </Button>
+                <Button variant="primary" size="sm" asChild>
+                  <Link href="/register" onClick={() => trackCtaClick(CTA_SOURCES.navbar)}>
+                    Create Profile
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              /* Logged In User - Show Notifications and User Menu */
+              <>
+                {/* Notifications */}
+                <div className="relative" ref={notificationRef}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    aria-label="Notifications"
+                    onClick={() => {
+                      const isOpening = !showNotifications;
+                      setShowNotifications(isOpening);
+                      setShowUserMenu(false);
+
+                      // Mark all unread notifications as read when opening the dropdown
+                      if (isOpening && unreadCount > 0) {
+                        const unreadIds = notifications
+                          .filter(n => !n.is_read)
+                          .map(n => n.id);
+                        if (unreadIds.length > 0) {
+                          markAsReadMutation.mutate(unreadIds);
+                        }
+                      }
+                    }}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-background text-xs rounded-full flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+
+                  {showNotifications && (
+                    <div
+                      className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-auto mt-0 sm:mt-2 sm:w-80 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-[fadeSlideDown_150ms_ease-out]"
+                    >
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <h3 className="font-semibold text-text">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <span className="text-xs text-text-muted">{unreadCount} unread</span>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto" aria-live="polite">
+                        {notificationsLoading ? (
+                          <div className="p-4 space-y-3">
+                            {[...Array(3)].map((_, i) => (
+                              <div key={i} className="flex items-start gap-3 animate-pulse">
+                                <div className="w-8 h-8 rounded-full bg-surface-light" />
+                                <div className="flex-1">
+                                  <div className="h-4 w-full bg-surface-light rounded mb-1" />
+                                  <div className="h-3 w-16 bg-surface-light rounded" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : notifications.length === 0 ? (
+                          <div className="p-6 text-center">
+                            <Bell className="h-8 w-8 text-text-muted mx-auto mb-2" />
+                            <p className="text-sm text-text-muted">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.slice(0, 5).map((notification) => (
+                            <Link
+                              key={notification.id}
+                              href={notification.action_url || "/notifications"}
+                              onClick={() => setShowNotifications(false)}
+                              className={cn(
+                                "flex items-start gap-3 px-4 py-3 hover:bg-surface-light cursor-pointer transition-colors",
+                                !notification.is_read && "bg-primary/5"
+                              )}
+                            >
+                              <div className="flex-shrink-0 mt-1">
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={cn(
+                                    "text-sm",
+                                    notification.is_read
+                                      ? "text-text-secondary"
+                                      : "text-text"
+                                  )}
+                                >
+                                  {notification.title}
+                                </p>
+                                {notification.body && (
+                                  <p className="text-xs text-text-muted line-clamp-1">
+                                    {notification.body}
+                                  </p>
+                                )}
+                                <p className="text-xs text-text-muted mt-1">
+                                  {formatNotificationTime(notification.created_at)}
+                                </p>
+                              </div>
+                              {!notification.is_read && (
+                                <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-2" />
+                              )}
+                            </Link>
+                          ))
+                        )}
+                      </div>
+                      <div className="border-t border-border">
+                        <Link
+                          href="/notifications"
+                          className="block px-4 py-3 text-center text-sm text-primary hover:bg-surface-light transition-colors"
+                          onClick={() => setShowNotifications(false)}
+                        >
+                          See all notifications
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* User Menu - hidden on mobile since My Profile is in hamburger */}
+                <div className="relative hidden sm:block" ref={userMenuRef}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="User menu"
+                    aria-expanded={showUserMenu}
+                    aria-haspopup="true"
+                    onClick={() => {
+                      setShowUserMenu(!showUserMenu);
+                      setShowNotifications(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setShowUserMenu(!showUserMenu);
+                        setShowNotifications(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-light transition-colors cursor-pointer"
+                  >
+                    <div className="relative">
+                      <Avatar
+                        src={profile?.avatar_url}
+                        alt={profile?.display_name || profile?.username || "User"}
+                        size="sm"
+                        status={myStatus}
+                        showStatus={false}
+                      />
+                      <StatusSelector size="sm" />
+                    </div>
+                    <span className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-text">
+                      {profile?.display_name || profile?.username}
+                    </span>
+                  </div>
+
+                  {showUserMenu && (
+                    <div
+                      className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-lg shadow-lg py-2 animate-[fadeSlideDown_150ms_ease-out]"
+                    >
+                      {profile?.username && (
+                        <Link
+                          href={`/profile/${profile.username}`}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:text-text hover:bg-surface-light"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          View Profile
+                        </Link>
+                      )}
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:text-text hover:bg-surface-light"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                      <hr className="my-2 border-border" />
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-surface-light w-full"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Mobile Menu Button - Show on small/medium screens, hide on large where sidebar is visible */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              aria-label={showMobileMenu ? "Close menu" : "Open menu"}
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              {showMobileMenu ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div
+          className="lg:hidden bg-surface border-b border-border max-h-[calc(100vh-4rem)] overflow-y-auto animate-[fadeSlideDown_150ms_ease-out]"
+        >
+          <div className="px-4 py-3 space-y-2">
+            <div className="relative mb-3">
+              <form onSubmit={handleSearch} role="search">
+                <Input
+                  aria-label="Search content"
+                  placeholder="Search agents, maps, pros…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 3) setShowSearch(true);
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.length >= 3) setShowSearch(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowSearch(false);
+                  }}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  rightIcon={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setShowSearch(false);
+                        }}
+                        className="hover:text-text transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : undefined
+                  }
+                />
+              </form>
+              <SearchDropdown
+                query={searchQuery}
+                isOpen={showSearch && searchQuery.length >= 3}
+                onClose={() => {
+                  setShowSearch(false);
+                  setShowMobileMenu(false);
+                }}
+              />
+            </div>
+            {mobileNavItems.map((item) => {
+              // Skip auth-required items for guests
+              if (item.requiresAuth && !user) return null;
+
+              const isActive = item.href === "/profile"
+                ? pathname.startsWith("/profile")
+                : pathname === item.href || pathname.startsWith(item.href + "/");
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setShowMobileMenu(false)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-text-secondary hover:text-text hover:bg-surface-light"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="flex-1">{item.label}</span>
+                </Link>
+              );
+            })}
+
+            {/* Legal Links */}
+            <div className="pt-3 mt-2 border-t border-border flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-dim px-3">
+              <Link href="/privacy" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Privacy</Link>
+              <Link href="/terms" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Terms</Link>
+              <Link href="/disclaimer" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Disclaimer</Link>
+              <Link href="/guidelines" onClick={() => setShowMobileMenu(false)} className="hover:text-text-muted">Guidelines</Link>
+              <span className="basis-full text-text-dim/60 mt-1">&copy; {new Date().getFullYear()} ggLobby</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}

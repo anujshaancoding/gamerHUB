@@ -2,12 +2,12 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/db/client";
 import { createAdminClient } from "@/lib/db/admin";
-import { BASE_URL } from "@/lib/seo/constants";
+import { BASE_URL } from "@/lib/features/seo/constants";
 import {
   CommunityPageClient,
   type BlogPost,
   type FriendPost,
-} from "@/components/community/community-page-client";
+} from "@/components/social/community/community-page-client";
 
 // Dynamic OG metadata when sharing a specific friend post via ?post= param
 export async function generateMetadata({

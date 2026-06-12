@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RankPercentile } from "@/components/tools/rank-percentile";
+import { RankPercentile } from "@/components/gaming/tools/rank-percentile";
 
 export function generateMetadata(): Metadata {
   return {

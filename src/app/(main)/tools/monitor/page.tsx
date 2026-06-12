@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MonitorGuide } from "@/components/tools/monitor-guide";
+import { MonitorGuide } from "@/components/gaming/tools/monitor-guide";
 
 export const metadata: Metadata = {
   title: "Monitor & Hz Guide — Refresh rate, response time, input lag for FPS · ggLobby",

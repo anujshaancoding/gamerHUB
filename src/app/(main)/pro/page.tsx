@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProLandingMotion } from "@/components/pro/pro-landing-motion";
+import { ProLandingMotion } from "@/components/monetization/pro/pro-landing-motion";
 
 export const metadata: Metadata = {
   title: "Pro Scene India — Valorant Rankings · ggLobby",

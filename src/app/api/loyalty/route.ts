@@ -16,7 +16,7 @@ import {
   applyReferral,
   getRecord,
   tierFor,
-} from "@/lib/loyalty/loyalty";
+} from "@/lib/features/loyalty/loyalty";
 
 export async function GET() {
   const user = await getUser();

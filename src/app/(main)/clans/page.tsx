@@ -15,7 +15,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { Card, Button, Input, Badge } from "@/components/ui";
-import { ClanCard } from "@/components/clans/clan-card";
+import { ClanCard } from "@/components/gaming/clans/clan-card";
 import { useClans } from "@/lib/hooks/useClans";
 import { useGames } from "@/lib/hooks/useGames";
 import { useAuth } from "@/lib/hooks/useAuth";

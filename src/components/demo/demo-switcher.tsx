@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { VALORANT as V } from "@/lib/theme/valorant-theme";
+import { VALORANT as V } from "@/lib/features/theme/valorant-theme";
 
 const links = [
   { href: "/demo/arena", n: "01 Arena" },

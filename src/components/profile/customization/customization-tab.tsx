@@ -26,7 +26,7 @@ import { HoverCardEditor } from "./hover-card-editor";
 import { CustomCssEditor } from "./custom-css-editor";
 import { FeatureFlag } from "./feature-flag";
 import { isFeatureEnabled } from "@/lib/config/profile-features";
-import { PremiumFeatureGate } from "@/components/premium";
+import { PremiumFeatureGate } from "@/components/monetization/premium";
 
 // ---------------------------------------------------------------------------
 // Types

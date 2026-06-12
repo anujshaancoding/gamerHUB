@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { getEventBySlug, listPickemMatches, listUserPredictions, pickemLeaderboard } from "@/lib/pro/pickem-queries";
 import { getUser } from "@/lib/auth/get-user";
-import { PickemBoard } from "@/components/pro/pickem-board";
-import { PickemLeaderboard } from "@/components/pro/pickem-leaderboard";
+import { PickemBoard } from "@/components/monetization/pro/pickem-board";
+import { PickemLeaderboard } from "@/components/monetization/pro/pickem-leaderboard";
 
 export const revalidate = 60;
 

@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { AuthGateModal } from "@/components/auth/auth-gate-modal";
+import { AuthGateModal } from "@/components/shared/auth/auth-gate-modal";
 import {
   AuthGateProvider,
   useActionGate,
-} from "@/components/auth/auth-gate-provider";
+} from "@/components/shared/auth/auth-gate-provider";
 
 const pushMock = jest.fn();
 jest.mock("next/navigation", () => ({

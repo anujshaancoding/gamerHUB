@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Overview — Find Teammates, Join Clans, Level Up | ggLobby",
+  title: "Create your Valorant Passport India | ggLobby",
   description:
-    "ggLobby is the gaming social platform where you find teammates, join clans, track stats, complete quests, and build your gaming reputation — all for free.",
+    "Create your free Valorant Passport for India. Show your rank, peak, main agent, role, state, language and clips before Squad Finder opens.",
 };
 
 export default function OverviewLayout({

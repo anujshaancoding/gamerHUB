@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { BASE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/seo";
+import { BASE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/features/seo";
 
 export const revalidate = 3600;
 

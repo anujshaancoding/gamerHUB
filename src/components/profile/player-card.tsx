@@ -7,9 +7,9 @@ import { Avatar } from "@/components/ui";
 import { useGameTheme } from "@/components/profile/game-theme-provider";
 import { AnimatedRankEmblem } from "@/components/profile/animated-rank-emblem";
 import { GGCardModal } from "@/components/profile/gg-card-modal";
-import { normalizeImageUrl } from "@/lib/storage";
+import { normalizeImageUrl } from "@/lib/services/storage";
 import type { Profile } from "@/types/database";
-import type { GGCardData } from "@/lib/gg-card";
+import type { GGCardData } from "@/lib/features/gg-card";
 
 interface PlayerCardProps {
   profile: Profile;

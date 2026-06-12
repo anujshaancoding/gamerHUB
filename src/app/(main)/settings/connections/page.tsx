@@ -7,8 +7,8 @@ import {
   ConnectionCard,
   GameStatsCard,
   SyncStatus,
-} from "@/components/integrations";
-import { CocConnectCard } from "@/components/integrations/CocConnectCard";
+} from "@/components/system/integrations";
+import { CocConnectCard } from "@/components/system/integrations/CocConnectCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Link2, Gamepad2, RefreshCw } from "lucide-react";

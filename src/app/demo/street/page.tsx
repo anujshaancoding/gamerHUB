@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Flame, Zap, ArrowRight, TrendingUp } from "lucide-react";
-import { VALORANT as V } from "@/lib/theme/valorant-theme";
+import { VALORANT as V } from "@/lib/features/theme/valorant-theme";
 import { AGENTS, agentPortrait, agentIcon } from "@/lib/data/valorant-agents";
 import { MAPS, mapSplash } from "@/lib/data/valorant-maps";
 import { DemoSwitcher } from "@/components/demo/demo-switcher";

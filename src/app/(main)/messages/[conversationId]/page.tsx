@@ -3,9 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { ConversationListPanel } from "@/components/messages/conversation-list-panel";
-import { MessageThread } from "@/components/messages/message-thread";
-import { NewConversationModal } from "@/components/messages/new-conversation-modal";
+import { ConversationListPanel } from "@/components/social/messages/conversation-list-panel";
+import { MessageThread } from "@/components/social/messages/message-thread";
+import { NewConversationModal } from "@/components/social/messages/new-conversation-modal";
 import { useConversations } from "@/lib/hooks/useMessages";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { Profile } from "@/types/database";

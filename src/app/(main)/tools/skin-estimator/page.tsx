@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SkinEstimator } from "@/components/tools/skin-estimator";
+import { SkinEstimator } from "@/components/gaming/tools/skin-estimator";
 
 export const metadata: Metadata = {
   title: "Valorant Skin Spend Estimator — How much have you spent? · ggLobby",

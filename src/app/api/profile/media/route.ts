@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPool } from "@/lib/db/index";
 import { getUser } from "@/lib/auth/get-user";
-import { deleteUploadedFileByUrl } from "@/lib/uploads/delete-file";
+import { deleteUploadedFileByUrl } from "@/lib/services/uploads/delete-file";
 
 const ALLOWED_TYPES = ["image", "video"] as const;
 

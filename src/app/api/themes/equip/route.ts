@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { isPromoPeriodActive } from "@/lib/promo";
+import { isPromoPeriodActive } from "@/lib/features/promo";
 import { getUser } from "@/lib/auth/get-user";
 
 // POST - Equip a theme

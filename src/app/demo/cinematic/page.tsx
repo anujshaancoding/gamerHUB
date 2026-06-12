@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swords, Map, Gift, Play } from "lucide-react";
-import { VALORANT as V } from "@/lib/theme/valorant-theme";
+import { VALORANT as V } from "@/lib/features/theme/valorant-theme";
 import {
   AGENTS,
   agentPortrait,

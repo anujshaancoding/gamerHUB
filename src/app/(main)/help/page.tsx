@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BASE_URL } from "@/lib/seo/constants";
+import { BASE_URL } from "@/lib/features/seo/constants";
 import { HelpCenterClient } from "./help-center-client";
 
 export const metadata: Metadata = {

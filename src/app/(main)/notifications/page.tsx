@@ -16,7 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { toast } from "sonner";
-import { NotificationItem } from "@/components/notifications";
+import { NotificationItem } from "@/components/system/notifications";
 import {
   useMarkAsRead,
   useArchiveNotification,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/services/stripe";
 import { createAdminClient } from "@/lib/db/admin";
 import type Stripe from "stripe";
 

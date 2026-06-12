@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import { useAdminNewsAction } from "@/lib/hooks/useAdminNews";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
-import { DEFAULT_GAME_THUMBNAILS } from "@/lib/news/constants";
-import { optimizedUpload, createPreview } from "@/lib/upload";
+import { DEFAULT_GAME_THUMBNAILS } from "@/lib/features/news/constants";
+import { optimizedUpload, createPreview } from "@/lib/services/upload";
 import type { NewsArticle, GameSlug, NewsCategory, NewsRegion } from "@/types/news";
 
 const EMBED_REGEX = /\[embed:(https?:\/\/[^\]]+)\]/g;

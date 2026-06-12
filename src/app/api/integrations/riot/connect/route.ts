@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { getRiotAuthUrl } from "@/lib/integrations/riot";
+import { getRiotAuthUrl } from "@/lib/services/integrations/riot";
 import { nanoid } from "nanoid";
 import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { verifySteamAuth, getSteamUser } from "@/lib/integrations/steam";
+import { verifySteamAuth, getSteamUser } from "@/lib/services/integrations/steam";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
 

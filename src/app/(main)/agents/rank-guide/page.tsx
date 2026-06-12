@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { AgentRankGuide } from "@/components/tools/agent-rank-guide";
+import { AgentRankGuide } from "@/components/gaming/tools/agent-rank-guide";
 import {
   RANK_BAND_LABEL,
   ROLE_LABEL,
@@ -9,7 +9,7 @@ import {
   isRoleSlug,
   type RankBand,
   type RoleSlug,
-} from "@/lib/tools/agent-rank-guide";
+} from "@/lib/features/tools/agent-rank-guide";
 
 interface PageProps {
   searchParams?: Promise<{ rank?: string; role?: string }>;
