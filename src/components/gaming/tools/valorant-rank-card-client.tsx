@@ -134,6 +134,15 @@ export function ValorantRankCardClient({
   const [name, setName] = useState<string>(initialName?.slice(0, 32) || "");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  // Real performance metrics from a career lookup. Drives the ggLobby Rating,
+  // which only appears on career cards — null on manual entry.
+  const [careerStats, setCareerStats] = useState<{
+    kd: number;
+    acs: number;
+    wr: number;
+    hs: number;
+    kast: number;
+  } | null>(null);
   const [riotId, setRiotId] = useState<string>("");
   const [careerLoaded, setCareerLoaded] = useState(initialSource === "career");
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -159,8 +168,16 @@ export function ValorantRankCardClient({
     params.set("map", favMap);
     if (displayName.trim()) params.set("name", displayName.trim());
     if (username) params.set("username", username);
+    // Career stats power the ggLobby Rating; only sent for career cards.
+    if (source === "career" && careerStats) {
+      params.set("kd", String(careerStats.kd));
+      params.set("acs", String(careerStats.acs));
+      params.set("wr", String(careerStats.wr));
+      params.set("hs", String(careerStats.hs));
+      params.set("kast", String(careerStats.kast));
+    }
     return `/api/og/rank-card?${params.toString()}`;
-  }, [agent, displayName, favMap, peakRank, role, source, template, tier, username, weapon]);
+  }, [agent, careerStats, displayName, favMap, peakRank, role, source, template, tier, username, weapon]);
 
   // POST body used whenever a photo is uploaded (a photo can't fit in a URL).
   const cardBody = useMemo(
@@ -174,9 +191,10 @@ export function ValorantRankCardClient({
       template,
       map: favMap,
       name: displayName.trim(),
+      ...(source === "career" && careerStats ? careerStats : {}),
       ...(photo ? { photo } : {}),
     }),
-    [agent, displayName, favMap, peakRank, photo, role, source, template, tier, weapon],
+    [agent, careerStats, displayName, favMap, peakRank, photo, role, source, template, tier, weapon],
   );
 
   async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -217,6 +235,13 @@ export function ValorantRankCardClient({
       setRole(agentRole(data.insights.mainAgentName || "Jett"));
       setWeapon(data.insights.favoriteWeapons?.[0]?.weaponName || "Vandal");
       setName(data.insights.riotId.split("#")[0] || trimmed);
+      setCareerStats({
+        kd: data.insights.kd ?? 0,
+        acs: data.insights.acs ?? 0,
+        wr: data.insights.winRate ?? 0,
+        hs: data.insights.headshotPct ?? 0,
+        kast: data.insights.kast ?? 0,
+      });
       setCareerLoaded(true);
     } catch (error) {
       setLookupError(error instanceof Error ? error.message : "Career lookup failed.");

@@ -3,9 +3,10 @@ import path from "path";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
-import { normaliseTier, rankIconUrl, rankTierNumber, VALORANT_TIERS } from "@/lib/features/tools/valorant-ranks";
+import { normaliseTier, rankIconUrl } from "@/lib/features/tools/valorant-ranks";
 import { agentPortrait, findAgent } from "@/lib/data/valorant-agents";
 import { MAPS, mapSplash, type ValorantMap } from "@/lib/data/valorant-maps";
+import { computeGGRating, type GGRatingStats } from "@/lib/features/tools/gg-rating";
 import { findWeapon, weaponDisplayIconUrl } from "@/lib/tracker/valorant-assets";
 
 export const runtime = "nodejs";
@@ -132,24 +133,11 @@ function sourceTone(source: CardSource, light: boolean) {
     : { border: "#ffb84d", text: "#ffb84d", bg: "rgba(38,26,5,0.72)", label: "SELF REPORTED" };
 }
 
-/** 55–99 score for a single tier on the rank ladder; null when unranked. */
-function tierScore(rank: string): number | null {
-  const n = rankTierNumber(rank);
-  if (n == null) return null;
-  const idx = n === 27 ? VALORANT_TIERS.length - 1 : n - 3; // 0 = Iron 1
-  return Math.round(55 + (idx / (VALORANT_TIERS.length - 1)) * 44);
-}
-
-/**
- * FIFA-style overall: 70% current rank + 30% peak rank, so the badge rewards
- * proven ceiling without letting an old peak carry the number. Iron 1 floor
- * is 55, Radiant current+peak is 99.
- */
-function rankRating(rank: string, peak: string): number | null {
-  const current = tierScore(rank);
-  if (current == null) return null;
-  const peakScore = tierScore(peak);
-  return Math.round(current * 0.7 + Math.max(current, peakScore ?? current) * 0.3);
+/** Parse a numeric query/body value, or null when absent/invalid. */
+function num(value: string | number | null | undefined): number | null {
+  if (value == null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 function findMapByNameOrSlug(value: string | null): ValorantMap | null {
@@ -177,6 +165,8 @@ type CardOptions = {
   photoUri: string | null;
   /** favourite map; its splash art fills the top-right at low opacity */
   map: string | null;
+  /** career performance metrics; feed the ggLobby Rating on career cards */
+  stats: GGRatingStats;
 };
 
 async function renderCard(opts: CardOptions): Promise<ImageResponse> {
@@ -188,7 +178,10 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
   const { accent, accentSoft, text, dim, panelBg, panelBorder } = palette;
   const isLight = template === "clean";
   const tone = sourceTone(source, isLight);
-  const rating = rankRating(rankLabel, peak);
+  // The ggLobby Rating is a real-data signal: only career cards show it.
+  const rating =
+    source === "career" ? computeGGRating({ rank: rankLabel, peak, ...opts.stats }) : null;
+  const showRating = !blank && rating != null;
   const favMap = findMapByNameOrSlug(opts.map);
   const rankEmblem = rankIconUrl(rankLabel); // official tier art, null if Unranked
   const peakEmblem = rankIconUrl(peak); // official art for the peak chip, null if not a tier
@@ -407,13 +400,13 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
               </div>
             </div>
 
-            {/* Rating box */}
-            {!blank && (
+            {/* ggLobby Rating — career cards only (real-data signal) */}
+            {showRating && (
               <div
                 style={{
                   marginTop: 30,
-                  width: 172,
-                  height: 178,
+                  width: 188,
+                  height: 188,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -423,20 +416,20 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
                   background: panelBg,
                 }}
               >
+                <span style={{ fontSize: 16, fontWeight: 900, letterSpacing: 3, color: isLight ? dim : accent }}>
+                  GG RATING
+                </span>
                 <span
                   style={{
                     fontFamily: displayFontFamily,
-                    fontSize: 124,
+                    fontSize: 118,
                     fontWeight: 700,
                     color: text,
                     lineHeight: 0.9,
-                    marginTop: 14,
+                    marginTop: 4,
                   }}
                 >
-                  {rating ?? "—"}
-                </span>
-                <span style={{ fontSize: 19, fontWeight: 900, letterSpacing: 6, color: isLight ? dim : accent }}>
-                  OVR
+                  {rating}
                 </span>
               </div>
             )}
@@ -584,10 +577,25 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
               </div>
             )}
 
+            {/* GG Rating explainer — only when the rating is shown */}
+            {showRating && (
+              <span
+                style={{
+                  marginTop: 18,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                  color: dim,
+                }}
+              >
+                GG RATING = CAREER RANK + LIVE PERFORMANCE (K/D · ACS · HS% · KAST · WIN%)
+              </span>
+            )}
+
             {/* Bottom bar */}
             <div
               style={{
-                marginTop: 34,
+                marginTop: showRating ? 14 : 34,
                 height: 96,
                 display: "flex",
                 alignItems: "center",
@@ -689,6 +697,13 @@ export async function GET(request: NextRequest) {
       blank: request.nextUrl.searchParams.get("blank") === "1",
       photoUri: null,
       map: request.nextUrl.searchParams.get("map"),
+      stats: {
+        kd: num(request.nextUrl.searchParams.get("kd")),
+        acs: num(request.nextUrl.searchParams.get("acs")),
+        winRate: num(request.nextUrl.searchParams.get("wr")),
+        headshotPct: num(request.nextUrl.searchParams.get("hs")),
+        kast: num(request.nextUrl.searchParams.get("kast")),
+      },
     });
   } catch (error) {
     console.error("[og/rank-card] Error:", error);
@@ -727,6 +742,13 @@ export async function POST(request: NextRequest) {
       blank: false,
       photoUri,
       map: str("map"),
+      stats: {
+        kd: num(body.kd as string | number | null),
+        acs: num(body.acs as string | number | null),
+        winRate: num(body.wr as string | number | null),
+        headshotPct: num(body.hs as string | number | null),
+        kast: num(body.kast as string | number | null),
+      },
     });
   } catch (error) {
     console.error("[og/rank-card] POST error:", error);

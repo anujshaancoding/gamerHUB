@@ -45,7 +45,7 @@ const updates: UpdateEntry[] = [
       "Four card templates — Ember, Frost, Aurum and a white Clean style — each with full-bleed background art and matching accents",
       "Upload your own photo onto the card; your main agent moves into the backdrop behind it, classic trading-card style",
       "Pick a favourite map and its splash art fills the card's right side, fading in behind your player",
-      "The OVR badge now blends your current rank with your peak, so the number rewards proven ceiling",
+      "New ggLobby Rating — our own 40–99 player score blending career rank with real performance (K/D, ACS, HS%, KAST, win rate); shown only on career-lookup cards, never on self-reported ones",
       "New trading-card layout: overall rating badge, hero art with ghosted backdrop, peak rank and weapon chips, and a bold name block",
       "Your name appears exactly as you type it, set in a new condensed display typeface",
       "Template picker now shows live art thumbnails so you can see each style before choosing",
