@@ -254,30 +254,46 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
             />
           )}
 
-          {/* Favourite map splash, faded into the open top-right corner */}
+          {/* Favourite map: a full-height, oversized splash filling the card's
+              right side (the rest clips off the edge), its left edge fading
+              into the card. Composition: ghost agent left, hero centre, map
+              right. */}
           {!blank && favMap && (
             <div
               style={{
                 position: "absolute",
-                top: 96,
-                left: 552,
-                width: 420,
-                height: 300,
+                top: 0,
+                left: 540,
+                width: 468,
+                height: 1278,
                 display: "flex",
-                borderRadius: 26,
                 overflow: "hidden",
-                opacity: isLight ? 0.2 : 0.14,
+                opacity: isLight ? 0.4 : 0.34,
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt=""
                 src={mapSplash(favMap.uuid)}
-                width={420}
-                height={300}
-                style={{ objectFit: "cover", ...(isLight ? { filter: "grayscale(0.4)" } : {}) }}
+                width={468}
+                height={1278}
+                style={{ objectFit: "cover", ...(isLight ? { filter: "grayscale(0.35)" } : {}) }}
               />
             </div>
+          )}
+          {!blank && favMap && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 540,
+                width: 468,
+                height: 1278,
+                background: isLight
+                  ? "linear-gradient(90deg, #f2f4f6 0%, rgba(242,244,246,0) 60%)"
+                  : "linear-gradient(90deg, #0a0d12 0%, rgba(10,13,18,0) 60%)",
+              }}
+            />
           )}
 
           {/* Ghosted oversize agent. Subtle watermark normally; when the
