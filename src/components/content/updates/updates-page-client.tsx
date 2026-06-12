@@ -35,6 +35,19 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-13T06:00:00",
+    version: "1.41.1",
+    type: "improvement",
+    title: "Cleaner mobile header and faster image loading",
+    description:
+      "Polished the landing page header on phones, sped up image loading, and fixed a dead-end link on missing news articles.",
+    highlights: [
+      "Mobile landing header no longer crowds the logo — the Create Passport action now lives at the top of the menu drawer",
+      "Hero and showcase images load lighter on mobile by serving right-sized versions instead of full-resolution art",
+      "Fixed the 'Article not found' page so its button takes you back home instead of a broken link",
+    ],
+  },
+  {
     date: "2026-06-12T18:00:00",
     version: "1.41.0",
     type: "improvement",

@@ -91,7 +91,7 @@ const nextConfig: NextConfig = {
     // by default. Showcase clip uploads are larger, so raise the cap to just
     // above /api/upload's 200MB limit (extra headroom covers multipart overhead).
     // Keep in sync with MAX_FILE_SIZE in src/app/api/upload/route.ts and Nginx.
-    middlewareClientMaxBodySize: "210mb",
+    proxyClientMaxBodySize: "210mb",
   },
 
   // Permanent redirects for V2 route moves to top-level SEO-canonical paths.

@@ -92,7 +92,7 @@ export default function HomePage() {
           <Link
             href="/passport"
             onClick={() => trackCtaClick(CTA_SOURCES.navbar)}
-            className="-skew-x-12 px-5 py-2 text-sm font-black uppercase italic tracking-wider"
+            className="hidden -skew-x-12 px-5 py-2 text-sm font-black uppercase italic tracking-wider sm:inline-block"
             style={{ background: V.red, color: V.cream }}
           >
             <span className="inline-block skew-x-12">Create passport</span>
@@ -123,6 +123,17 @@ export default function HomePage() {
               className="absolute left-0 right-0 top-full z-40 mx-5 mt-1 flex flex-col overflow-hidden rounded-xl border md:hidden"
               style={{ background: V.surface, borderColor: V.border }}
             >
+              <Link
+                href="/passport"
+                onClick={() => {
+                  trackCtaClick(CTA_SOURCES.navbar);
+                  setMobileNavOpen(false);
+                }}
+                className="flex min-h-[44px] items-center justify-center border-b px-5 text-sm font-black uppercase italic tracking-wider"
+                style={{ background: V.red, color: V.cream, borderColor: V.border }}
+              >
+                Create passport
+              </Link>
               {[
                 { href: "/agents", label: "Agents" },
                 { href: "/maps", label: "Maps" },
@@ -218,6 +229,7 @@ export default function HomePage() {
                 alt=""
                 fill
                 priority
+                sizes="(min-width: 1024px) 40vw, 100vw"
                 className="object-cover object-center"
               />
               <div
@@ -290,6 +302,7 @@ export default function HomePage() {
                       src={agentPortrait(s.uuid)}
                       alt=""
                       fill
+                      sizes="(min-width: 1024px) 13vw, 30vw"
                       className="object-cover object-top"
                     />
                   </div>
