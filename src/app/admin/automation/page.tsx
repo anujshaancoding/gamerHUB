@@ -261,30 +261,66 @@ export default function AdminAutomationPage() {
             Auto-post content as configured personas with human-like timing
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleTrigger}
-            disabled={triggering}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-500/30 text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {triggering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-            Trigger Now
-          </button>
-          {settings && (
-            <button
-              onClick={() => updateSetting("automation_enabled", !settings.automation_enabled)}
+        {settings && (
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Master status — single source of truth for whether anything posts */}
+            <span
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
+                "hidden sm:flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium",
                 settings.automation_enabled
-                  ? "bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30"
-                  : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20",
+                  ? "border-green-500/30 bg-green-500/10 text-green-300"
+                  : "border-red-500/20 bg-red-500/10 text-red-300",
               )}
             >
-              {settings.automation_enabled ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-              {settings.automation_enabled ? "Enabled" : "Disabled"}
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  settings.automation_enabled ? "animate-pulse bg-green-400" : "bg-red-400",
+                )}
+              />
+              {settings.automation_enabled ? "Running" : "Stopped"}
+            </span>
+
+            {/* Manual run — only usable while automation is running */}
+            <button
+              onClick={handleTrigger}
+              disabled={triggering || !settings.automation_enabled}
+              title={
+                settings.automation_enabled
+                  ? "Run one automation tick right now"
+                  : "Start automation first to run it manually"
+              }
+              className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/20 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {triggering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              Trigger Now
             </button>
-          )}
-        </div>
+
+            {/* Master Start / Stop switch */}
+            <button
+              onClick={() => {
+                if (
+                  settings.automation_enabled &&
+                  !confirm(
+                    "Stop all community automation? Personas will stop posting and commenting until you start it again.",
+                  )
+                ) {
+                  return;
+                }
+                updateSetting("automation_enabled", !settings.automation_enabled);
+              }}
+              className={cn(
+                "flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors",
+                settings.automation_enabled
+                  ? "border-red-500/30 bg-red-500/15 text-red-300 hover:bg-red-500/25"
+                  : "border-green-500/30 bg-green-500/20 text-green-300 hover:bg-green-500/30",
+              )}
+            >
+              {settings.automation_enabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              {settings.automation_enabled ? "Stop Automation" : "Start Automation"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Health Warning */}

@@ -65,7 +65,18 @@ export async function GET(request: NextRequest) {
 
   // Newest first
   items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return NextResponse.json({ lineups: items });
+  // Lineups only change on admin POST/DELETE, so this read is safe to cache.
+  // Browser holds it 60s; any proxy/CDN serves it for 5min and revalidates in
+  // the background for a day — kills the cold refetch on every map visit.
+  return NextResponse.json(
+    { lineups: items },
+    {
+      headers: {
+        "Cache-Control":
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+      },
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {

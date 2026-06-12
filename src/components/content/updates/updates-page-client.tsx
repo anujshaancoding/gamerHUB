@@ -35,13 +35,17 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
-    date: "2026-06-12T16:00:00",
-    version: "1.40.0",
+    date: "2026-06-12T18:00:00",
+    version: "1.41.0",
     type: "improvement",
-    title: "Rank Card redesign with full-art templates",
+    title: "Faster maps, revamped Gamer Tools, and the Rank Card redesign",
     description:
-      "The Valorant Rank Card got a complete visual overhaul — trading-card style layout with rich background art instead of flat colors.",
+      "Valorant maps now load faster and stay cached, the Gamer Tools hub is reorganised with several tools surfaced for the first time, broken tier-list and agent images are fixed, and the Rank Card got a complete visual overhaul.",
     highlights: [
+      "Valorant map images load noticeably faster and no longer re-download from scratch on every refresh",
+      "Fixed tier-list and agent images that were failing to render across the site",
+      "Gamer Tools is reorganised into clear sections — Aim & Setup, Valorant, and Community & Identity — so tools are easier to find",
+      "Surfaced four tools that were previously hard to reach: Aim trainer, Rank Card maker, Valorant Passport, and the Agent rank guide",
       "Four card templates — Ember, Frost, Aurum and a white Clean style — each with full-bleed background art and matching accents",
       "Upload your own photo onto the card; your main agent moves into the backdrop behind it, classic trading-card style",
       "Pick a favourite map and its splash art fills the card's right side, fading in behind your player",
