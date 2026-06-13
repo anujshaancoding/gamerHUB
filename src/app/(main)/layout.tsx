@@ -13,7 +13,8 @@ export default function MainLayout({
         <Navbar />
         <Sidebar />
         <main id="main-content" className="lg:ml-64 pt-16 min-h-screen">
-          <div className="p-4 lg:p-6">{children}</div>
+          {/* extra bottom padding so page content clears the fixed Feedback button */}
+          <div className="p-4 lg:p-6 pb-24">{children}</div>
         </main>
       </div>
     </LazyCallWrapper>
