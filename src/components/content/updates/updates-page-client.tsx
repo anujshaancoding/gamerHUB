@@ -47,6 +47,7 @@ const updates: UpdateEntry[] = [
       "Mobile landing header no longer crowds the logo — the Create Passport action now lives at the top of the menu drawer",
       "Cleaner logged-in header on phones, with sign-in and Create Profile moved into the menu",
       "Hero and showcase images load lighter on mobile by serving right-sized versions instead of full-resolution art",
+      "Fixed a broken link after publishing a forum thread — you now land on your new thread instead of a dead page",
     ],
   },
   {

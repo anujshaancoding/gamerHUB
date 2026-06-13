@@ -42,7 +42,12 @@ export function NewThreadForm({ categories, preselected }: { categories: ForumCa
         setError(json.error || "Failed to publish");
         return;
       }
-      router.push(`/forum/${json.categorySlug}/${json.slug}`);
+      // Resolve the category slug from the form's own data so navigation never
+      // depends on the API echoing it back (the joined categorySlug can come
+      // back undefined → a broken /forum/undefined/<slug> URL).
+      const categorySlug =
+        categories.find((c) => c.id === categoryId)?.slug ?? json.categorySlug;
+      router.push(`/forum/${categorySlug}/${json.slug}`);
     } finally {
       setSubmitting(false);
     }
