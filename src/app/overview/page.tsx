@@ -79,7 +79,7 @@ export default function HomePage() {
         <span className="text-2xl font-black italic tracking-tight">
           gg<span style={{ color: V.red }}>Lobby</span>
         </span>
-        <nav className="hidden items-center gap-6 text-sm font-bold uppercase tracking-wider md:flex">
+        <nav className="hidden items-center gap-6 text-sm font-bold uppercase tracking-wider lg:flex">
           <Link href="/passport" style={{ color: V.textMuted }}>Passport</Link>
           <Link href="/passport/gallery" style={{ color: V.textMuted }}>Gallery</Link>
           <Link href="/agents" style={{ color: V.textMuted }}>Agents</Link>
@@ -104,7 +104,7 @@ export default function HomePage() {
             aria-label="Open navigation menu"
             aria-expanded={mobileNavOpen}
             aria-controls="overview-mobile-nav"
-            className="flex h-11 w-11 items-center justify-center md:hidden"
+            className="flex h-11 w-11 items-center justify-center lg:hidden"
             style={{ color: V.cream }}
           >
             {mobileNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -120,7 +120,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
-              className="absolute left-0 right-0 top-full z-40 mx-5 mt-1 flex flex-col overflow-hidden rounded-xl border md:hidden"
+              className="absolute left-0 right-0 top-full z-40 mx-5 mt-1 flex flex-col overflow-hidden rounded-xl border lg:hidden"
               style={{ background: V.surface, borderColor: V.border }}
             >
               <Link

@@ -49,6 +49,7 @@ const updates: UpdateEntry[] = [
       "Hero and showcase images load lighter on mobile by serving right-sized versions instead of full-resolution art",
       "Fixed a broken link after publishing a forum thread — you now land on your new thread instead of a dead page",
       "Fixed saved Valorant Passports not showing up in the public Passport Gallery",
+      "Fixed the landing-page menu overflowing/clipping on tablet-width screens",
     ],
   },
   {
