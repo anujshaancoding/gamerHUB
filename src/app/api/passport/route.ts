@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
           passport.name,
           passport.role,
           passport.rank,
-          JSON.stringify(passportStats),
+          passportStats,
           user.id,
         ],
       );
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           passport.name,
           passport.rank,
           passport.role,
-          JSON.stringify(passportStats),
+          passportStats,
         ],
       );
     }

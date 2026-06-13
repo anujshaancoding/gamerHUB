@@ -26,7 +26,7 @@ interface ProgressionOverviewProps {
     quests_completed: number;
     current_win_streak: number;
     best_win_streak: number;
-  };
+  } | null;
   recentBadges?: Badge[];
   activeTitle?: { name: string; color: string | null } | null;
   className?: string;
@@ -42,9 +42,19 @@ export function ProgressionOverview({
   activeTitle,
   className,
 }: ProgressionOverviewProps) {
+  // Stats are null for users who haven't played yet — fall back to zeros so the
+  // page (this widget renders on the dashboard) doesn't crash on a null read.
+  const s = stats ?? {
+    matches_played: 0,
+    matches_won: 0,
+    challenges_completed: 0,
+    quests_completed: 0,
+    current_win_streak: 0,
+    best_win_streak: 0,
+  };
   const winRate =
-    stats.matches_played > 0
-      ? Math.round((stats.matches_won / stats.matches_played) * 100)
+    s.matches_played > 0
+      ? Math.round((s.matches_won / s.matches_played) * 100)
       : 0;
 
   return (
@@ -89,7 +99,7 @@ export function ProgressionOverview({
               <Trophy className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-bold text-text">{stats.matches_won}</p>
+              <p className="text-lg font-bold text-text">{s.matches_won}</p>
               <p className="text-xs text-text-muted">Wins</p>
             </div>
           </div>
@@ -110,7 +120,7 @@ export function ProgressionOverview({
             </div>
             <div>
               <p className="text-lg font-bold text-text">
-                {stats.current_win_streak}
+                {s.current_win_streak}
               </p>
               <p className="text-xs text-text-muted">Streak</p>
             </div>
@@ -122,7 +132,7 @@ export function ProgressionOverview({
             </div>
             <div>
               <p className="text-lg font-bold text-text">
-                {stats.quests_completed}
+                {s.quests_completed}
               </p>
               <p className="text-xs text-text-muted">Quests</p>
             </div>
