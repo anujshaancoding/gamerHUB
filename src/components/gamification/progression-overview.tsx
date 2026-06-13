@@ -93,9 +93,11 @@ export function ProgressionOverview({
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* 2x2 keeps each tile wide enough for its label in both the narrow
+            dashboard column and the full-width layout (4-up clipped labels). */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
               <Trophy className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -105,7 +107,7 @@ export function ProgressionOverview({
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-accent/20 flex items-center justify-center">
               <Target className="w-5 h-5 text-accent" />
             </div>
             <div>
@@ -115,7 +117,7 @@ export function ProgressionOverview({
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-warning/20 flex items-center justify-center">
               <Flame className="w-5 h-5 text-warning" />
             </div>
             <div>
@@ -127,7 +129,7 @@ export function ProgressionOverview({
           </div>
 
           <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
-            <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-success/20 flex items-center justify-center">
               <Award className="w-5 h-5 text-success" />
             </div>
             <div>
