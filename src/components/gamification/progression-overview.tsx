@@ -92,52 +92,43 @@ export function ProgressionOverview({
           level={level}
         />
 
-        {/* Stats Grid */}
-        {/* 2x2 keeps each tile wide enough for its label in both the narrow
-            dashboard column and the full-width layout (4-up clipped labels). */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
+        {/* Stats Grid — each tile stacks vertically (icon → value → label),
+            centered, so labels never clip regardless of tile width. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex flex-col items-center gap-1.5 p-3 bg-surface-light rounded-lg text-center">
             <div className="w-10 h-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
               <Trophy className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-text">{s.matches_won}</p>
-              <p className="text-xs text-text-muted">Wins</p>
-            </div>
+            <p className="text-lg font-bold text-text leading-none">{s.matches_won}</p>
+            <p className="text-xs text-text-muted leading-tight">Wins</p>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
+          <div className="flex flex-col items-center gap-1.5 p-3 bg-surface-light rounded-lg text-center">
             <div className="w-10 h-10 shrink-0 rounded-full bg-accent/20 flex items-center justify-center">
               <Target className="w-5 h-5 text-accent" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-text">{winRate}%</p>
-              <p className="text-xs text-text-muted">Win Rate</p>
-            </div>
+            <p className="text-lg font-bold text-text leading-none">{winRate}%</p>
+            <p className="text-xs text-text-muted leading-tight">Win Rate</p>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
+          <div className="flex flex-col items-center gap-1.5 p-3 bg-surface-light rounded-lg text-center">
             <div className="w-10 h-10 shrink-0 rounded-full bg-warning/20 flex items-center justify-center">
               <Flame className="w-5 h-5 text-warning" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-text">
-                {s.current_win_streak}
-              </p>
-              <p className="text-xs text-text-muted">Streak</p>
-            </div>
+            <p className="text-lg font-bold text-text leading-none">
+              {s.current_win_streak}
+            </p>
+            <p className="text-xs text-text-muted leading-tight">Streak</p>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-surface-light rounded-lg">
+          <div className="flex flex-col items-center gap-1.5 p-3 bg-surface-light rounded-lg text-center">
             <div className="w-10 h-10 shrink-0 rounded-full bg-success/20 flex items-center justify-center">
               <Award className="w-5 h-5 text-success" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-text">
-                {s.quests_completed}
-              </p>
-              <p className="text-xs text-text-muted">Quests</p>
-            </div>
+            <p className="text-lg font-bold text-text leading-none">
+              {s.quests_completed}
+            </p>
+            <p className="text-xs text-text-muted leading-tight">Quests</p>
           </div>
         </div>
 
