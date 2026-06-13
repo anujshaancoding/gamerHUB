@@ -12,13 +12,13 @@ export default function NewsArticleNotFound() {
       <p className="text-text-muted max-w-md">
         This article doesn&apos;t exist or may have been removed.
       </p>
-      <Link href="/">
+      <Link href="/news">
         <Button
           size="lg"
           className="bg-primary text-black font-semibold hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2"
           leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          Back to Home
+          Back to News
         </Button>
       </Link>
     </div>

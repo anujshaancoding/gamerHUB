@@ -72,6 +72,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Personal/account routes require auth. Send anonymous visitors to /login with
+  // a return path — bouncing them to the marketing landing ("/") is disorienting.
+  // Discovery pages (clans, lfg, forum, pros…) stay public on purpose.
+  const protectedPrefixes = [
+    "/dashboard",
+    "/friends",
+    "/messages",
+    "/notifications",
+    "/settings",
+    "/write",
+    "/clans/create",
+  ];
+  if (
+    !user &&
+    protectedPrefixes.some((p) => path === p || path.startsWith(`${p}/`))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("callbackUrl", path);
+    return NextResponse.redirect(url);
+  }
+
   // Admin API routes (except verify-pin) require a valid signed admin token
   if (isAdminApi && !isVerifyPinRoute && !isCheckPinRoute) {
     if (!user?.id) {

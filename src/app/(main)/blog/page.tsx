@@ -34,6 +34,11 @@ export const metadata: Metadata = {
   },
 };
 
+// Serve cached HTML and refresh in the background. Previously this page was
+// rendered dynamically against the DB on every request (slow TTFB); blog posts
+// are admin-published and change infrequently, so ISR is a better fit.
+export const revalidate = 300;
+
 async function getBlogPosts(): Promise<BlogListingPost[]> {
   try {
     const db = createClient();

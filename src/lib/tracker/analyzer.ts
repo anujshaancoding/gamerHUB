@@ -25,7 +25,6 @@ function buildAimFindings(s: RawValorantStats): InsightFinding[] {
           ? "Your headshot rate is around average. Tighten crosshair placement at common head-level angles to push it higher."
           : "Your headshot rate is low. You're spraying at body-level — work on pre-aiming common head angles before peeking.",
     suggestion: hsVerdict === "weak" ? "Daily 10-min crosshair-placement warmup before queue." : undefined,
-    drillLink: hsVerdict === "weak" ? { label: "Open Aim Lab", href: "/aim" } : undefined,
   });
 
   const adrVerdict = judge(s.adr, VALORANT_THRESHOLDS.adr);
@@ -41,7 +40,6 @@ function buildAimFindings(s: RawValorantStats): InsightFinding[] {
           ? "Your damage output is fine but not dominant. Look for second-bullet follow-ups instead of disengaging after one shot."
           : "Low damage per round suggests you peek and back off without committing. Trade or commit fully when you take the duel.",
     suggestion: adrVerdict === "weak" ? "Practice spray transfers and follow-up shots." : undefined,
-    drillLink: adrVerdict === "weak" ? { label: "Aim Lab — Tracking", href: "/aim" } : undefined,
   });
 
   const fbVerdict = judge(s.firstBloodPct, VALORANT_THRESHOLDS.firstBloodPct);
@@ -56,8 +54,7 @@ function buildAimFindings(s: RawValorantStats): InsightFinding[] {
         : fbVerdict === "decent"
           ? "You break even on first contact. Pre-aim tighter or pre-fire common angles to swing this in your favor."
           : "You're losing opening duels often. Either you're peeking unsupported or your reaction-peek timing is off.",
-    suggestion: fbVerdict === "weak" ? "Drill peek-and-pre-fire timing — try our Peek Duel mode." : undefined,
-    drillLink: fbVerdict === "weak" ? { label: "Peek Duel", href: "/aim" } : undefined,
+    suggestion: fbVerdict === "weak" ? "Drill peek-and-pre-fire timing." : undefined,
   });
 
   const kastVerdict = judge(s.kast, VALORANT_THRESHOLDS.kast);
@@ -92,8 +89,7 @@ function buildGameSenseFindings(s: RawValorantStats): InsightFinding[] {
         : clutchVerdict === "decent"
           ? "You hold your own in clutches but let some winnable rounds slip. Slow down, use sound, force isolations."
           : "Clutch rounds are not landing. You're rushing decisions — practice using sound cues and isolating one enemy at a time.",
-    suggestion: clutchVerdict === "weak" ? "Try our Clutch 1v5 mode to rehearse the pressure." : undefined,
-    drillLink: clutchVerdict === "weak" ? { label: "Clutch 1v5", href: "/aim" } : undefined,
+    suggestion: clutchVerdict === "weak" ? "Slow clutches down — use sound cues and isolate one enemy at a time." : undefined,
   });
 
   const mkVerdict = judge(s.multiKillsPerMatch, VALORANT_THRESHOLDS.multiKillsPerMatch);

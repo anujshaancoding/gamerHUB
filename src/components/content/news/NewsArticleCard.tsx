@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ExternalLink,
+  ArrowRight,
   Clock,
   Eye,
   Gamepad2,
@@ -40,10 +41,8 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.03 }}
       >
-        <a
-          href={article.original_url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={`/news/${article.id}`}
           className="block"
         >
           <div className={cn(
@@ -61,7 +60,7 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
               <RelativeTime date={article.published_at || article.created_at} />
             </span>
           </div>
-        </a>
+        </Link>
       </motion.div>
     );
   }
@@ -72,10 +71,8 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <a
-        href={article.original_url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/news/${article.id}`}
         className="block"
       >
         <Card className={cn(
@@ -151,13 +148,13 @@ export function NewsArticleCard({ article, index = 0, variant = "default" }: New
                       {article.views_count.toLocaleString()}
                     </span>
                   )}
-                  <ExternalLink className="h-3 w-3 ml-auto flex-shrink-0" />
+                  <ArrowRight className="h-3 w-3 ml-auto flex-shrink-0" />
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </a>
+      </Link>
     </motion.div>
   );
 }

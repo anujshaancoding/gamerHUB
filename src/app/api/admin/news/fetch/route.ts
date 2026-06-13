@@ -104,24 +104,39 @@ function detectCategory(text: string): string {
   return "general";
 }
 
-export async function POST() {
-  try {
-    const user = await getUser();
+// Confident Valorant matches are auto-published so the news feed stays current
+// without daily manual moderation; borderline matches stay "pending" for
+// optional review. Raise this to be stricter, lower it to publish more.
+const AUTO_PUBLISH_MIN_SCORE = 3;
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function POST(request: Request) {
+  try {
+    // Auth: either a signed-in admin (the manual "Fetch now" button) or an
+    // automated scheduler presenting the shared CRON_SECRET (Authorization:
+    // Bearer <CRON_SECRET>). The latter lets a cron job keep news fresh
+    // hands-free. See docs/TESTING.md for the cron setup.
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization");
+    const isCron = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
 
     const admin = createAdminClient();
 
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
+    if (!isCron) {
+      const user = await getUser();
 
-    if (!profile?.is_admin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Get all active sources
@@ -199,6 +214,18 @@ export async function POST() {
           // Use game match score as a relevance indicator
           const relevanceScore = Math.min(gameMatch.score / 10, 1);
 
+          // Confident matches go live immediately (hands-free feed); weaker
+          // ones wait as "pending" for optional manual review. Require an
+          // explicit "valorant" mention so false positives from general
+          // esports feeds (cricket/WWE can score on generic keywords) never
+          // auto-publish unreviewed.
+          const shouldPublish =
+            gameMatch.score >= AUTO_PUBLISH_MIN_SCORE &&
+            /valorant/i.test(fullText);
+          const publishedAt = item.pubDate
+            ? new Date(item.pubDate).toISOString()
+            : new Date().toISOString();
+
           await admin.from("news_articles").insert({
             source_id: source.id,
             external_id: item.guid || itemUrl,
@@ -220,7 +247,8 @@ export async function POST() {
             category,
             region,
             tags,
-            status: "pending",
+            status: shouldPublish ? "published" : "pending",
+            published_at: shouldPublish ? publishedAt : null,
             ai_processed: false,
             ai_relevance_score: relevanceScore,
           });

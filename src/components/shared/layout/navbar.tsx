@@ -236,12 +236,14 @@ export function Navbar() {
                   Giveaway
                 </Link>
                 <div className="hidden md:block w-px h-6 bg-border mx-1" />
-                <Button variant="ghost" size="sm" asChild>
+                {/* Auth CTAs collapse into the hamburger menu on mobile to keep
+                    the header from crowding the logo (see guest section below). */}
+                <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
                   <Link href="/login">
                     Log In
                   </Link>
                 </Button>
-                <Button variant="primary" size="sm" asChild>
+                <Button variant="primary" size="sm" asChild className="hidden sm:inline-flex">
                   <Link href="/register" onClick={() => trackCtaClick(CTA_SOURCES.navbar)}>
                     Create Profile
                   </Link>
@@ -502,6 +504,28 @@ export function Navbar() {
                 }}
               />
             </div>
+            {/* Guest auth CTAs — only on mobile, where the header buttons are hidden */}
+            {!user && (
+              <div className="sm:hidden flex flex-col gap-2 pb-3 mb-1 border-b border-border">
+                <Link
+                  href="/register"
+                  onClick={() => {
+                    trackCtaClick(CTA_SOURCES.navbar);
+                    setShowMobileMenu(false);
+                  }}
+                  className="flex items-center justify-center px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary text-background hover:bg-primary/90 transition-colors"
+                >
+                  Create Profile
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center justify-center px-3 py-2.5 rounded-lg text-sm font-medium border border-border text-text-secondary hover:text-text hover:bg-surface-light transition-colors"
+                >
+                  Log In
+                </Link>
+              </div>
+            )}
             {mobileNavItems.map((item) => {
               // Skip auth-required items for guests
               if (item.requiresAuth && !user) return null;

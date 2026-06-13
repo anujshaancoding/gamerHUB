@@ -281,6 +281,44 @@ git clone <repo> /tmp/gglobby-clean && cd /tmp/gglobby-clean
 npm ci && NEXT_TELEMETRY_DISABLED=1 npm run build   # must succeed before you touch prod
 ```
 
+### 8.5 News automation (hands‑free /news feed)
+
+`/news` is populated automatically — no daily manual curation. The pipeline:
+RSS sources (`news_sources`) → `POST /api/admin/news/fetch` → keyword game/region/category
+detection → **auto‑publish** confident Valorant matches (`status='published'`), hold borderline
+ones as `pending` → old `pending` items auto‑pruned (published ones persist).
+
+**Auth:** the fetch endpoint accepts EITHER a signed‑in admin (the admin "Fetch now" button) OR a
+scheduler presenting `Authorization: Bearer $CRON_SECRET`. **Set a strong `CRON_SECRET` in the
+prod env** (it gates the cron trigger; if empty, cron auth is disabled).
+
+**Auto‑publish rule:** `gameMatch.score >= AUTO_PUBLISH_MIN_SCORE` (currently 3) **and** the
+article text explicitly mentions "valorant". The valorant‑mention guard blocks false positives —
+general esports feeds score cricket/WWE on generic keywords; those stay `pending`, never go live.
+Tune `AUTO_PUBLISH_MIN_SCORE` in `src/app/api/admin/news/fetch/route.ts`.
+
+**Source curation matters.** Prefer Valorant‑specific, high‑signal feeds (e.g. Google News
+`valorant esports india`, a dedicated Valorant news site). Reddit `r/VALORANT` works but mixes in
+low‑value posts ("how do I climb bronze"). Manage sources in **/admin/news** (seed via
+`/api/admin/news/sources/seed`). Set `is_active=false` on noisy general feeds.
+
+**VPS cron setup** (runs the fetch every 2 hours; news is published with no human in the loop):
+```bash
+# crontab -e  (on the VPS)
+0 */2 * * * curl -s -X POST https://gglobby.in/api/admin/news/fetch \
+  -H "Authorization: Bearer $CRON_SECRET" >> /var/www/gglobby/logs/news-cron.log 2>&1
+```
+> ⚠️ If/when the dormant middleware is activated (see §7 / the security rollout), `/api/admin/*`
+> will require an admin PIN cookie at the edge and this cron call will start getting 403. At that
+> point either move the fetch to a `/api/cron/news` route or add a `CRON_SECRET` bypass to the
+> admin‑API check in middleware. Verify the cron after any middleware change.
+
+**Verify automation works:**
+```bash
+curl -s -X POST https://gglobby.in/api/admin/news/fetch -H "Authorization: Bearer $CRON_SECRET"
+# → {"success":true,"sourcesProcessed":N,"totalFound":..,"totalNew":..}  then check /news
+```
+
 ---
 
 ## 9. Post‑deploy smoke test (~15 min, run on https://gglobby.in after every deploy)
@@ -316,9 +354,21 @@ Then **manually**:
 
 Prioritised. Items marked **[fixed]** are committed in this pass.
 
+> 🔴 **CRITICAL — middleware is not running in production.** `middleware.ts` is at the repo root,
+> but the app uses a `src/` directory, so Next.js ignores it (it must be `src/middleware.ts`).
+> Verified locally: no `csrf_token` cookie is set and `/admin` isn't gated until the file is moved
+> into `src/`. **Consequence:** no API rate‑limiting, **no CSRF enforcement**, and the admin
+> edge‑gate is off in prod today. It can't simply be moved — only **16 of 102** client mutation
+> files send `csrfHeaders()`, so activating CSRF naively would 403 the other ~86 (forum posts,
+> comments, DMs, profile edits…). **Fix = a deliberate, tested rollout:** wire `csrfHeaders()`
+> across all mutations → move to `src/middleware.ts` → test every POST flow → deploy with
+> monitoring. The gated‑route redirect (item 9 below) + `?callbackUrl` support are already staged
+> to activate with this rollout. **Do not move the file unattended.**
+
 | # | Sev | Area | Finding | Status |
 |---|-----|------|---------|--------|
-| 1 | 🟠 | Deploy | `deploy.sh` migrations path breaks if the `scripts→infra` reorg is pushed without updating it (§8.4). | flag — fix **with** the reorg commit |
+| 0 | 🔴 | Security | Middleware dormant in prod (root vs `src/`) — CSRF + rate‑limit + admin gate off (see callout above). | escalated — needs staged rollout |
+| 1 | 🟠 | Deploy | `deploy.sh` migrations path breaks if the `scripts→infra` reorg is pushed without updating it (§8.4). | **[fixed]** auto‑detects `infra/migrations` vs `scripts/migrations` |
 | 2 | 🟠 | Build | `next.config.ts` used deprecated `experimental.middlewareClientMaxBodySize`. | **[fixed]** → `proxyClientMaxBodySize` |
 | 3 | 🟡 | Perf | Overview hero `fill` images (map banner, agent showcase) missing `sizes` → full‑res download + console warnings. | **[fixed]** added `sizes` |
 | 4 | 🟡 | UX | Mobile (`<640px`) header crowded the logo with a skewed CTA + hamburger; CTA duplicated the hero. | **[fixed]** CTA hidden `<sm`, added as first item in mobile drawer |

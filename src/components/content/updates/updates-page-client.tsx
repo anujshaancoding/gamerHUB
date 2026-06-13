@@ -36,15 +36,17 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 const updates: UpdateEntry[] = [
   {
     date: "2026-06-13T06:00:00",
-    version: "1.41.1",
-    type: "improvement",
-    title: "Cleaner mobile header and faster image loading",
+    version: "1.42.0",
+    type: "feature",
+    title: "Valorant News section, faster Blog, and a cleaner mobile header",
     description:
-      "Polished the landing page header on phones, sped up image loading, and fixed a dead-end link on missing news articles.",
+      "A new auto-updating Valorant News section, snappier Blog and News pages, and a tidier mobile header across the app.",
     highlights: [
+      "New Valorant News section — patch notes, tournaments and roster moves for the Indian scene, kept fresh automatically",
+      "Blog and News pages now load noticeably faster (served from cache and refreshed in the background)",
       "Mobile landing header no longer crowds the logo — the Create Passport action now lives at the top of the menu drawer",
+      "Cleaner logged-in header on phones, with sign-in and Create Profile moved into the menu",
       "Hero and showcase images load lighter on mobile by serving right-sized versions instead of full-resolution art",
-      "Fixed the 'Article not found' page so its button takes you back home instead of a broken link",
     ],
   },
   {

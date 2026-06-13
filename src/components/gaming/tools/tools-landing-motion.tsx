@@ -14,7 +14,6 @@ import {
   ArrowRight,
   ChevronRight,
   MessagesSquare,
-  Target,
   CreditCard,
   Contact,
   Compass,
@@ -55,14 +54,6 @@ const sections: ToolSection[] = [
         desc: "Convert FOV between games — horizontal, vertical, 4:3 stretched and aspect-ratio scaling.",
         icon: Crop,
         color: "#00d4ff",
-      },
-      {
-        href: "/aim",
-        title: "Aim trainer",
-        desc: "Warm up in the browser — reaction, flick and tracking drills. No download, no install.",
-        icon: Target,
-        color: "#00ff88",
-        badge: "Browser",
       },
       {
         href: "/tools/monitor",

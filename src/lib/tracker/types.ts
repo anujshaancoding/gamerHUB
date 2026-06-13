@@ -148,7 +148,7 @@ export interface InsightFinding {
   suggestion?: string;     // drill / action — only for "weak"
   drillLink?: {
     label: string;
-    href: string;          // e.g. /aim?mode=peek
+    href: string;          // e.g. /tools/sens-share
   };
 }
 

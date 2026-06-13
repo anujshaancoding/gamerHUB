@@ -569,12 +569,6 @@ export function PassportClient() {
                 href: "/rank-card",
               },
               {
-                icon: Zap,
-                title: "Aim Lab",
-                body: "Play browser drills and share your score.",
-                href: "/aim",
-              },
-              {
                 icon: Trophy,
                 title: "India Scene",
                 body: "Vote for the next Indian player to go pro.",

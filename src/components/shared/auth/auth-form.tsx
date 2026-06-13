@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -60,13 +60,23 @@ const HERO = AGENTS.find((a) => a.slug === "jett")!;
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading, signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
+
+  // Where to land after auth. Honour ?callbackUrl=… set by middleware when an
+  // anonymous user was bounced off a gated route, but only accept same-site
+  // relative paths to avoid open-redirects. Default to the app shell.
+  const rawCallback = searchParams?.get("callbackUrl") ?? "";
+  const postAuthDest =
+    rawCallback.startsWith("/") && !rawCallback.startsWith("//")
+      ? rawCallback
+      : "/agents";
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace("/agents");
+      router.replace(postAuthDest);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, postAuthDest]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -94,7 +104,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       if (isLogin) {
         const { error } = await signInWithEmail(email, password);
         if (error) throw error;
-        router.push("/agents");
+        router.push(postAuthDest);
       } else {
         if (username.length < 3) throw new Error("Username must be at least 3 characters");
         if (password.length < 8) throw new Error("Password must be at least 8 characters");
