@@ -39,21 +39,40 @@ function writeJSON(key: string, value: unknown) {
   }
 }
 
+// Cached snapshots. useSyncExternalStore compares snapshots with Object.is, so
+// getSnapshot MUST return a stable reference between changes. readJSON parses
+// fresh on every call (a new object each time), which made React think the
+// store changed on every render → "getSnapshot should be cached" infinite loop.
+// Cache the parsed value and only recompute it when a change event fires.
+let tallyCache: Tally | null = null;
+let userCache: UserVotes | null = null;
+
+function refreshSnapshots() {
+  tallyCache = readJSON<Tally>(TALLY_KEY, {});
+  userCache = readJSON<UserVotes>(USER_KEY, {});
+}
+
 function subscribe(cb: () => void) {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("scene-votes-changed", cb);
-  window.addEventListener("storage", cb);
+  const handler = () => {
+    refreshSnapshots();
+    cb();
+  };
+  window.addEventListener("scene-votes-changed", handler);
+  window.addEventListener("storage", handler);
   return () => {
-    window.removeEventListener("scene-votes-changed", cb);
-    window.removeEventListener("storage", cb);
+    window.removeEventListener("scene-votes-changed", handler);
+    window.removeEventListener("storage", handler);
   };
 }
 
 function getTallySnapshot(): Tally {
-  return readJSON<Tally>(TALLY_KEY, {});
+  if (tallyCache === null) tallyCache = readJSON<Tally>(TALLY_KEY, {});
+  return tallyCache;
 }
 function getUserSnapshot(): UserVotes {
-  return readJSON<UserVotes>(USER_KEY, {});
+  if (userCache === null) userCache = readJSON<UserVotes>(USER_KEY, {});
+  return userCache;
 }
 
 // SSR-safe snapshot — keeps useSyncExternalStore happy.

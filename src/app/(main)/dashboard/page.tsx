@@ -178,7 +178,7 @@ export default function DashboardPage() {
         <div className="flex gap-2">
           <Link href="/lfg">
             <Button leftIcon={<Plus className="h-4 w-4" />}>
-              Schedule Match
+              Find a Squad
             </Button>
           </Link>
         </div>

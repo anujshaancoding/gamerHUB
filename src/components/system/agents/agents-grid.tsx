@@ -88,10 +88,10 @@ export function AgentsGrid() {
                   />
                 </div>
                 <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-sm font-bold text-text">
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-bold text-text">
                     {agent.name}
                     <span
-                      className="text-[10px] font-bold uppercase tracking-widest"
+                      className="text-[10px] font-bold uppercase tracking-wide"
                       style={{ color }}
                     >
                       {agent.role}
