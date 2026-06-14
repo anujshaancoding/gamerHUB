@@ -480,7 +480,7 @@ export function ProfileHeader({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="relative flex flex-wrap gap-2 sm:gap-3 md:min-w-[240px] xl:min-w-[280px] md:justify-end"
+              className="relative flex flex-wrap gap-2 sm:gap-3 md:min-w-[200px] lg:min-w-[240px] xl:min-w-[280px] md:justify-end"
             >
               {[
                 { label: "FRIENDS", value: friendsCount, color: "primary", listType: "friends" as const },
@@ -742,7 +742,7 @@ export function ProfileHeader({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex gap-2 flex-wrap md:justify-end md:min-w-[240px] xl:min-w-[280px] shrink-0"
+              className="flex gap-2 flex-wrap md:justify-end md:min-w-[200px] lg:min-w-[240px] xl:min-w-[280px] shrink-0"
             >
                 {isOwnProfile ? (
                   <>
