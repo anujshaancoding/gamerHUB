@@ -126,7 +126,7 @@ export function FeedbackWidget() {
 
       {/* Feedback panel */}
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-80 rounded-xl border border-border/50 bg-surface shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+        <div className="fixed bottom-20 right-6 z-50 w-[calc(100vw-3rem)] sm:w-80 max-h-[calc(100dvh-7rem)] overflow-y-auto rounded-xl border border-border/50 bg-surface shadow-2xl shadow-black/50 animate-in slide-in-from-bottom-4 fade-in duration-200">
           {/* Header */}
           <div className="border-b border-border px-4 py-3">
             <p className="text-sm font-semibold text-text">Send Feedback</p>

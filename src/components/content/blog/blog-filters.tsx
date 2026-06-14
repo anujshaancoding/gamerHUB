@@ -128,7 +128,7 @@ export function BlogFiltersComponent({
             <div className="mt-4 p-4 bg-surface rounded-xl border border-border">
               <div className="flex flex-wrap items-center gap-4">
                 {/* Game filter */}
-                <div className="min-w-[200px] flex-1">
+                <div className="min-w-[140px] sm:min-w-[200px] flex-1">
                   <label className="block text-xs font-medium text-text-muted mb-2 flex items-center gap-1.5">
                     <Gamepad2 className="w-3.5 h-3.5" />
                     Game
@@ -147,7 +147,7 @@ export function BlogFiltersComponent({
                 </div>
 
                 {/* Category filter */}
-                <div className="min-w-[180px] flex-1">
+                <div className="min-w-[140px] sm:min-w-[180px] flex-1">
                   <label className="block text-xs font-medium text-text-muted mb-2">
                     Category
                   </label>

@@ -7,15 +7,19 @@ import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { usePresence } from "@/lib/presence/PresenceProvider";
 import { createClient } from "@/lib/db/client-browser";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import type { ProPlayer } from "@/app/api/pro-players/route";
 
 interface ProPlayerCardProps {
   player: ProPlayer;
   onFollow?: (userId: string, isFollowed: boolean) => void;
   isLoading?: boolean;
+  /** "carousel" keeps a fixed width for horizontal scroll; "grid" fills the
+      grid track so it never overflows narrow columns. */
+  variant?: "carousel" | "grid";
 }
 
-export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProps) {
+export function ProPlayerCard({ player, onFollow, isLoading, variant = "carousel" }: ProPlayerCardProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
   const db = createClient();
@@ -67,7 +71,10 @@ export function ProPlayerCard({ player, onFollow, isLoading }: ProPlayerCardProp
 
   return (
     <Link href={`/profile/${profile.username}`}>
-      <Card className="p-5 h-full min-w-[240px] w-[240px] snap-start hover:border-primary/50 transition-colors cursor-pointer">
+      <Card className={cn(
+        "p-5 h-full snap-start hover:border-primary/50 transition-colors cursor-pointer",
+        variant === "grid" ? "w-full" : "min-w-[240px] w-[240px]"
+      )}>
         <div className="flex flex-col items-center text-center gap-3">
           {/* Avatar with Pro Badge */}
           <div className="relative">

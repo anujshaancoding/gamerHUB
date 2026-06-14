@@ -97,7 +97,9 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
       <div
         ref={ref}
         className={cn(
-          "relative inline-block rounded-full",
+          // shrink-0 so the avatar never deforms into an oval when placed in a
+          // flex row (its inner element had shrink-0 but the root did not).
+          "relative inline-block shrink-0 rounded-full",
           frameStyle === "rgb" && "avatar-rgb-wrapper",
           className
         )}

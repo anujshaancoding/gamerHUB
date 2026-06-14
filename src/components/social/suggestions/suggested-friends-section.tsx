@@ -107,6 +107,7 @@ export function SuggestedFriendsSection({ className, isExpanded, onToggleExpand 
               <SuggestionCard
                 suggestion={suggestion}
                 onAddFriend={handleAddFriend}
+                variant="grid"
               />
             </motion.div>
           ))}

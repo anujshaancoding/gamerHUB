@@ -93,7 +93,7 @@ export function ProPlayersSection({ className, gameId, isExpanded, onToggleExpan
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <ProPlayerCard player={player} />
+              <ProPlayerCard player={player} variant="grid" />
             </motion.div>
           ))}
         </div>

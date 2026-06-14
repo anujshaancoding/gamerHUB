@@ -298,7 +298,7 @@ export default function ClanDetailPage() {
         <button
           onClick={() => setActiveTab("wall")}
           className={cn(
-            "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+            "shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
             activeTab === "wall"
               ? "border-primary text-primary"
               : "border-transparent text-text-muted hover:text-text"
@@ -310,7 +310,7 @@ export default function ClanDetailPage() {
         <button
           onClick={() => setActiveTab("members")}
           className={cn(
-            "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+            "shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
             activeTab === "members"
               ? "border-primary text-primary"
               : "border-transparent text-text-muted hover:text-text"
@@ -324,7 +324,7 @@ export default function ClanDetailPage() {
             <button
               onClick={() => setActiveTab("missions")}
               className={cn(
-                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                "shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
                 activeTab === "missions"
                   ? "border-primary text-primary"
                   : "border-transparent text-text-muted hover:text-text"
@@ -336,7 +336,7 @@ export default function ClanDetailPage() {
             <button
               onClick={() => setActiveTab("scrims")}
               className={cn(
-                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                "shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
                 activeTab === "scrims"
                   ? "border-primary text-primary"
                   : "border-transparent text-text-muted hover:text-text"
@@ -348,7 +348,7 @@ export default function ClanDetailPage() {
             <button
               onClick={() => setActiveTab("activity")}
               className={cn(
-                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                "shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
                 activeTab === "activity"
                   ? "border-primary text-primary"
                   : "border-transparent text-text-muted hover:text-text"

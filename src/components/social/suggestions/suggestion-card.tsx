@@ -7,15 +7,19 @@ import { Card, Avatar, Badge, Button } from "@/components/ui";
 import { PremiumBadge } from "@/components/monetization/premium";
 import { usePresence } from "@/lib/presence/PresenceProvider";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import type { SuggestedUser } from "@/app/api/suggestions/route";
 
 interface SuggestionCardProps {
   suggestion: SuggestedUser;
   onAddFriend?: (userId: string) => void;
   isLoading?: boolean;
+  /** "carousel" keeps a fixed width for horizontal scroll; "grid" fills the
+      grid track so it never overflows narrow columns. */
+  variant?: "carousel" | "grid";
 }
 
-export function SuggestionCard({ suggestion, onAddFriend, isLoading }: SuggestionCardProps) {
+export function SuggestionCard({ suggestion, onAddFriend, isLoading, variant = "carousel" }: SuggestionCardProps) {
   const { user } = useAuth();
   const { getUserStatus } = usePresence();
   const [loading, setLoading] = useState(false);
@@ -67,7 +71,10 @@ export function SuggestionCard({ suggestion, onAddFriend, isLoading }: Suggestio
 
   return (
     <Link href={`/profile/${profile.username}`}>
-      <Card className="p-4 h-full min-w-[200px] w-[200px] snap-start hover:border-primary/50 transition-colors cursor-pointer">
+      <Card className={cn(
+        "p-4 h-full snap-start hover:border-primary/50 transition-colors cursor-pointer",
+        variant === "grid" ? "w-full" : "min-w-[200px] w-[200px]"
+      )}>
         <div className="flex flex-col items-center text-center gap-3">
           {/* Avatar */}
           <Avatar
