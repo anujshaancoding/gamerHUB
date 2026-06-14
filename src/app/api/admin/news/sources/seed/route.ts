@@ -3,16 +3,13 @@ import { createAdminClient } from "@/lib/db/admin";
 import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";
 
-// Default RSS sources for Indian esports gaming news
-// These are reliable, free RSS feeds focused on Valorant
+// Default RSS sources — focused on the INDIAN VALORANT pro scene.
+// We deliberately avoid broad multi-topic feeds (general "esports" feeds, Dexerto,
+// Dot Esports, r/VALORANT) because they flood the queue with cricket/WWE/global
+// noise; the fetch's "valorant" auto-publish guard blocks most of it, but these
+// targeted India/VCT feeds keep the signal high. Add more anytime in /admin/news.
 const DEFAULT_SOURCES = [
-  // ── Indian Esports (multi-game, India-focused) ──────────────────
-  {
-    name: "Sportskeeda Esports",
-    url: "https://www.sportskeeda.com/feed/esports",
-    slug: "sportskeeda-esports",
-    region: "india",
-  },
+  // ── India esports outlets (Valorant coverage) ──────────────────
   {
     name: "TalkEsport",
     url: "https://www.talkesport.com/feed/",
@@ -25,46 +22,38 @@ const DEFAULT_SOURCES = [
     slug: "afk-gaming",
     region: "india",
   },
-
-  // ── Valorant-specific ───────────────────────────────────────────
   {
     name: "Sportskeeda Valorant",
     url: "https://www.sportskeeda.com/feed/valorant",
     slug: "sportskeeda-valorant",
     region: "india",
   },
-  {
-    name: "Valorant Reddit",
-    url: "https://www.reddit.com/r/VALORANT/new/.rss",
-    slug: "reddit-valorant",
-    region: "global",
-  },
-  {
-    name: "VCT Reddit",
-    url: "https://www.reddit.com/r/ValorantCompetitive/new/.rss",
-    slug: "reddit-vct",
-    region: "global",
-  },
 
-  // ── Google News (India esports) ────────────────────────────────
+  // ── Google News — targeted Indian-scene queries ────────────────
   {
-    name: "Google News - Valorant India",
+    name: "Google News - Valorant Esports India",
     url: "https://news.google.com/rss/search?q=valorant+esports+india&hl=en-IN&gl=IN&ceid=IN:en",
     slug: "google-valorant-india",
     region: "india",
   },
-
-  // ── Global esports ─────────────────────────────────────────────
   {
-    name: "Dexerto",
-    url: "https://www.dexerto.com/feed/",
-    slug: "dexerto",
-    region: "global",
+    name: "Google News - Challengers South Asia",
+    url: "https://news.google.com/rss/search?q=%22Challengers+South+Asia%22+valorant&hl=en-IN&gl=IN&ceid=IN:en",
+    slug: "google-vcsa",
+    region: "india",
   },
   {
-    name: "Dot Esports",
-    url: "https://dotesports.com/feed",
-    slug: "dot-esports",
+    name: "Google News - Indian Valorant Teams",
+    url: "https://news.google.com/rss/search?q=valorant+(%22Global+Esports%22+OR+%22S8UL%22+OR+%22Revenant%22+OR+%22Gods+Reign%22+OR+%22Velocity+Gaming%22)&hl=en-IN&gl=IN&ceid=IN:en",
+    slug: "google-india-teams",
+    region: "india",
+  },
+
+  // ── VCT pro scene (global, for VCT Pacific where India's GE plays) ──
+  {
+    name: "Valorant Competitive (Reddit)",
+    url: "https://www.reddit.com/r/ValorantCompetitive/new/.rss",
+    slug: "reddit-vct",
     region: "global",
   },
 ];
