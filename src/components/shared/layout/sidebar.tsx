@@ -54,6 +54,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
       { href: "/messages", label: "Chats", icon: MessageCircle, requiresAuth: true, showMessageBadge: true },
+      { href: "/friends", label: "Friends", icon: UserPlus, requiresAuth: true },
+      { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
       { href: "/community", label: "Community", icon: Users, requiresAuth: false },
       { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
     ],
@@ -73,6 +75,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Esports",
     items: [
       { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false, isBeta: true },
+      { href: "/pros", label: "Pro Players", icon: Users, requiresAuth: false, isBeta: true },
       { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
       { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
     ],

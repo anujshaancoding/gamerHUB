@@ -25,6 +25,8 @@ import {
   Wrench,
   MessagesSquare,
   Gamepad2,
+  Shield,
+  UserPlus,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -78,10 +80,13 @@ const mobileNavItems = [
   { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false },
   { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false },
   { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false },
+  { href: "/pros", label: "Pro Players", icon: Users, requiresAuth: false },
   { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, requiresAuth: false },
   { href: "/profile", label: "My Profile", icon: User, requiresAuth: true },
   { href: "/messages", label: "Chats", icon: MessageCircle, requiresAuth: true },
+  { href: "/friends", label: "Friends", icon: UserPlus, requiresAuth: true },
+  { href: "/clans", label: "Clans", icon: Shield, requiresAuth: true },
   { href: "/community", label: "Community", icon: Users, requiresAuth: false },
   { href: "/find-gamers", label: "Find Gamers", icon: Gamepad2, requiresAuth: false },
   { href: "/settings", label: "Settings", icon: Settings, requiresAuth: true },
