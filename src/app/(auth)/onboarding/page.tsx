@@ -296,7 +296,11 @@ export default function OnboardingPage() {
         }
       }
 
-      router.replace("/agents");
+      // Profile-first motto: send a freshly-onboarded player straight into the
+      // Passport builder to turn their profile into a share-ready Valorant
+      // Passport (sets the gallery-visible stats.passport). "Skip for later"
+      // still goes to /agents.
+      router.replace("/passport");
     } catch (err) {
       console.error("Onboarding error:", err);
       setError("Something went wrong. Please try again.");
