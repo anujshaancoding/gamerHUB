@@ -35,6 +35,18 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-15T15:30:00",
+    version: "1.42.1",
+    type: "fix",
+    title: "Tier-list and agent images now load everywhere",
+    description:
+      "Fixed the remaining Valorant agent images that were failing to load on the Tier List maker and other pages.",
+    highlights: [
+      "Agent portraits on the Tier List maker now render instead of showing broken thumbnails",
+      "Also restores higher-quality images on share and rank cards that had stopped loading",
+    ],
+  },
+  {
     date: "2026-06-13T06:00:00",
     version: "1.42.0",
     type: "feature",

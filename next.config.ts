@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     // Serve modern formats when supported
     formats: ["image/avif", "image/webp"],
+    // Next 16 rejects any `q` not listed here with a 400. The app requests
+    // 70 (tier-list), 75 (Image default), and 90 (share/rank cards).
+    qualities: [70, 75, 90],
     // Keep optimized image responses on the server for 30 days. Riot/Valorant
     // asset UUIDs are stable, so a repeat visitor never re-downloads.
     minimumCacheTTL: 2592000,
