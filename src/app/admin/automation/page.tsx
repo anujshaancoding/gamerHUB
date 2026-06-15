@@ -159,6 +159,7 @@ export default function AdminAutomationPage() {
   const [lastActionAt, setLastActionAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   // ── Data Fetching ───────────────────────────────────────────────────────────
 
@@ -205,16 +206,25 @@ export default function AdminAutomationPage() {
   // ── Setting Update ──────────────────────────────────────────────────────────
 
   const updateSetting = async (key: keyof AutoSettings, value: unknown) => {
-    const res = await fetchWithCsrf("/api/admin/settings", {
-      method: "PATCH",
-      body: JSON.stringify({ key, value }),
-    });
-    if (res.ok) {
-      const { settings: s } = await res.json();
-      setSettings(s);
-      toast.success(`Updated ${key.replace("automation_", "").replace(/_/g, " ")}`);
-    } else {
-      toast.error("Failed to update setting");
+    try {
+      const res = await fetchWithCsrf("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ key, value }),
+      });
+      if (res.ok) {
+        const { settings: s } = await res.json();
+        setSettings(s);
+        toast.success(`Updated ${key.replace("automation_", "").replace(/_/g, " ")}`);
+      } else {
+        // Surface the real reason instead of a generic message so failures are
+        // diagnosable (e.g. 403 auth, 400 bad key, 500 server).
+        const body = await res.text().catch(() => "");
+        console.error("updateSetting failed", res.status, body);
+        toast.error(`Failed to update ${key} — ${res.status} ${res.statusText}`);
+      }
+    } catch (err) {
+      console.error("updateSetting network error", err);
+      toast.error("Network error — could not reach the server");
     }
   };
 
@@ -296,28 +306,40 @@ export default function AdminAutomationPage() {
               Trigger Now
             </button>
 
-            {/* Master Start / Stop switch */}
+            {/* Master Start / Stop switch.
+                Stopping is a two-step click instead of a native confirm() — the
+                browser can suppress confirm() (returning false), which silently
+                no-ops the click. Two-step is reversible and always works. */}
             <button
               onClick={() => {
-                if (
-                  settings.automation_enabled &&
-                  !confirm(
-                    "Stop all community automation? Personas will stop posting and commenting until you start it again.",
-                  )
-                ) {
-                  return;
+                if (settings.automation_enabled) {
+                  if (!confirmStop) {
+                    setConfirmStop(true);
+                    toast("Click again to confirm — this stops all automation", {
+                      duration: 4000,
+                    });
+                    setTimeout(() => setConfirmStop(false), 4000);
+                    return;
+                  }
+                  setConfirmStop(false);
                 }
                 updateSetting("automation_enabled", !settings.automation_enabled);
               }}
               className={cn(
                 "flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors",
                 settings.automation_enabled
-                  ? "border-red-500/30 bg-red-500/15 text-red-300 hover:bg-red-500/25"
+                  ? confirmStop
+                    ? "border-red-500/60 bg-red-500/30 text-red-200 animate-pulse"
+                    : "border-red-500/30 bg-red-500/15 text-red-300 hover:bg-red-500/25"
                   : "border-green-500/30 bg-green-500/20 text-green-300 hover:bg-green-500/30",
               )}
             >
               {settings.automation_enabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {settings.automation_enabled ? "Stop Automation" : "Start Automation"}
+              {settings.automation_enabled
+                ? confirmStop
+                  ? "Click to confirm stop"
+                  : "Stop Automation"
+                : "Start Automation"}
             </button>
           </div>
         )}
