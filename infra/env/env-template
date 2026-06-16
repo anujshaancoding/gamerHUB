@@ -44,3 +44,10 @@ OPENAI_API_KEY=
 
 # ── Analytics ────────────────────────────────
 NEXT_PUBLIC_GA_MEASUREMENT_ID=
+
+# ── Pro Scene ingest (vlr.gg) ───────────────
+# Base URL of a SELF-HOSTED vlrggapi instance (https://github.com/axsddlr/vlrggapi).
+# Do NOT use the public Vercel instance (rate-limited/disabled). Run it on the VPS,
+# e.g. on :3001, and point this at it. Used by infra/ingest/vlr-ingest.mjs (nightly).
+VLRGG_API_BASE=
+VLR_TIMESPAN=90

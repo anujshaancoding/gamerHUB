@@ -12,7 +12,7 @@
 
 # testing
 /coverage
-e2e/.auth/
+tests/e2e/.auth/
 /test-results/
 /playwright-report/
 
@@ -50,7 +50,7 @@ yarn-error.log*
 *.local.md
 
 # automation setup script (contains persona password hash — keep local)
-scripts/setup-automation-personas.sql
+infra/sql/setup-automation-personas.sql
 
 # Aim Lab (sideway development — kept local only, do not ship to prod)
 /src/app/(main)/aim
@@ -71,3 +71,12 @@ next-env.d.ts
 .claude/commands/
 .claude/company/
 .claude/skills/
+.claude/launch.json
+.agents/
+.codex/
+
+# local-only tooling and research (genuinely new, not part of the product repo)
+AGENTS.md
+docs/research/
+infra/ingest/
+scripts/verify-passport-gallery.mjs

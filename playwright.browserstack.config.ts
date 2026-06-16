@@ -32,7 +32,7 @@ function bsCaps(browser: string, os: string, osVersion: string, name: string) {
 }
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   fullyParallel: true,
   retries: 1,
   workers: 4,
