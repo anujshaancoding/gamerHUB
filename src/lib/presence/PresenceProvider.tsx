@@ -137,21 +137,48 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Initial poll
-    pollOnlineStatus();
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-    // Repeat on interval
-    const interval = setInterval(pollOnlineStatus, DB_POLL_INTERVAL);
+    const startPolling = () => {
+      if (interval !== null) return;
+      // Refetch immediately on (re)start so a returning tab is up to date,
+      // then resume the periodic fallback poll.
+      pollOnlineStatus();
+      interval = setInterval(pollOnlineStatus, DB_POLL_INTERVAL);
+    };
+
+    const stopPolling = () => {
+      if (interval === null) return;
+      clearInterval(interval);
+      interval = null;
+    };
+
+    // Pause polling while the tab is hidden (no one is looking at the friends
+    // panel), resume + refetch on focus. Saves a request every 30s per idle tab.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
 
     // Mark offline on page unload
     const handleUnload = () => {
       navigator.sendBeacon("/api/profile/offline");
     };
+
+    // Only start if the tab is currently visible; otherwise wait for focus.
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("beforeunload", handleUnload);
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleUnload);
     };
   }, [user?.id, gotSocketSync]);

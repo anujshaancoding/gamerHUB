@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VALORANT } from "@/lib/features/theme/valorant-theme";
 
 export const metadata: Metadata = {
-  title: "Home Design Demos · ggLobby",
+  title: "Home Design Demos",
   robots: { index: false, follow: false },
 };
 

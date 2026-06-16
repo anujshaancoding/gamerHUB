@@ -7,7 +7,7 @@ import { CrosshairGallery } from "@/components/gaming/tools/crosshair-gallery";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Valorant Pro Crosshair Codes — One-click copy · ggLobby",
+  title: "Valorant Pro Crosshair Codes — One-click copy",
   description:
     "Every Indian Valorant pro's crosshair code in one place. Click to copy, paste into Valorant — instant pro crosshair.",
   alternates: { canonical: "/crosshairs" },

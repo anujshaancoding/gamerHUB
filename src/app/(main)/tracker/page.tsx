@@ -4,7 +4,7 @@ import { Construction, ArrowRight } from "lucide-react";
 import { Card, CardContent, Button } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Player Insights · ggLobby",
+  title: "Player Insights",
   description: "Player Insights is on hold while we rework how stats are sourced. Check back soon.",
   robots: { index: false, follow: false },
 };

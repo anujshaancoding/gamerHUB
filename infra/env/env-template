@@ -1,6 +1,7 @@
 # ============================================================
-# GamerHub Environment Variables (VPS)
-# Copy this to /var/www/gglobby/.env and fill in values
+# GamerHub Environment Variables (VPS)  — CANONICAL deploy template
+# Copy this to /var/www/gglobby/.env and fill in values.
+# (Reconciled with .env.example, audit finding M6 — keep the two in sync.)
 # ============================================================
 
 # ── Database ─────────────────────────────────
@@ -8,7 +9,17 @@ DATABASE_URL=postgresql://gamerhub_app:YOUR_PASSWORD@localhost:5432/gamerhub
 
 # ── Auth.js ──────────────────────────────────
 NEXTAUTH_URL=https://gglobby.in
+# AUTH_SECRET is the canonical name (Auth.js v5). REQUIRED — admin-token signing
+# now fails closed without it. NEXTAUTH_SECRET is kept only as the socket-token
+# fallback in server.mjs; set BOTH to the same value to be safe.
+AUTH_SECRET=GENERATE_WITH_openssl_rand_base64_32
 NEXTAUTH_SECRET=GENERATE_WITH_openssl_rand_base64_32
+
+# ── Security / secrets ───────────────────────
+# Admin PIN gate (bcrypt hash of the PIN), cron-route auth, token encryption.
+ADMIN_PIN_HASH=
+CRON_SECRET=GENERATE_WITH_openssl_rand_base64_32
+TOKEN_ENCRYPTION_KEY=GENERATE_WITH_openssl_rand_base64_32
 
 # ── Google OAuth ─────────────────────────────
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -51,3 +62,24 @@ NEXT_PUBLIC_GA_MEASUREMENT_ID=
 # e.g. on :3001, and point this at it. Used by infra/ingest/vlr-ingest.mjs (nightly).
 VLRGG_API_BASE=
 VLR_TIMESPAN=90
+
+# ── Twitch Integration ──────────────────────
+# Used by src/lib/services/integrations/twitch.ts (were missing from both templates).
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
+TWITCH_WEBHOOK_SECRET=
+
+# ── Valorant tracker (Riot / Henrik) ────────
+# Live lookups are OFF by default (mocks). Enabling live requires BOTH flags AND
+# RSO-gating to the caller's own account (Riot ToS — audit H9). Leave live off.
+RIOT_API_KEY=
+RIOT_CLIENT_ID=
+RIOT_CLIENT_SECRET=
+HENRIK_API_KEY=
+TRACKER_USE_LIVE=false
+TRACKER_RSO_COMPLIANT=false
+STEAM_API_KEY=
+
+# ── Email (Resend) ──────────────────────────
+RESEND_API_KEY=
+EMAIL_FROM=ggLobby <noreply@gglobby.in>

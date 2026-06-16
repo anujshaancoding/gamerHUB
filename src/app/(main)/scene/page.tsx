@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { SceneLadder } from "@/components/gaming/scene/scene-ladder";
 
 export const metadata: Metadata = {
-  title: "India Scene — Semi-Pros, Amateurs & Creators · ggLobby",
+  title: "India Scene — Semi-Pros, Amateurs & Creators",
   description:
     "The Indian Valorant scene below Tier-1: academy rosters, amateur grinders and the creators driving the community. Vote for who goes pro next.",
   openGraph: {

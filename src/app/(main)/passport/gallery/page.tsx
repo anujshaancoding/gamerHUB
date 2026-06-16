@@ -6,7 +6,7 @@ import { PassportGalleryCard } from "@/components/gaming/passport/passport-galle
 import { Button } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Indian Valorant Passport Gallery | ggLobby",
+  title: "Indian Valorant Passport Gallery",
   description:
     "Browse public Valorant Passports from Indian players. See rank, peak rank, main agent, role, state, language and playstyle.",
   alternates: { canonical: "/passport/gallery" },

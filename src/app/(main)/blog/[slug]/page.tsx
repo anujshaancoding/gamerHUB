@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: "Post not found | ggLobby",
+      title: "Post not found",
       robots: { index: false, follow: false },
     };
   }

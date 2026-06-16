@@ -79,9 +79,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" data-scroll-behavior="smooth">
       <head>
-        {/* Preconnect to external origins for faster resource loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preconnect/dns-prefetch to external origins for faster resource loading.
+            Note: no Google-Fonts preconnect — fonts are self-hosted via next/font,
+            so fonts.googleapis.com / fonts.gstatic.com are never requested. */}
         <link rel="dns-prefetch" href="https://api.dicebear.com" />
         <link rel="dns-prefetch" href="https://cdn.discordapp.com" />
       </head>

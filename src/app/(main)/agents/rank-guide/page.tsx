@@ -24,7 +24,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     const rankLabel = RANK_BAND_LABEL[rank];
     const roleLabel = ROLE_LABEL[role];
     return {
-      title: `Best ${roleLabel}s for ${rankLabel} in Valorant (2026) · ggLobby`,
+      title: `Best ${roleLabel}s for ${rankLabel} in Valorant (2026)`,
       description: `The best Valorant ${roleLabel.toLowerCase()} agents to play at ${rankLabel} in 2026, with why each works at your rank. Free interactive guide — pick your rank and role.`,
       alternates: { canonical: `/agents/rank-guide?rank=${rank}&role=${role}` },
       keywords: [
@@ -43,7 +43,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   }
 
   return {
-    title: "Best Valorant Agents for Your Rank (2026 Guide) · ggLobby",
+    title: "Best Valorant Agents for Your Rank (2026 Guide)",
     description:
       "Pick your rank and role to see the best Valorant agents you should be playing in 2026, with a short reason for each. Free interactive guide for India and global players.",
     alternates: { canonical: "/agents/rank-guide" },

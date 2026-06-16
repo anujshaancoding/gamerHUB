@@ -5,7 +5,7 @@ import { listProPlayers } from "@/lib/pro/queries";
 import { RankingTable } from "@/components/monetization/pro/ranking-table";
 
 export const metadata: Metadata = {
-  title: "Indian Valorant Pros — Rankings, Stats & Gear · ggLobby",
+  title: "Indian Valorant Pros — Rankings, Stats & Gear",
   description:
     "Top Indian Valorant pro players ranked. Detailed stats, agent pools, peripherals, sensitivity and in-game settings — all in one place.",
   openGraph: {

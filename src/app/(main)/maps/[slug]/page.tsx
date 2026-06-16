@@ -15,9 +15,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const map = getMap(slug);
-  if (!map) return { title: "Map not found · ggLobby" };
+  if (!map) return { title: "Map not found" };
 
-  const title = `${map.name} Lineups & Callouts — Valorant | ggLobby`;
+  const title = `${map.name} Lineups & Callouts — Valorant`;
   const description = `${map.name} agent lineups and callouts. ${map.blurb}`;
   return {
     title,

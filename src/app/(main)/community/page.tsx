@@ -43,7 +43,7 @@ export async function generateMetadata({
       .single();
 
     if (!post) {
-      return { title: "Post not found | ggLobby" };
+      return { title: "Post not found" };
     }
 
     const { data: profile } = await db
@@ -91,7 +91,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: "Community | ggLobby" };
+    return { title: "Community" };
   }
 }
 

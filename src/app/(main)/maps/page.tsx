@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MAPS, mapSplash } from "@/lib/data/valorant-maps";
 
 export const metadata: Metadata = {
-  title: "Valorant Maps — Callouts & Lineups | ggLobby",
+  title: "Valorant Maps — Callouts & Lineups",
   description:
     "Every Valorant map with callouts and agent lineups. Ascent, Breeze, Fracture, Haven, Lotus, Pearl, Split and more — learn the lineups that win rounds.",
   keywords: [

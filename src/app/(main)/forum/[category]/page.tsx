@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const cat = await getForumCategoryBySlug(category);
   if (!cat) return { title: "Forum" };
   return {
-    title: `${cat.name} — Forum · ggLobby`,
+    title: `${cat.name} — Forum`,
     description: cat.description ?? `Discussion threads in the ${cat.name} section.`,
     alternates: { canonical: `/forum/${cat.slug}` },
   };

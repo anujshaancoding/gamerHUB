@@ -4,7 +4,7 @@ import { ArrowRight, FileText, Sparkles } from "lucide-react";
 import { getAllPatches, getLatestPatch } from "@/lib/data/valorant-patches";
 
 export const metadata: Metadata = {
-  title: "Valorant Patch Notes Hub — Tier List & Balance Changes · ggLobby",
+  title: "Valorant Patch Notes Hub — Tier List & Balance Changes",
   description:
     "Every Valorant patch broken down: agent buffs and nerfs, map pool changes, weapon tweaks and the updated meta tier list. Stay current every Act.",
   alternates: { canonical: "/patch" },

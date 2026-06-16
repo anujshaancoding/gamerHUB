@@ -68,15 +68,21 @@ server {
     listen 80;
     server_name gglobby.in www.gglobby.in;
 
-    # Uploads directory - served directly by Nginx
+    # Uploads directory - served directly by Nginx (bypasses the Next route, so
+    # the same defense-in-depth headers must be set here too).
     location /uploads/ {
         alias /var/www/gglobby/uploads/;
         expires 30d;
         add_header Cache-Control "public, immutable";
         add_header Access-Control-Allow-Origin "*";
+        # Never let user-uploaded bytes be sniffed into HTML/SVG or run scripts.
+        add_header X-Content-Type-Options "nosniff";
+        add_header Content-Security-Policy "default-src 'none'; sandbox";
 
-        # Security: prevent executing scripts from uploads
-        location ~* \.(php|py|pl|sh|cgi)$ {
+        # Security: block any extension that can execute or render active content
+        # in a browser context (scripts + svg/html/xml/js). Uploads already reject
+        # these at write time; this is the edge backstop.
+        location ~* \.(php|py|pl|sh|cgi|svg|svgz|html?|xhtml|xml|js|mjs)$ {
             deny all;
         }
     }

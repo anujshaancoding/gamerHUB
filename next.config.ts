@@ -81,7 +81,10 @@ const nextConfig: NextConfig = {
       : [],
 
   // 485 pre-existing type errors need fixing before this can be removed.
-  // Run `tsc --noEmit` separately for type checking until then.
+  // Until then, `npm run typecheck` (tsc --noEmit) is the type-safety gate —
+  // run it in CI / pre-deploy. The build intentionally does NOT type-check so
+  // it can ship while the backlog is burned down. Do not flip this to false
+  // without first clearing the errors.
   typescript: {
     ignoreBuildErrors: true,
   },

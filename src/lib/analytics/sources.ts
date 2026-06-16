@@ -58,6 +58,8 @@ export const CTA_SOURCES = {
   sens_setup_save: "sens_setup_save",
   /** "Best agents for your rank" guide — find-teammates / track CTA. */
   agent_rank_guide: "agent_rank_guide",
+  /** Rank Up game-sense tier guide — closing "find teammates / LFG" CTA. */
+  rank_up_to_lfg: "rank_up_to_lfg",
   /** Generic inline banner CTA. */
   inline_banner: "inline_banner",
   /** Landing page driven by a share link (?ref= present). */

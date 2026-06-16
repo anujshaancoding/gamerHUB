@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TierListMaker } from "@/components/gaming/tools/tier-list-maker";
 
 export const metadata: Metadata = {
-  title: "Tier List Maker — Drag-and-drop S/A/B/C/D rankings · ggLobby",
+  title: "Tier List Maker — Drag-and-drop S/A/B/C/D rankings",
   description:
     "Build a shareable tier list. Pre-loaded with Valorant agents, agent ultimates, weapons and maps — every item shown with real in-game art.",
   alternates: { canonical: "/tier-list" },

@@ -62,10 +62,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Get replies for each comment
-    const commentsWithReplies = await Promise.all(
-      (comments || []).map(async (comment: Record<string, unknown>) => {
-        const { data: replies } = await db
+    // Batch-fetch replies and likes for all top-level comments to avoid an
+    // N+1 (previously 1 replies query + 1 likes query per comment).
+    const commentIds = (comments || []).map(
+      (c: Record<string, unknown>) => c.id as string
+    );
+
+    // One query for all replies, ordered ascending (oldest first) like before.
+    const { data: allReplies } = commentIds.length
+      ? await db
           .from("news_article_comments")
           .select(
             `
@@ -75,28 +80,46 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             )
           `
           )
-          .eq("parent_id", comment.id)
+          .in("parent_id", commentIds)
           .eq("status", "visible")
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: true })
+      : { data: [] };
 
-        // Check if user has liked this comment
-        let user_has_liked = false;
-        if (user) {
-          const { data: like } = await db
-            .from("news_article_comment_likes")
-            .select("id")
-            .eq("comment_id", comment.id as string)
-            .eq("user_id", user.id)
-            .single();
-          user_has_liked = !!like;
-        }
+    const repliesByParent = new Map<string, Record<string, unknown>[]>();
+    for (const reply of allReplies || []) {
+      const parentId = (reply as Record<string, unknown>).parent_id as string;
+      const list = repliesByParent.get(parentId);
+      if (list) {
+        list.push(reply as Record<string, unknown>);
+      } else {
+        repliesByParent.set(parentId, [reply as Record<string, unknown>]);
+      }
+    }
 
+    // One query for the current user's likes across all these comments.
+    const likedCommentIds = new Set<string>();
+    if (user && commentIds.length) {
+      const { data: likes } = await db
+        .from("news_article_comment_likes")
+        .select("comment_id")
+        .in("comment_id", commentIds)
+        .eq("user_id", user.id);
+      for (const like of likes || []) {
+        likedCommentIds.add(
+          (like as Record<string, unknown>).comment_id as string
+        );
+      }
+    }
+
+    const commentsWithReplies = (comments || []).map(
+      (comment: Record<string, unknown>) => {
+        const commentId = comment.id as string;
         return {
           ...comment,
-          replies: replies || [],
-          user_has_liked,
+          replies: repliesByParent.get(commentId) || [],
+          user_has_liked: likedCommentIds.has(commentId),
         };
-      })
+      }
     );
 
     return NextResponse.json({

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProLandingMotion } from "@/components/monetization/pro/pro-landing-motion";
 
 export const metadata: Metadata = {
-  title: "Pro Scene India — Valorant Rankings · ggLobby",
+  title: "Pro Scene India — Valorant Rankings",
   description:
     "India's top Valorant pros in one place. Rankings, detailed stats, peripherals, sensitivities and in-game setups — plus tournament calendar and pro-vs-pro compare.",
   openGraph: {

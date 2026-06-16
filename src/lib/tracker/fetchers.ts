@@ -16,8 +16,28 @@ export type FetchResult =
   | { kind: "ok"; stats: RawValorantStats; fromMock: boolean }
   | { kind: "error"; code: LookupErrorCode; message: string };
 
+// ⚠️ RIOT POLICY (audit finding H9): looking up an ARBITRARY player's match
+// history / MMR by Riot ID — as the live path does — is only permitted for the
+// authenticated user's OWN account, gated behind Riot Sign-On (RSO). Until the
+// tracker is RSO-gated to the caller's own PUUID, live mode must stay OFF in
+// production. Default is mocks; enabling live without RSO is a ToS violation.
+// See memory: riot-api-policy-constraints.
 export function isLiveTrackerEnabled(): boolean {
-  return process.env.TRACKER_USE_LIVE === "true" && !!process.env.HENRIK_API_KEY;
+  if (process.env.TRACKER_USE_LIVE !== "true" || !process.env.HENRIK_API_KEY) {
+    return false;
+  }
+  // Hard gate: require an explicit acknowledgement flag so live can't be turned
+  // on by setting TRACKER_USE_LIVE alone before RSO gating is implemented.
+  if (process.env.TRACKER_RSO_COMPLIANT !== "true") {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[tracker] TRACKER_USE_LIVE=true but TRACKER_RSO_COMPLIANT is not set — " +
+          "refusing live lookups of arbitrary Riot IDs (Riot ToS). Serving mocks.",
+      );
+    }
+    return false;
+  }
+  return true;
 }
 
 function parseRiotId(riotId: string): { name: string; tag: string } | null {

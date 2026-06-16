@@ -20,7 +20,7 @@ export async function generateMetadata({
   const thread = await getForumThread(cat.id, slug);
   if (!thread) return { title: "Thread" };
   return {
-    title: `${thread.title} — ${cat.name} · ggLobby`,
+    title: `${thread.title} — ${cat.name}`,
     description: thread.content.slice(0, 160),
     alternates: { canonical: `/forum/${cat.slug}/${thread.slug}` },
     openGraph: {

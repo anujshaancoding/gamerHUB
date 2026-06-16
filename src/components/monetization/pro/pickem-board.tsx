@@ -145,6 +145,10 @@ function TeamButton({
       )}
     >
       {logo ? (
+        // TODO(perf/L5): migrate to next/image once the team-logo source hosts are
+        // known and added to `images.remotePatterns` in next.config.ts. Logos come
+        // from arbitrary DB-stored URLs (team_a_logo/team_b_logo), so <Image> would
+        // 400 on un-allow-listed hosts — keep the raw <img> until the set is pinned.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={logo} alt={label} className="w-9 h-9 rounded object-contain" />
       ) : (

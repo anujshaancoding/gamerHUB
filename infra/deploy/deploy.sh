@@ -51,12 +51,32 @@ sudo -u postgres psql -d "$DB_NAME" -q -c "
   );
 " 2>/dev/null
 
+# Migrations that need deliberate, verified application are listed here and are
+# SKIPPED by a routine `git pull` deploy. Opt in explicitly with:
+#   APPLY_MANUAL=1 bash deploy.sh
+#  - 011 (RLS): FORCEs row-level security and locks the app out of writes until
+#    the setRequestUser() wiring + non-owner role grants exist (the app currently
+#    connects as the table OWNER and relies on owner-bypass). See
+#    docs/SECURITY-RLS-ROLLOUT.md.
+#  - 021 (integrity constraints): adds FKs/uniqueness that can fail on dirty data
+#    or a uuid/puuid type mismatch — verify `\d` against the live schema first.
+MANUAL_MIGRATIONS=("011_enable_rls_role_based.sql" "021_integrity_constraints.sql")
+
 # Run any .sql files in scripts/migrations/ that haven't been applied yet
 if [ -d "$MIGRATIONS_DIR" ]; then
   PENDING=0
-  for sql_file in "$MIGRATIONS_DIR"/*.sql; do
+  # Iterate in deterministic byte order regardless of the host locale, so the
+  # numeric filename prefixes always apply in sequence (e.g. 008_forum_schema
+  # before 009_forum_valorant_only). Relying on glob collation is locale-fragile.
+  for sql_file in $(LC_ALL=C ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | LC_ALL=C sort); do
     [ -f "$sql_file" ] || continue
     FILENAME=$(basename "$sql_file")
+
+    # Skip deferred migrations unless explicitly opted in.
+    if [[ " ${MANUAL_MIGRATIONS[*]} " == *" ${FILENAME} "* ]] && [ "${APPLY_MANUAL:-0}" != "1" ]; then
+      echo "  ⏭  Skipping deferred migration (set APPLY_MANUAL=1 to apply): $FILENAME"
+      continue
+    fi
 
     # Check if already applied
     APPLIED=$(sudo -u postgres psql -d "$DB_NAME" -tAc "

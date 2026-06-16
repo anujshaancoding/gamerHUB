@@ -14,7 +14,7 @@ export const revalidate = 300;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const detail = await getProPlayerDetail("valorant", slug);
-  if (!detail) return { title: "Player Not Found · ggLobby" };
+  if (!detail) return { title: "Player Not Found" };
 
   const { player } = detail;
   const title = `${player.ign}${player.real_name ? ` (${player.real_name})` : ""} — Valorant Pro · ggLobby`;

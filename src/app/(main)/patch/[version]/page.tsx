@@ -22,9 +22,9 @@ type Props = { params: Promise<{ version: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { version } = await params;
   const patch = getPatch(version);
-  if (!patch) return { title: "Patch not found · ggLobby" };
+  if (!patch) return { title: "Patch not found" };
 
-  const title = `Valorant ${patch.title} Notes — Tier List & Balance Changes | ggLobby`;
+  const title = `Valorant ${patch.title} Notes — Tier List & Balance Changes`;
   return {
     title,
     description: patch.summary,

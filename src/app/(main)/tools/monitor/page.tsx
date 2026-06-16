@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MonitorGuide } from "@/components/gaming/tools/monitor-guide";
 
 export const metadata: Metadata = {
-  title: "Monitor & Hz Guide — Refresh rate, response time, input lag for FPS · ggLobby",
+  title: "Monitor & Hz Guide — Refresh rate, response time, input lag for FPS",
   description:
     "What refresh rate, response time, panel type and viewing distance actually matter for FPS gaming. Includes a viewing-distance calculator and an Hz frame-time table.",
   alternates: { canonical: "/tools/monitor" },

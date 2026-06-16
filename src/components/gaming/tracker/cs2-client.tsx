@@ -140,6 +140,10 @@ function Cs2ProfileHeader({ insights }: { insights: Cs2Insights }) {
         <div className="-mt-10 flex items-end gap-3 sm:-mt-12">
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-4 border-surface bg-surface-light shadow-xl sm:h-24 sm:w-24">
             {avatarUrl ? (
+              // TODO(perf/L5): migrate to next/image once the Steam avatar host
+              // (avatars.steamstatic.com / avatars.akamai.steamstatic.com) is added
+              // to `images.remotePatterns` in next.config.ts. Using <Image> now would
+              // 400 at runtime since the host isn't allow-listed, so keep the raw <img>.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
             ) : (

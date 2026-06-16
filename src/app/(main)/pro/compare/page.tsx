@@ -6,7 +6,7 @@ import { CompareView } from "@/components/monetization/pro/compare-view";
 import type { ProGame, ProPlayerWithTeam } from "@/lib/pro/types";
 
 export const metadata: Metadata = {
-  title: "Compare Indian Valorant Pros · ggLobby",
+  title: "Compare Indian Valorant Pros",
   description:
     "Compare any two Indian Valorant pros side by side. K/D, agent pool, gear, sensitivity — head-to-head in one view.",
   openGraph: {

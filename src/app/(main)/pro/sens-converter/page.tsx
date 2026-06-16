@@ -5,7 +5,7 @@ import { SensConverter } from "@/components/monetization/pro/sens-converter";
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Sensitivity Converter — CS2 to Valorant & more (India) · ggLobby",
+    title: "Sensitivity Converter — CS2 to Valorant & more (India)",
     description:
       "Convert your mouse sensitivity between Valorant, CS2, Apex, Overwatch 2, R6 — or CODM and PUBG: New State. cm/360 and eDPI included. Save & share your setup free.",
     alternates: { canonical: "/pro/sens-converter" },

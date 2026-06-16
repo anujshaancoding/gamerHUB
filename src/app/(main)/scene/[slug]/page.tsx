@@ -14,7 +14,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const player = getScenePlayer(slug);
-  if (!player) return { title: "Scene Player Not Found · ggLobby" };
+  if (!player) return { title: "Scene Player Not Found" };
 
   const tierLabel = TIER_LABEL[player.tier];
   const title = `${player.ign} — ${tierLabel} · India Scene · ggLobby`;

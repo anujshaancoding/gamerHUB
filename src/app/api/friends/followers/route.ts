@@ -3,6 +3,7 @@ import { createClient } from "@/lib/db/client";
 import type { Profile } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 import { logger } from "@/lib/logger";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 
 interface FollowData {
   follower_id: string;
@@ -92,8 +93,9 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (search) {
+      const s = sanitizeSearchQuery(search);
       query = query.or(
-        `username.ilike.%${search}%,display_name.ilike.%${search}%`
+        `username.ilike.%${s}%,display_name.ilike.%${s}%`
       );
     }
 

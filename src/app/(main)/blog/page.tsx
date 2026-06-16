@@ -7,7 +7,7 @@ import {
 } from "@/components/content/blog/blog-listing-page";
 
 export const metadata: Metadata = {
-  title: "Gaming Blog — Guides, News & Updates | ggLobby",
+  title: "Gaming Blog — Guides, News & Updates",
   description:
     "Read the latest Valorant guides, news, patch notes, and analysis on ggLobby.",
   openGraph: {

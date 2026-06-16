@@ -27,6 +27,7 @@ import {
   Gamepad2,
   Shield,
   UserPlus,
+  TrendingUp,
 } from "lucide-react";
 import { Button, Avatar, Input, Badge } from "@/components/ui";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -79,6 +80,7 @@ const mobileNavItems = [
   { href: "/tier-list", label: "Tier List", icon: Swords, requiresAuth: false },
   { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false },
   { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false },
+  { href: "/rank-up", label: "Rank Up", icon: TrendingUp, requiresAuth: false },
   { href: "/pro", label: "Pro Scene", icon: Trophy, requiresAuth: false },
   { href: "/pros", label: "Pro Players", icon: Users, requiresAuth: false },
   { href: "/giveaway", label: "Giveaway", icon: Gift, requiresAuth: false },

@@ -3,7 +3,7 @@ import { ValorantRankCardClient } from "@/components/gaming/tools/valorant-rank-
 import { LoyaltyRankCard } from "@/components/gamification/loyalty/loyalty-rank-card-client";
 
 export const metadata: Metadata = {
-  title: "Valorant Rank Card Maker — Free Shareable PNG · ggLobby",
+  title: "Valorant Rank Card Maker — Free Shareable PNG",
   description:
     "Make a free Valorant rank card and download it as a PNG. Build manually or from a career lookup, with role, main agent, peak rank and source label.",
   alternates: { canonical: "/rank-card" },

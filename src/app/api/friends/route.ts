@@ -8,6 +8,7 @@ import { emitToUser, getIO } from "@/lib/realtime/socket-server";
 import { createRateLimiter, getClientIdentifier } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import { validateBody } from "@/lib/security/validate-body";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 
 // 30 requests per minute for friend request submissions
 const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 30 });
@@ -69,8 +70,9 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     if (search) {
+      const s = sanitizeSearchQuery(search);
       query = query.or(
-        `username.ilike.%${search}%,display_name.ilike.%${search}%`
+        `username.ilike.%${s}%,display_name.ilike.%${s}%`
       );
     }
 

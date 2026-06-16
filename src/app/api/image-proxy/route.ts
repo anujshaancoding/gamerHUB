@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lookup } from "node:dns/promises";
+
+export const runtime = "nodejs";
 
 const ALLOWED_HOSTS = new Set([
   "i.pinimg.com",
@@ -9,14 +12,13 @@ const ALLOWED_HOSTS = new Set([
   "api-assets.clashofclans.com",
 ]);
 
-/** Block loopback / link-local / private-range literals (basic anti-SSRF). */
-function isPrivateHost(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-  if (h === "localhost" || h.endsWith(".local") || h.endsWith(".internal")) return true;
-  // IPv6 loopback / unique-local
-  if (h === "::1" || h.startsWith("fd") || h.startsWith("fe80")) return true;
-  // IPv4 literals in private / link-local / loopback ranges
-  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+/** True if an IP literal (v4 or v6) falls in a loopback/link-local/private range. */
+function isPrivateAddress(ip: string): boolean {
+  const h = ip.toLowerCase().replace(/^\[|\]$/g, "");
+  // IPv6 loopback / unique-local / link-local (also handles IPv4-mapped ::ffff:x)
+  if (h === "::1" || h.startsWith("fd") || h.startsWith("fc") || h.startsWith("fe80")) return true;
+  const v4 = h.startsWith("::ffff:") ? h.slice(7) : h;
+  const m = v4.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (m) {
     const [a, b] = [Number(m[1]), Number(m[2])];
     if (a === 10 || a === 127 || a === 0) return true;
@@ -25,6 +27,37 @@ function isPrivateHost(hostname: string): boolean {
     if (a === 192 && b === 168) return true;
   }
   return false;
+}
+
+/** Block loopback / link-local / private-range literals (basic anti-SSRF). */
+function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === "localhost" || h.endsWith(".local") || h.endsWith(".internal")) return true;
+  return isPrivateAddress(h);
+}
+
+/**
+ * Resolve a hostname and reject if it (currently) points at a private/loopback/
+ * link-local address. This narrows the TOCTOU / DNS-rebinding window: an allowed
+ * CDN host whose DNS has been pointed at internal space is rejected before we
+ * fetch. Residual risk: Node's fetch() re-resolves DNS independently of this
+ * lookup, so an attacker controlling DNS could in theory return a public IP here
+ * and a private IP to fetch() in the same TTL window. The fixed public-CDN
+ * allowlist above is the primary mitigation; a fully airtight fix needs a
+ * pinned-IP connector (custom Agent / undici lookup) which is out of scope here.
+ */
+async function resolvesToPrivate(hostname: string): Promise<boolean> {
+  // IP literals are already covered by isPrivateHost on the allowlist path.
+  if (/^[\d.]+$/.test(hostname) || hostname.includes(":")) {
+    return isPrivateAddress(hostname);
+  }
+  try {
+    const records = await lookup(hostname, { all: true });
+    return records.some((r) => isPrivateAddress(r.address));
+  } catch {
+    // Unresolvable host — treat as not-allowed by signaling private.
+    return true;
+  }
 }
 
 function isAllowedHost(hostname: string): boolean {
@@ -51,6 +84,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (parsed.protocol !== "https:" || !isAllowedHost(parsed.hostname)) {
+    return NextResponse.json({ error: "Host not allowed" }, { status: 403 });
+  }
+
+  // Reject if the allowed host currently resolves to a private/internal address.
+  if (await resolvesToPrivate(parsed.hostname)) {
     return NextResponse.json({ error: "Host not allowed" }, { status: 403 });
   }
 
@@ -87,6 +125,10 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({ error: "Invalid redirect" }, { status: 502 });
         }
         if (next.protocol !== "https:" || !isAllowedHost(next.hostname)) {
+          clearTimeout(timeout);
+          return NextResponse.json({ error: "Redirect host not allowed" }, { status: 403 });
+        }
+        if (await resolvesToPrivate(next.hostname)) {
           clearTimeout(timeout);
           return NextResponse.json({ error: "Redirect host not allowed" }, { status: 403 });
         }

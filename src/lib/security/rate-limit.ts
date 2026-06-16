@@ -176,14 +176,37 @@ export function logFailedPinAttempt(ip: string): void {
 }
 
 /**
- * Extracts the client IP address from the request headers.
- * Checks common proxy headers in order of priority.
+ * Robustly derive the client IP from proxy headers.
+ *
+ * Order of trust:
+ *   1. `cf-connecting-ip`   — set/overwritten by Cloudflare (real client when behind CF).
+ *   2. `x-real-ip`          — set by our own Nginx to the immediate peer ($remote_addr),
+ *                             not client-spoofable because Nginx overwrites any inbound value.
+ *   3. `x-forwarded-for`    — LAST hop only. Our Nginx APPENDS the real peer via
+ *                             `$proxy_add_x_forwarded_for`, so the right-most entry is the one
+ *                             our infra added. The left-most entry is fully client-controlled —
+ *                             using it (the old behaviour) let an attacker mint a fresh
+ *                             rate-limit bucket per spoofed `X-Forwarded-For` value.
  */
+function clientIpFromHeader(get: (name: string) => string | null | undefined): string {
+  const cf = get("cf-connecting-ip");
+  if (cf) return cf.trim();
+  const realIp = get("x-real-ip");
+  if (realIp) return realIp.trim();
+  const xff = get("x-forwarded-for");
+  if (xff) {
+    const hops = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    if (hops.length) return hops[hops.length - 1];
+  }
+  return "unknown";
+}
+
+/** Extracts the client IP from a NextRequest (for middleware / route handlers). */
 export function getClientIdentifier(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
+  return clientIpFromHeader((n) => request.headers.get(n));
+}
+
+/** Extracts the client IP from a Headers object (e.g. `await headers()` in auth callbacks). */
+export function getClientIp(headers: Headers): string {
+  return clientIpFromHeader((n) => headers.get(n));
 }

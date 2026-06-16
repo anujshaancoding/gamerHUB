@@ -12,11 +12,18 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import { headers } from "next/headers";
 import { compare } from "bcryptjs";
 import { getPool } from "@/lib/db/index";
+import { createRateLimiter, getClientIp } from "@/lib/security/rate-limit";
 import { trackEvent } from "@/lib/analytics/track-event";
 import { FUNNEL_EVENTS, SIGNUP_SOURCES } from "@/lib/analytics/sources";
 import { recordConsent } from "@/lib/features/legal/record-consent";
+
+// Brute-force throttle for credentials login. The edge middleware that was
+// meant to rate-limit /api/auth/* is dormant under the custom server, so we
+// enforce it in-route: 10 password attempts per IP per 15 minutes.
+const loginRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
 
 /**
  * Client-safe credentials error for an unverified email. Because it extends
@@ -27,6 +34,11 @@ import { recordConsent } from "@/lib/features/legal/record-consent";
  */
 class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
+}
+
+/** Client-safe error surfaced when an IP exceeds the login attempt budget. */
+class TooManyAttemptsError extends CredentialsSignin {
+  code = "too_many_attempts";
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -44,6 +56,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // Throttle by client IP before doing any DB work / bcrypt compare.
+        // Fail open only if the request headers are somehow unavailable — never
+        // block a legitimate login because the limiter couldn't read an IP.
+        try {
+          const ip = getClientIp(await headers());
+          if (!loginRateLimiter(ip).allowed) {
+            throw new TooManyAttemptsError();
+          }
+        } catch (e) {
+          if (e instanceof TooManyAttemptsError) throw e;
+          // headers() unavailable in this context — skip the limiter, don't block login.
+        }
 
         const sql = getPool();
         const email = credentials.email as string;

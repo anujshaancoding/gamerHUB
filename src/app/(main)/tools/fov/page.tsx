@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FovCalculator } from "@/components/gaming/tools/fov-calculator";
 
 export const metadata: Metadata = {
-  title: "FOV Calculator — Convert FOV between Valorant, CS2, Apex, COD · ggLobby",
+  title: "FOV Calculator — Convert FOV between Valorant, CS2, Apex, COD",
   description:
     "Convert field of view between every major FPS — Valorant, CS2, Apex, COD, Fortnite, R6. Handles Hor+, vertical FOV, 4:3 stretched and ultrawide.",
   alternates: { canonical: "/tools/fov" },

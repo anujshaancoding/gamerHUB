@@ -18,9 +18,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const agent = getAgent(slug);
-  if (!agent) return { title: "Agent not found · ggLobby" };
+  if (!agent) return { title: "Agent not found" };
 
-  const title = `${agent.name} Abilities Guide — Valorant ${agent.role} | ggLobby`;
+  const title = `${agent.name} Abilities Guide — Valorant ${agent.role}`;
   const description = `${agent.name} ability breakdown: ${agent.abilities
     .map((a) => a.name)
     .join(", ")}. ${agent.tagline}`;

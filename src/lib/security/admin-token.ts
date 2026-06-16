@@ -9,6 +9,22 @@ interface AdminTokenPayload {
 const TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 /**
+ * Resolve the HMAC signing secret, failing CLOSED if it isn't configured.
+ * Previously this fell back to `""`, which made admin tokens forgeable by
+ * anyone (an empty-key HMAC is trivially reproducible). We now refuse to
+ * sign or verify without a real secret.
+ */
+function getSigningSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "AUTH_SECRET is not set — refusing to sign/verify admin tokens with an empty key.",
+    );
+  }
+  return secret;
+}
+
+/**
  * Create an HMAC-signed admin token (Node.js runtime only — use in API routes).
  * Format: `base64url(payload).hmacHexDigest`
  */
@@ -20,7 +36,7 @@ export function createAdminToken(userId: string): string {
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", process.env.AUTH_SECRET || "")
+    .createHmac("sha256", getSigningSecret())
     .update(payloadB64)
     .digest("hex");
   return `${payloadB64}.${signature}`;
@@ -36,7 +52,7 @@ export function verifyAdminToken(token: string, userId: string): boolean {
     if (!payloadB64 || !signature) return false;
 
     const expectedSig = crypto
-      .createHmac("sha256", process.env.AUTH_SECRET || "")
+      .createHmac("sha256", getSigningSecret())
       .update(payloadB64)
       .digest("hex");
 

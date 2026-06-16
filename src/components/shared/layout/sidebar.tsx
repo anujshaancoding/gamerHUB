@@ -21,6 +21,7 @@ import {
   Gift,
   FileText,
   ListOrdered,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/tier-list", label: "Tier List", icon: ListOrdered, requiresAuth: false },
       { href: "/tools", label: "Gamer Tools", icon: Wrench, requiresAuth: false, isBeta: true },
       { href: "/forum", label: "Forum", icon: MessagesSquare, requiresAuth: false, isBeta: true },
+      { href: "/rank-up", label: "Rank Up", icon: TrendingUp, requiresAuth: false, isBeta: true },
     ],
   },
   {

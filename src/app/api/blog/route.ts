@@ -5,6 +5,7 @@ import { getUserPermissionContext } from "@/lib/api/check-permission";
 import { getUserTier, can } from "@/lib/permissions";
 import { getUser } from "@/lib/auth/get-user";
 import { parsePagination } from "@/lib/security/pagination";
+import { sanitizeSearchQuery } from "@/lib/utils/sanitize-search";
 
 // GET - List published blog posts with filters
 export async function GET(request: NextRequest) {
@@ -79,8 +80,9 @@ export async function GET(request: NextRequest) {
 
     // Search by title or excerpt using ilike for reliable partial matching
     if (search) {
+      const s = sanitizeSearchQuery(search);
       query = query.or(
-        `title.ilike.%${search}%,excerpt.ilike.%${search}%`
+        `title.ilike.%${s}%,excerpt.ilike.%${s}%`
       );
     }
 

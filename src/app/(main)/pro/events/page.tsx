@@ -5,7 +5,7 @@ import { listProEvents } from "@/lib/pro/queries";
 import { EventsList } from "@/components/monetization/pro/events-list";
 
 export const metadata: Metadata = {
-  title: "Indian Valorant Tournament Calendar · ggLobby",
+  title: "Indian Valorant Tournament Calendar",
   description:
     "Upcoming and live Valorant tournaments in India — VCT Challengers South Asia and more. Dates, prize pools, venues, official streams.",
   openGraph: {

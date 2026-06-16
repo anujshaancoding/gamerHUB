@@ -3,7 +3,7 @@ import { RankPercentile } from "@/components/gaming/tools/rank-percentile";
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Valorant Rank Distribution India 2026 — Where Do You Stand? · ggLobby",
+    title: "Valorant Rank Distribution India 2026 — Where Do You Stand?",
     description:
       "See the Valorant rank distribution for India in 2026 and find out what percentile your rank puts you in. Free India + global rank percentile calculator — no account needed.",
     alternates: { canonical: "/tools/rank-percentile" },

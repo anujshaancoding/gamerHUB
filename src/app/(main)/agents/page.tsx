@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AgentsGrid } from "@/components/system/agents/agents-grid";
 
 export const metadata: Metadata = {
-  title: "Valorant Agents — Abilities & Guides | ggLobby",
+  title: "Valorant Agents — Abilities & Guides",
   description:
     "Browse every Valorant agent by role. Full ability breakdowns for Duelists, Initiators, Controllers and Sentinels — costs, cooldowns and how to use each ability.",
   keywords: [

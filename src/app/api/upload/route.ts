@@ -117,23 +117,85 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 
 const ALLOWED_EXTENSIONS = new Set(Object.keys(ALLOWED_TYPES));
 
-// Magic byte signatures for file content validation
-const MAGIC_BYTES: Record<string, number[][]> = {
-  ".jpg":  [[0xFF, 0xD8, 0xFF]],
-  ".jpeg": [[0xFF, 0xD8, 0xFF]],
-  ".png":  [[0x89, 0x50, 0x4E, 0x47]],
-  ".gif":  [[0x47, 0x49, 0x46, 0x38]],           // GIF8
-  ".webp": [[0x52, 0x49, 0x46, 0x46]],            // RIFF (WebP container)
-  ".mp4":  [],                                      // MP4 has variable header; rely on MIME
-  ".webm": [[0x1A, 0x45, 0xDF, 0xA3]],            // EBML header
-};
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"]);
+const ALL_MEDIA_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ".mp4", ".webm"]);
+const MB = 1024 * 1024;
 
+interface UploadPreset {
+  /** Hard size ceiling for this surface. */
+  maxBytes: number;
+  /** Extensions this surface accepts. */
+  allow: Set<string>;
+  /** Human label for error messages. */
+  kind: string;
+}
+
+/**
+ * Per-surface upload policy. The old route applied one flat 200 MB / any-type
+ * cap to every path, so a user could store a 200 MB "avatar". Caps and accepted
+ * types are now derived server-side from the destination path prefix.
+ */
+function presetForPath(path: string): UploadPreset {
+  const p = path.toLowerCase();
+  // Avatars & banners: small images only.
+  if (p.startsWith("avatars/") || p.startsWith("banners/")) {
+    return { maxBytes: 10 * MB, allow: IMAGE_EXTENSIONS, kind: "image" };
+  }
+  // Feedback screenshots: images only, modest cap.
+  if (p.startsWith("media/feedback/")) {
+    return { maxBytes: 16 * MB, allow: IMAGE_EXTENSIONS, kind: "image" };
+  }
+  // Profile media gallery: clips + screenshots — the only video-bearing surface.
+  if (p.startsWith("media/")) {
+    return { maxBytes: MAX_FILE_SIZE, allow: ALL_MEDIA_EXTENSIONS, kind: "image or video" };
+  }
+  // Editorial/content surfaces (blog, news, guides, etc.) and anything else:
+  // images only, moderate cap.
+  return { maxBytes: 16 * MB, allow: IMAGE_EXTENSIONS, kind: "image" };
+}
+
+/** Read `len` bytes at `start` as an ASCII/latin1 string (for container tags). */
+function tag(buffer: Buffer, start: number, len: number): string {
+  return buffer.subarray(start, start + len).toString("latin1");
+}
+
+/**
+ * Validate that the file's real content matches its claimed extension via
+ * magic bytes. This fails CLOSED: anything not positively recognised — empty
+ * buffers, truncated headers, or unknown extensions — is rejected. Previously
+ * `.mp4` had an empty signature (always passed), `.webp` only checked the
+ * outer RIFF tag (any RIFF file passed), and `.avif` had no entry (skipped).
+ */
 function validateMagicBytes(buffer: Buffer, ext: string): boolean {
-  const signatures = MAGIC_BYTES[ext];
-  if (!signatures || signatures.length === 0) return true; // No signature to check
-  return signatures.some((sig) =>
-    sig.every((byte, i) => buffer[i] === byte)
-  );
+  // Every real image/video header we accept is well past 12 bytes.
+  if (buffer.length < 12) return false;
+
+  switch (ext) {
+    case ".jpg":
+    case ".jpeg":
+      return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    case ".png":
+      return buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+    case ".gif":
+      return tag(buffer, 0, 4) === "GIF8";
+    case ".webp":
+      // RIFF....WEBP — verify BOTH the RIFF container and the WEBP fourCC.
+      return tag(buffer, 0, 4) === "RIFF" && tag(buffer, 8, 4) === "WEBP";
+    case ".avif": {
+      // ISO-BMFF: "ftyp" box at offset 4, then a brand. Accept AVIF brands
+      // in the major-brand slot or the compatible-brands list (first 32 bytes).
+      if (tag(buffer, 4, 4) !== "ftyp") return false;
+      const brands = tag(buffer, 8, 24).toLowerCase();
+      return ["avif", "avis", "mif1", "miaf"].some((b) => brands.includes(b));
+    }
+    case ".mp4":
+      // ISO-BMFF container: "ftyp" box at offset 4 (brand varies: isom/mp42/…).
+      return tag(buffer, 4, 4) === "ftyp";
+    case ".webm":
+      return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+    default:
+      return false; // unknown extension — never reached (allowlist gates first), fail closed
+  }
 }
 
 function isAllowedFile(filename: string, mimeType: string): boolean {
@@ -181,21 +243,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File too large (max 200MB)" },
-        { status: 400 }
-      );
-    }
-
-    // Validate file type
-    if (!isAllowedFile(file.name, file.type)) {
-      return NextResponse.json(
-        { error: "File type not allowed. Accepted: images (jpg, png, gif, webp, avif, svg) and videos (mp4, webm)" },
-        { status: 400 }
-      );
-    }
-
     // Security: ensure path doesn't escape the upload directory
     const normalizedPath = storagePath.replace(/\.\./g, "").replace(/^\//, "");
     const fullPath = resolve(UPLOAD_DIR, normalizedPath);
@@ -207,9 +254,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ownership: users can only upload to paths containing their own ID
-    // Paths like "news/..." or "blog/..." without a userId segment are admin-only (checked below)
-    if (!userOwnsPath(user.id, normalizedPath)) {
+    // Per-surface policy: what this destination accepts and how big it may be.
+    const preset = presetForPath(normalizedPath);
+    const ext = extname(file.name).toLowerCase();
+
+    // Validate file type — must be a globally allowed type AND permitted on
+    // this surface (e.g. videos only land in the media gallery, not avatars).
+    if (!isAllowedFile(file.name, file.type) || !preset.allow.has(ext)) {
+      return NextResponse.json(
+        { error: `File type not allowed here. This location accepts: ${preset.kind}.` },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > preset.maxBytes) {
+      const limitMb = Math.round(preset.maxBytes / MB);
+      return NextResponse.json(
+        { error: `File too large (max ${limitMb}MB for ${preset.kind} here)` },
+        { status: 400 }
+      );
+    }
+
+    // Feedback screenshots are an intentionally shared, authenticated dropbox
+    // (no per-user segment), so any signed-in user may write under media/feedback/.
+    const isSharedFeedbackUpload = normalizedPath.toLowerCase().startsWith("media/feedback/");
+
+    // Ownership: users can only upload to paths containing their own ID.
+    // Paths like "news/..." or "blog/..." without a userId segment are admin-only (checked below).
+    if (!isSharedFeedbackUpload && !userOwnsPath(user.id, normalizedPath)) {
       // Allow admins to upload to any path (e.g., news thumbnails)
       const { createAdminClient } = await import("@/lib/db/admin");
       const admin = createAdminClient();
@@ -229,7 +301,6 @@ export async function POST(request: NextRequest) {
 
     // Read file into buffer and validate content matches claimed type
     const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = extname(file.name).toLowerCase();
     if (!validateMagicBytes(buffer, ext)) {
       return NextResponse.json(
         { error: "File content does not match file type" },

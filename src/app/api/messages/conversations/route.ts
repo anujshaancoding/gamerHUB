@@ -91,28 +91,26 @@ export async function GET() {
           .in("follower_id", uniqueOtherUserIds),
       ]);
 
-      const iFollowSet = new Set((iFollow || []).map((f) => f.following_id));
-      const followMeSet = new Set((followMe || []).map((f) => f.follower_id));
+      const iFollowSet = new Set((iFollow || []).map((f) => f.following_id as string));
+      const followMeSet = new Set((followMe || []).map((f) => f.follower_id as string));
       friendSet = new Set([...iFollowSet].filter((id) => followMeSet.has(id)));
     }
 
-    // Get last message for each conversation
-    const lastMessages = await Promise.all(
-      conversationIds.map(async (cid) => {
-        const { data } = await db
-          .from("messages")
-          .select("*")
-          .eq("conversation_id", cid)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-        return { conversationId: cid, message: data };
-      })
-    );
+    // Get last message for each conversation in a single batched query.
+    // Fetch all messages for these conversations newest-first, then keep the
+    // first (latest) message seen per conversation_id.
+    const { data: allMessages } = await db
+      .from("messages")
+      .select("*")
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false });
 
-    const lastMessageMap = new Map(
-      lastMessages.map((lm) => [lm.conversationId, lm.message])
-    );
+    const lastMessageMap = new Map();
+    for (const message of allMessages || []) {
+      if (!lastMessageMap.has(message.conversation_id)) {
+        lastMessageMap.set(message.conversation_id, message);
+      }
+    }
 
     // Build response
     const result = (conversations || []).map((conv) => {
@@ -131,7 +129,7 @@ export async function GET() {
       const unreadCount =
         lastMessage && lastMessage.sender_id !== user.id
           ? myLastRead
-            ? new Date(lastMessage.created_at) > new Date(myLastRead)
+            ? new Date(lastMessage.created_at) > new Date(myLastRead as string)
               ? 1
               : 0
             : 1 // never read → unread
@@ -143,7 +141,7 @@ export async function GET() {
         const otherParticipant = participants.find(
           (p) => p.user_id !== user.id
         );
-        if (otherParticipant && !friendSet.has(otherParticipant.user_id)) {
+        if (otherParticipant && !friendSet.has(otherParticipant.user_id as string)) {
           isVoid = true;
         }
       }

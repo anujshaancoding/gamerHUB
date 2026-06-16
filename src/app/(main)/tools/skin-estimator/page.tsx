@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SkinEstimator } from "@/components/gaming/tools/skin-estimator";
 
 export const metadata: Metadata = {
-  title: "Valorant Skin Spend Estimator — How much have you spent? · ggLobby",
+  title: "Valorant Skin Spend Estimator — How much have you spent?",
   description:
     "Count your Valorant skins by tier and see the rough VP / INR / USD total. Quick estimator using current Indian pack pricing.",
   alternates: { canonical: "/tools/skin-estimator" },

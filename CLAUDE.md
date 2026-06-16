@@ -42,7 +42,7 @@ Things to address before bringing on a backend team:
 
 ## Updates Page Maintenance
 
-**IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/updates/updates-page-client.tsx` with the changes made.
+**IMPORTANT:** Whenever pushing code to GitHub, update the Updates page at `src/components/content/updates/updates-page-client.tsx` with the changes made.
 
 ### Rules:
 1. **Only log significant user-facing changes** — major feature additions, notable UI overhauls, new pages/sections, API changes, important bug fixes, security patches, and performance improvements. Skip trivial changes like minor CSS tweaks, typo fixes, or small UI adjustments. **Never log admin panel changes** — these are internal and should not be shown to users.

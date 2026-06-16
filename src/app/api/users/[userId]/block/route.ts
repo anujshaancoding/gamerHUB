@@ -6,6 +6,11 @@ interface RouteParams {
   params: Promise<{ userId: string }>;
 }
 
+// userId is interpolated into PostgREST .or() filters below; require a valid
+// UUID to prevent OR-predicate / boolean-probe injection via the path param.
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // POST /api/users/[userId]/block - Block a user
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
@@ -15,6 +20,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!UUID_REGEX.test(userId)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
     }
 
     if (userId === user.id) {
@@ -157,6 +169,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!UUID_REGEX.test(userId)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
     }
 
     // Check if either user has blocked the other

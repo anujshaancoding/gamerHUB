@@ -3,6 +3,11 @@ import { createClient } from "@/lib/db/client";
 import type { ClanMember } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 
+// clan_id is interpolated into a PostgREST .or() filter below; require a valid
+// UUID to prevent OR-predicate injection via the query param.
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // GET - List clan challenges
 export async function GET(request: NextRequest) {
   try {
@@ -41,6 +46,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (clanId) {
+      if (!UUID_REGEX.test(clanId)) {
+        return NextResponse.json({ error: "Invalid clan_id" }, { status: 400 });
+      }
       query = query.or(
         `challenger_clan_id.eq.${clanId},challenged_clan_id.eq.${clanId}`
       );

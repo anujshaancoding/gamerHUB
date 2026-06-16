@@ -199,7 +199,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Handle scores and winner
     if (team1_score !== undefined) updates.team1_score = team1_score;
     if (team2_score !== undefined) updates.team2_score = team2_score;
-    if (winner_id !== undefined) updates.winner_id = winner_id;
+    if (winner_id !== undefined) {
+      // winner_id must be one of this match's two participants — otherwise a
+      // caller could declare an arbitrary participant (or another match's team)
+      // the winner.
+      if (winner_id !== null && winner_id !== match.team1_id && winner_id !== match.team2_id) {
+        return NextResponse.json(
+          { error: "winner_id must be one of the match's participants" },
+          { status: 400 }
+        );
+      }
+      updates.winner_id = winner_id;
+    }
     if (result !== undefined) updates.result = result;
 
     // Handle disputes (organizer only)

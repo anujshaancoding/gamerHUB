@@ -4,6 +4,11 @@ import { privateCachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers"
 import type { BadgeDefinition } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 
+// game_id is interpolated into a PostgREST .or() filter below; require a valid
+// UUID to prevent OR-predicate injection via the query param.
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // GET - List all badge definitions
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +34,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (gameId) {
+      if (!UUID_REGEX.test(gameId)) {
+        return NextResponse.json({ error: "Invalid game_id" }, { status: 400 });
+      }
       query = query.or(`game_id.eq.${gameId},game_id.is.null`);
     }
 

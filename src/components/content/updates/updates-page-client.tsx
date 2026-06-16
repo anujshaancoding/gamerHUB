@@ -35,6 +35,34 @@ const typeConfig: Record<UpdateType, { icon: LucideIcon; color: string; label: s
 // All website updates in reverse chronological order
 const updates: UpdateEntry[] = [
   {
+    date: "2026-06-17T12:00:00",
+    version: "1.44.0",
+    type: "security",
+    title: "Security hardening and performance pass",
+    description:
+      "A platform-wide hardening and speed pass — stronger upload protection, login abuse prevention, and faster messages, comments and profile pages.",
+    highlights: [
+      "Uploads now enforce per-type size limits and verify real file contents, blocking disguised or oversized files",
+      "Added brute-force protection on sign-in",
+      "Faster conversation list, news comments, and profile pages",
+      "Assorted reliability and SEO fixes across the site",
+    ],
+  },
+  {
+    date: "2026-06-16T18:00:00",
+    version: "1.43.0",
+    type: "feature",
+    title: "New Rank Up section — Valorant game-sense guides by rank",
+    description:
+      "A new Game Hub section that breaks down how to climb Valorant rank by rank — how each rank thinks, the habits holding you back, and the exact unlocks and drills to level up.",
+    highlights: [
+      "Rank-by-rank guides launching with Iron, Bronze and Silver (Gold through Immortal coming soon)",
+      "Each guide covers the rank's mindset, bad habits, concrete unlocks to climb, and practical drills",
+      "Cross-cutting fundamentals threaded through every tier — crosshair placement, economy, comms, minimap and post-plant discipline",
+      "Find the new \"Rank Up\" entry in the Game Hub sidebar (Beta)",
+    ],
+  },
+  {
     date: "2026-06-15T15:30:00",
     version: "1.42.1",
     type: "fix",

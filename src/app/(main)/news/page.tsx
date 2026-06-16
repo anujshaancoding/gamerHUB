@@ -13,7 +13,7 @@ import type { NewsArticle } from "@/types/news";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Valorant News — Patches, Tournaments & Roster Moves | ggLobby",
+  title: "Valorant News — Patches, Tournaments & Roster Moves",
   description:
     "The latest Valorant news for India and beyond — patch notes, tournament results, roster changes, and meta updates, curated by ggLobby.",
   alternates: { canonical: "/news" },
