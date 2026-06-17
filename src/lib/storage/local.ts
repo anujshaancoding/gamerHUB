@@ -50,4 +50,9 @@ export class LocalStorageDriver implements StorageDriver {
   publicUrl(relPath: string, opts?: { versioned?: boolean }): string {
     return opts?.versioned ? getPublicUrlVersioned(relPath) : getPublicUrl(relPath);
   }
+
+  /** Local disk uploads go through the normal POST route — no presign. */
+  async presignUpload(): Promise<string | null> {
+    return null;
+  }
 }

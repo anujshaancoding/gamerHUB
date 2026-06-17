@@ -29,6 +29,12 @@ export interface StorageDriver {
   deleteFile(relPath: string): Promise<void>;
   /** Public URL for a stored path (optionally cache-busted). */
   publicUrl(relPath: string, opts?: { versioned?: boolean }): string;
+  /**
+   * A presigned PUT URL the browser can upload to directly — needed for large
+   * files on serverless, where the function body cap is too small. Returns null
+   * on drivers that don't support it (local serves via the normal POST path).
+   */
+  presignUpload(relPath: string, contentType: string, expiresSeconds?: number): Promise<string | null>;
 }
 
 let _storage: StorageDriver | null = null;

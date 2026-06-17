@@ -59,6 +59,22 @@ console.log("GET   :", get.status, get.ok && got === body ? "OK (bytes match)" :
 const del = await client.fetch(url, { method: "DELETE" });
 console.log("DELETE:", del.status, del.ok ? "OK" : "FAILED");
 
-const ok = put.ok && get.ok && got === body && del.ok;
-console.log(ok ? `\n✅ R2 verified. Set R2_BUCKET=${bucket} in .env.local` : "\n❌ R2 round-trip failed");
+// 3. Presigned PUT — generate a signed URL, then upload with a PLAIN fetch (no
+// signing), exactly as a browser would. Proves direct browser->R2 video upload.
+const pkey = "_healthcheck/presign.mp4";
+const psignUrl = new URL(`${endpoint}/${bucket}/${pkey}`);
+psignUrl.searchParams.set("X-Amz-Expires", "600");
+const presigned = (await client.sign(psignUrl.toString(), { method: "PUT", aws: { signQuery: true } })).url;
+const pput = await fetch(presigned, {
+  method: "PUT",
+  body: "fake-video-bytes",
+  headers: { "Content-Type": "video/mp4" },
+});
+console.log("Presigned PUT (unsigned client):", pput.status, pput.ok ? "OK" : "FAILED");
+const pget = await client.fetch(`${endpoint}/${bucket}/${pkey}`, { method: "GET" });
+console.log("Presigned object GET:", pget.status, pget.ok ? "OK" : "FAILED");
+await client.fetch(`${endpoint}/${bucket}/${pkey}`, { method: "DELETE" });
+
+const ok = put.ok && get.ok && got === body && del.ok && pput.ok && pget.ok;
+console.log(ok ? `\n✅ R2 verified (incl. presigned upload). Set R2_BUCKET=${bucket} in .env.local` : "\n❌ R2 round-trip failed");
 process.exit(ok ? 0 : 1);

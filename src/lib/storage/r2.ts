@@ -104,4 +104,23 @@ export class R2StorageDriver implements StorageDriver {
     const url = `${this.publicBase}/${encodeKey(relPath)}`;
     return opts?.versioned ? `${url}?v=${Date.now()}` : url;
   }
+
+  /**
+   * Presigned PUT URL for direct browser->R2 upload (large video bypasses the
+   * function body cap). Host-signed only, so the browser sets Content-Type on
+   * the PUT; the caller restricts which paths/types ever get a URL.
+   */
+  async presignUpload(
+    relPath: string,
+    _contentType: string,
+    expiresSeconds = 600,
+  ): Promise<string | null> {
+    const url = new URL(this.objectUrl(relPath));
+    url.searchParams.set("X-Amz-Expires", String(expiresSeconds));
+    const signed = await this.client.sign(url.toString(), {
+      method: "PUT",
+      aws: { signQuery: true },
+    });
+    return signed.url;
+  }
 }
