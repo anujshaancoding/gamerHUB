@@ -1,6 +1,17 @@
 import path from "path";
 import type { NextConfig } from "next";
 
+// ── Hosts introduced by the serverless migration (R2 uploads + realtime worker) ──
+// Derived from env so any deployment/domain works without editing this file:
+//  - R2_PUBLIC_ORIGIN: where uploaded images are SERVED from (img-src/remotePatterns)
+//  - R2_API_ORIGIN:    the S3 endpoint the browser PUTs video to (connect-src, presigned)
+//  - REALTIME_WSS:     the realtime worker WebSocket origin (connect-src)
+const R2_PUBLIC_ORIGIN = (process.env.R2_PUBLIC_URL || "").replace(/\/+$/, "");
+const R2_PUBLIC_HOST = R2_PUBLIC_ORIGIN ? new URL(R2_PUBLIC_ORIGIN).hostname : "";
+const R2_API_ORIGIN = (process.env.R2_ENDPOINT || "").replace(/\/+$/, "");
+const REALTIME_ORIGIN = (process.env.NEXT_PUBLIC_REALTIME_URL || process.env.REALTIME_URL || "").replace(/\/+$/, "");
+const REALTIME_WSS = REALTIME_ORIGIN ? REALTIME_ORIGIN.replace(/^https?:/, "wss:") : "";
+
 const nextConfig: NextConfig = {
   // Pin Turbopack's workspace root to this directory. Without this, Next 16
   // mis-infers the root as the parent dir when the project path contains a
@@ -69,6 +80,10 @@ const nextConfig: NextConfig = {
         hostname: "media.valorant-api.com",
         pathname: "/**",
       },
+      // R2 public bucket (uploaded avatars/media/news images) — from R2_PUBLIC_URL.
+      ...(R2_PUBLIC_HOST
+        ? [{ protocol: "https" as const, hostname: R2_PUBLIC_HOST }]
+        : []),
     ],
   },
 
@@ -132,9 +147,13 @@ const nextConfig: NextConfig = {
     const scriptSrc = isDev
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://js.stripe.com"
       : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://js.stripe.com";
-    const connectSrc = isDev
-      ? "connect-src 'self' ws: wss: https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in"
-      : "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in";
+    // Realtime worker (wss) + R2 S3 endpoint (browser PUTs presigned video uploads there).
+    const migrationConnect = [REALTIME_WSS, R2_API_ORIGIN].filter(Boolean).join(" ");
+    const connectSrc =
+      (isDev
+        ? "connect-src 'self' ws: wss: https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in"
+        : "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://api.stripe.com wss://gglobby.in") +
+      (migrationConnect ? " " + migrationConnect : "");
 
     const securityHeaders = [
       { key: "X-Frame-Options", value: "DENY" },
@@ -148,7 +167,8 @@ const nextConfig: NextConfig = {
           "default-src 'self'",
           scriptSrc,
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-          "img-src 'self' data: blob: https://upload.wikimedia.org https://i.pinimg.com https://api.dicebear.com https://images.unsplash.com https://gglobby.in https://api-assets.clashofclans.com https://cdn.discordapp.com https://*.googleusercontent.com https://www.googletagmanager.com https://media.valorant-api.com",
+          "img-src 'self' data: blob: https://upload.wikimedia.org https://i.pinimg.com https://api.dicebear.com https://images.unsplash.com https://gglobby.in https://api-assets.clashofclans.com https://cdn.discordapp.com https://*.googleusercontent.com https://www.googletagmanager.com https://media.valorant-api.com" +
+            (R2_PUBLIC_ORIGIN ? " " + R2_PUBLIC_ORIGIN : ""),
           "font-src 'self' https://fonts.gstatic.com",
           connectSrc,
           "media-src 'self' https:",
