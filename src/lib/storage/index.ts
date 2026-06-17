@@ -14,6 +14,7 @@
  */
 
 import { LocalStorageDriver } from "./local";
+import { R2StorageDriver } from "./r2";
 
 export { normalizeStoragePath, isPathSafe } from "./paths";
 
@@ -38,7 +39,9 @@ export function getStorage(): StorageDriver {
 
   const driver = (process.env.STORAGE_DRIVER || "local").toLowerCase();
   switch (driver) {
-    // case "r2": _storage = new R2StorageDriver(); break;  // added in A1b
+    case "r2":
+      _storage = new R2StorageDriver();
+      break;
     case "local":
     default:
       _storage = new LocalStorageDriver();
