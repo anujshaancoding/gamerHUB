@@ -53,9 +53,13 @@ export function presetForPath(path: string): UploadPreset {
   if (p.startsWith("media/feedback/")) {
     return { maxBytes: 16 * MB, allow: IMAGE_EXTENSIONS, kind: "image" };
   }
-  // Profile media gallery: clips + screenshots — the only video-bearing surface.
+  // Profile media gallery: clips + screenshots.
   if (p.startsWith("media/")) {
     return { maxBytes: MAX_FILE_SIZE, allow: ALL_MEDIA_EXTENSIONS, kind: "image or video" };
+  }
+  // Admin lineup clips: short mp4/webm (or image), modest cap.
+  if (p.startsWith("lineups/")) {
+    return { maxBytes: 64 * MB, allow: ALL_MEDIA_EXTENSIONS, kind: "image or video" };
   }
   // Editorial/content surfaces (blog, news, guides, etc.) and anything else:
   // images only, moderate cap.

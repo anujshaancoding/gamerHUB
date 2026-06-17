@@ -279,8 +279,9 @@ export async function POST(request: NextRequest) {
       await getStorage().deleteFile(oldPath.replace(/\.\./g, "").replace(/^\//, ""));
     }
 
-    // Return public URL
-    const publicUrl = `/uploads/${normalizedPath}?v=${Date.now()}`;
+    // Return the driver's public URL — /uploads/... on local, the R2 CDN URL on
+    // R2 (so the browser hits R2 directly instead of proxying through a function).
+    const publicUrl = getStorage().publicUrl(normalizedPath, { versioned: true });
 
     return NextResponse.json({ publicUrl, fileSize: file.size });
   } catch (error) {

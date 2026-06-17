@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Trash2, UploadCloud, Plus, Loader2, Youtube } from "lucide-react";
 import { MAPS } from "@/lib/data/valorant-maps";
 import { AGENTS } from "@/lib/data/valorant-agents";
+import { uploadVideoViaPresign } from "@/lib/services/video-upload";
 import {
   type Lineup,
   type LineupSide,
@@ -56,14 +57,26 @@ export default function AdminLineupsPage() {
     setUploading(true);
     setMsg(null);
     try {
-      const ext = file.name.split(".").pop() || "mp4";
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("path", `lineups/${form.map}/${Date.now()}.${ext}`);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      setForm((f) => ({ ...f, videoUrl: data.publicUrl, youtubeId: "" }));
+      const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+      const path = `lineups/${form.map}/${Date.now()}.${ext}`;
+
+      // On R2/serverless, push the clip straight to R2 via a presigned URL.
+      // Returns null on the local driver — fall back to the server POST.
+      const direct = await uploadVideoViaPresign(file, path, () => {});
+      let publicUrl: string;
+      if (direct) {
+        publicUrl = direct.publicUrl;
+      } else {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("path", path);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+        publicUrl = data.publicUrl;
+      }
+
+      setForm((f) => ({ ...f, videoUrl: publicUrl, youtubeId: "" }));
       setMsg({ ok: true, text: "Video uploaded." });
     } catch (e) {
       setMsg({ ok: false, text: (e as Error).message });
