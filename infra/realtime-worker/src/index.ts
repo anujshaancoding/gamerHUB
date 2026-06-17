@@ -17,8 +17,10 @@
 export interface Env {
   REALTIME_HUB: DurableObjectNamespace;
   AUTH_SECRET: string;
-  /** Shared secret the Next app sends on /emit (Bearer). */
+  /** Shared secret for /emit (in) and the presence callback (out), as Bearer. */
   REALTIME_SECRET?: string;
+  /** Next app base URL; the DO POSTs presence here to persist it to the DB. */
+  APP_URL?: string;
 }
 
 const DISCONNECT_GRACE_MS = 5000;
@@ -134,9 +136,12 @@ export class RealtimeHub {
     const client = pair[0];
     const server = pair[1];
 
-    // Cancel a pending grace alarm if this user is reconnecting.
     this.setAtt(server, { userId, status: "auto", rooms: [`user:${userId}`] });
     this.state.acceptWebSocket(server, [`u:${userId}`]);
+
+    // Reconnected within the grace window → cancel the pending offline; mark online.
+    void this.state.storage.delete(`pending:${userId}`);
+    this.notifyApp({ userId, online: true });
 
     server.send(JSON.stringify({ type: "connected", data: { userId } }));
     this.broadcastPresence();
@@ -156,11 +161,20 @@ export class RealtimeHub {
     const a = this.att(ws);
     if (!a.userId) return;
 
+    // Symmetric protocol: the single emit() payload arrives as msg.data, the
+    // same way server->client sends {type, data}. join/leave carry a scalar id;
+    // status/typing carry an object.
+    const p = msg.data as Record<string, unknown> | string | undefined;
+
     switch (msg.type) {
       case "status:set": {
-        a.status = String(msg.status ?? "auto");
+        a.status = String((p as { status?: unknown })?.status ?? "auto");
         this.setAtt(ws, a);
         this.broadcastPresence();
+        const dur = (p as { durationMinutes?: unknown })?.durationMinutes;
+        const statusUntil =
+          typeof dur === "number" ? new Date(Date.now() + dur * 60000).toISOString() : null;
+        this.notifyApp({ userId: a.userId, status: a.status, statusUntil });
         break;
       }
       case "status:auto-away":
@@ -174,34 +188,37 @@ export class RealtimeHub {
         this.broadcastPresence();
         break;
       case "join:conversation":
-        this.joinRoom(ws, a, `conversation:${msg.conversationId}`);
+        this.joinRoom(ws, a, `conversation:${p}`);
         break;
       case "leave:conversation":
-        this.leaveRoom(ws, a, `conversation:${msg.conversationId}`);
+        this.leaveRoom(ws, a, `conversation:${p}`);
         break;
       case "join:tournament":
-        this.joinRoom(ws, a, `tournament:${msg.tournamentId}`);
+        this.joinRoom(ws, a, `tournament:${p}`);
         break;
       case "leave:tournament":
-        this.leaveRoom(ws, a, `tournament:${msg.tournamentId}`);
+        this.leaveRoom(ws, a, `tournament:${p}`);
         break;
       case "typing:start":
-      case "typing:stop":
+      case "typing:stop": {
+        const conversationId = (p as { conversationId?: unknown })?.conversationId;
         this.sendToRoom(
-          `conversation:${msg.conversationId}`,
+          `conversation:${conversationId}`,
           msg.type,
-          { userId: a.userId, conversationId: msg.conversationId },
+          { userId: a.userId, conversationId },
           ws,
         );
         break;
+      }
     }
   }
 
   async webSocketClose(ws: WebSocket): Promise<void> {
     const a = this.att(ws);
-    // If this user has no other live sockets, schedule a grace check before
-    // marking them offline (avoids an offline flash on page refresh).
+    // If this user has no other live sockets, mark them pending-offline and
+    // schedule a grace check (avoids an offline flash on page refresh).
     if (a.userId && this.socketsForUser(a.userId).length <= 1) {
+      await this.state.storage.put(`pending:${a.userId}`, Date.now());
       await this.state.storage.setAlarm(Date.now() + DISCONNECT_GRACE_MS);
     } else {
       this.broadcastPresence();
@@ -212,9 +229,30 @@ export class RealtimeHub {
     await this.webSocketClose(ws);
   }
 
-  // Grace expiry: presence has already lost the closed socket, so just re-broadcast.
+  // Grace expiry: anyone still pending with no live sockets is truly offline.
   async alarm(): Promise<void> {
+    const pending = await this.state.storage.list<number>({ prefix: "pending:" });
+    for (const key of pending.keys()) {
+      const userId = key.slice("pending:".length);
+      await this.state.storage.delete(key);
+      if (this.socketsForUser(userId).length === 0) {
+        this.notifyApp({ userId, online: false });
+      }
+    }
     this.broadcastPresence();
+  }
+
+  /** Persist presence to the DB via the Next app (the DO can't reach Postgres). */
+  private notifyApp(payload: Record<string, unknown>): void {
+    if (!this.env.APP_URL) return;
+    void fetch(`${this.env.APP_URL.replace(/\/+$/, "")}/api/internal/realtime`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.env.REALTIME_SECRET ? { Authorization: `Bearer ${this.env.REALTIME_SECRET}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
   }
 
   // ── rooms ─────────────────────────────────────────────────────────────────
