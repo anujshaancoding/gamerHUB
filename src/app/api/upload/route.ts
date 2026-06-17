@@ -15,6 +15,7 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { resolve, dirname, extname } from "path";
 import { spawn } from "child_process";
 import { getUser } from "@/lib/auth/get-user";
+import { getStorage } from "@/lib/storage";
 
 // Store uploads outside public/ — served by the catch-all route at /uploads/[...path].
 // In production, Nginx also serves from UPLOAD_DIR for static performance.
@@ -335,15 +336,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Images and other files: write as-is.
-    await writeFile(fullPath, buffer);
+    // Images and other files: write as-is through the storage driver.
+    await getStorage().writeFile(normalizedPath, buffer);
 
     // Delete old file if provided and different
     if (oldPath && oldPath !== normalizedPath) {
-      const oldFullPath = resolve(UPLOAD_DIR, oldPath.replace(/\.\./g, "").replace(/^\//, ""));
-      if (oldFullPath.startsWith(UPLOAD_DIR)) {
-        await unlink(oldFullPath).catch(() => {});
-      }
+      await getStorage().deleteFile(oldPath.replace(/\.\./g, "").replace(/^\//, ""));
     }
 
     // Return public URL
@@ -396,7 +394,7 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    await unlink(fullPath).catch(() => {});
+    await getStorage().deleteFile(normalizedPath);
 
     return NextResponse.json({ success: true });
   } catch (error) {

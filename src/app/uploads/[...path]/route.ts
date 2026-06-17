@@ -1,18 +1,15 @@
 /**
- * Serve uploaded files from the filesystem.
+ * Serve uploaded files via the storage driver.
  *
  * Next.js dev server (Turbopack) doesn't reliably serve files added
- * dynamically to public/. This catch-all route reads from UPLOAD_DIR
- * directly so images in messages, avatars, and banners always load.
+ * dynamically to public/. This catch-all route reads through the storage
+ * driver (local disk today; R2 next) so images in messages, avatars, and
+ * banners always load. In production, Nginx also serves UPLOAD_DIR directly
+ * for static performance on the local driver.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import { resolve } from "path";
-
-const UPLOAD_DIR = resolve(
-  process.env.UPLOAD_DIR || "./uploads"
-);
+import { getStorage } from "@/lib/storage";
 
 // Only these extensions are served inline with an image/video content-type.
 // SVG is deliberately absent: an SVG can carry inline <script> and, served
@@ -34,35 +31,32 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path: segments } = await params;
-  const filePath = segments.join("/").replace(/\.\./g, "");
-  const fullPath = resolve(UPLOAD_DIR, filePath);
+  const filePath = segments.join("/");
 
-  if (!fullPath.startsWith(UPLOAD_DIR)) {
+  // The driver normalizes + guards the path and returns null on traversal or
+  // a missing file.
+  const buffer = await getStorage().readFile(filePath);
+  if (!buffer) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  try {
-    const buffer = await readFile(fullPath);
-    const ext = filePath.split(".").pop()?.toLowerCase() || "";
-    const known = MIME[ext];
-    const contentType = known || "application/octet-stream";
+  const ext = filePath.split(".").pop()?.toLowerCase() || "";
+  const known = MIME[ext];
+  const contentType = known || "application/octet-stream";
 
-    // Defense-in-depth against stored XSS from user-uploaded content:
-    //  - nosniff stops the browser from re-interpreting an octet-stream as HTML/SVG
-    //  - a locked-down CSP neutralises any markup that does get rendered
-    //  - unknown / non-allowlisted types are forced to download, never rendered inline
-    const headers: Record<string, string> = {
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "X-Content-Type-Options": "nosniff",
-      "Content-Security-Policy": "default-src 'none'; sandbox",
-    };
-    if (!known) {
-      headers["Content-Disposition"] = "attachment";
-    }
-
-    return new NextResponse(buffer, { headers });
-  } catch {
-    return new NextResponse("Not found", { status: 404 });
+  // Defense-in-depth against stored XSS from user-uploaded content:
+  //  - nosniff stops the browser from re-interpreting an octet-stream as HTML/SVG
+  //  - a locked-down CSP neutralises any markup that does get rendered
+  //  - unknown / non-allowlisted types are forced to download, never rendered inline
+  const headers: Record<string, string> = {
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'; sandbox",
+  };
+  if (!known) {
+    headers["Content-Disposition"] = "attachment";
   }
+
+  return new NextResponse(new Uint8Array(buffer), { headers });
 }
