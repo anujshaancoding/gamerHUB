@@ -1,0 +1,12 @@
+# Netlify config for ggLobby (Next 16). The Next.js runtime is auto-detected;
+# pinned here for clarity. Scheduled functions in netlify/functions/ drive the
+# nightly ingest + prune crons (they call the Bearer-protected /api/cron/* routes).
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
