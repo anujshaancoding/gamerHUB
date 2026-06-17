@@ -237,8 +237,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await mkdir(dirname(fullPath), { recursive: true });
-
     // Videos: transcode with ffmpeg on the LOCAL driver. On R2/serverless there
     // is no ffmpeg and the 200MB body won't fit through a function — clients
     // must upload video directly via /api/upload/presign instead.
@@ -250,6 +248,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Only the local ffmpeg path writes to disk and needs the dir. The image
+      // path below goes through the storage driver (which creates dirs itself on
+      // local, or writes to R2) — mkdir'ing unconditionally throws on Netlify's
+      // read-only filesystem and 500s every image upload.
+      await mkdir(dirname(fullPath), { recursive: true });
       const tmpInput = `${fullPath}.upload`;
       await writeFile(tmpInput, buffer);
       try {
