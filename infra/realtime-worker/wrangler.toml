@@ -1,0 +1,17 @@
+# ggLobby realtime — Cloudflare Worker + Durable Object.
+# Replaces the in-process Socket.IO server (src/lib/realtime/socket-server.ts).
+# A single "hub" DO holds all WebSocket connections and implements rooms in
+# memory exactly like Socket.IO did — simplest correct port at our scale.
+
+name = "gglobby-realtime"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "REALTIME_HUB"
+class_name = "RealtimeHub"
+
+# Free plan requires the SQLite storage backend for Durable Objects.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RealtimeHub"]

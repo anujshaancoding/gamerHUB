@@ -51,6 +51,7 @@
     "@tiptap/extension-underline": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
+    "aws4fetch": "^1.0.20",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",

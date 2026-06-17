@@ -8,11 +8,17 @@ import {
   useMemo,
   ReactNode,
 } from "react";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import { useAuthSession } from "@/lib/auth/AuthProvider";
+import { RealtimeClient, type RealtimeSocket } from "./realtime-client";
+
+// When set, realtime runs against the Cloudflare DO worker (serverless);
+// otherwise the in-process Socket.IO server (local / VPS). Same dual-mode idea
+// as the storage driver — the VPS is unchanged until this is configured.
+const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL;
 
 interface SocketContextType {
-  socket: Socket | null;
+  socket: RealtimeSocket | null;
   connected: boolean;
 }
 
@@ -21,35 +27,56 @@ const SocketContext = createContext<SocketContextType>({
   connected: false,
 });
 
+/** Fetch a signed handshake token (validated server-side against AUTH_SECRET). */
+async function fetchSocketToken(): Promise<string | null> {
+  try {
+    const res = await fetch("/api/realtime/socket-token", { credentials: "include" });
+    if (res.ok) {
+      const data = (await res.json()) as { token?: string };
+      return data?.token ?? null;
+    }
+  } catch {
+    // network blip — UI handles the offline state
+  }
+  return null;
+}
+
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthSession();
   const [connected, setConnected] = useState(false);
-  // Socket is stored in state (not a ref) so that creating/destroying it
-  // re-renders consumers — reading a ref's `.current` during render is a bug
-  // (consumers would get a stale/null socket).
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // Stored in state (not a ref) so create/destroy re-renders consumers.
+  const [socket, setSocket] = useState<RealtimeSocket | null>(null);
 
   useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
+    if (!user?.id) return;
 
     let cancelled = false;
-    let s: Socket | null = null;
 
-    // Fetch a signed handshake token. The server validates this against
-    // AUTH_SECRET so users can't claim another userId on the websocket.
+    // ── Serverless: Cloudflare Durable Object worker over native WebSocket ──
+    if (REALTIME_URL) {
+      const client = new RealtimeClient(REALTIME_URL, fetchSocketToken);
+      client.on("connect", () => {
+        if (!cancelled) setConnected(true);
+      });
+      client.on("disconnect", () => {
+        if (!cancelled) setConnected(false);
+      });
+      // One-time init of the realtime client for this user (mirrors the
+      // socket.io branch below, which sets it from an async callback).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSocket(client);
+      return () => {
+        cancelled = true;
+        client.disconnect();
+        setSocket(null);
+        setConnected(false);
+      };
+    }
+
+    // ── Local / VPS: in-process Socket.IO ──────────────────────────────────
+    let s: ReturnType<typeof io> | null = null;
     (async () => {
-      let token: string | null = null;
-      try {
-        const res = await fetch("/api/realtime/socket-token", { credentials: "include" });
-        if (res.ok) {
-          const data = (await res.json()) as { token?: string };
-          token = data?.token ?? null;
-        }
-      } catch {
-        // network blip — socket simply won't connect; UI handles offline state
-      }
+      const token = await fetchSocketToken();
       if (cancelled || !token) return;
 
       s = io({
@@ -61,28 +88,17 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         reconnectionDelayMax: 10000,
       });
 
-      s.on("connect", () => {
-        setConnected(true);
-      });
+      s.on("connect", () => setConnected(true));
+      s.on("disconnect", () => setConnected(false));
 
-      s.on("disconnect", () => {
-        setConnected(false);
-      });
-
-      // If the token expired mid-session, the server rejects with
-      // "unauthorized" — fetch a fresh one and reconnect.
+      // Token expired mid-session → server rejects with "unauthorized"; fetch a
+      // fresh one and reconnect.
       s.on("connect_error", async (err) => {
         if (err?.message !== "unauthorized") return;
-        try {
-          const res = await fetch("/api/realtime/socket-token", { credentials: "include" });
-          if (!res.ok) return;
-          const data = (await res.json()) as { token?: string };
-          if (data?.token && s) {
-            (s.auth as Record<string, unknown>).token = data.token;
-            s.connect();
-          }
-        } catch {
-          // give up — user can refresh the page
+        const fresh = await fetchSocketToken();
+        if (fresh && s) {
+          (s.auth as Record<string, unknown>).token = fresh;
+          s.connect();
         }
       });
 
@@ -91,27 +107,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      if (s) {
-        s.disconnect();
-      }
+      if (s) s.disconnect();
       setSocket(null);
       setConnected(false);
     };
   }, [user?.id]);
 
-  const value = useMemo(
-    () => ({
-      socket,
-      connected,
-    }),
-    [socket, connected]
-  );
+  const value = useMemo(() => ({ socket, connected }), [socket, connected]);
 
-  return (
-    <SocketContext.Provider value={value}>
-      {children}
-    </SocketContext.Provider>
-  );
+  return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
 
 export function useSocket() {

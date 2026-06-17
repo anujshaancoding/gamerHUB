@@ -239,25 +239,48 @@ function broadcastPresence(io: Server) {
 }
 
 // ─── Helper to emit events from API routes ───────────────────────────────────
+//
+// Dual-mode, like the storage driver: when REALTIME_URL is set (serverless,
+// Netlify), events fan out via an authenticated POST to the Cloudflare DO
+// worker's /emit. Otherwise they go through the in-process Socket.IO server
+// (local / VPS). So the VPS is unchanged until the worker is switched on.
+
+const REALTIME_URL = process.env.REALTIME_URL?.replace(/\/+$/, "");
+const REALTIME_SECRET = process.env.REALTIME_SECRET;
 
 export function getIO(): Server | null {
   return (globalThis as Record<string, unknown>).__socket_io__ as Server | null;
 }
 
+/** Emit `event` to everyone in `room` — via the DO worker or local Socket.IO. */
+function emitToRoom(room: string, event: string, data: unknown) {
+  if (REALTIME_URL) {
+    // Fire-and-forget — realtime delivery must never block or fail the request.
+    void fetch(`${REALTIME_URL}/emit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(REALTIME_SECRET ? { Authorization: `Bearer ${REALTIME_SECRET}` } : {}),
+      },
+      body: JSON.stringify({ room, event, data }),
+    }).catch(() => {});
+    return;
+  }
+  const io = getIO();
+  if (io) io.to(room).emit(event, data);
+}
+
 /** Emit an event to a specific user's room */
 export function emitToUser(userId: string, event: string, data: unknown) {
-  const io = getIO();
-  if (io) io.to(`user:${userId}`).emit(event, data);
+  emitToRoom(`user:${userId}`, event, data);
 }
 
 /** Emit an event to a conversation room */
 export function emitToConversation(conversationId: string, event: string, data: unknown) {
-  const io = getIO();
-  if (io) io.to(`conversation:${conversationId}`).emit(event, data);
+  emitToRoom(`conversation:${conversationId}`, event, data);
 }
 
 /** Emit an event to a tournament room */
 export function emitToTournament(tournamentId: string, event: string, data: unknown) {
-  const io = getIO();
-  if (io) io.to(`tournament:${tournamentId}`).emit(event, data);
+  emitToRoom(`tournament:${tournamentId}`, event, data);
 }

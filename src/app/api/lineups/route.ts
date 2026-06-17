@@ -5,33 +5,37 @@
  *  POST   /api/lineups                          admin only, add a lineup
  *  DELETE /api/lineups?id=<id>                  admin only, remove a lineup
  *
- * Storage is a JSON file on the upload volume so no DB migration is needed;
- * the admin fills videos in over time and they persist across restarts.
+ * Storage is the `valorant_lineups` Postgres table (migration 022). It used to
+ * be a JSON file on the upload volume, but that silently loses writes on
+ * serverless, so it now lives in the database. Column names are snake_case in
+ * the DB and mapped to/from the camelCase `Lineup` type here.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { resolve, dirname } from "path";
 import { nanoid } from "nanoid";
 import { getUser } from "@/lib/auth/get-user";
+import { createClient } from "@/lib/db/client";
 import type { Lineup, NewLineup } from "@/lib/data/lineup-types";
 
-const UPLOAD_DIR = resolve(process.env.UPLOAD_DIR || "./uploads");
-const STORE_PATH = resolve(UPLOAD_DIR, "data/valorant-lineups.json");
-
-async function readStore(): Promise<Lineup[]> {
-  try {
-    const raw = await readFile(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeStore(items: Lineup[]) {
-  await mkdir(dirname(STORE_PATH), { recursive: true });
-  await writeFile(STORE_PATH, JSON.stringify(items, null, 2), "utf8");
+/** Map a snake_case DB row to the camelCase Lineup type the client expects. */
+function toLineup(r: Record<string, unknown>): Lineup {
+  const created = r.created_at;
+  return {
+    id: r.id as string,
+    map: r.map as string,
+    agent: r.agent as string,
+    ability: r.ability as string,
+    side: r.side as Lineup["side"],
+    site: r.site as string,
+    fromCallout: (r.from_callout as string) ?? "",
+    toCallout: (r.to_callout as string) ?? "",
+    title: r.title as string,
+    description: (r.description as string) ?? "",
+    difficulty: Number(r.difficulty) as Lineup["difficulty"],
+    videoUrl: (r.video_url as string) ?? undefined,
+    youtubeId: (r.youtube_id as string) ?? undefined,
+    createdAt: created instanceof Date ? created.toISOString() : (created as string),
+  };
 }
 
 async function requireAdmin(): Promise<{ ok: true } | { ok: false; res: NextResponse }> {
@@ -58,18 +62,28 @@ export async function GET(request: NextRequest) {
   const agent = searchParams.get("agent");
   const side = searchParams.get("side");
 
-  let items = await readStore();
-  if (map) items = items.filter((l) => l.map === map);
-  if (agent) items = items.filter((l) => l.agent === agent);
-  if (side) items = items.filter((l) => l.side === side);
+  const db = createClient();
+  let query = db.from("valorant_lineups").select("*");
+  if (map) query = query.eq("map", map);
+  if (agent) query = query.eq("agent", agent);
+  if (side) query = query.eq("side", side);
+  // Newest first.
+  query = query.order("created_at", { ascending: false });
 
-  // Newest first
-  items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const { data, error } = await query;
+  if (error) {
+    // Stay resilient on the public read path — a DB hiccup shouldn't 500 the
+    // maps page; serve an empty list rather than an error.
+    console.error("lineups GET failed:", error.message);
+    return NextResponse.json({ lineups: [] });
+  }
+
+  const lineups = ((data as Record<string, unknown>[]) ?? []).map(toLineup);
   // Lineups only change on admin POST/DELETE, so this read is safe to cache.
   // Browser holds it 60s; any proxy/CDN serves it for 5min and revalidates in
   // the background for a day — kills the cold refetch on every map visit.
   return NextResponse.json(
-    { lineups: items },
+    { lineups },
     {
       headers: {
         "Cache-Control":
@@ -97,15 +111,34 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const items = await readStore();
-  const lineup: Lineup = {
-    ...body,
-    id: nanoid(10),
-    createdAt: new Date().toISOString(),
-  };
-  items.push(lineup);
-  await writeStore(items);
-  return NextResponse.json({ lineup }, { status: 201 });
+  const db = createClient();
+  const { data, error } = await db
+    .from("valorant_lineups")
+    .insert({
+      id: nanoid(10),
+      map: body.map,
+      agent: body.agent,
+      ability: body.ability,
+      side: body.side,
+      site: body.site,
+      from_callout: body.fromCallout ?? "",
+      to_callout: body.toCallout ?? "",
+      title: body.title,
+      description: body.description ?? "",
+      difficulty: body.difficulty ?? 1,
+      video_url: body.videoUrl ?? null,
+      youtube_id: body.youtubeId ?? null,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error("lineups POST failed:", error?.message);
+    return NextResponse.json({ error: "Failed to save lineup" }, { status: 500 });
+  }
+
+  return NextResponse.json({ lineup: toLineup(data as Record<string, unknown>) }, { status: 201 });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -116,11 +149,23 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const items = await readStore();
-  const next = items.filter((l) => l.id !== id);
-  if (next.length === items.length) {
+  const db = createClient();
+  const { data, error } = await db
+    .from("valorant_lineups")
+    .delete()
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    console.error("lineups DELETE failed:", error.message);
+    return NextResponse.json({ error: "Failed to delete lineup" }, { status: 500 });
+  }
+  // The builder returns the deleted row(s) — an array or a single object
+  // depending on shape. Either way, nothing back means no row matched the id.
+  const deleted = Array.isArray(data) ? data.length > 0 : Boolean(data);
+  if (!deleted) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  await writeStore(next);
+
   return NextResponse.json({ success: true });
 }

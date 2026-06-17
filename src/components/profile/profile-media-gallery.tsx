@@ -13,6 +13,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { optimizedUpload } from "@/lib/services/upload";
+import { uploadVideoViaPresign } from "@/lib/services/video-upload";
 import { storagePathFromUrl } from "@/lib/services/storage";
 import { MediaLightbox, type MediaItem } from "./media-lightbox";
 
@@ -187,17 +188,24 @@ export function ProfileMediaGallery({ userId, isOwner, viewerId }: Props) {
 
       if (isVideo) {
         const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
-        const res = await uploadWithProgress(
-          file,
-          `media/${userId}/${Date.now()}.${ext}`,
-          (pct) => {
-            setProgress(pct);
-            // Bytes are up — the server is now transcoding before it responds.
-            if (pct >= 100) setPhase("processing");
-          },
-        );
-        publicUrl = res.publicUrl;
-        thumbnailUrl = res.thumbnailUrl ?? null;
+        const videoPath = `media/${userId}/${Date.now()}.${ext}`;
+        const onProg = (pct: number) => {
+          setProgress(pct);
+          // Bytes are up — server transcode (local) or poster gen (R2) follows.
+          if (pct >= 100) setPhase("processing");
+        };
+        // Serverless (R2): upload the clip straight to R2 via a presigned URL
+        // and make the poster in the browser. Returns null on the local driver,
+        // where we fall back to the server-transcode POST.
+        const direct = await uploadVideoViaPresign(file, videoPath, onProg);
+        if (direct) {
+          publicUrl = direct.publicUrl;
+          thumbnailUrl = direct.thumbnailUrl;
+        } else {
+          const res = await uploadWithProgress(file, videoPath, onProg);
+          publicUrl = res.publicUrl;
+          thumbnailUrl = res.thumbnailUrl ?? null;
+        }
       } else {
         // Images compress to ~1MB and upload fast; show an indeterminate state.
         setPhase("processing");
