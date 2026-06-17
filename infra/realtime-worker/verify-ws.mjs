@@ -1,22 +1,20 @@
-// Verify the realtime hub locally (against `wrangler dev` on :8787): signs an
-// HMAC handshake token like the app does, opens a WebSocket, and checks the
-// connect + echo round-trip — plus that a bad token is rejected.
+// Verify the realtime hub locally (against `wrangler dev` on :8787). Exercises
+// auth, presence broadcast, room join + /emit fan-out, typing (sender excluded),
+// and bad-token rejection. Two simulated clients.
 //
-//   AUTH_SECRET must match the worker's. Run with:
-//     node --env-file=.dev.vars verify-ws.mjs
+//   node --env-file=.dev.vars verify-ws.mjs
 
 import { createHmac } from "crypto";
 
 const SECRET = process.env.AUTH_SECRET;
 const PORT = process.env.PORT || 8787;
+const BASE = `127.0.0.1:${PORT}`;
 if (!SECRET) {
   console.error("AUTH_SECRET not set (expected from .dev.vars)");
   process.exit(1);
 }
 
-const b64url = (buf) =>
-  buf.toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-
+const b64url = (b) => b.toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 function signToken(uid, ttl = 3600) {
   const now = Math.floor(Date.now() / 1000);
   const payload = b64url(Buffer.from(JSON.stringify({ uid, iat: now, exp: now + ttl })));
@@ -24,39 +22,78 @@ function signToken(uid, ttl = 3600) {
   return `${payload}.${sig}`;
 }
 
-function connect(token, label) {
-  return new Promise((resolve) => {
-    const ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws?token=${token}`);
-    const result = { label, opened: false, connected: false, echo: false };
-    const timer = setTimeout(() => {
-      try { ws.close(); } catch {}
-      resolve(result);
-    }, 6000);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-    ws.onopen = () => { result.opened = true; };
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      if (msg.type === "connected") {
-        result.connected = msg.userId;
-        ws.send("ping-123");
-      } else if (msg.type === "echo") {
-        result.echo = msg.data === "ping-123";
-        clearTimeout(timer);
-        try { ws.close(); } catch {}
-        resolve(result);
-      }
-    };
-    ws.onerror = () => { /* bad-token path closes the socket */ };
-    ws.onclose = () => { clearTimeout(timer); resolve(result); };
+function client(uid) {
+  const ws = new WebSocket(`ws://${BASE}/ws?token=${signToken(uid)}`);
+  const msgs = [];
+  ws.onmessage = (e) => msgs.push(JSON.parse(e.data));
+  const ready = new Promise((res, rej) => {
+    ws.onopen = () => res();
+    ws.onerror = () => rej(new Error("ws error"));
+    ws.onclose = () => rej(new Error("closed"));
   });
+  return {
+    ws,
+    msgs,
+    ready,
+    send: (o) => ws.send(JSON.stringify(o)),
+    has: (type, pred = () => true) => msgs.some((m) => m.type === type && pred(m)),
+    close: () => ws.close(),
+  };
 }
 
-const good = await connect(signToken("test-user-123"), "valid token");
-console.log("valid token  →", good);
+async function emit(room, event, data) {
+  const res = await fetch(`http://${BASE}/emit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ room, event, data }),
+  });
+  return res.json();
+}
 
-const bad = await connect("garbage.token", "bad token");
-console.log("bad token    →", bad);
+const checks = [];
+const check = (name, pass) => { checks.push({ name, pass }); console.log(`${pass ? "✅" : "❌"} ${name}`); };
 
-const ok = good.connected === "test-user-123" && good.echo === true && bad.connected === false;
-console.log(ok ? "\n✅ realtime hub: auth + WS echo verified (bad token rejected)" : "\n❌ verification failed");
-process.exit(ok ? 0 : 1);
+// ── bad token first
+const badResult = await new Promise((res) => {
+  const ws = new WebSocket(`ws://${BASE}/ws?token=garbage.token`);
+  ws.onopen = () => { res("opened"); ws.close(); };
+  ws.onerror = () => res("rejected");
+  ws.onclose = () => res("rejected");
+});
+check("bad token rejected", badResult === "rejected");
+
+// ── two good clients
+const a = client("userA");
+const b = client("userB");
+await Promise.all([a.ready, b.ready]);
+await sleep(300); // let presence settle
+
+check("A sees itself + B online (presence:sync)",
+  a.has("presence:sync", (m) => m.data.userA && m.data.userB));
+check("B sees both online", b.has("presence:sync", (m) => m.data.userA && m.data.userB));
+
+// ── room join + /emit fan-out
+a.send({ type: "join:conversation", conversationId: "room1" });
+b.send({ type: "join:conversation", conversationId: "room1" });
+await sleep(150);
+const delivered = await emit("conversation:room1", "message:new", { id: "m1", text: "hi" });
+await sleep(200);
+check("/emit delivered to both room members", delivered.delivered === 2);
+check("A received message:new", a.has("message:new", (m) => m.data.id === "m1"));
+check("B received message:new", b.has("message:new", (m) => m.data.id === "m1"));
+
+// ── typing excludes sender
+a.send({ type: "typing:start", conversationId: "room1" });
+await sleep(200);
+check("B received A's typing:start", b.has("typing:start", (m) => m.data.userId === "userA"));
+check("A did NOT receive its own typing", !a.has("typing:start"));
+
+a.close();
+b.close();
+await sleep(100);
+
+const allPass = checks.every((c) => c.pass);
+console.log(allPass ? "\n✅ realtime hub: full presence/rooms/emit/typing verified" : "\n❌ some checks failed");
+process.exit(allPass ? 0 : 1);
