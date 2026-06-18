@@ -12,6 +12,7 @@ import {
   Trophy,
   Crosshair,
   Flame,
+  Download,
   Menu,
   X,
 } from "lucide-react";
@@ -49,6 +50,21 @@ const FEATURES = [
   { icon: Crosshair, t: "Agent identity", d: "Lock in your main agent, role, language and state for future squads." },
   { icon: Images, t: "Clutch ready", d: "Keep clips and cards ready for weekly features and social drops." },
   { icon: CalendarDays, t: "Squad data", d: "Build the profile data that later powers safer Squad Finder matches." },
+];
+
+const RANK_STEPS = [
+  {
+    t: "Pick your rank",
+    d: "Choose your current and peak rank, main agent, role and a template — or pull it live from your Riot ID.",
+  },
+  {
+    t: "Make it yours",
+    d: "Add your display name, best weapon, favourite map and an optional photo for a card that looks like you.",
+  },
+  {
+    t: "Download & flex",
+    d: "Hit download for a free PNG and share it anywhere — Discord, Instagram stories, your LFG posts.",
+  },
 ];
 
 export default function HomePage() {
@@ -199,6 +215,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/rank-card"
+              onClick={() => trackCtaClick(CTA_SOURCES.rank_card)}
               className="flex items-center gap-2 px-5 py-3.5 text-sm font-black uppercase tracking-wider"
               style={{ color: V.cream }}
             >
@@ -361,6 +378,118 @@ export default function HomePage() {
                 </p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* rank card — how it works + direct download CTA */}
+      <section className="mx-auto max-w-7xl px-5 py-14">
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{ background: V.surface, border: `1px solid ${V.border}` }}
+        >
+          <div className="grid items-center gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_0.9fr]">
+            {/* copy + steps */}
+            <div>
+              <div
+                className="-skew-x-12 inline-block px-3 py-1 text-xs font-black uppercase tracking-widest"
+                style={{ background: V.red, color: V.bg }}
+              >
+                <span className="inline-block skew-x-12">Free · No signup to download</span>
+              </div>
+              <h2 className="mt-5 text-3xl font-black uppercase italic tracking-tight sm:text-5xl">
+                Make your <span style={{ color: V.red }}>rank card</span>
+              </h2>
+              <p className="mt-3 max-w-md text-sm sm:text-base" style={{ color: V.textMuted }}>
+                Build a share-ready VALORANT rank card in under a minute and
+                download it as a clean PNG. No account needed — sign up only if
+                you want to save it to your profile.
+              </p>
+
+              <ol className="mt-7 space-y-4">
+                {RANK_STEPS.map((s, i) => (
+                  <li key={s.t} className="flex gap-4">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-black"
+                      style={{ background: `${V.red}26`, color: V.red }}
+                    >
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-black uppercase italic tracking-tight">
+                        {s.t}
+                      </h3>
+                      <p className="mt-0.5 text-sm" style={{ color: V.textMuted }}>
+                        {s.d}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/rank-card"
+                  onClick={() => trackCtaClick(CTA_SOURCES.rank_card)}
+                  className="group flex -skew-x-12 items-center gap-2 px-7 py-3.5 text-sm font-black uppercase tracking-wider"
+                  style={{ background: V.red, color: V.cream }}
+                >
+                  <span className="flex skew-x-12 items-center gap-2">
+                    <Download className="h-4 w-4" /> Make your rank card
+                  </span>
+                </Link>
+                <span className="text-xs" style={{ color: V.textDim }}>
+                  Takes ~60 seconds
+                </span>
+              </div>
+            </div>
+
+            {/* sample rank card visual */}
+            <div className="relative">
+              <Link
+                href="/rank-card"
+                onClick={() => trackCtaClick(CTA_SOURCES.rank_card)}
+                aria-label="Make your rank card"
+                className="block overflow-hidden rounded-xl"
+                style={{ background: V.bgDeep, border: `1px solid ${V.border}` }}
+              >
+                <div className="relative aspect-[4/5]">
+                  <Image
+                    src={agentPortrait(AV.uuid)}
+                    alt="Sample VALORANT rank card"
+                    fill
+                    sizes="(min-width: 1024px) 36vw, 100vw"
+                    className="object-cover object-top"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: `linear-gradient(to top, ${V.bgDeep} 8%, transparent 55%)`,
+                    }}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <p className="text-2xl font-black uppercase italic leading-none">
+                      your_tag
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {["Immortal 3", "Peak Radiant", "Jett · Duelist"].map((b) => (
+                        <span
+                          key={b}
+                          className="rounded px-2 py-0.5 text-[10px] font-black uppercase"
+                          style={{ background: `${V.red}26`, color: V.red }}
+                        >
+                          {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+              <div
+                className="pointer-events-none absolute -inset-3 -z-10 -skew-y-3"
+                style={{ background: `linear-gradient(135deg, ${V.red}1f, transparent)` }}
+              />
+            </div>
           </div>
         </div>
       </section>
