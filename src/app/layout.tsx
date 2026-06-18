@@ -97,15 +97,13 @@ export default function RootLayout({
           data={[
             {
               "@context": "https://schema.org",
-              "@type": "Organization",
-              name: ORGANIZATION_JSONLD.name,
-              url: ORGANIZATION_JSONLD.url,
-              logo: ORGANIZATION_JSONLD.logo,
+              ...ORGANIZATION_JSONLD,
             },
             {
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: SITE_NAME,
+              alternateName: ORGANIZATION_JSONLD.alternateName,
               url: BASE_URL,
               description: SITE_DESCRIPTION,
               publisher: {
