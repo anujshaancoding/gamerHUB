@@ -31,20 +31,24 @@ async function loadFonts(): Promise<SatoriFont[]> {
     { family: "Teko", weight: 700 },
     { family: "Black Ops One", weight: 400 },
   ];
-  const loaded: SatoriFont[] = [];
-  for (const { family, weight } of wanted) {
-    try {
-      const css = await fetch(
-        `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`,
-      ).then((r) => r.text());
-      const url = css.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/)?.[1];
-      if (!url) continue;
-      const data = await fetch(url).then((r) => r.arrayBuffer());
-      loaded.push({ name: family, data, weight, style: "normal" });
-    } catch {
-      /* skip this weight */
-    }
-  }
+  // Load every weight in parallel — sequential awaits made cold starts pay
+  // ~14 network round-trips back-to-back.
+  const results = await Promise.all(
+    wanted.map(async ({ family, weight }): Promise<SatoriFont | null> => {
+      try {
+        const css = await fetch(
+          `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`,
+        ).then((r) => r.text());
+        const url = css.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/)?.[1];
+        if (!url) return null;
+        const data = await fetch(url).then((r) => r.arrayBuffer());
+        return { name: family, data, weight, style: "normal" };
+      } catch {
+        return null; // skip this weight
+      }
+    }),
+  );
+  const loaded = results.filter((f): f is SatoriFont => f !== null);
   if (loaded.length) fontsCache = loaded;
   return loaded;
 }
@@ -122,6 +126,31 @@ async function templateBackground(template: CardTemplate): Promise<string | null
   }
 }
 
+// Card art (agent portraits, rank/peak emblems, weapon icons, map splashes)
+// lives on fixed CDNs and is a finite set, but Satori re-fetches every <img
+// src> on every render — so a warm card pays ~5 network round-trips it
+// shouldn't. Resolve each URL to a data URI once and cache it for the server's
+// lifetime; warm renders then do zero image network I/O (the bulk of
+// per-render latency). Any failure falls back to the raw URL, so behaviour is
+// unchanged if a fetch fails — Satori just fetches it itself as before.
+const artCache = new Map<string, string>();
+async function artUri(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  const cached = artCache.get(url);
+  if (cached) return cached;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const buf = await res.arrayBuffer();
+    const contentType = res.headers.get("content-type") || "image/png";
+    const uri = `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
+    artCache.set(url, uri);
+    return uri;
+  } catch {
+    return url;
+  }
+}
+
 function sourceTone(source: CardSource, light: boolean) {
   if (source === "career") {
     return light
@@ -183,13 +212,21 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
     source === "career" ? computeGGRating({ rank: rankLabel, peak, ...opts.stats }) : null;
   const showRating = !blank && rating != null;
   const favMap = findMapByNameOrSlug(opts.map);
-  const rankEmblem = rankIconUrl(rankLabel); // official tier art, null if Unranked
-  const peakEmblem = rankIconUrl(peak); // official art for the peak chip, null if not a tier
   const agentMatch = findAgent(agent);
-  const agentPortraitUrl = agentMatch ? agentPortrait(agentMatch.uuid) : null;
   const weaponMatch = findWeapon(weapon);
-  const weaponIconUrl = weaponMatch ? weaponDisplayIconUrl(weaponMatch.uuid) : null;
-  const backgroundUri = await templateBackground(template);
+
+  // Resolve every remote card-art URL to a cached data URI in parallel, so a
+  // warm render does no image network I/O. Variable names mirror the raw URLs
+  // they replace; the JSX below is unchanged.
+  const [backgroundUri, agentPortraitUrl, rankEmblem, peakEmblem, weaponIconUrl, mapArtUri] =
+    await Promise.all([
+      templateBackground(template),
+      artUri(agentMatch ? agentPortrait(agentMatch.uuid) : null),
+      artUri(rankIconUrl(rankLabel)), // official tier art, null if Unranked
+      artUri(rankIconUrl(peak)), // official art for the peak chip, null if not a tier
+      artUri(weaponMatch ? weaponDisplayIconUrl(weaponMatch.uuid) : null),
+      artUri(favMap ? mapSplash(favMap.uuid) : null),
+    ]);
 
   // Name block: last word drops to its own line, reference-card style.
   // The name keeps exactly the casing the player typed.
@@ -251,7 +288,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
               right side (the rest clips off the edge), its left edge fading
               into the card. Composition: ghost agent left, hero centre, map
               right. */}
-          {!blank && favMap && (
+          {!blank && favMap && mapArtUri && (
             <div
               style={{
                 position: "absolute",
@@ -267,7 +304,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt=""
-                src={mapSplash(favMap.uuid)}
+                src={mapArtUri}
                 width={468}
                 height={1278}
                 style={{
@@ -685,7 +722,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return await renderCard({
+    const image = await renderCard({
       displayName,
       rank: rank || "Unranked",
       peak,
@@ -705,6 +742,16 @@ export async function GET(request: NextRequest) {
         kast: num(request.nextUrl.searchParams.get("kast")),
       },
     });
+
+    // The card is fully determined by the query params, so identical URLs are
+    // safe to cache hard. This is what turns a viral shared card (Discord /
+    // WhatsApp / Twitter unfurls, repeat previews) from N renders into one:
+    // the edge serves the cached PNG and never re-invokes Satori.
+    image.headers.set(
+      "Cache-Control",
+      "public, max-age=600, s-maxage=2592000, stale-while-revalidate=604800",
+    );
+    return image;
   } catch (error) {
     console.error("[og/rank-card] Error:", error);
     return new Response("Failed to generate image", { status: 500 });

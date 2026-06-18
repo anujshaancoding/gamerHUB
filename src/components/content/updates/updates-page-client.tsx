@@ -38,13 +38,14 @@ const updates: UpdateEntry[] = [
     date: "2026-06-18T12:00:00",
     version: "1.45.0",
     type: "improvement",
-    title: "Easier way to make your Valorant rank card",
+    title: "Easier — and much faster — Valorant rank card maker",
     description:
-      "The home page now spotlights the rank card maker with a quick how-it-works guide and a direct button, so new players can build and download a shareable rank card in under a minute.",
+      "The home page now spotlights the rank card maker with a quick how-it-works guide and a direct button, and the card itself now generates noticeably faster as you edit and when you share it.",
     highlights: [
       "New \"Make your rank card\" section on the landing page with a simple 3-step guide",
       "Direct download button — free PNG, no signup needed to download",
       "Sample card preview so you can see what you'll get before you start",
+      "Live preview updates faster, and shared cards now load instantly from cache",
     ],
   },
   {
