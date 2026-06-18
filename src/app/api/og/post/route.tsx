@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
+import { OG_CACHE_CONTROL } from "@/lib/og/cache";
+
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const postId = request.nextUrl.searchParams.get("id");
@@ -272,7 +275,7 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1200, height: 630 }
+      { width: 1200, height: 630, headers: { "Cache-Control": OG_CACHE_CONTROL } }
     );
   } catch (error) {
     console.error("OG image generation error:", error);

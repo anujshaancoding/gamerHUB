@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/admin";
+import { artUri, OG_CACHE_CONTROL } from "@/lib/og/cache";
+
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get("username");
@@ -28,28 +31,33 @@ export async function GET(request: NextRequest) {
     const isPremium = (p.is_premium as boolean) || false;
     const avatarUrl = p.avatar_url as string | null;
 
-    // Fetch game count
-    const { count: gamesCount } = await db
-      .from("user_games")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", p.id as string)
-      .eq("is_public", true);
+    // These three reads only depend on the profile id, not on each other —
+    // run them together (was 3 sequential round-trips), and resolve the avatar
+    // to a cached data URI so Satori doesn't re-fetch it on every render.
+    const [gamesCountRes, gamesRes, followersRes, avatarUri] = await Promise.all([
+      db
+        .from("user_games")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", p.id as string)
+        .eq("is_public", true),
+      db
+        .from("user_games")
+        .select("rank, game:games(name)")
+        .eq("user_id", p.id as string)
+        .eq("is_public", true)
+        .limit(1),
+      db
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("following_id", p.id as string),
+      artUri(avatarUrl),
+    ]);
 
-    // Fetch primary game
-    const { data: games } = await db
-      .from("user_games")
-      .select("rank, game:games(name)")
-      .eq("user_id", p.id as string)
-      .eq("is_public", true)
-      .limit(1);
-
-    const primaryGame = games?.[0] as { rank?: string; game?: { name: string } | null } | undefined;
-
-    // Fetch follower count
-    const { count: followers } = await db
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("following_id", p.id as string);
+    const gamesCount = (gamesCountRes.count as number | null) ?? 0;
+    const followers = (followersRes.count as number | null) ?? 0;
+    const primaryGame = gamesRes.data?.[0] as
+      | { rank?: string; game?: { name: string } | null }
+      | undefined;
 
     const displayBio = bio.length > 100 ? bio.slice(0, 97) + "..." : bio;
 
@@ -126,10 +134,10 @@ export async function GET(request: NextRequest) {
                 boxShadow: "0 0 40px rgba(159,122,234,0.4)",
               }}
             >
-              {avatarUrl ? (
+              {avatarUri ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={avatarUrl}
+                  src={avatarUri}
                   alt=""
                   width={200}
                   height={200}
@@ -193,7 +201,7 @@ export async function GET(request: NextRequest) {
 
               {/* Username */}
               <span style={{ fontSize: 26, color: "#9f7aea", fontWeight: 500 }}>
-                @{p.username}
+                @{p.username as string}
               </span>
 
               {/* Bio */}
@@ -300,7 +308,7 @@ export async function GET(request: NextRequest) {
               </span>
             </div>
             <span style={{ fontSize: 18, color: "#7a7a8a" }}>
-              gglobby.in/profile/{p.username}
+              gglobby.in/profile/{p.username as string}
             </span>
           </div>
 
@@ -320,6 +328,7 @@ export async function GET(request: NextRequest) {
       {
         width: 1200,
         height: 630,
+        headers: { "Cache-Control": OG_CACHE_CONTROL },
       },
     );
   } catch (error) {

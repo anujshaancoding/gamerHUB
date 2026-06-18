@@ -8,50 +8,22 @@ import { agentPortrait, findAgent } from "@/lib/data/valorant-agents";
 import { MAPS, mapSplash, type ValorantMap } from "@/lib/data/valorant-maps";
 import { computeGGRating, type GGRatingStats } from "@/lib/features/tools/gg-rating";
 import { findWeapon, weaponDisplayIconUrl } from "@/lib/tracker/valorant-assets";
+import { artUri, loadFonts, OG_CACHE_CONTROL, type SatoriFont } from "@/lib/og/cache";
 
 export const runtime = "nodejs";
 
-type SatoriFont = { name: string; data: ArrayBuffer; weight: 400 | 500 | 600 | 700 | 800 | 900; style: "normal" };
-
 // Card fonts for Satori: Outfit for labels/UI, Teko (tall condensed) for the
 // rating and rank, Black Ops One (military stencil) for the player name.
-// Fetched once per server lifetime and cached. Sending NO user-agent makes
-// Google's css2 endpoint serve plain TTF (Satori cannot parse woff/woff2);
-// an IE11 UA returns woff for some families and silently drops them. Fully
-// guarded — any failure falls back to the built-in font, never a 500.
-let fontsCache: SatoriFont[] | null = null;
-async function loadFonts(): Promise<SatoriFont[]> {
-  if (fontsCache) return fontsCache;
-  const wanted: Array<{ family: string; weight: SatoriFont["weight"] }> = [
-    { family: "Outfit", weight: 400 },
-    { family: "Outfit", weight: 700 },
-    { family: "Outfit", weight: 900 },
-    { family: "Teko", weight: 500 },
-    { family: "Teko", weight: 600 },
-    { family: "Teko", weight: 700 },
-    { family: "Black Ops One", weight: 400 },
-  ];
-  // Load every weight in parallel — sequential awaits made cold starts pay
-  // ~14 network round-trips back-to-back.
-  const results = await Promise.all(
-    wanted.map(async ({ family, weight }): Promise<SatoriFont | null> => {
-      try {
-        const css = await fetch(
-          `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`,
-        ).then((r) => r.text());
-        const url = css.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/)?.[1];
-        if (!url) return null;
-        const data = await fetch(url).then((r) => r.arrayBuffer());
-        return { name: family, data, weight, style: "normal" };
-      } catch {
-        return null; // skip this weight
-      }
-    }),
-  );
-  const loaded = results.filter((f): f is SatoriFont => f !== null);
-  if (loaded.length) fontsCache = loaded;
-  return loaded;
-}
+// Loaded in parallel and cached per family+weight by the shared OG cache.
+const CARD_FONTS: Array<{ family: string; weight: SatoriFont["weight"] }> = [
+  { family: "Outfit", weight: 400 },
+  { family: "Outfit", weight: 700 },
+  { family: "Outfit", weight: 900 },
+  { family: "Teko", weight: 500 },
+  { family: "Teko", weight: 600 },
+  { family: "Teko", weight: 700 },
+  { family: "Black Ops One", weight: 400 },
+];
 
 type CardSource = "manual" | "career";
 type CardTemplate = "ember" | "frost" | "aurum" | "clean";
@@ -123,31 +95,6 @@ async function templateBackground(template: CardTemplate): Promise<string | null
   } catch {
     bgCache.set(template, null);
     return null;
-  }
-}
-
-// Card art (agent portraits, rank/peak emblems, weapon icons, map splashes)
-// lives on fixed CDNs and is a finite set, but Satori re-fetches every <img
-// src> on every render — so a warm card pays ~5 network round-trips it
-// shouldn't. Resolve each URL to a data URI once and cache it for the server's
-// lifetime; warm renders then do zero image network I/O (the bulk of
-// per-render latency). Any failure falls back to the raw URL, so behaviour is
-// unchanged if a fetch fails — Satori just fetches it itself as before.
-const artCache = new Map<string, string>();
-async function artUri(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  const cached = artCache.get(url);
-  if (cached) return cached;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return url;
-    const buf = await res.arrayBuffer();
-    const contentType = res.headers.get("content-type") || "image/png";
-    const uri = `data:${contentType};base64,${Buffer.from(buf).toString("base64")}`;
-    artCache.set(url, uri);
-    return uri;
-  } catch {
-    return url;
   }
 }
 
@@ -238,7 +185,7 @@ async function renderCard(opts: CardOptions): Promise<ImageResponse> {
   // condensed Teko numerals.
   const nameFontSize = longest > 16 ? 38 : longest > 11 ? 48 : 62;
 
-  const fonts = await loadFonts();
+  const fonts = await loadFonts(CARD_FONTS);
   const baseFontFamily = fonts.some((f) => f.name === "Outfit") ? "Outfit" : "Arial";
   const displayFontFamily = fonts.some((f) => f.name === "Teko") ? "Teko" : baseFontFamily;
   const nameFontFamily = fonts.some((f) => f.name === "Black Ops One")
@@ -747,10 +694,7 @@ export async function GET(request: NextRequest) {
     // safe to cache hard. This is what turns a viral shared card (Discord /
     // WhatsApp / Twitter unfurls, repeat previews) from N renders into one:
     // the edge serves the cached PNG and never re-invokes Satori.
-    image.headers.set(
-      "Cache-Control",
-      "public, max-age=600, s-maxage=2592000, stale-while-revalidate=604800",
-    );
+    image.headers.set("Cache-Control", OG_CACHE_CONTROL);
     return image;
   } catch (error) {
     console.error("[og/rank-card] Error:", error);
