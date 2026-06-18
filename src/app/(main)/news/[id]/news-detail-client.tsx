@@ -23,9 +23,16 @@ import { formatDistanceToNow } from "date-fns";
 import { NEWS_CATEGORIES, NEWS_REGIONS } from "@/types/news";
 import { DEFAULT_GAME_THUMBNAILS } from "@/lib/features/news/constants";
 import type { NewsArticle, NewsCategory } from "@/types/news";
+import dynamic from "next/dynamic";
 import { NewsComments } from "@/components/content/news/news-comments";
 import { NewsShareCardModal } from "@/components/content/news/news-share-card-modal";
-import { InstagramEmbed as ReactInstagramEmbed } from "react-social-media-embed";
+
+// Lazy-load the embed library — it's only needed when an article actually
+// contains an Instagram embed, so keep its weight out of the news-detail bundle.
+const ReactInstagramEmbed = dynamic(
+  () => import("react-social-media-embed").then((m) => m.InstagramEmbed),
+  { ssr: false },
+);
 
 const GAME_COLORS: Record<string, string> = {
   valorant: "bg-red-500/90 text-white",

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -435,14 +436,22 @@ export function ValorantRankCardClient({
                     key={item.value}
                     type="button"
                     onClick={() => setTemplate(item.value)}
-                    className={`relative h-16 overflow-hidden rounded-lg border-2 bg-cover bg-center transition-all ${
+                    className={`relative h-16 overflow-hidden rounded-lg border-2 transition-all ${
                       active ? "scale-[1.02]" : "opacity-75 hover:opacity-100"
                     }`}
                     style={{
-                      backgroundImage: `url(/images/cards/bg-${item.value}.jpg)`,
                       borderColor: active ? item.accent : "rgba(255,255,255,0.12)",
                     }}
                   >
+                    {/* next/image downscales the full-size card art to a
+                        thumbnail — the source JPG is 1080x1350. */}
+                    <Image
+                      src={`/images/cards/bg-${item.value}.jpg`}
+                      alt=""
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
                     <span className="absolute inset-x-0 bottom-0 bg-black/55 py-0.5 text-center text-[10px] font-black uppercase tracking-wide text-white">
                       {item.label}
                     </span>
@@ -558,7 +567,7 @@ export function ValorantRankCardClient({
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={lookupCareerRecord}
+                    onClick={() => lookupCareerRecord()}
                     isLoading={lookupLoading}
                     leftIcon={<Search className="h-4 w-4" />}
                   >
