@@ -64,27 +64,29 @@ export async function GET(request: NextRequest) {
         console.error("Error fetching mutual friends:", mutualError);
       } else if (mutualData && mutualData.length > 0) {
         const userIds = mutualData.map((m) => m.user_id);
+        const allMutualIds = [...new Set(mutualData.flatMap((m) => m.mutual_friend_ids))];
 
-        // Fetch profiles for these users
-        const { data: profilesRaw } = await db
-          .from("profiles")
-          .select(`
+        // The suggested-user profiles and the mutual-friend name lookup both
+        // depend only on mutualData, not on each other — fetch them together.
+        const [profilesRes, mutualProfilesRes] = await Promise.all([
+          db
+            .from("profiles")
+            .select(`
             *,
             user_games (
               *,
               game:games (*)
             )
           `)
-          .in("id", userIds);
-        const profiles = profilesRaw as ProfileWithGames[] | null;
-
-        // Fetch mutual friend names
-        const allMutualIds = [...new Set(mutualData.flatMap(m => m.mutual_friend_ids))];
-        const { data: mutualProfilesRaw } = await db
-          .from("profiles")
-          .select("id, username, display_name")
-          .in("id", allMutualIds);
-        const mutualProfiles = mutualProfilesRaw as { id: string; username: string; display_name: string | null }[] | null;
+            .in("id", userIds),
+          db.from("profiles").select("id, username, display_name").in("id", allMutualIds),
+        ]);
+        const profiles = profilesRes.data as ProfileWithGames[] | null;
+        const mutualProfiles = mutualProfilesRes.data as {
+          id: string;
+          username: string;
+          display_name: string | null;
+        }[] | null;
 
         const mutualProfileMap = new Map(
           (mutualProfiles || []).map((p) => [p.id, p.display_name || p.username])

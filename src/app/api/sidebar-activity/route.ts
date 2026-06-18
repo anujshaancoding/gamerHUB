@@ -50,38 +50,37 @@ export async function GET(request: NextRequest) {
         .limit(5),
     ];
 
-    // 4. Friend posts (only for logged-in users, filtered by follows/friends)
-    let friendPostPromise: Promise<unknown> | null = null;
-    if (user) {
-      const { data: following } = await db
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", user.id);
-
-      const followingIds = ((following || []) as Array<Record<string, unknown>>).map((f) => f.following_id as string);
-
-      if (followingIds.length > 0) {
-        friendPostPromise = sb
-          .from("friend_posts")
-          .select(
-            "id, content, image_url, likes_count, created_at, user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url)"
-          )
-          .in("user_id", followingIds)
-          .order("created_at", { ascending: false })
-          .limit(5);
-      }
-    }
-
-    if (friendPostPromise) {
-      queries.push(friendPostPromise);
-    }
-
-    const results = await Promise.all(queries);
-
-    const [newsResult, blogResult, listingsResult, friendPostResult] = results as Array<{
+    type QResult = {
       data?: Array<Record<string, unknown>> | null;
       error?: { message: string } | null;
-    }>;
+    };
+
+    // Run the three public feeds together with the follows lookup (for logged-in
+    // users), so the public content no longer waits on the follows query — it
+    // was previously awaited first, serializing the whole batch behind it.
+    const [followsResult, newsResult, blogResult, listingsResult] = (await Promise.all([
+      user
+        ? db.from("follows").select("following_id").eq("follower_id", user.id)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
+      ...queries,
+    ])) as QResult[];
+
+    // Friend posts depend on the follows result, so they're a second hop —
+    // only for logged-in users who actually follow someone.
+    let friendPostResult: QResult | undefined;
+    const followingIds = ((followsResult?.data || []) as Array<Record<string, unknown>>).map(
+      (f) => f.following_id as string,
+    );
+    if (user && followingIds.length > 0) {
+      friendPostResult = (await sb
+        .from("friend_posts")
+        .select(
+          "id, content, image_url, likes_count, created_at, user:profiles!friend_posts_user_id_fkey(username, display_name, avatar_url)"
+        )
+        .in("user_id", followingIds)
+        .order("created_at", { ascending: false })
+        .limit(5)) as QResult;
+    }
 
     const items: SidebarActivityItem[] = [];
 

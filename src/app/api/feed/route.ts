@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/db/client";
-import { cachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
+import { cachedResponse, privateCachedResponse, CACHE_DURATIONS } from "@/lib/api/cache-headers";
 import { getUser } from "@/lib/auth/get-user";
 
 // GET - Get combined feed (friends + following activities)
@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
         `
         *,
         user:profiles!activity_feed_user_id_fkey(id, username, display_name, avatar_url)
-      `,
-        { count: "exact" }
+      `
       )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -50,7 +49,7 @@ export async function GET(request: NextRequest) {
       query = query.eq("activity_type", type);
     }
 
-    const { data: activities, error, count } = await query;
+    const { data: activities, error } = await query;
 
     if (error) {
       console.error("Error fetching feed:", error);
@@ -87,15 +86,14 @@ export async function GET(request: NextRequest) {
       user_reaction: userReactions[activity.id as string] || null,
     }));
 
-    return cachedResponse(
-      {
-        activities: activitiesWithReactions,
-        total: count || 0,
-        limit,
-        offset,
-      },
-      CACHE_DURATIONS.USER_DATA
-    );
+    // A logged-in feed is personalized (friends-only activities via the follows
+    // filter), so it must be privately cached — never shared on the CDN. The
+    // exact COUNT(*) scan was dropped: an infinite-scroll feed doesn't need a
+    // grand total, and no caller reads it.
+    const payload = { activities: activitiesWithReactions, limit, offset };
+    return user
+      ? privateCachedResponse(payload, CACHE_DURATIONS.USER_DATA)
+      : cachedResponse(payload, CACHE_DURATIONS.USER_DATA);
   } catch (error) {
     console.error("Feed fetch error:", error);
     return NextResponse.json(
