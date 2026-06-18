@@ -46,6 +46,7 @@ const updates: UpdateEntry[] = [
       "Direct download button — free PNG, no signup needed to download",
       "Sample card preview so you can see what you'll get before you start",
       "Live preview updates faster, and shared cards now load instantly from cache",
+      "Profile pages and shared profile/post link previews load noticeably faster",
     ],
   },
   {
