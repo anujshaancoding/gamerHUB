@@ -769,13 +769,17 @@ export class QueryBuilder<T = Record<string, unknown>> {
   ): Promise<void> {
     const fks = await getForeignKeys(this._sql);
 
-    for (const join of joins) {
+    // Resolve sibling joins concurrently. Each iteration reads only the shared
+    // source rows and writes its own distinct alias, so they're independent —
+    // sequentially this made an N-join select N round-trips deep per nesting
+    // level, the single biggest multiplier on multi-join routes.
+    await Promise.all(joins.map(async (join) => {
       try {
         const resolved = resolveFKForTable(fks, join, sourceTable);
 
         if (!resolved) {
           rows.forEach((r) => { r[join.alias] = null; });
-          continue;
+          return;
         }
 
         const { direction, localCol, foreignCol, foreignTable } = resolved;
@@ -789,7 +793,7 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
           if (fkValues.length === 0) {
             rows.forEach((r) => { r[join.alias] = null; });
-            continue;
+            return;
           }
 
           const placeholders = fkValues.map((_, i) => `$${i + 1}`).join(", ");
@@ -815,7 +819,7 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
           if (mainIds.length === 0) {
             rows.forEach((r) => { r[join.alias] = []; });
-            continue;
+            return;
           }
 
           const placeholders = mainIds.map((_, i) => `$${i + 1}`).join(", ");
@@ -845,7 +849,7 @@ export class QueryBuilder<T = Record<string, unknown>> {
         console.warn(`FK join "${join.alias}" failed:`, joinErr);
         rows.forEach((r) => { r[join.alias] = null; });
       }
-    }
+    }));
   }
 
   /** Determine FK direction and columns for a join reference */
