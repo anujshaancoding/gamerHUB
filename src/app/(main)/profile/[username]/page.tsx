@@ -96,27 +96,85 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const profile = profileData as unknown as Profile;
 
-  // Fetch user games
-  const { data: userGames } = await db
-    .from("user_games")
-    .select("*, game:games(*)")
-    .eq("user_id", profile.id)
-    .eq("is_public", true);
+  // Every read below depends only on the profile id (not on each other), plus
+  // the viewer lookup — so run them in ONE parallel batch instead of ~12
+  // sequential round-trips. The profile page is the most-trafficked SEO surface
+  // and was the worst connection-hold offender. Each query is preserved
+  // verbatim; only the awaiting is parallelized. Downstream processing unchanged.
+  const [
+    userGamesRes,
+    achievementsRes,
+    endorsementsRes,
+    trustBadgeRes,
+    accountTrustRes,
+    userBadgesRes,
+    followersRes,
+    followingRes,
+    clanMembershipsRes,
+    rankHistoryRes,
+    activityDataRes,
+    user,
+  ] = await Promise.all([
+    db.from("user_games").select("*, game:games(*)").eq("user_id", profile.id).eq("is_public", true),
+    db
+      .from("achievements")
+      .select("*, game:games(*)")
+      .eq("user_id", profile.id)
+      .eq("is_public", true)
+      .order("achievement_date", { ascending: false })
+      .limit(12),
+    db
+      .from("trait_endorsements" as never)
+      .select("friendly, team_player, leader, communicative, reliable" as never)
+      .eq("endorsed_id" as never, profile.id),
+    db.from("trust_badges" as never).select("*").eq("user_id" as never, profile.id).single(),
+    db
+      .from("account_trust" as never)
+      .select(
+        "account_age_score, activity_score, community_score, report_score, interaction_depth_score, repeat_play_score, clan_participation_score, verification_bonus" as never,
+      )
+      .eq("user_id" as never, profile.id)
+      .single(),
+    db
+      .from("user_profile_badges")
+      .select("*, badge:profile_badges(*)")
+      .eq("user_id", profile.id)
+      .order("earned_at", { ascending: false }),
+    db.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profile.id),
+    db.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
+    db
+      .from("clan_members")
+      .select("*, clan:clans(id, name, tag, slug, avatar_url, banner_url)")
+      .eq("user_id", profile.id),
+    db
+      .from("rank_history" as never)
+      .select("id, rank, achieved_at, season, game_id, game:games(name, slug, icon_url)" as never)
+      .eq("user_id" as never, profile.id)
+      .order("achieved_at" as never, { ascending: true })
+      .limit(20),
+    db
+      .from("user_activity_days" as never)
+      .select("activity_date, minutes_online, first_seen_at, last_seen_at" as never)
+      .eq("user_id" as never, profile.id)
+      .gte(
+        "activity_date" as never,
+        new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      )
+      .order("activity_date" as never, { ascending: true }),
+    getUser(),
+  ]);
 
-  // Fetch achievements
-  const { data: achievements } = await db
-    .from("achievements")
-    .select("*, game:games(*)")
-    .eq("user_id", profile.id)
-    .eq("is_public", true)
-    .order("achievement_date", { ascending: false })
-    .limit(12);
-
-  // Fetch trait endorsements (new system - not in auto-generated types)
-  const { data: endorsements } = await db
-    .from("trait_endorsements" as never)
-    .select("friendly, team_player, leader, communicative, reliable" as never)
-    .eq("endorsed_id" as never, profile.id);
+  const userGames = userGamesRes.data;
+  const achievements = achievementsRes.data;
+  const endorsements = endorsementsRes.data;
+  const trustBadgeRaw = trustBadgeRes.data;
+  const accountTrustRaw = accountTrustRes.data;
+  const userBadges = userBadgesRes.data;
+  const followersCount = followersRes.count;
+  const followingCount = followingRes.count;
+  const clanMemberships = clanMembershipsRes.data;
+  const rankHistoryRaw = rankHistoryRes.data;
+  const activityDataRaw = activityDataRes.data;
 
   // Calculate trait endorsement stats
   type EndorsementRow = {
@@ -149,12 +207,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     is_community_pillar: boolean;
     is_established: boolean;
   };
-  const { data: trustBadgeRaw } = await db
-    .from("trust_badges" as never)
-    .select("*")
-    .eq("user_id" as never, profile.id)
-    .single();
-
   const trustBadgeData = trustBadgeRaw as unknown as TrustBadgeRow | null;
   const trustBadges: TrustBadges = trustBadgeData
     ? {
@@ -186,12 +238,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     clan_participation_score: number;
     verification_bonus: number;
   };
-  const { data: accountTrustRaw } = await db
-    .from("account_trust" as never)
-    .select("account_age_score, activity_score, community_score, report_score, interaction_depth_score, repeat_play_score, clan_participation_score, verification_bonus" as never)
-    .eq("user_id" as never, profile.id)
-    .single();
-
   const accountTrust = accountTrustRaw as unknown as AccountTrustRow | null;
   const standingFactors = accountTrust
     ? {
@@ -206,30 +252,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       }
     : null;
 
-  // Fetch user badges
-  const { data: userBadges } = await db
-    .from("user_profile_badges")
-    .select("*, badge:profile_badges(*)")
-    .eq("user_id", profile.id)
-    .order("earned_at", { ascending: false });
-
   // Note: gamification tables (badge_definitions, user_badges, user_progression) are not yet migrated.
   // Badge definitions are provided as static data in the ProfileMedals component.
   // User stats for progress bars are derived from already-fetched profile data below.
 
-  // Fetch follow counts
-  const { count: followersCount } = await db
-    .from("follows")
-    .select("*", { count: "exact", head: true })
-    .eq("following_id", profile.id);
-
-  const { count: followingCount } = await db
-    .from("follows")
-    .select("*", { count: "exact", head: true })
-    .eq("follower_id", profile.id);
-
   // Check if current user follows this profile
-  const user = await getUser();
   let isFollowing = false;
   let isOwnProfile = false;
 
@@ -287,20 +314,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Determine primary game slug for theme
   const primaryGameSlug = userGames?.[0]?.game?.slug ?? null;
 
-  // Fetch clan memberships for profile display
-  const { data: clanMemberships } = await db
-    .from("clan_members")
-    .select("*, clan:clans(id, name, tag, slug, avatar_url, banner_url)")
-    .eq("user_id", profile.id);
-
-  // Fetch rank history for timeline
-  const { data: rankHistoryRaw } = await db
-    .from("rank_history" as never)
-    .select("id, rank, achieved_at, season, game_id, game:games(name, slug, icon_url)" as never)
-    .eq("user_id" as never, profile.id)
-    .order("achieved_at" as never, { ascending: true })
-    .limit(20);
-
   type RankHistoryRow = {
     id: string;
     rank: string;
@@ -321,14 +334,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     isCurrent: i === rankHistory.length - 1,
   }));
 
-  // Fetch activity data for power level and calendar
-  const { data: activityDataRaw } = await db
-    .from("user_activity_days" as never)
-    .select("activity_date, minutes_online, first_seen_at, last_seen_at" as never)
-    .eq("user_id" as never, profile.id)
-    .gte("activity_date" as never, new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
-    .order("activity_date" as never, { ascending: true });
-
+  // Activity data for power level and calendar (fetched in the batch above)
   type ActivityRow = { activity_date: string; minutes_online: number; first_seen_at: string; last_seen_at: string };
   const activityRows = (activityDataRaw as unknown as ActivityRow[] | null) || [];
   const totalMinutesOnline = activityRows.reduce((sum, d) => sum + d.minutes_online, 0);
